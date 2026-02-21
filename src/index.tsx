@@ -1461,18 +1461,14 @@ app.get('/contact', (c) => {
             <h2 style="font-family:'Bangers',cursive;font-size:2rem;color:#FFD700;letter-spacing:2px;margin-bottom:0.5rem">
               <i class="fas fa-star mr-3"></i>Enrollment Application
             </h2>
-            <p style="color:#999;margin-bottom:1.5rem;font-size:0.95rem">Fill out this form and our team will contact you within 24 hours to schedule a tour!</p>
+            <p style="color:#999;margin-bottom:2rem;font-size:0.95rem">Fill out this form and our team will contact you within 24 hours to schedule a tour!</p>
 
-            <!-- Setup notice - remove after adding Web3Forms key -->
-            <div id="setup-notice" style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.4);border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:0.85rem;color:#FFD700;display:flex;align-items:flex-start;gap:10px">
-              <i class="fas fa-key" style="margin-top:2px;flex-shrink:0"></i>
-              <span><strong>Admin Setup Required:</strong> To activate email delivery, visit <a href="https://web3forms.com" target="_blank" style="color:#00D9E8;text-decoration:underline">web3forms.com</a>, enter <strong>superkidsenrollment@gmail.com</strong>, copy your free Access Key, and replace <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">YOUR_WEB3FORMS_ACCESS_KEY</code> in the code. Takes 2 minutes!</span>
-            </div>
+
 
             <form id="enroll-form" onsubmit="handleSubmit(event)" style="display:flex;flex-direction:column;gap:1.5rem;position:relative;z-index:2">
 
               <!-- Web3Forms hidden fields -->
-              <input type="hidden" name="access_key" id="w3f-access-key" value="YOUR_WEB3FORMS_ACCESS_KEY" />
+              <input type="hidden" name="access_key" id="w3f-access-key" value="bd2e27b6-9cfe-4db2-8d56-9c002529d6bd" />
               <input type="hidden" name="subject" value="🦸 New SuperKids Enrollment Application!" />
               <input type="hidden" name="from_name" value="SuperKids Preschool Website" />
               <input type="hidden" name="redirect" value="false" />

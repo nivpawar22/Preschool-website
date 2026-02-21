@@ -172,7 +172,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       padding: 2rem;
       transition: all 0.3s;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
     }
     .card::before {
       content: '';
@@ -182,6 +182,8 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       background: linear-gradient(135deg, rgba(0,217,232,0.05), transparent);
       opacity: 0;
       transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 0;
     }
     .card:hover {
       border-color: #00D9E8;
@@ -326,6 +328,9 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       font-size: 1rem;
       transition: border-color 0.3s;
       outline: none;
+      position: relative;
+      z-index: 2;
+      cursor: text;
     }
     .form-input:focus {
       border-color: #00D9E8;
@@ -480,10 +485,10 @@ const Navbar = (active: string) => `
     border-bottom:2px solid #00D9E8;
     box-shadow:0 2px 30px rgba(0,217,232,0.22),0 4px 60px rgba(0,0,0,0.7);
   ">
-    <!-- Radial cyan glow — matches screenshot -->
+    <!-- Radial cyan glow — left-anchored -->
     <div style="
-      position:absolute;top:50%;left:50%;
-      transform:translate(-50%,-50%);
+      position:absolute;top:50%;left:0;
+      transform:translateY(-50%);
       width:600px;height:200px;
       background:radial-gradient(ellipse,rgba(0,195,220,0.16) 0%,transparent 70%);
       pointer-events:none;
@@ -493,24 +498,47 @@ const Navbar = (active: string) => `
     <div class="max-w-7xl mx-auto px-6" style="position:relative;z-index:2">
 
       <!-- Logo row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
 
-        <!-- Logo -->
-        <a href="/" style="text-decoration:none;display:flex;align-items:center">
+        <!-- Logo + Tagline -->
+        <a href="/" style="text-decoration:none;display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0">
           <img src="/static/logo.png" alt="SuperKids Preschool"
             style="
-              height:110px;
-              width:auto;
+              display:block;
+              width:500px !important;
+              height:120px !important;
+              min-width:500px;
+              min-height:120px;
+              max-width:500px;
+              max-height:120px;
               object-fit:contain;
+              object-position:left center;
               filter:
                 drop-shadow(0px 4px 12px rgba(0,0,0,0.7))
                 drop-shadow(0 0 20px rgba(0,210,230,0.65))
                 drop-shadow(0 0 42px rgba(0,210,230,0.30));
               transition:filter 0.3s,transform 0.3s;
             "
-            onmouseover="this.style.filter='drop-shadow(0px 4px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 32px rgba(0,210,230,1)) drop-shadow(0 0 60px rgba(0,210,230,0.5))';this.style.transform='scale(1.03)'"
+            onmouseover="this.style.filter='drop-shadow(0px 4px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 32px rgba(0,210,230,1)) drop-shadow(0 0 60px rgba(0,210,230,0.5))';this.style.transform='scale(1.02)'"
             onmouseout="this.style.filter='drop-shadow(0px 4px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 20px rgba(0,210,230,0.65)) drop-shadow(0 0 42px rgba(0,210,230,0.30))';this.style.transform='scale(1)'"
           />
+          <!-- Tagline — white illuminated style -->
+          <div style="
+            margin-top:-12px;
+            font-family:'Nunito',sans-serif;
+            font-size:1rem;
+            font-weight:800;
+            letter-spacing:2px;
+            text-align:left;
+            width:500px;
+            color:#ffffff;
+            text-shadow:
+              0 0 6px rgba(255,255,255,0.9),
+              0 0 14px rgba(255,255,255,0.7),
+              0 0 28px rgba(0,217,232,0.8),
+              0 0 50px rgba(0,217,232,0.5);
+            white-space: nowrap;
+          ">✨ Where Every Child is a SuperHero!!</div>
         </a>
 
         <!-- Desktop nav links (right side) -->
@@ -1429,13 +1457,19 @@ app.get('/contact', (c) => {
 
         <!-- Enrollment Form -->
         <div class="lg:col-span-2 fade-in">
-          <div class="card" style="border-color:rgba(255,215,0,0.2);padding:2.5rem">
+          <div class="card" style="border-color:rgba(255,215,0,0.2);padding:2.5rem;position:relative;z-index:1">
             <h2 style="font-family:'Bangers',cursive;font-size:2rem;color:#FFD700;letter-spacing:2px;margin-bottom:0.5rem">
               <i class="fas fa-star mr-3"></i>Enrollment Application
             </h2>
             <p style="color:#999;margin-bottom:2rem;font-size:0.95rem">Fill out this form and our team will contact you within 24 hours to schedule a tour!</p>
 
-            <form id="enroll-form" onsubmit="handleSubmit(event)" style="display:flex;flex-direction:column;gap:1.5rem">
+            <form id="enroll-form" onsubmit="handleSubmit(event)" style="display:flex;flex-direction:column;gap:1.5rem;position:relative;z-index:2">
+
+              <!-- Hidden Formspree fields -->
+              <input type="hidden" name="_subject" value="🦸 New SuperKids Enrollment Application!" />
+              <input type="hidden" name="_replyto" id="reply-to-field" value="" />
+              <input type="hidden" name="_format" value="plain" />
+
               <!-- Parent section -->
               <div>
                 <h3 style="font-family:'Bangers',cursive;color:#00D9E8;letter-spacing:1px;margin-bottom:1rem;font-size:1.2rem">
@@ -1444,19 +1478,20 @@ app.get('/contact', (c) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">First Name *</label>
-                    <input type="text" required placeholder="Your first name" class="form-input" />
+                    <input type="text" name="parent_first_name" required placeholder="Your first name" class="form-input" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Last Name *</label>
-                    <input type="text" required placeholder="Your last name" class="form-input" />
+                    <input type="text" name="parent_last_name" required placeholder="Your last name" class="form-input" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Email Address *</label>
-                    <input type="email" required placeholder="your@email.com" class="form-input" />
+                    <input type="email" name="parent_email" id="parent-email" required placeholder="your@email.com" class="form-input"
+                      oninput="document.getElementById('reply-to-field').value=this.value" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Phone Number *</label>
-                    <input type="tel" required placeholder="(555) 000-0000" class="form-input" />
+                    <input type="tel" name="parent_phone" required placeholder="(555) 000-0000" class="form-input" />
                   </div>
                 </div>
               </div>
@@ -1469,15 +1504,15 @@ app.get('/contact', (c) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Child's Name *</label>
-                    <input type="text" required placeholder="Your child's name" class="form-input" />
+                    <input type="text" name="child_name" required placeholder="Your child's name" class="form-input" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Date of Birth *</label>
-                    <input type="date" required class="form-input" />
+                    <input type="date" name="child_dob" required class="form-input" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Program of Interest *</label>
-                    <select required class="form-input" style="cursor:pointer">
+                    <select name="program" required class="form-input" style="cursor:pointer">
                       <option value="" disabled selected>Select a program</option>
                       <option>Toddler Titans (1-2 years)</option>
                       <option>Mini Heroes (2-3 years)</option>
@@ -1489,7 +1524,7 @@ app.get('/contact', (c) => {
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Preferred Start Date</label>
-                    <input type="date" class="form-input" />
+                    <input type="date" name="start_date" class="form-input" />
                   </div>
                 </div>
               </div>
@@ -1499,10 +1534,10 @@ app.get('/contact', (c) => {
                 <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:10px">Schedule Preference</label>
                 <div class="flex flex-wrap gap-3">
                   ${['Full-Time (5 days)', 'Part-Time (3 days)', 'Half Day', 'Full Day', 'Flexible'].map(opt => `
-                    <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;border:1px solid rgba(0,217,232,0.3);color:#ccc;font-size:0.85rem;font-weight:600;transition:all 0.3s"
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;border:1px solid rgba(0,217,232,0.3);color:#ccc;font-size:0.85rem;font-weight:600;transition:all 0.3s;position:relative;z-index:2"
                       onmouseover="this.style.borderColor='#00D9E8';this.style.color='#00D9E8'"
-                      onmouseout="">
-                      <input type="checkbox" style="accent-color:#00D9E8"> ${opt}
+                      onmouseout="this.style.borderColor='rgba(0,217,232,0.3)';this.style.color='#ccc'">
+                      <input type="checkbox" name="schedule" value="${opt}" style="accent-color:#00D9E8;cursor:pointer"> ${opt}
                     </label>
                   `).join('')}
                 </div>
@@ -1511,13 +1546,13 @@ app.get('/contact', (c) => {
               <!-- Message -->
               <div>
                 <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Message / Questions</label>
-                <textarea rows="4" placeholder="Tell us about your child, any special needs, questions, or how you heard about us..." class="form-input" style="resize:vertical"></textarea>
+                <textarea name="message" rows="4" placeholder="Tell us about your child, any special needs, questions, or how you heard about us..." class="form-input" style="resize:vertical"></textarea>
               </div>
 
               <!-- How did you hear -->
               <div>
                 <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">How Did You Hear About Us?</label>
-                <select class="form-input" style="cursor:pointer">
+                <select name="referral_source" class="form-input" style="cursor:pointer">
                   <option value="" disabled selected>Select one...</option>
                   <option>Google Search</option>
                   <option>Social Media (Instagram/Facebook)</option>
@@ -1528,9 +1563,15 @@ app.get('/contact', (c) => {
                 </select>
               </div>
 
-              <button type="submit" class="btn-primary" style="font-size:1.1rem;padding:16px">
+              <!-- Submit button -->
+              <button type="submit" id="submit-btn" class="btn-primary" style="font-size:1.1rem;padding:16px;position:relative;z-index:2">
                 <i class="fas fa-rocket mr-2"></i>Submit Application!
               </button>
+
+              <!-- Error message -->
+              <div id="error-msg" style="display:none;background:rgba(232,19,26,0.1);border:1px solid rgba(232,19,26,0.4);border-radius:10px;padding:1rem;color:#ff6b6b;font-size:0.9rem;text-align:center">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Something went wrong. Please try again or email us directly at <strong>superkidsenrollment@gmail.com</strong>
+              </div>
             </form>
 
             <!-- Success message (hidden) -->
@@ -1541,8 +1582,8 @@ app.get('/contact', (c) => {
                 Amazing! Your child is one step closer to becoming a SuperKid! Our enrollment team will 
                 contact you within <strong style="color:#FFD700">24 hours</strong> to schedule your tour.
               </p>
-              <div class="badge mt-4" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3)">
-                <i class="fas fa-check mr-2"></i>Reference #SK-${Math.floor(Math.random()*9000+1000)}
+              <div class="badge mt-4" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3);display:inline-block;padding:8px 20px">
+                <i class="fas fa-check mr-2"></i>We'll be in touch at <strong>superkidsenrollment@gmail.com</strong>
               </div>
             </div>
           </div>
@@ -1579,10 +1620,47 @@ app.get('/contact', (c) => {
   </section>
 
   <script>
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
       e.preventDefault();
-      document.getElementById('enroll-form').style.display = 'none';
-      document.getElementById('success-msg').style.display = 'block';
+
+      const form = document.getElementById('enroll-form');
+      const btn  = document.getElementById('submit-btn');
+      const errMsg = document.getElementById('error-msg');
+
+      // Loading state
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+      btn.style.opacity = '0.8';
+      errMsg.style.display = 'none';
+
+      // Collect all form data
+      const data = new FormData(form);
+
+      // Collect checked schedule checkboxes
+      const checked = [...form.querySelectorAll('input[name="schedule"]:checked')].map(c => c.value);
+      data.delete('schedule');
+      data.append('schedule_preference', checked.length ? checked.join(', ') : 'Not specified');
+
+      try {
+        const res = await fetch('https://formspree.io/f/xpwzgdjv', {
+          method: 'POST',
+          body: data,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if (res.ok) {
+          form.style.display = 'none';
+          document.getElementById('success-msg').style.display = 'block';
+        } else {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.error || 'Server error');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Submit Application!';
+        btn.style.opacity = '1';
+        errMsg.style.display = 'block';
+      }
     }
   </script>
 

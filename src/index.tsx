@@ -1461,14 +1461,22 @@ app.get('/contact', (c) => {
             <h2 style="font-family:'Bangers',cursive;font-size:2rem;color:#FFD700;letter-spacing:2px;margin-bottom:0.5rem">
               <i class="fas fa-star mr-3"></i>Enrollment Application
             </h2>
-            <p style="color:#999;margin-bottom:2rem;font-size:0.95rem">Fill out this form and our team will contact you within 24 hours to schedule a tour!</p>
+            <p style="color:#999;margin-bottom:1.5rem;font-size:0.95rem">Fill out this form and our team will contact you within 24 hours to schedule a tour!</p>
+
+            <!-- Setup notice - remove after adding Web3Forms key -->
+            <div id="setup-notice" style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.4);border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:0.85rem;color:#FFD700;display:flex;align-items:flex-start;gap:10px">
+              <i class="fas fa-key" style="margin-top:2px;flex-shrink:0"></i>
+              <span><strong>Admin Setup Required:</strong> To activate email delivery, visit <a href="https://web3forms.com" target="_blank" style="color:#00D9E8;text-decoration:underline">web3forms.com</a>, enter <strong>superkidsenrollment@gmail.com</strong>, copy your free Access Key, and replace <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">YOUR_WEB3FORMS_ACCESS_KEY</code> in the code. Takes 2 minutes!</span>
+            </div>
 
             <form id="enroll-form" onsubmit="handleSubmit(event)" style="display:flex;flex-direction:column;gap:1.5rem;position:relative;z-index:2">
 
-              <!-- Hidden Formspree fields -->
-              <input type="hidden" name="_subject" value="🦸 New SuperKids Enrollment Application!" />
-              <input type="hidden" name="_replyto" id="reply-to-field" value="" />
-              <input type="hidden" name="_format" value="plain" />
+              <!-- Web3Forms hidden fields -->
+              <input type="hidden" name="access_key" id="w3f-access-key" value="YOUR_WEB3FORMS_ACCESS_KEY" />
+              <input type="hidden" name="subject" value="🦸 New SuperKids Enrollment Application!" />
+              <input type="hidden" name="from_name" value="SuperKids Preschool Website" />
+              <input type="hidden" name="redirect" value="false" />
+              <input type="hidden" name="botcheck" value="" style="display:none" />
 
               <!-- Parent section -->
               <div>
@@ -1486,8 +1494,7 @@ app.get('/contact', (c) => {
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Email Address *</label>
-                    <input type="email" name="parent_email" id="parent-email" required placeholder="your@email.com" class="form-input"
-                      oninput="document.getElementById('reply-to-field').value=this.value" />
+                    <input type="email" name="parent_email" id="parent-email" required placeholder="your@email.com" class="form-input" />
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Phone Number *</label>
@@ -1570,7 +1577,7 @@ app.get('/contact', (c) => {
 
               <!-- Error message -->
               <div id="error-msg" style="display:none;background:rgba(232,19,26,0.1);border:1px solid rgba(232,19,26,0.4);border-radius:10px;padding:1rem;color:#ff6b6b;font-size:0.9rem;text-align:center">
-                <i class="fas fa-exclamation-triangle mr-2"></i>Something went wrong. Please try again or email us directly at <strong>superkidsenrollment@gmail.com</strong>
+                <i class="fas fa-exclamation-triangle mr-2"></i>Something went wrong. Please check your connection and try again, or email us at <strong>superkidsenrollment@gmail.com</strong>
               </div>
             </form>
 
@@ -1641,25 +1648,36 @@ app.get('/contact', (c) => {
       data.delete('schedule');
       data.append('schedule_preference', checked.length ? checked.join(', ') : 'Not specified');
 
+      // Convert FormData to JSON object for Web3Forms
+      const jsonData = {};
+      data.forEach((value, key) => {
+        if (key !== 'botcheck') jsonData[key] = value;
+      });
+
       try {
-        const res = await fetch('https://formspree.io/f/xpwzgdjv', {
+        const res = await fetch('https://api.web3forms.com/submit', {
           method: 'POST',
-          body: data,
-          headers: { 'Accept': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(jsonData)
         });
 
-        if (res.ok) {
+        const json = await res.json();
+
+        if (res.ok && json.success) {
           form.style.display = 'none';
           document.getElementById('success-msg').style.display = 'block';
         } else {
-          const json = await res.json().catch(() => ({}));
-          throw new Error(json.error || 'Server error');
+          throw new Error(json.message || 'Submission failed');
         }
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Submit Application!';
         btn.style.opacity = '1';
         errMsg.style.display = 'block';
+        console.error('Form error:', err);
       }
     }
   </script>

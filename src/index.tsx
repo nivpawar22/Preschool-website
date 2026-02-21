@@ -49,13 +49,22 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* ===== NAVBAR ===== */
     nav {
-      background: rgba(15,15,26,0.95);
-      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, #0a0e1a 0%, #0d1525 100%);
+      backdrop-filter: blur(12px);
       border-bottom: 2px solid #00D9E8;
-      box-shadow: 0 2px 20px rgba(0,217,232,0.3);
+      box-shadow: 0 2px 30px rgba(0,217,232,0.25), 0 4px 60px rgba(0,0,0,0.6);
       position: sticky;
       top: 0;
       z-index: 1000;
+    }
+
+    /* Header logo glow bg — matches screenshot radial glow */
+    .nav-logo-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(0,180,210,0.13) 0%, transparent 65%);
+      pointer-events: none;
     }
 
     .nav-logo-text {
@@ -461,49 +470,80 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
 // ========== NAVBAR COMPONENT ==========
 const Navbar = (active: string) => `
-<nav>
-  <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-    <!-- Logo -->
-    <a href="/" class="flex items-center no-underline" style="text-decoration:none">
-      <div class="nav-logo-img" style="position:relative;padding:4px 8px;border-radius:12px;transition:all 0.3s;"
-        onmouseover="this.style.background='rgba(0,217,232,0.08)'"
-        onmouseout="this.style.background='transparent'">
-        <img src="/static/logo.png" alt="SuperKids Preschool"
-          style="height:64px;width:auto;object-fit:contain;
-                 filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(0,217,232,0.55));
-                 transition:filter 0.35s,transform 0.35s;"
-          onmouseover="this.style.filter='drop-shadow(2px 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 26px rgba(0,217,232,0.9))';this.style.transform='scale(1.04)'"
-          onmouseout="this.style.filter='drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(0,217,232,0.55))';this.style.transform='scale(1)'"/>
+<nav style="position:sticky;top:0;z-index:1000">
+
+  <!-- ── TOP HEADER BAR: full-width logo banner matching screenshot ── -->
+  <div style="
+    background: linear-gradient(180deg,#08101e 0%,#0d1828 100%);
+    position:relative;
+    overflow:hidden;
+    border-bottom:2px solid #00D9E8;
+    box-shadow:0 2px 30px rgba(0,217,232,0.22),0 4px 60px rgba(0,0,0,0.7);
+  ">
+    <!-- Radial cyan glow — matches screenshot -->
+    <div style="
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      width:600px;height:200px;
+      background:radial-gradient(ellipse,rgba(0,195,220,0.16) 0%,transparent 70%);
+      pointer-events:none;
+    "></div>
+
+    <!-- Two-row layout: logo centred, nav below -->
+    <div class="max-w-7xl mx-auto px-6" style="position:relative;z-index:2">
+
+      <!-- Logo row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px">
+
+        <!-- Logo -->
+        <a href="/" style="text-decoration:none;display:flex;align-items:center">
+          <img src="/static/logo.png" alt="SuperKids Preschool"
+            style="
+              height:110px;
+              width:auto;
+              object-fit:contain;
+              filter:
+                drop-shadow(0px 4px 12px rgba(0,0,0,0.7))
+                drop-shadow(0 0 20px rgba(0,210,230,0.65))
+                drop-shadow(0 0 42px rgba(0,210,230,0.30));
+              transition:filter 0.3s,transform 0.3s;
+            "
+            onmouseover="this.style.filter='drop-shadow(0px 4px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 32px rgba(0,210,230,1)) drop-shadow(0 0 60px rgba(0,210,230,0.5))';this.style.transform='scale(1.03)'"
+            onmouseout="this.style.filter='drop-shadow(0px 4px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 20px rgba(0,210,230,0.65)) drop-shadow(0 0 42px rgba(0,210,230,0.30))';this.style.transform='scale(1)'"
+          />
+        </a>
+
+        <!-- Desktop nav links (right side) -->
+        <div class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link ${active === 'home' ? 'active' : ''}" style="color:${active === 'home' ? '#00D9E8' : '#ccc'}">Home</a>
+          <a href="/about" class="nav-link ${active === 'about' ? 'active' : ''}" style="color:${active === 'about' ? '#00D9E8' : '#ccc'}">About</a>
+          <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#00D9E8' : '#ccc'}">Programs</a>
+          <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#00D9E8' : '#ccc'}">Gallery</a>
+          <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#00D9E8' : '#ccc'}">Contact</a>
+          <a href="/contact" class="btn-primary ml-3" style="font-size:0.88rem;padding:10px 22px">Enroll Now!</a>
+        </div>
+
+        <!-- Mobile hamburger -->
+        <button id="menu-btn" class="md:hidden" style="color:#fff;font-size:1.6rem;background:none;border:none;cursor:pointer">
+          <i class="fas fa-bars"></i>
+        </button>
       </div>
-    </a>
 
-    <!-- Desktop Links -->
-    <div class="hidden md:flex items-center gap-2">
-      <a href="/" class="nav-link ${active === 'home' ? 'active' : ''}" style="color:${active === 'home' ? '#00D9E8' : '#ccc'}">Home</a>
-      <a href="/about" class="nav-link ${active === 'about' ? 'active' : ''}" style="color:${active === 'about' ? '#00D9E8' : '#ccc'}">About</a>
-      <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#00D9E8' : '#ccc'}">Programs</a>
-      <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#00D9E8' : '#ccc'}">Gallery</a>
-      <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#00D9E8' : '#ccc'}">Contact</a>
-      <a href="/contact" class="btn-primary ml-4" style="font-size:0.9rem;padding:10px 24px">Enroll Now!</a>
     </div>
-
-    <!-- Mobile Hamburger -->
-    <button id="menu-btn" class="md:hidden text-white text-2xl">
-      <i class="fas fa-bars"></i>
-    </button>
   </div>
 
   <!-- Mobile Menu -->
-  <div id="mobile-menu" class="md:hidden px-4 pb-4">
-    <div class="flex flex-col gap-2" style="background:rgba(0,0,0,0.4);border-radius:12px;padding:16px">
-      <a href="/" style="color:#ccc;padding:8px;font-weight:700">🏠 Home</a>
-      <a href="/about" style="color:#ccc;padding:8px;font-weight:700">⚡ About</a>
-      <a href="/programs" style="color:#ccc;padding:8px;font-weight:700">🎓 Programs</a>
-      <a href="/gallery" style="color:#ccc;padding:8px;font-weight:700">🖼️ Gallery</a>
-      <a href="/contact" style="color:#ccc;padding:8px;font-weight:700">📞 Contact</a>
-      <a href="/contact" class="btn-primary text-center mt-2">Enroll Now!</a>
+  <div id="mobile-menu" class="md:hidden px-4 pb-4" style="background:#0d1828;border-bottom:1px solid rgba(0,217,232,0.2)">
+    <div class="flex flex-col gap-1" style="padding:12px 0">
+      <a href="/" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🏠 Home</a>
+      <a href="/about" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">⚡ About</a>
+      <a href="/programs" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🎓 Programs</a>
+      <a href="/gallery" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🖼️ Gallery</a>
+      <a href="/contact" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">📞 Contact</a>
+      <a href="/contact" class="btn-primary" style="text-align:center;margin-top:8px;display:block">Enroll Now!</a>
     </div>
   </div>
+
 </nav>
 `
 
@@ -516,7 +556,7 @@ const Footer = () => `
       <div>
         <a href="/" style="display:inline-block;margin-bottom:1.2rem;text-decoration:none">
           <img src="/static/logo.png" alt="SuperKids Preschool"
-            style="height:60px;width:auto;object-fit:contain;
+            style="height:76px;width:auto;object-fit:contain;
                    filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(0,217,232,0.5));
                    transition:filter 0.3s"
             onmouseover="this.style.filter='drop-shadow(2px 4px 10px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(0,217,232,0.8))'"

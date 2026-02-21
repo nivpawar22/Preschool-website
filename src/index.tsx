@@ -134,15 +134,17 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* Shield / Logo hero animation */
     .shield-hero {
-      animation: heroFloat 3s ease-in-out infinite;
+      animation: heroFloat 4s ease-in-out infinite;
+      border-radius: 12px;
     }
     @keyframes heroFloat {
-      0%,100% { transform: translateY(0) rotate(-1.5deg); }
-      50%      { transform: translateY(-22px) rotate(1.5deg); }
+      0%,100% { transform: translateY(0px)   scale(1)    rotate(-1deg); }
+      33%      { transform: translateY(-14px) scale(1.02) rotate(0deg);  }
+      66%      { transform: translateY(-8px)  scale(1.01) rotate(1deg);  }
     }
     @keyframes glowPulse {
-      0%,100% { opacity:0.7; transform:scale(1); }
-      50%      { opacity:1;   transform:scale(1.06); }
+      0%,100% { opacity:0.55; transform:scale(1);    }
+      50%      { opacity:1;   transform:scale(1.08); }
     }
 
     /* ===== SECTION HEADINGS ===== */
@@ -463,11 +465,15 @@ const Navbar = (active: string) => `
   <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
     <!-- Logo -->
     <a href="/" class="flex items-center no-underline" style="text-decoration:none">
-      <div style="position:relative">
-        <img src="/static/logo.png" alt="SuperKids Preschool" 
-          style="height:58px;width:auto;object-fit:contain;filter:drop-shadow(0 0 12px rgba(0,217,232,0.7));transition:filter 0.3s"
-          onmouseover="this.style.filter='drop-shadow(0 0 20px rgba(0,217,232,1))'"
-          onmouseout="this.style.filter='drop-shadow(0 0 12px rgba(0,217,232,0.7))'"/>
+      <div class="nav-logo-img" style="position:relative;padding:4px 8px;border-radius:12px;transition:all 0.3s;"
+        onmouseover="this.style.background='rgba(0,217,232,0.08)'"
+        onmouseout="this.style.background='transparent'">
+        <img src="/static/logo.png" alt="SuperKids Preschool"
+          style="height:64px;width:auto;object-fit:contain;
+                 filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(0,217,232,0.55));
+                 transition:filter 0.35s,transform 0.35s;"
+          onmouseover="this.style.filter='drop-shadow(2px 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 26px rgba(0,217,232,0.9))';this.style.transform='scale(1.04)'"
+          onmouseout="this.style.filter='drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(0,217,232,0.55))';this.style.transform='scale(1)'"/>
       </div>
     </a>
 
@@ -508,9 +514,13 @@ const Footer = () => `
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
       <!-- Brand -->
       <div>
-        <a href="/" style="display:inline-block;margin-bottom:1rem;text-decoration:none">
+        <a href="/" style="display:inline-block;margin-bottom:1.2rem;text-decoration:none">
           <img src="/static/logo.png" alt="SuperKids Preschool"
-            style="height:52px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(0,217,232,0.6))"/>
+            style="height:60px;width:auto;object-fit:contain;
+                   filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(0,217,232,0.5));
+                   transition:filter 0.3s"
+            onmouseover="this.style.filter='drop-shadow(2px 4px 10px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(0,217,232,0.8))'"
+            onmouseout="this.style.filter='drop-shadow(2px 4px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 12px rgba(0,217,232,0.5))'"/>
         </a>
         <p style="color:#999;font-size:0.9rem;line-height:1.8">Empowering little superheroes to grow, learn, and shine every single day!</p>
         <div class="flex gap-4 mt-4">
@@ -665,21 +675,37 @@ app.get('/', (c) => {
         <div style="position:relative;display:inline-block">
           <!-- Animated glow ring behind logo -->
           <div style="
-            position:absolute;inset:-18px;border-radius:24px;
-            background:radial-gradient(ellipse at center,rgba(0,217,232,0.18),transparent 70%);
-            animation:glowPulse 3s ease-in-out infinite;
-            pointer-events:none;z-index:0
+            position:absolute;
+            inset:-24px;
+            border-radius:20px;
+            background:radial-gradient(ellipse at 40% 60%, rgba(0,217,232,0.22) 0%, rgba(232,19,26,0.08) 50%, transparent 75%);
+            animation:glowPulse 4s ease-in-out infinite;
+            pointer-events:none;
+            z-index:0;
+          "></div>
+          <!-- Subtle bottom shadow for depth -->
+          <div style="
+            position:absolute;
+            bottom:-10px;left:10%;right:10%;
+            height:20px;
+            background:radial-gradient(ellipse,rgba(0,217,232,0.35),transparent 70%);
+            filter:blur(8px);
+            pointer-events:none;
+            z-index:0;
           "></div>
 
-          <!-- Real logo image -->
+          <!-- Real logo image (clean transparent bg) -->
           <img src="/static/logo.png" alt="SuperKids Preschool"
             class="shield-hero"
             style="
-              width:clamp(300px,42vw,520px);
+              width:clamp(300px,44vw,540px);
               height:auto;
               object-fit:contain;
               position:relative;z-index:1;
-              filter:drop-shadow(0 0 28px rgba(0,217,232,0.75)) drop-shadow(0 0 50px rgba(0,217,232,0.35));
+              filter:
+                drop-shadow(0px 6px 18px rgba(0,0,0,0.65))
+                drop-shadow(0 0 32px rgba(0,217,232,0.80))
+                drop-shadow(0 0 64px rgba(0,217,232,0.40));
             "
           />
 
@@ -901,7 +927,9 @@ app.get('/about', (c) => {
           <div style="position:relative;width:350px;height:350px">
             <!-- Central circle — real logo -->
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:130px;height:130px;border-radius:50%;background:rgba(15,15,26,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,217,232,0.5);z-index:10;border:3px solid #00D9E8;overflow:hidden">
-              <img src="/static/logo.png" alt="SuperKids" style="width:110px;height:auto;object-fit:contain;filter:drop-shadow(0 0 8px rgba(0,217,232,0.8))"/>
+              <img src="/static/logo.png" alt="SuperKids"
+                style="width:118px;height:auto;object-fit:contain;
+                       filter:drop-shadow(2px 3px 6px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(0,217,232,0.7))"/>
             </div>
             <!-- Orbiting elements -->
             ${[

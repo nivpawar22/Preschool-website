@@ -3,8 +3,8 @@ import { serveStatic } from 'hono/cloudflare-workers'
 
 const app = new Hono()
 
-// Serve static files
-app.use('/static/*', serveStatic({ root: './' }))
+// Serve static files — public/static/* is served at /static/*
+app.use('/static/*', serveStatic({ root: './public' }))
 
 // Layout wrapper
 const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
@@ -14,6 +14,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
+  <link rel="icon" type="image/png" href="/static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -131,20 +132,17 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       50%      { transform: translateY(-15px) rotate(5deg); }
     }
 
-    /* Shield SVG */
+    /* Shield / Logo hero animation */
     .shield-hero {
       animation: heroFloat 3s ease-in-out infinite;
-      filter: drop-shadow(0 0 30px rgba(0,217,232,0.8));
     }
     @keyframes heroFloat {
-      0%,100% { transform: translateY(0) rotate(-2deg); }
-      50%      { transform: translateY(-20px) rotate(2deg); }
+      0%,100% { transform: translateY(0) rotate(-1.5deg); }
+      50%      { transform: translateY(-22px) rotate(1.5deg); }
     }
-
-    /* Cape */
-    .cape-wrap {
-      position: relative;
-      display: inline-block;
+    @keyframes glowPulse {
+      0%,100% { opacity:0.7; transform:scale(1); }
+      50%      { opacity:1;   transform:scale(1.06); }
     }
 
     /* ===== SECTION HEADINGS ===== */
@@ -462,21 +460,15 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 // ========== NAVBAR COMPONENT ==========
 const Navbar = (active: string) => `
 <nav>
-  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+  <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
     <!-- Logo -->
-    <a href="/" class="flex items-center gap-3 no-underline">
-      <div style="position:relative;width:50px;height:50px">
-        <svg viewBox="0 0 100 100" width="50" height="50">
-          <polygon points="50,5 95,28 95,72 50,95 5,72 5,28" fill="#E8131A" stroke="#FFD700" stroke-width="6"/>
-          <polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="none" stroke="#FFD700" stroke-width="3"/>
-          <text x="50" y="64" font-family="Bangers,cursive" font-size="42" fill="#FFD700" text-anchor="middle">S</text>
-        </svg>
-        <div style="position:absolute;inset:-4px;border-radius:50%;box-shadow:0 0 15px #00D9E8,0 0 30px rgba(0,217,232,0.3);pointer-events:none;border-radius:4px;"></div>
+    <a href="/" class="flex items-center no-underline" style="text-decoration:none">
+      <div style="position:relative">
+        <img src="/static/logo.png" alt="SuperKids Preschool" 
+          style="height:58px;width:auto;object-fit:contain;filter:drop-shadow(0 0 12px rgba(0,217,232,0.7));transition:filter 0.3s"
+          onmouseover="this.style.filter='drop-shadow(0 0 20px rgba(0,217,232,1))'"
+          onmouseout="this.style.filter='drop-shadow(0 0 12px rgba(0,217,232,0.7))'"/>
       </div>
-      <span class="nav-logo-text">
-        <span style="color:#00D9E8">Super</span><span style="color:#E8131A">Kids</span>
-        <span style="display:block;font-size:0.7rem;color:#FFD700;letter-spacing:3px;text-transform:uppercase;line-height:1">Preschool</span>
-      </span>
     </a>
 
     <!-- Desktop Links -->
@@ -516,10 +508,10 @@ const Footer = () => `
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
       <!-- Brand -->
       <div>
-        <div class="nav-logo-text mb-4">
-          <span style="color:#00D9E8">Super</span><span style="color:#E8131A">Kids</span>
-          <span style="display:block;font-size:0.7rem;color:#FFD700;letter-spacing:3px;text-transform:uppercase">Preschool</span>
-        </div>
+        <a href="/" style="display:inline-block;margin-bottom:1rem;text-decoration:none">
+          <img src="/static/logo.png" alt="SuperKids Preschool"
+            style="height:52px;width:auto;object-fit:contain;filter:drop-shadow(0 0 10px rgba(0,217,232,0.6))"/>
+        </a>
         <p style="color:#999;font-size:0.9rem;line-height:1.8">Empowering little superheroes to grow, learn, and shine every single day!</p>
         <div class="flex gap-4 mt-4">
           <a href="#" style="color:#00D9E8;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-facebook"></i></a>
@@ -668,47 +660,34 @@ app.get('/', (c) => {
         </div>
       </div>
 
-      <!-- Hero Graphic -->
+      <!-- Hero Graphic — Real Logo -->
       <div class="flex justify-center items-center" style="z-index:10">
-        <div class="cape-wrap shield-hero" style="position:relative">
-          <!-- Main shield -->
-          <svg viewBox="0 0 300 320" width="clamp(240px,35vw,320px)" height="clamp(260px,37vw,340px)">
-            <!-- Glow filter -->
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="6" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <filter id="glow2">
-                <feGaussianBlur stdDeviation="3" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
+        <div style="position:relative;display:inline-block">
+          <!-- Animated glow ring behind logo -->
+          <div style="
+            position:absolute;inset:-18px;border-radius:24px;
+            background:radial-gradient(ellipse at center,rgba(0,217,232,0.18),transparent 70%);
+            animation:glowPulse 3s ease-in-out infinite;
+            pointer-events:none;z-index:0
+          "></div>
 
-            <!-- Cape -->
-            <path d="M 155 80 Q 220 60 280 30 Q 260 80 240 120 Q 200 160 155 150 Z" fill="#CC1111" filter="url(#glow2)"/>
-            <path d="M 155 80 Q 220 60 280 30 Q 270 60 255 95 Q 215 140 155 135 Z" fill="#E8131A"/>
+          <!-- Real logo image -->
+          <img src="/static/logo.png" alt="SuperKids Preschool"
+            class="shield-hero"
+            style="
+              width:clamp(300px,42vw,520px);
+              height:auto;
+              object-fit:contain;
+              position:relative;z-index:1;
+              filter:drop-shadow(0 0 28px rgba(0,217,232,0.75)) drop-shadow(0 0 50px rgba(0,217,232,0.35));
+            "
+          />
 
-            <!-- Shield body -->
-            <path d="M 50 60 L 250 60 L 250 200 L 150 280 L 50 200 Z" fill="#CC1111"/>
-            <path d="M 60 70 L 240 70 L 240 195 L 150 265 L 60 195 Z" fill="#E8131A"/>
-
-            <!-- Yellow border inside -->
-            <path d="M 75 85 L 225 85 L 225 188 L 150 250 L 75 188 Z" fill="none" stroke="#FFD700" stroke-width="8"/>
-            <path d="M 80 90 L 220 90 L 220 185 L 150 244 L 80 185 Z" fill="none" stroke="#CC9900" stroke-width="2"/>
-
-            <!-- S letter -->
-            <text x="150" y="198" font-family="Bangers,cursive" font-size="110" fill="#FFD700" text-anchor="middle" filter="url(#glow)">S</text>
-            <text x="150" y="198" font-family="Bangers,cursive" font-size="110" fill="none" stroke="#CC9900" stroke-width="1" text-anchor="middle">S</text>
-
-            <!-- Cyan glow ring -->
-            <path d="M 50 60 L 250 60 L 250 200 L 150 280 L 50 200 Z" fill="none" stroke="#00D9E8" stroke-width="3" opacity="0.8" filter="url(#glow)"/>
-          </svg>
-
-          <!-- Stars around shield -->
-          <div style="position:absolute;top:-10px;right:-10px;color:#FFD700;font-size:1.5rem;animation:float 2s ease-in-out infinite">⭐</div>
-          <div style="position:absolute;bottom:30px;left:-20px;color:#00D9E8;font-size:1.2rem;animation:float 2.5s ease-in-out infinite 0.5s">✨</div>
-          <div style="position:absolute;top:40%;right:-30px;color:#E8131A;font-size:1.8rem;animation:float 3s ease-in-out infinite 1s">💫</div>
+          <!-- Floating sparkles around logo -->
+          <div style="position:absolute;top:-14px;right:10px;font-size:1.8rem;animation:float 2s ease-in-out infinite;z-index:2">⭐</div>
+          <div style="position:absolute;bottom:20px;left:-24px;font-size:1.4rem;animation:float 2.7s ease-in-out infinite 0.6s;z-index:2">✨</div>
+          <div style="position:absolute;top:38%;right:-28px;font-size:2rem;animation:float 3.2s ease-in-out infinite 1.2s;z-index:2">💫</div>
+          <div style="position:absolute;bottom:-10px;right:30px;font-size:1.2rem;animation:float 2.4s ease-in-out infinite 0.3s;z-index:2">🌟</div>
         </div>
       </div>
     </div>
@@ -920,10 +899,9 @@ app.get('/about', (c) => {
         <!-- Values visual -->
         <div class="fade-in flex justify-center">
           <div style="position:relative;width:350px;height:350px">
-            <!-- Central circle -->
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#E8131A,#CC1111);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(232,19,26,0.5);z-index:10;border:3px solid #FFD700">
-              <div style="font-size:2.5rem">🦸</div>
-              <div style="font-family:'Bangers',cursive;font-size:0.8rem;color:#FFD700;letter-spacing:1px">SUPERKIDS</div>
+            <!-- Central circle — real logo -->
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:130px;height:130px;border-radius:50%;background:rgba(15,15,26,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,217,232,0.5);z-index:10;border:3px solid #00D9E8;overflow:hidden">
+              <img src="/static/logo.png" alt="SuperKids" style="width:110px;height:auto;object-fit:contain;filter:drop-shadow(0 0 8px rgba(0,217,232,0.8))"/>
             </div>
             <!-- Orbiting elements -->
             ${[

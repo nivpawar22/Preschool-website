@@ -628,15 +628,15 @@ const Footer = () => `
         <div class="flex flex-col gap-3">
           <div class="flex items-start gap-3">
             <i class="fas fa-map-marker-alt mt-1" style="color:#E8131A;width:16px"></i>
-            <span style="color:#999;font-size:0.9rem">123 Superhero Lane, Heroville, CA 90210</span>
+            <span style="color:#999;font-size:0.9rem">Super Kids Preschool, Matoshri Apartment,<br>Plot no 51, Sector no 10, Bhosari Pradhikaran,<br>Pin: 411026</span>
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-phone" style="color:#00D9E8;width:16px"></i>
-            <span style="color:#999;font-size:0.9rem">(555) 123-HERO</span>
+            <span style="color:#999;font-size:0.9rem">9822977477</span>
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-envelope" style="color:#FFD700;width:16px"></i>
-            <span style="color:#999;font-size:0.9rem">hello@superkids.edu</span>
+            <span style="color:#999;font-size:0.9rem">superkidsenrollment@gmail.com<br>superkidsprincipal@gmail.com</span>
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-clock" style="color:#00D9E8;width:16px"></i>
@@ -699,7 +699,7 @@ app.get('/', (c) => {
       <!-- Text -->
       <div style="z-index:10">
         <div class="badge mb-4" style="background:rgba(232,19,26,0.2);color:#E8131A;border:1px solid rgba(232,19,26,0.4)">
-          ⭐ #1 Rated Preschool in Heroville
+          ⭐ #1 Rated Preschool in Bhosari
         </div>
 
         <h1 style="font-family:'Bangers',cursive;font-size:clamp(3rem,7vw,5.5rem);line-height:1;margin-bottom:1rem">
@@ -1038,7 +1038,7 @@ app.get('/about', (c) => {
         ${[
           {year:'2009', event:'SuperKids Preschool founded by Dr. Amanda Powers with a vision to revolutionize early childhood education.', color:'#00D9E8'},
           {year:'2011', event:'Expanded to two classrooms after overwhelming demand. Introduced our signature STEAM superhero curriculum.', color:'#E8131A'},
-          {year:'2014', event:'Received "Best Preschool in Heroville" award for 3 consecutive years. Opened our outdoor "Hero Training Grounds."', color:'#FFD700'},
+          {year:'2014', event:'Received "Best Preschool in Bhosari" award for 3 consecutive years. Opened our outdoor "Hero Training Grounds."', color:'#FFD700'},
           {year:'2017', event:'Launched SuperKids Parent App — giving parents real-time insights into their child\'s learning journey.', color:'#00D9E8'},
           {year:'2020', event:'Adapted seamlessly during challenging times, offering hybrid learning while maintaining safety and quality.', color:'#E8131A'},
           {year:'2023', event:'Opened our new 5,000 sq ft SuperHQ facility with state-of-the-art classrooms, sensory rooms, and a rooftop garden.', color:'#FFD700'},
@@ -1218,43 +1218,22 @@ app.get('/programs', (c) => {
     </div>
   </section>
 
-  <!-- Tuition -->
-  <section style="padding:5rem 0;background:#0f0f1a">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="text-center mb-12 fade-in">
-        <h2 class="section-title neon-cyan" style="color:#00D9E8">Super Plans & Pricing</h2>
-        <p style="color:#999;margin-top:1rem">Flexible, transparent pricing for every super family.</p>
+  <!-- Contact CTA (replaces Pricing) -->
+  <section style="padding:4rem 0;background:#0f0f1a">
+    <div class="max-w-3xl mx-auto px-4 text-center fade-in">
+      <div class="card" style="border-color:rgba(0,217,232,0.3);padding:3rem">
+        <div style="font-size:3rem;margin-bottom:1rem">📞</div>
+        <h2 style="font-family:'Bangers',cursive;font-size:2.2rem;color:#00D9E8;letter-spacing:2px;margin-bottom:1rem">Enquire About Fees</h2>
+        <p style="color:#999;font-size:1rem;line-height:1.8;margin-bottom:2rem">For fee details and admissions, please get in touch with us directly. We'd love to have your little superhero join our family!</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <a href="tel:9822977477" class="btn-primary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px">
+            <i class="fas fa-phone"></i> 9822977477
+          </a>
+          <a href="/contact" class="btn-secondary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px">
+            <i class="fas fa-envelope"></i> Contact Us
+          </a>
+        </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        ${[
-          {title:'Sidekick Plan', subtitle:'Part-Time', price:'$850', period:'/month', color:'#00D9E8', popular:false, features:['3 days per week', 'Half day (7AM-12PM)', 'Meals included', 'Basic STEAM activities', 'Monthly progress report', 'Parent app access']},
-          {title:'Hero Plan', subtitle:'Full-Time', price:'$1,400', period:'/month', color:'#E8131A', popular:true, features:['5 days per week', 'Full day (7AM-6PM)', 'All meals & snacks', 'Full STEAM curriculum', 'Weekly progress reports', 'Priority events access', 'After-school included']},
-          {title:'SuperHero Plan', subtitle:'Premium', price:'$1,800', period:'/month', color:'#FFD700', popular:false, features:['5 days per week', 'Extended hours available', 'Gourmet meals', 'Advanced enrichment', 'Daily progress updates', '1-on-1 tutoring sessions', 'Summer camp included']},
-        ].map(p => `
-          <div class="card fade-in text-center" style="border-color:${p.color}44;position:relative;${p.popular ? `box-shadow:0 0 40px ${p.color}33;border-color:${p.color}` : ''}">
-            ${p.popular ? `<div style="position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:${p.color};color:#0f0f1a;font-family:'Bangers',cursive;padding:4px 20px;border-radius:20px;letter-spacing:1px;white-space:nowrap">⭐ MOST POPULAR</div>` : ''}
-            <div class="badge mb-3" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.subtitle}</div>
-            <h3 style="font-family:'Bangers',cursive;font-size:1.6rem;color:#fff;letter-spacing:2px;margin-bottom:1rem">${p.title}</h3>
-            <div style="font-family:'Bangers',cursive;font-size:3.5rem;color:${p.color};line-height:1">${p.price}<span style="font-size:1rem;color:#999">${p.period}</span></div>
-            <div class="divider" style="margin:1.5rem 0"></div>
-            <div class="flex flex-col gap-3 mb-6 text-left">
-              ${p.features.map(f => `
-                <div class="flex items-center gap-3">
-                  <i class="fas fa-check" style="color:${p.color};font-size:0.85rem;flex-shrink:0"></i>
-                  <span style="color:#ccc;font-size:0.9rem">${f}</span>
-                </div>
-              `).join('')}
-            </div>
-            <a href="/contact" class="btn-primary" style="${p.popular ? '' : `background:transparent;border:2px solid ${p.color};color:${p.color};box-shadow:none`};display:block;text-align:center">
-              Get Started
-            </a>
-          </div>
-        `).join('')}
-      </div>
-      <p class="text-center mt-8 fade-in" style="color:#666;font-size:0.9rem">
-        <i class="fas fa-info-circle mr-2" style="color:#00D9E8"></i>
-        Sibling discounts available. Financial assistance programs offered. Contact us for details.
-      </p>
     </div>
   </section>
 
@@ -1422,9 +1401,9 @@ app.get('/contact', (c) => {
           <h2 style="font-family:'Bangers',cursive;font-size:2rem;color:#00D9E8;letter-spacing:2px;margin-bottom:2rem">SuperHQ Location</h2>
 
           ${[
-            {icon:'fa-map-marker-alt', color:'#E8131A', title:'Our Super HQ', content:'123 Superhero Lane<br>Heroville, CA 90210'},
-            {icon:'fa-phone-alt', color:'#00D9E8', title:'Call the Hotline', content:'(555) 123-HERO<br>(555) 123-4376'},
-            {icon:'fa-envelope', color:'#FFD700', title:'Super Mail', content:'hello@superkids.edu<br>enroll@superkids.edu'},
+            {icon:'fa-map-marker-alt', color:'#E8131A', title:'Our Super HQ', content:'Super Kids Preschool, Matoshri Apartment,<br>Plot no 51, Sector no 10, Bhosari Pradhikaran<br>Pin: 411026'},
+            {icon:'fa-phone-alt', color:'#00D9E8', title:'Call the Hotline', content:'9822977477'},
+            {icon:'fa-envelope', color:'#FFD700', title:'Super Mail', content:'superkidsenrollment@gmail.com<br>superkidsprincipal@gmail.com'},
             {icon:'fa-clock', color:'#00D9E8', title:'Super Hours', content:'Monday – Friday<br>7:00 AM – 6:00 PM'},
           ].map(info => `
             <div class="flex gap-4 mb-6">
@@ -1438,11 +1417,17 @@ app.get('/contact', (c) => {
             </div>
           `).join('')}
 
-          <!-- Map placeholder -->
-          <div style="border-radius:16px;overflow:hidden;margin-top:2rem;border:2px solid rgba(0,217,232,0.2);background:linear-gradient(135deg,#1a2a4a,#0f1f3f);height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem">
-            <div style="font-size:3rem">🗺️</div>
-            <div style="font-family:'Bangers',cursive;color:#00D9E8;letter-spacing:2px">Find SuperHQ</div>
-            <div style="color:#999;font-size:0.85rem">123 Superhero Lane, Heroville</div>
+          <!-- Google Map -->
+          <div style="border-radius:16px;overflow:hidden;margin-top:2rem;border:2px solid rgba(0,217,232,0.3)">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d477.8!2d73.832081!3d18.651444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTjCsDM5JzA1LjIiTiA3M8KwNDknNTUuNSJF!5e0!3m2!1sen!2sin!4v1708000000000"
+              width="100%" height="260" style="border:0;display:block" allowfullscreen="" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+            <div style="background:#0d1628;padding:10px 14px;display:flex;align-items:center;gap:8px">
+              <i class="fas fa-map-marker-alt" style="color:#E8131A"></i>
+              <a href="https://www.google.com/maps/place/18%C2%B039'05.2%22N+73%C2%B049'55.5%22E/@18.651213,73.8294641,17z/data=!4m4!3m3!8m2!3d18.651444!4d73.832081?entry=ttu&g_ep=EgoyMDI2MDIxOC4wIKXMDSoASAFQAw%3D%3D" target="_blank" style="color:#00D9E8;font-size:0.85rem;text-decoration:none;font-weight:700">Open in Google Maps ↗</a>
+            </div>
           </div>
 
           <!-- Emergency contact -->
@@ -1451,7 +1436,7 @@ app.get('/contact', (c) => {
               <i class="fas fa-shield-alt" style="color:#E8131A;font-size:1.2rem"></i>
               <span style="font-family:'Bangers',cursive;color:#E8131A;letter-spacing:1px">Emergency Line</span>
             </div>
-            <p style="color:#999;font-size:0.85rem">For urgent matters during school hours, call our emergency hotline: <strong style="color:#fff">(555) 911-HERO</strong></p>
+            <p style="color:#999;font-size:0.85rem">For urgent matters during school hours, call our emergency hotline: <strong style="color:#fff">9822977477</strong></p>
           </div>
         </div>
 

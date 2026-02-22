@@ -489,7 +489,7 @@ const Navbar = (active: string) => `
     <div style="
       position:absolute;top:50%;left:0;
       transform:translateY(-50%);
-      width:380px;height:120px;
+      width:600px;height:200px;
       background:radial-gradient(ellipse,rgba(0,195,220,0.16) 0%,transparent 70%);
       pointer-events:none;
     "></div>
@@ -498,45 +498,45 @@ const Navbar = (active: string) => `
     <div class="max-w-7xl mx-auto px-6" style="position:relative;z-index:2">
 
       <!-- Logo row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
 
         <!-- Logo + Tagline -->
         <a href="/" style="text-decoration:none;display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0">
           <img src="/static/logo.png" alt="SuperKids Preschool"
             style="
               display:block;
-              width:320px !important;
-              height:76px !important;
-              min-width:320px;
-              min-height:76px;
-              max-width:320px;
-              max-height:76px;
+              width:500px !important;
+              height:120px !important;
+              min-width:500px;
+              min-height:120px;
+              max-width:500px;
+              max-height:120px;
               object-fit:contain;
               object-position:left center;
               filter:
-                drop-shadow(0px 3px 8px rgba(0,0,0,0.7))
-                drop-shadow(0 0 14px rgba(0,210,230,0.65))
-                drop-shadow(0 0 28px rgba(0,210,230,0.30));
+                drop-shadow(0px 4px 12px rgba(0,0,0,0.7))
+                drop-shadow(0 0 20px rgba(0,210,230,0.65))
+                drop-shadow(0 0 42px rgba(0,210,230,0.30));
               transition:filter 0.3s,transform 0.3s;
             "
-            onmouseover="this.style.filter='drop-shadow(0px 3px 10px rgba(0,0,0,0.8)) drop-shadow(0 0 22px rgba(0,210,230,1)) drop-shadow(0 0 40px rgba(0,210,230,0.5))';this.style.transform='scale(1.02)'"
-            onmouseout="this.style.filter='drop-shadow(0px 3px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 14px rgba(0,210,230,0.65)) drop-shadow(0 0 28px rgba(0,210,230,0.30))';this.style.transform='scale(1)'"
+            onmouseover="this.style.filter='drop-shadow(0px 4px 16px rgba(0,0,0,0.8)) drop-shadow(0 0 32px rgba(0,210,230,1)) drop-shadow(0 0 60px rgba(0,210,230,0.5))';this.style.transform='scale(1.02)'"
+            onmouseout="this.style.filter='drop-shadow(0px 4px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 20px rgba(0,210,230,0.65)) drop-shadow(0 0 42px rgba(0,210,230,0.30))';this.style.transform='scale(1)'"
           />
           <!-- Tagline — white illuminated style -->
           <div style="
-            margin-top:-8px;
+            margin-top:-12px;
             font-family:'Nunito',sans-serif;
-            font-size:0.78rem;
+            font-size:1rem;
             font-weight:800;
-            letter-spacing:1.5px;
+            letter-spacing:2px;
             text-align:left;
-            width:320px;
+            width:500px;
             color:#ffffff;
             text-shadow:
-              0 0 5px rgba(255,255,255,0.9),
-              0 0 12px rgba(255,255,255,0.7),
-              0 0 22px rgba(0,217,232,0.8),
-              0 0 40px rgba(0,217,232,0.5);
+              0 0 6px rgba(255,255,255,0.9),
+              0 0 14px rgba(255,255,255,0.7),
+              0 0 28px rgba(0,217,232,0.8),
+              0 0 50px rgba(0,217,232,0.5);
             white-space: nowrap;
           ">✨ Where Every Child is a SuperHero!!</div>
         </a>

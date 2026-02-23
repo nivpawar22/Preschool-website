@@ -603,10 +603,16 @@ const Footer = () => `
       <div>
         <h4 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#00D9E8;letter-spacing:2px;margin-bottom:1rem">Quick Links</h4>
         <div class="flex flex-col gap-2">
-          ${['Home', 'About Us', 'Programs', 'Gallery', 'Contact'].map(l =>
-            `<a href="/${l.toLowerCase().replace(' us','')}" style="color:#999;text-decoration:none;font-size:0.9rem;transition:color 0.3s" 
+          ${[
+            {label:'Home',     href:'/'},
+            {label:'About Us', href:'/about'},
+            {label:'Programs', href:'/programs'},
+            {label:'Gallery',  href:'/gallery'},
+            {label:'Contact',  href:'/contact'},
+          ].map(l =>
+            `<a href="${l.href}" style="color:#999;text-decoration:none;font-size:0.9rem;transition:color 0.3s"
               onmouseover="this.style.color='#00D9E8'" onmouseout="this.style.color='#999'">
-              <i class="fas fa-chevron-right mr-2" style="font-size:0.7rem;color:#E8131A"></i>${l}
+              <i class="fas fa-chevron-right mr-2" style="font-size:0.7rem;color:#E8131A"></i>${l.label}
             </a>`
           ).join('')}
         </div>

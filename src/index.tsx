@@ -39,9 +39,9 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     }
 
     /* ===== NEON GLOW EFFECTS ===== */
-    .neon-cyan { text-shadow: 0 0 10px #00D9E8, 0 0 20px #00D9E8, 0 0 40px #00D9E8; }
-    .neon-red  { text-shadow: 0 0 10px #E8131A, 0 0 20px #E8131A, 0 0 40px #E8131A; }
-    .neon-yellow { text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 40px #FFD700; }
+    .neon-cyan { text-shadow: 0 0 6px rgba(0,217,232,0.5), 0 0 12px rgba(0,217,232,0.25); }
+    .neon-red  { text-shadow: 0 0 6px rgba(232,19,26,0.5),  0 0 12px rgba(232,19,26,0.25); }
+    .neon-yellow { text-shadow: 0 0 6px rgba(255,215,0,0.5), 0 0 12px rgba(255,215,0,0.25); }
 
     .glow-box-cyan  { box-shadow: 0 0 15px #00D9E8, 0 0 30px rgba(0,217,232,0.3); }
     .glow-box-red   { box-shadow: 0 0 15px #E8131A, 0 0 30px rgba(232,19,26,0.3); }
@@ -87,7 +87,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     .nav-link:hover {
       color: #00D9E8;
       background: rgba(0,217,232,0.1);
-      text-shadow: 0 0 10px #00D9E8;
+      text-shadow: 0 0 5px rgba(0,217,232,0.4);
     }
 
     .nav-link.active {
@@ -133,7 +133,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       font-family: 'Bangers', cursive;
       font-size: 1.2rem;
       color: #FFD700;
-      text-shadow: 0 0 10px #FFD700;
+      text-shadow: 0 0 5px rgba(255,215,0,0.4);
       animation: float 4s ease-in-out infinite;
     }
     @keyframes float {
@@ -533,10 +533,9 @@ const Navbar = (active: string) => `
             width:500px;
             color:#ffffff;
             text-shadow:
-              0 0 6px rgba(255,255,255,0.9),
-              0 0 14px rgba(255,255,255,0.7),
-              0 0 28px rgba(0,217,232,0.8),
-              0 0 50px rgba(0,217,232,0.5);
+              0 0 4px rgba(255,255,255,0.5),
+              0 0 8px rgba(255,255,255,0.3),
+              0 0 14px rgba(0,217,232,0.3);
             white-space: nowrap;
           ">✨ Where Every Child is a SuperHero!!</div>
         </a>
@@ -695,10 +694,10 @@ app.get('/', (c) => {
 
     <!-- Floating bursts -->
     <div class="burst" style="top:15%;left:5%;animation-delay:0s">POW!</div>
-    <div class="burst" style="top:20%;right:8%;animation-delay:1s;color:#E8131A;text-shadow:0 0 10px #E8131A">ZAP!</div>
-    <div class="burst" style="bottom:25%;left:8%;animation-delay:2s;color:#00D9E8;text-shadow:0 0 10px #00D9E8">WOW!</div>
+    <div class="burst" style="top:20%;right:8%;animation-delay:1s;color:#E8131A;text-shadow:0 0 5px rgba(232,19,26,0.4)">ZAP!</div>
+    <div class="burst" style="bottom:25%;left:8%;animation-delay:2s;color:#00D9E8;text-shadow:0 0 5px rgba(0,217,232,0.4)">WOW!</div>
     <div class="burst" style="bottom:30%;right:6%;animation-delay:0.5s">BOOM!</div>
-    <div class="burst" style="top:60%;left:3%;animation-delay:1.5s;color:#E8131A;text-shadow:0 0 10px #E8131A;font-size:0.9rem">SUPER!</div>
+    <div class="burst" style="top:60%;left:3%;animation-delay:1.5s;color:#E8131A;text-shadow:0 0 5px rgba(232,19,26,0.4);font-size:0.9rem">SUPER!</div>
     <div class="burst" style="top:50%;right:4%;animation-delay:2.5s;font-size:0.9rem">HERO!</div>
 
     <div class="max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -737,7 +736,7 @@ app.get('/', (c) => {
             {n:'30+', label:'Super Teachers', color:'#FFD700'},
           ].map(s => `
             <div class="text-center">
-              <div style="font-family:'Bangers',cursive;font-size:2rem;color:${s.color};text-shadow:0 0 10px ${s.color}">${s.n}</div>
+              <div style="font-family:'Bangers',cursive;font-size:2rem;color:${s.color};text-shadow:0 0 5px ${s.color}44">${s.n}</div>
               <div style="color:#999;font-size:0.8rem">${s.label}</div>
             </div>
           `).join('')}
@@ -953,8 +952,8 @@ app.get('/about', (c) => {
 
   <!-- About Hero -->
   <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#1a1a3e,#0f0f1a);position:relative;overflow:hidden">
-    <div style="position:absolute;top:20%;left:5%;font-family:'Bangers',cursive;font-size:1.2rem;color:#FFD700;text-shadow:0 0 10px #FFD700;animation:float 3s ease-in-out infinite">POW!</div>
-    <div style="position:absolute;top:30%;right:8%;font-family:'Bangers',cursive;font-size:1rem;color:#E8131A;text-shadow:0 0 10px #E8131A;animation:float 2.5s ease-in-out infinite 1s">ZAP!</div>
+    <div style="position:absolute;top:20%;left:5%;font-family:'Bangers',cursive;font-size:1.2rem;color:#FFD700;text-shadow:0 0 5px rgba(255,215,0,0.4);animation:float 3s ease-in-out infinite">POW!</div>
+    <div style="position:absolute;top:30%;right:8%;font-family:'Bangers',cursive;font-size:1rem;color:#E8131A;text-shadow:0 0 5px rgba(232,19,26,0.4);animation:float 2.5s ease-in-out infinite 1s">ZAP!</div>
     <div class="max-w-4xl mx-auto px-4 text-center">
       <div class="badge mb-4" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3)">Our Story</div>
       <h1 class="section-title neon-cyan" style="color:#00D9E8;font-size:clamp(2.5rem,6vw,4.5rem)">About SuperKids</h1>

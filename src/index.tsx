@@ -469,6 +469,83 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     }, { threshold: 0.5 });
     document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
   </script>
+
+  <!-- ── WhatsApp Floating Button ── -->
+  <a href="https://wa.me/919822977644?text=Hello%20SuperKids%20Preschool!%20I%20would%20like%20to%20know%20more%20about%20your%20programs."
+     target="_blank"
+     rel="noopener noreferrer"
+     id="whatsapp-btn"
+     style="
+       position:fixed;
+       bottom:28px;
+       right:28px;
+       z-index:9999;
+       width:62px;
+       height:62px;
+       border-radius:50%;
+       background:linear-gradient(135deg,#25D366,#128C7E);
+       display:flex;
+       align-items:center;
+       justify-content:center;
+       box-shadow:0 4px 20px rgba(37,211,102,0.55),0 2px 8px rgba(0,0,0,0.4);
+       text-decoration:none;
+       transition:transform 0.3s,box-shadow 0.3s;
+       animation:waPulse 2.5s ease-in-out infinite;
+     "
+     onmouseover="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 28px rgba(37,211,102,0.75),0 2px 10px rgba(0,0,0,0.5)'"
+     onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 20px rgba(37,211,102,0.55),0 2px 8px rgba(0,0,0,0.4)'">
+    <!-- WhatsApp SVG icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="34" height="34">
+      <path fill="#fff" d="M24 4C13 4 4 13 4 24c0 3.6 1 7 2.7 9.9L4 44l10.4-2.7C17 43 20.4 44 24 44c11 0 20-9 20-20S35 4 24 4zm0 36c-3.1 0-6.1-.8-8.7-2.4l-.6-.4-6.2 1.6 1.7-6-.4-.6C8.8 30.1 8 27.1 8 24c0-8.8 7.2-16 16-16s16 7.2 16 16-7.2 16-16 16zm8.7-11.8c-.5-.2-2.8-1.4-3.2-1.5-.4-.2-.7-.2-1 .2-.3.4-1.2 1.5-1.5 1.9-.3.3-.5.4-1 .1-.5-.2-2-.7-3.8-2.3-1.4-1.2-2.3-2.8-2.6-3.2-.3-.5 0-.7.2-1 .2-.2.5-.5.7-.8.2-.3.3-.5.4-.8.1-.3 0-.6-.1-.8-.1-.2-1-2.5-1.4-3.4-.4-.9-.7-.8-1-.8h-.9c-.3 0-.8.1-1.2.6-.4.5-1.6 1.5-1.6 3.7 0 2.2 1.6 4.3 1.8 4.6.2.3 3.1 4.8 7.6 6.7 1.1.5 1.9.7 2.6.9 1.1.3 2.1.3 2.9.2.9-.1 2.8-1.1 3.2-2.2.4-1.1.4-2 .3-2.2-.1-.2-.4-.3-.9-.5z"/>
+    </svg>
+    <!-- Pulse ring -->
+    <span style="
+      position:absolute;
+      width:62px;height:62px;
+      border-radius:50%;
+      background:rgba(37,211,102,0.35);
+      animation:waPulse 2.5s ease-out infinite;
+      pointer-events:none;
+    "></span>
+  </a>
+
+  <!-- WhatsApp tooltip on hover -->
+  <div id="wa-tooltip" style="
+    position:fixed;
+    bottom:38px;
+    right:100px;
+    z-index:9998;
+    background:#1a1a2e;
+    color:#fff;
+    padding:10px 16px;
+    border-radius:12px;
+    font-size:0.85rem;
+    font-weight:700;
+    white-space:nowrap;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    border:1px solid rgba(37,211,102,0.4);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s;
+  ">
+    <i class="fab fa-whatsapp" style="color:#25D366;margin-right:6px"></i>Chat with us on WhatsApp!
+  </div>
+
+  <style>
+    @keyframes waPulse {
+      0%   { transform:scale(1);   opacity:1; }
+      70%  { transform:scale(1.4); opacity:0; }
+      100% { transform:scale(1.4); opacity:0; }
+    }
+  </style>
+
+  <script>
+    const waBtn     = document.getElementById('whatsapp-btn');
+    const waTooltip = document.getElementById('wa-tooltip');
+    waBtn.addEventListener('mouseenter', () => waTooltip.style.opacity = '1');
+    waBtn.addEventListener('mouseleave', () => waTooltip.style.opacity = '0');
+  </script>
+
 </body>
 </html>
 `
@@ -637,7 +714,7 @@ const Footer = () => `
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-phone" style="color:#00D9E8;width:16px"></i>
-            <span style="color:#999;font-size:0.9rem">9822977477</span>
+            <span style="color:#999;font-size:0.9rem">(+91) 9822-977-644<br>(+91) 9822-977-944</span>
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-envelope" style="color:#FFD700;width:16px"></i>
@@ -1231,8 +1308,11 @@ app.get('/programs', (c) => {
         <h2 style="font-family:'Bangers',cursive;font-size:2.2rem;color:#00D9E8;letter-spacing:2px;margin-bottom:1rem">Enquire About Fees</h2>
         <p style="color:#999;font-size:1rem;line-height:1.8;margin-bottom:2rem">For fee details and admissions, please get in touch with us directly. We'd love to have your little superhero join our family!</p>
         <div class="flex flex-col sm:flex-row justify-center gap-4">
-          <a href="tel:9822977477" class="btn-primary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px">
-            <i class="fas fa-phone"></i> 9822977477
+          <a href="tel:+919822977644" class="btn-primary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px">
+            <i class="fas fa-phone"></i> (+91) 9822-977-644
+          </a>
+          <a href="tel:+919822977944" class="btn-primary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#E8131A,#cc0000)">
+            <i class="fas fa-phone"></i> (+91) 9822-977-944
           </a>
           <a href="/contact" class="btn-secondary" style="display:inline-flex;align-items:center;justify-content:center;gap:8px">
             <i class="fas fa-envelope"></i> Contact Us
@@ -1407,7 +1487,7 @@ app.get('/contact', (c) => {
 
           ${[
             {icon:'fa-map-marker-alt', color:'#E8131A', title:'Our Super HQ', content:'Super Kids Preschool, Matoshri Apartment,<br>Plot no 51, Sector no 10, Bhosari Pradhikaran<br>Pin: 411026'},
-            {icon:'fa-phone-alt', color:'#00D9E8', title:'Call the Hotline', content:'9822977477'},
+            {icon:'fa-phone-alt', color:'#00D9E8', title:'Call the Hotline', content:'<a href="tel:+919822977644" style="color:#00D9E8;text-decoration:none">(+91) 9822-977-644</a><br><a href="tel:+919822977944" style="color:#00D9E8;text-decoration:none">(+91) 9822-977-944</a>'},
             {icon:'fa-envelope', color:'#FFD700', title:'Super Mail', content:'superkidsenrollment@gmail.com<br>superkidsprincipal@gmail.com'},
             {icon:'fa-clock', color:'#00D9E8', title:'Super Hours', content:'Monday – Friday<br>7:00 AM – 6:00 PM'},
           ].map(info => `
@@ -1441,7 +1521,10 @@ app.get('/contact', (c) => {
               <i class="fas fa-shield-alt" style="color:#E8131A;font-size:1.2rem"></i>
               <span style="font-family:'Bangers',cursive;color:#E8131A;letter-spacing:1px">Emergency Line</span>
             </div>
-            <p style="color:#999;font-size:0.85rem">For urgent matters during school hours, call our emergency hotline: <strong style="color:#fff">9822977477</strong></p>
+            <p style="color:#999;font-size:0.85rem">For urgent matters during school hours, call our emergency hotline:<br>
+              <a href="tel:+919822977644" style="color:#fff;font-weight:700;text-decoration:none">(+91) 9822-977-644</a> &nbsp;|&nbsp;
+              <a href="tel:+919822977944" style="color:#fff;font-weight:700;text-decoration:none">(+91) 9822-977-944</a>
+            </p>
           </div>
         </div>
 
@@ -1484,7 +1567,7 @@ app.get('/contact', (c) => {
                   </div>
                   <div>
                     <label style="display:block;color:#ccc;font-size:0.85rem;font-weight:700;margin-bottom:6px">Phone Number *</label>
-                    <input type="tel" name="parent_phone" required placeholder="(555) 000-0000" class="form-input" />
+                    <input type="tel" name="parent_phone" required placeholder="(+91) 98XXXXXXXX" class="form-input" />
                   </div>
                 </div>
               </div>

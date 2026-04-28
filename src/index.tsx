@@ -144,7 +144,8 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     /* Shield / Logo hero animation */
     .shield-hero {
       animation: heroFloat 4s ease-in-out infinite;
-      border-radius: 12px;
+      border-radius: 0;
+      background: transparent;
     }
     @keyframes heroFloat {
       0%,100% { transform: translateY(0px)   scale(1)    rotate(-1deg); }
@@ -823,23 +824,14 @@ app.get('/', (c) => {
       <!-- Hero Graphic — Real Logo -->
       <div class="flex justify-center items-center" style="z-index:10">
         <div style="position:relative;display:inline-block">
-          <!-- Animated glow ring behind logo -->
+          <!-- Soft circular ambient glow — no hard edges -->
           <div style="
             position:absolute;
-            inset:-24px;
-            border-radius:20px;
-            background:radial-gradient(ellipse at 40% 60%, rgba(0,217,232,0.22) 0%, rgba(232,19,26,0.08) 50%, transparent 75%);
-            animation:glowPulse 4s ease-in-out infinite;
-            pointer-events:none;
-            z-index:0;
-          "></div>
-          <!-- Subtle bottom shadow for depth -->
-          <div style="
-            position:absolute;
-            bottom:-10px;left:10%;right:10%;
-            height:20px;
-            background:radial-gradient(ellipse,rgba(0,217,232,0.35),transparent 70%);
-            filter:blur(8px);
+            top:50%;left:50%;
+            transform:translate(-50%,-50%);
+            width:110%;height:110%;
+            border-radius:50%;
+            background:radial-gradient(ellipse at center, rgba(0,217,232,0.12) 0%, rgba(0,217,232,0.04) 45%, transparent 70%);
             pointer-events:none;
             z-index:0;
           "></div>
@@ -853,9 +845,8 @@ app.get('/', (c) => {
               object-fit:contain;
               position:relative;z-index:1;
               filter:
-                drop-shadow(0px 6px 18px rgba(0,0,0,0.65))
-                drop-shadow(0 0 32px rgba(0,217,232,0.80))
-                drop-shadow(0 0 64px rgba(0,217,232,0.40));
+                drop-shadow(0px 8px 24px rgba(0,0,0,0.7))
+                drop-shadow(0 0 18px rgba(0,217,232,0.30));
             "
           />
 

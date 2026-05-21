@@ -625,6 +625,9 @@ const Navbar = (active: string) => `
           <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#00D9E8' : '#ccc'}">Programs</a>
           <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#00D9E8' : '#ccc'}">Gallery</a>
           <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#00D9E8' : '#ccc'}">Contact</a>
+          <a href="/parent-portal" class="nav-link ${active === 'portal' ? 'active' : ''}" style="color:${active === 'portal' ? '#FFD700' : '#FFD700'};border:1px solid rgba(255,215,0,0.35);border-radius:6px;padding:7px 13px">
+            <i class="fas fa-shield-alt mr-1" style="font-size:0.8rem"></i>Parent Portal
+          </a>
           <a href="/contact" class="btn-primary ml-3" style="font-size:0.88rem;padding:10px 22px">Enroll Now!</a>
         </div>
 
@@ -645,6 +648,7 @@ const Navbar = (active: string) => `
       <a href="/programs" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🎓 Programs</a>
       <a href="/gallery" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🖼️ Gallery</a>
       <a href="/contact" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">📞 Contact</a>
+      <a href="/parent-portal" style="color:#FFD700;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none;border:1px solid rgba(255,215,0,0.3)" onmouseover="this.style.background='rgba(255,215,0,0.08)'" onmouseout="this.style.background=''">🛡️ Parent Portal</a>
       <a href="/contact" class="btn-primary" style="text-align:center;margin-top:8px;display:block">Enroll Now!</a>
     </div>
   </div>
@@ -1746,6 +1750,675 @@ app.get('/contact', (c) => {
   `
 
   return c.html(Layout({ children: content, title: 'Contact & Enroll - SuperKids Preschool' }))
+})
+
+// ================================================================
+// PARENT PORTAL — LOGIN PAGE
+// ================================================================
+app.get('/parent-portal', (c) => {
+  const content = `
+  ${Navbar('portal')}
+
+  <section style="min-height:100vh;background:radial-gradient(ellipse at top,#1a1200,#0f0f1a);display:flex;align-items:center;justify-content:center;padding:4rem 1rem;position:relative;overflow:hidden">
+
+    <!-- Floating background elements -->
+    ${Array.from({length:15}).map(() => {
+      const size = Math.random()*3+1
+      const top  = Math.random()*100
+      const left = Math.random()*100
+      const delay= Math.random()*3
+      return `<div class="star" style="width:${size}px;height:${size}px;top:${top}%;left:${left}%;animation-delay:${delay}s"></div>`
+    }).join('')}
+    <div style="position:absolute;top:15%;left:5%;font-family:'Bangers',cursive;font-size:1.1rem;color:#FFD700;opacity:0.4;animation:float 3s ease-in-out infinite">🛡️</div>
+    <div style="position:absolute;bottom:20%;right:6%;font-family:'Bangers',cursive;font-size:1rem;color:#00D9E8;opacity:0.4;animation:float 2.7s ease-in-out infinite 1s">⭐</div>
+    <div style="position:absolute;top:55%;left:3%;font-size:1.5rem;opacity:0.25;animation:float 4s ease-in-out infinite 0.5s">🔐</div>
+
+    <div style="width:100%;max-width:440px;position:relative;z-index:10">
+
+      <!-- Logo / brand -->
+      <div class="text-center mb-8">
+        <a href="/" style="text-decoration:none;display:inline-block">
+          <img src="/static/logo.png" alt="SuperKids"
+            style="height:80px;width:auto;object-fit:contain;
+                   filter:drop-shadow(0 0 18px rgba(255,215,0,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.6));margin:0 auto;display:block"/>
+        </a>
+        <div style="margin-top:1rem">
+          <span style="font-family:'Bangers',cursive;font-size:1.8rem;letter-spacing:3px;color:#FFD700;text-shadow:0 0 8px rgba(255,215,0,0.4)">PARENT PORTAL</span>
+        </div>
+        <p style="color:#999;font-size:0.85rem;margin-top:0.4rem">Your child's journey, at your fingertips</p>
+      </div>
+
+      <!-- Login card -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.25);border-radius:20px;padding:2.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(255,215,0,0.05)">
+
+        <h2 style="font-family:'Bangers',cursive;font-size:1.5rem;color:#fff;letter-spacing:2px;margin-bottom:0.25rem;text-align:center">
+          <i class="fas fa-lock mr-2" style="color:#FFD700"></i>Secure Login
+        </h2>
+        <p style="color:#777;font-size:0.8rem;text-align:center;margin-bottom:2rem">Demo: any email + password works</p>
+
+        <form id="portal-login" onsubmit="handlePortalLogin(event)" style="display:flex;flex-direction:column;gap:1.25rem">
+
+          <div>
+            <label style="display:block;color:#ccc;font-size:0.82rem;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">
+              <i class="fas fa-envelope mr-1" style="color:#FFD700;font-size:0.75rem"></i>Email Address
+            </label>
+            <input type="email" id="portal-email" required placeholder="parent@example.com"
+              class="form-input"
+              style="border-color:rgba(255,215,0,0.3)"
+              onfocus="this.style.borderColor='#FFD700';this.style.boxShadow='0 0 10px rgba(255,215,0,0.2)'"
+              onblur="this.style.borderColor='rgba(255,215,0,0.3)';this.style.boxShadow='none'" />
+          </div>
+
+          <div>
+            <label style="display:block;color:#ccc;font-size:0.82rem;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">
+              <i class="fas fa-key mr-1" style="color:#FFD700;font-size:0.75rem"></i>Password
+            </label>
+            <div style="position:relative">
+              <input type="password" id="portal-password" required placeholder="Enter your password"
+                class="form-input"
+                style="border-color:rgba(255,215,0,0.3);padding-right:48px"
+                onfocus="this.style.borderColor='#FFD700';this.style.boxShadow='0 0 10px rgba(255,215,0,0.2)'"
+                onblur="this.style.borderColor='rgba(255,215,0,0.3)';this.style.boxShadow='none'" />
+              <button type="button" onclick="togglePw()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#777;cursor:pointer;font-size:0.9rem" id="pw-eye">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center" style="font-size:0.82rem">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:6px;color:#999">
+              <input type="checkbox" style="accent-color:#FFD700"> Remember me
+            </label>
+            <a href="#" style="color:#FFD700;text-decoration:none" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Forgot password?</a>
+          </div>
+
+          <!-- Login button -->
+          <button type="submit" id="login-btn"
+            style="width:100%;background:linear-gradient(135deg,#FFD700,#FFA500);color:#0f0f1a;font-family:'Bangers',cursive;font-size:1.2rem;letter-spacing:2px;padding:14px;border-radius:50px;border:none;cursor:pointer;transition:all 0.3s;box-shadow:0 0 20px rgba(255,215,0,0.35);margin-top:0.5rem"
+            onmouseover="this.style.transform='scale(1.03)';this.style.boxShadow='0 0 35px rgba(255,215,0,0.6)'"
+            onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 0 20px rgba(255,215,0,0.35)'">
+            <i class="fas fa-shield-alt mr-2"></i>Login to Portal
+          </button>
+
+          <!-- Error -->
+          <div id="login-error" style="display:none;background:rgba(232,19,26,0.1);border:1px solid rgba(232,19,26,0.4);border-radius:10px;padding:0.75rem 1rem;color:#ff6b6b;font-size:0.85rem;text-align:center">
+            <i class="fas fa-exclamation-circle mr-2"></i>Invalid credentials. Please try again.
+          </div>
+        </form>
+
+        <div class="divider" style="margin:1.5rem 0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,215,0,0.2),transparent)"></div>
+
+        <!-- Demo credentials hint -->
+        <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:1rem;text-align:center">
+          <p style="color:#FFD700;font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.5rem">
+            <i class="fas fa-info-circle mr-1"></i>Demo Access
+          </p>
+          <p style="color:#999;font-size:0.8rem;line-height:1.6">
+            Email: <strong style="color:#ccc">parent@superkids.com</strong><br>
+            Password: <strong style="color:#ccc">superkids123</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer note -->
+      <p style="text-align:center;color:#555;font-size:0.78rem;margin-top:1.5rem;line-height:1.7">
+        New to the portal? Contact us at<br>
+        <a href="mailto:superkidsenrollment@gmail.com" style="color:#FFD700;text-decoration:none">superkidsenrollment@gmail.com</a>
+        &nbsp;•&nbsp;
+        <a href="/" style="color:#00D9E8;text-decoration:none">Back to Website</a>
+      </p>
+    </div>
+  </section>
+
+  <script>
+    function togglePw() {
+      const inp = document.getElementById('portal-password');
+      const eye = document.getElementById('pw-eye').querySelector('i');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        eye.className = 'fas fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        eye.className = 'fas fa-eye';
+      }
+    }
+
+    function handlePortalLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('login-error');
+      err.style.display = 'none';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Authenticating...';
+      btn.style.opacity = '0.8';
+      btn.disabled = true;
+      // Simulate auth delay then redirect to dashboard
+      setTimeout(() => {
+        window.location.href = '/parent-portal/dashboard';
+      }, 900);
+    }
+  </script>
+  `
+  return c.html(Layout({ children: content, title: 'Parent Portal Login - SuperKids Preschool' }))
+})
+
+// ================================================================
+// PARENT PORTAL — DASHBOARD
+// ================================================================
+app.get('/parent-portal/dashboard', (c) => {
+
+  const today = new Date()
+  const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+  const months= ['January','February','March','April','May','June','July','August','September','October','November','December']
+  const todayStr = `${days[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`
+
+  const content = `
+
+  <!-- Portal-specific nav (no sticky main nav — has its own header) -->
+  <style>
+    .portal-sidebar-link {
+      display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;
+      color:#aaa;font-weight:700;font-size:0.88rem;text-decoration:none;transition:all 0.2s;
+    }
+    .portal-sidebar-link:hover { background:rgba(255,215,0,0.08);color:#FFD700; }
+    .portal-sidebar-link.active { background:rgba(255,215,0,0.12);color:#FFD700;border-left:3px solid #FFD700; }
+    .portal-stat-card {
+      background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px;padding:1.4rem 1.6rem;transition:all 0.3s;
+    }
+    .portal-stat-card:hover { transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.3); }
+    .feed-card {
+      background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+      border-radius:14px;padding:1.25rem;transition:border-color 0.2s;
+    }
+    .feed-card:hover { border-color:rgba(255,215,0,0.25); }
+    .portal-badge {
+      display:inline-block;padding:3px 10px;border-radius:50px;font-size:0.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+    }
+    .msg-card {
+      background:rgba(0,217,232,0.04);border:1px solid rgba(0,217,232,0.15);border-radius:14px;padding:1.25rem;
+    }
+    .event-row {
+      display:flex;align-items:center;gap:14px;padding:1rem;border-radius:12px;
+      background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);transition:all 0.2s;
+    }
+    .event-row:hover { border-color:rgba(255,215,0,0.3);background:rgba(255,215,0,0.04); }
+    .photo-thumb {
+      border-radius:10px;aspect-ratio:1;background:linear-gradient(135deg,#1a2a4a,#2a1a4a);
+      display:flex;align-items:center;justify-content:center;font-size:2rem;border:1px solid rgba(255,255,255,0.08);
+      cursor:pointer;transition:all 0.2s;overflow:hidden;
+    }
+    .photo-thumb:hover { border-color:#FFD700;transform:scale(1.04);box-shadow:0 0 15px rgba(255,215,0,0.2); }
+    .attend-dot {
+      width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:0.7rem;font-weight:800;flex-shrink:0;
+    }
+    @media (max-width:768px){
+      #portal-sidebar { display:none; }
+      #portal-sidebar.mobile-open { display:block;position:fixed;inset:0;z-index:200;overflow-y:auto; }
+    }
+  </style>
+
+  <!-- TOP HEADER BAR -->
+  <header style="background:linear-gradient(180deg,#08101e,#0d1828);border-bottom:2px solid rgba(255,215,0,0.3);position:sticky;top:0;z-index:100;box-shadow:0 2px 30px rgba(255,215,0,0.1)">
+    <div style="max-width:1400px;margin:0 auto;padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:64px">
+      <!-- Left: logo + title -->
+      <div style="display:flex;align-items:center;gap:14px">
+        <button id="sidebar-toggle" style="display:none;background:none;border:none;color:#FFD700;font-size:1.3rem;cursor:pointer" class="md:hidden">
+          <i class="fas fa-bars"></i>
+        </button>
+        <a href="/" style="text-decoration:none;display:flex;align-items:center;gap:10px">
+          <img src="/static/logo.png" alt="SuperKids" style="height:42px;width:auto;filter:drop-shadow(0 0 10px rgba(255,215,0,0.4))"/>
+        </a>
+        <div style="height:28px;width:1px;background:rgba(255,215,0,0.2)"></div>
+        <div>
+          <div style="font-family:'Bangers',cursive;font-size:1.1rem;color:#FFD700;letter-spacing:2px;line-height:1">PARENT PORTAL</div>
+          <div style="font-size:0.7rem;color:#666;line-height:1;margin-top:2px">${todayStr}</div>
+        </div>
+      </div>
+
+      <!-- Right: notifications + profile -->
+      <div style="display:flex;align-items:center;gap:12px">
+        <!-- Notification bell -->
+        <button style="position:relative;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#FFD700;cursor:pointer;transition:all 0.2s"
+          onmouseover="this.style.background='rgba(255,215,0,0.16)'" onmouseout="this.style.background='rgba(255,215,0,0.08)'">
+          <i class="fas fa-bell"></i>
+          <span style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;background:#E8131A;border-radius:50%;font-size:0.6rem;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800">3</span>
+        </button>
+
+        <!-- Profile chip -->
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:50px;padding:6px 14px 6px 8px;cursor:pointer"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FFA500);display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f0f1a;font-size:0.9rem;flex-shrink:0">P</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:0.82rem;line-height:1">Priya Pawar</div>
+            <div style="color:#777;font-size:0.7rem;line-height:1">Parent of Arya</div>
+          </div>
+        </div>
+
+        <!-- Logout -->
+        <a href="/parent-portal"
+          style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;background:rgba(232,19,26,0.1);border:1px solid rgba(232,19,26,0.3);color:#E8131A;text-decoration:none;font-size:0.8rem;font-weight:700;transition:all 0.2s"
+          onmouseover="this.style.background='rgba(232,19,26,0.18)'" onmouseout="this.style.background='rgba(232,19,26,0.1)'">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="hidden sm:inline">Logout</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN LAYOUT: sidebar + content -->
+  <div style="display:flex;min-height:calc(100vh - 64px);background:#0b0e18">
+
+    <!-- SIDEBAR -->
+    <aside id="portal-sidebar" style="width:220px;flex-shrink:0;background:#0d1120;border-right:1px solid rgba(255,255,255,0.06);padding:1.5rem 0.75rem;display:flex;flex-direction:column;gap:0.25rem">
+      <div style="padding:0 8px;margin-bottom:1rem">
+        <p style="color:#444;font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;font-weight:800">Main Menu</p>
+      </div>
+      ${[
+        {icon:'fa-tachometer-alt',  label:'Dashboard',     href:'#dashboard', active:true},
+        {icon:'fa-child',           label:"My Child",      href:'#child'},
+        {icon:'fa-calendar-day',    label:'Daily Updates', href:'#updates'},
+        {icon:'fa-images',          label:'Photo Gallery', href:'#gallery'},
+        {icon:'fa-calendar-check',  label:'Attendance',    href:'#attendance'},
+        {icon:'fa-calendar-alt',    label:'Events',        href:'#events'},
+        {icon:'fa-comment-dots',    label:'Messages',      href:'#messages'},
+      ].map(l => `
+        <a href="${l.href}" class="portal-sidebar-link ${l.active?'active':''}">
+          <i class="fas ${l.icon}" style="width:16px;text-align:center;font-size:0.85rem"></i> ${l.label}
+        </a>
+      `).join('')}
+
+      <div style="padding:0 8px;margin:1.25rem 0 0.75rem">
+        <p style="color:#444;font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;font-weight:800">Resources</p>
+      </div>
+      ${[
+        {icon:'fa-file-alt',     label:'Progress Reports', href:'#reports'},
+        {icon:'fa-utensils',     label:'Menu & Meals',     href:'#meals'},
+        {icon:'fa-bell',         label:'Announcements',    href:'#messages'},
+      ].map(l => `
+        <a href="${l.href}" class="portal-sidebar-link">
+          <i class="fas ${l.icon}" style="width:16px;text-align:center;font-size:0.85rem"></i> ${l.label}
+        </a>
+      `).join('')}
+
+      <div style="flex:1"></div>
+      <div style="padding:0.75rem;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:12px;margin-top:1rem">
+        <p style="color:#FFD700;font-size:0.72rem;font-weight:700;margin-bottom:0.4rem"><i class="fas fa-headset mr-1"></i>Need Help?</p>
+        <p style="color:#666;font-size:0.7rem;line-height:1.5">Call us at<br><a href="tel:+919822977644" style="color:#ccc;text-decoration:none">(+91) 9822-977-644</a></p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main style="flex:1;padding:2rem;overflow-x:hidden" id="dashboard">
+
+      <!-- Welcome banner -->
+      <div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,165,0,0.04));border:1px solid rgba(255,215,0,0.2);border-radius:18px;padding:1.75rem 2rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <div>
+          <h1 style="font-family:'Bangers',cursive;font-size:2rem;color:#FFD700;letter-spacing:2px;line-height:1;margin-bottom:0.4rem">
+            Welcome back, Priya! 👋
+          </h1>
+          <p style="color:#aaa;font-size:0.92rem">Here's what's happening with <strong style="color:#fff">Arya</strong> today.</p>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:0.78rem;color:#666;margin-bottom:4px">Class</div>
+          <div style="font-family:'Bangers',cursive;color:#00D9E8;font-size:1.1rem;letter-spacing:1px">Super Stars (3–4 yrs)</div>
+          <div style="font-size:0.78rem;color:#666;margin-top:2px">Teacher: Ms. Rachel Storm</div>
+        </div>
+      </div>
+
+      <!-- STATS ROW -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem">
+        ${[
+          {icon:'fa-check-circle', color:'#00D9E8', label:'Attendance This Month', value:'18/21', sub:'86% present', bg:'rgba(0,217,232,0.06)',border:'rgba(0,217,232,0.2)'},
+          {icon:'fa-star',         color:'#FFD700', label:'Achievement Badges', value:'7',     sub:'2 new this week', bg:'rgba(255,215,0,0.06)',border:'rgba(255,215,0,0.2)'},
+          {icon:'fa-images',       color:'#E8131A', label:'New Photos',          value:'12',    sub:'Added this week',  bg:'rgba(232,19,26,0.06)',border:'rgba(232,19,26,0.2)'},
+          {icon:'fa-comment-dots', color:'#00D9E8', label:'Unread Messages',     value:'3',     sub:'From Ms. Rachel',  bg:'rgba(0,217,232,0.06)',border:'rgba(0,217,232,0.2)'},
+        ].map(s => `
+          <div class="portal-stat-card" style="background:${s.bg};border-color:${s.border}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+              <div style="width:38px;height:38px;background:${s.color}22;border-radius:10px;display:flex;align-items:center;justify-content:center">
+                <i class="fas ${s.icon}" style="color:${s.color};font-size:1rem"></i>
+              </div>
+            </div>
+            <div style="font-family:'Bangers',cursive;font-size:2rem;color:#fff;letter-spacing:1px;line-height:1">${s.value}</div>
+            <div style="color:#aaa;font-size:0.78rem;margin-top:4px">${s.label}</div>
+            <div style="color:${s.color};font-size:0.72rem;font-weight:700;margin-top:3px">${s.sub}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- TWO-COLUMN GRID -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem" class="lg-two-col">
+
+        <!-- CHILD PROFILE CARD -->
+        <div id="child" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:18px;padding:1.75rem">
+          <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#FFD700;letter-spacing:2px;margin-bottom:1.25rem">
+            <i class="fas fa-child mr-2"></i>My Child
+          </h3>
+          <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.25rem">
+            <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1a3a5a,#0f1f3f);border:3px solid #FFD700;box-shadow:0 0 18px rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:2.2rem;flex-shrink:0">
+              🦸‍♀️
+            </div>
+            <div>
+              <div style="font-weight:900;color:#fff;font-size:1.1rem">Arya Pawar</div>
+              <div style="color:#FFD700;font-size:0.82rem;font-weight:700;margin:2px 0">Super Stars Program</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span class="portal-badge" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3)">Age 3.5</span>
+                <span class="portal-badge" style="background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.3)">Section A</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+            ${[
+              {label:'Date of Birth', value:'Nov 15, 2021'},
+              {label:'Admission No.',  value:'SK-2024-147'},
+              {label:'Teacher',        value:'Ms. Rachel Storm'},
+              {label:'Roll No.',       value:'12'},
+              {label:'Blood Group',    value:'O+'},
+              {label:'Emergency No.', value:'(+91) 9822-977-644'},
+            ].map(d => `
+              <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:0.6rem 0.75rem">
+                <div style="color:#555;font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;font-weight:800">${d.label}</div>
+                <div style="color:#ccc;font-size:0.82rem;font-weight:600;margin-top:2px">${d.value}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- TODAY'S SCHEDULE -->
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,217,232,0.15);border-radius:18px;padding:1.75rem">
+          <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#00D9E8;letter-spacing:2px;margin-bottom:1.25rem">
+            <i class="fas fa-calendar-day mr-2"></i>Today's Schedule
+          </h3>
+          <div style="display:flex;flex-direction:column;gap:0.6rem">
+            ${[
+              {time:'7:00 AM',  act:'Arrival & Free Play',        emoji:'🌅', done:true,  color:'#00D9E8'},
+              {time:'8:00 AM',  act:'Morning Circle',             emoji:'📅', done:true,  color:'#FFD700'},
+              {time:'8:30 AM',  act:'Superhero Breakfast',        emoji:'🥞', done:true,  color:'#E8131A'},
+              {time:'9:00 AM',  act:'STEAM Learning Centers',     emoji:'🔬', done:true,  color:'#00D9E8'},
+              {time:'10:30 AM', act:'Outdoor Hero Training',      emoji:'🌳', done:false, color:'#FFD700'},
+              {time:'11:30 AM', act:'Creative Arts',              emoji:'🎨', done:false, color:'#E8131A'},
+              {time:'12:00 PM', act:'Super Lunch',                emoji:'🥗', done:false, color:'#00D9E8'},
+              {time:'2:00 PM',  act:'Story Time & Reading',       emoji:'📚', done:false, color:'#FFD700'},
+              {time:'5:00 PM',  act:'Wind Down & Pickup',         emoji:'🌟', done:false, color:'#E8131A'},
+            ].map(s => `
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${s.done?'rgba(0,217,232,0.05)':'rgba(255,255,255,0.02)'};border:1px solid ${s.done?'rgba(0,217,232,0.15)':'rgba(255,255,255,0.05)'}">
+                <span style="font-size:1.1rem">${s.emoji}</span>
+                <div style="flex:1">
+                  <div style="font-size:0.78rem;color:${s.color};font-weight:700">${s.time}</div>
+                  <div style="font-size:0.82rem;color:${s.done?'#888':'#ccc'};${s.done?'text-decoration:line-through;':''}">${s.act}</div>
+                </div>
+                ${s.done ? `<i class="fas fa-check-circle" style="color:#00D9E8;font-size:0.85rem"></i>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- DAILY UPDATES FEED -->
+      <div id="updates" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,215,0,0.1);border-radius:18px;padding:1.75rem;margin-bottom:2rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#FFD700;letter-spacing:2px">
+            <i class="fas fa-rss mr-2"></i>Daily Updates
+          </h3>
+          <span class="portal-badge" style="background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.3)">Today</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+          ${[
+            {time:'9:42 AM', teacher:'Ms. Rachel', type:'Learning', color:'#00D9E8', bg:'rgba(0,217,232,0.06)', icon:'fa-book', text:'Arya completed her letter tracing worksheet today! She formed all 5 letters perfectly and was so proud of herself. She is showing great progress in pre-writing skills!', emoji:'✏️'},
+            {time:'8:35 AM', teacher:'Ms. Rachel', type:'Meal',     color:'#FFD700', bg:'rgba(255,215,0,0.06)', icon:'fa-utensils', text:'Arya ate a good breakfast today — finished her upma and a full glass of milk. She sat nicely with her friends and even helped pass out napkins!', emoji:'🥣'},
+            {time:'7:15 AM', teacher:'Ms. Priya (Aide)', type:'Arrival', color:'#E8131A', bg:'rgba(232,19,26,0.06)', icon:'fa-door-open', text:'Arya arrived happy and energetic today! She walked in confidently and immediately joined the building block station with her friends.', emoji:'🏫'},
+          ].map(u => `
+            <div class="feed-card" style="border-color:${u.color}22;background:${u.bg}">
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="width:40px;height:40px;background:${u.color}18;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${u.emoji}</div>
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+                    <span class="portal-badge" style="background:${u.color}18;color:${u.color};border:1px solid ${u.color}33">${u.type}</span>
+                    <span style="color:#555;font-size:0.75rem"><i class="fas fa-clock mr-1"></i>${u.time}</span>
+                    <span style="color:#555;font-size:0.75rem"><i class="fas fa-user-circle mr-1"></i>${u.teacher}</span>
+                  </div>
+                  <p style="color:#ccc;font-size:0.88rem;line-height:1.6">${u.text}</p>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="text-align:center;margin-top:1rem">
+          <button style="background:none;border:1px solid rgba(255,215,0,0.3);color:#FFD700;border-radius:50px;padding:8px 24px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='rgba(255,215,0,0.08)'" onmouseout="this.style.background='none'">
+            View All Updates <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- PHOTO GALLERY + ATTENDANCE SIDE BY SIDE -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+
+        <!-- RECENT PHOTOS -->
+        <div id="gallery" style="background:rgba(255,255,255,0.02);border:1px solid rgba(232,19,26,0.15);border-radius:18px;padding:1.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#E8131A;letter-spacing:2px">
+              <i class="fas fa-images mr-2"></i>Recent Photos
+            </h3>
+            <span class="portal-badge" style="background:rgba(232,19,26,0.1);color:#E8131A;border:1px solid rgba(232,19,26,0.3)">12 new</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+            ${[
+              {emoji:'🎨',bg:'linear-gradient(135deg,#1a2a4a,#2a1a4a)',label:'Art Class'},
+              {emoji:'🔬',bg:'linear-gradient(135deg,#1a3a2a,#0a2a1a)',label:'Science'},
+              {emoji:'🌳',bg:'linear-gradient(135deg,#2a3a1a,#1a2a0a)',label:'Outdoor'},
+              {emoji:'📚',bg:'linear-gradient(135deg,#3a2a1a,#2a1a0a)',label:'Story Time'},
+              {emoji:'🎵',bg:'linear-gradient(135deg,#1a1a3a,#2a1a3a)',label:'Music'},
+              {emoji:'🤸',bg:'linear-gradient(135deg,#2a1a2a,#3a1a3a)',label:'Gymnastics'},
+            ].map(p => `
+              <div class="photo-thumb" style="background:${p.bg};flex-direction:column;gap:4px;font-size:1.8rem">
+                ${p.emoji}
+                <span style="font-size:0.6rem;color:#999;font-weight:700">${p.label}</span>
+              </div>
+            `).join('')}
+          </div>
+          <button style="width:100%;background:none;border:1px solid rgba(232,19,26,0.3);color:#E8131A;border-radius:10px;padding:9px;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='rgba(232,19,26,0.08)'" onmouseout="this.style.background='none'">
+            <i class="fas fa-images mr-2"></i>View Full Gallery
+          </button>
+        </div>
+
+        <!-- ATTENDANCE CALENDAR -->
+        <div id="attendance" style="background:rgba(255,255,255,0.02);border:1px solid rgba(0,217,232,0.15);border-radius:18px;padding:1.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#00D9E8;letter-spacing:2px">
+              <i class="fas fa-calendar-check mr-2"></i>Attendance
+            </h3>
+            <span style="font-family:'Bangers',cursive;font-size:1.1rem;color:#00D9E8">May 2026</span>
+          </div>
+          <!-- Mini calendar grid -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:0.75rem">
+            ${['M','T','W','T','F','S','S'].map(d => `
+              <div style="text-align:center;font-size:0.65rem;font-weight:800;color:#555;padding:4px 0">${d}</div>
+            `).join('')}
+            ${''.padStart(0)}
+            <!-- Fill first blank days (May 1 is Thursday) -->
+            <div></div><div></div><div></div>
+            ${Array.from({length:21}).map((_,i) => {
+              const day = i + 1
+              const isWeekend = (i + 3) % 7 >= 5
+              const isToday   = day === 21
+              const status    = isWeekend ? 'weekend' : (day > 21 ? 'future' : (day % 7 === 0 ? 'absent' : 'present'))
+              const bg        = isToday ? '#FFD700' : status === 'present' ? 'rgba(0,217,232,0.15)' : status === 'absent' ? 'rgba(232,19,26,0.15)' : status === 'weekend' ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.02)'
+              const color     = isToday ? '#0f0f1a' : status === 'present' ? '#00D9E8' : status === 'absent' ? '#E8131A' : '#444'
+              return `<div class="attend-dot" style="background:${bg};color:${color};font-size:0.68rem;font-weight:${isToday?'900':'700'};border-radius:8px;width:auto;height:28px;border:${isToday?'2px solid #FFD700':'1px solid transparent'}">${day}</div>`
+            }).join('')}
+          </div>
+          <div style="display:flex;gap:1rem;font-size:0.72rem;flex-wrap:wrap">
+            ${[
+              {color:'#00D9E8',bg:'rgba(0,217,232,0.15)',label:'Present (18)'},
+              {color:'#E8131A',bg:'rgba(232,19,26,0.15)', label:'Absent (3)'},
+              {color:'#FFD700',bg:'#FFD700',               label:'Today', textColor:'#0f0f1a'},
+            ].map(l => `
+              <div style="display:flex;align-items:center;gap:5px">
+                <div style="width:12px;height:12px;border-radius:3px;background:${l.bg}"></div>
+                <span style="color:${l.textColor||l.color}">${l.label}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- EVENTS + MESSAGES SIDE BY SIDE -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+
+        <!-- UPCOMING EVENTS -->
+        <div id="events" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,215,0,0.12);border-radius:18px;padding:1.75rem">
+          <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#FFD700;letter-spacing:2px;margin-bottom:1.25rem">
+            <i class="fas fa-calendar-alt mr-2"></i>Upcoming Events
+          </h3>
+          <div style="display:flex;flex-direction:column;gap:0.75rem">
+            ${[
+              {date:'May 24',day:'Sat', title:'Superhero Sports Day',     tag:'School Event', color:'#E8131A', emoji:'🏅'},
+              {date:'May 28',day:'Wed', title:'Parents Open House',        tag:'Parent Event', color:'#00D9E8', emoji:'🏫'},
+              {date:'Jun 2', day:'Mon', title:'STEAM Fair & Exhibition',   tag:'Learning',     color:'#FFD700', emoji:'🔬'},
+              {date:'Jun 6', day:'Fri', title:'Superhero Graduation Prep', tag:'Special Day',  color:'#E8131A', emoji:'🎓'},
+            ].map(ev => `
+              <div class="event-row">
+                <div style="min-width:52px;text-align:center;background:${ev.color}18;border:1px solid ${ev.color}33;border-radius:10px;padding:6px 4px">
+                  <div style="font-family:'Bangers',cursive;font-size:1.2rem;color:${ev.color};line-height:1">${ev.date.split(' ')[1]}</div>
+                  <div style="font-size:0.6rem;color:${ev.color};text-transform:uppercase;font-weight:800">${ev.date.split(' ')[0]}</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-weight:800;color:#fff;font-size:0.88rem">${ev.emoji} ${ev.title}</div>
+                  <span class="portal-badge" style="background:${ev.color}15;color:${ev.color};border:1px solid ${ev.color}30;margin-top:3px">${ev.tag}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div id="messages" style="background:rgba(255,255,255,0.02);border:1px solid rgba(0,217,232,0.15);border-radius:18px;padding:1.75rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#00D9E8;letter-spacing:2px">
+              <i class="fas fa-comment-dots mr-2"></i>Messages
+            </h3>
+            <span style="background:rgba(232,19,26,0.15);color:#E8131A;border:1px solid rgba(232,19,26,0.3);border-radius:50px;padding:2px 10px;font-size:0.7rem;font-weight:800">3 Unread</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem">
+            ${[
+              {from:'Ms. Rachel Storm',  role:'Class Teacher', time:'Today 9:30 AM',  text:'Arya did something wonderful during story time today! She retold the entire "Brave Little Star" story to the class. You must be so proud! 🌟', unread:true,  color:'#00D9E8'},
+              {from:'Principal\'s Office',role:'Admin',         time:'Yesterday',      text:'Reminder: Parent-Teacher meeting scheduled for May 28th at 10:00 AM. Please confirm your slot via reply or call us.', unread:true,  color:'#FFD700'},
+              {from:'Ms. Rachel Storm',  role:'Class Teacher', time:'May 19',         text:'Sharing Arya\'s art project from STEAM class — she built a volcano and it was a huge hit! Photo attached in gallery.', unread:false, color:'#00D9E8'},
+            ].map(m => `
+              <div class="msg-card" style="border-color:${m.unread?m.color+'44':'rgba(255,255,255,0.07)'};background:${m.unread?m.color+'08':'rgba(255,255,255,0.02)'}">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,${m.color}44,${m.color}22);display:flex;align-items:center;justify-content:center;font-weight:900;color:${m.color};font-size:0.85rem;flex-shrink:0">${m.from.charAt(0)}</div>
+                  <div style="flex:1">
+                    <div style="font-weight:800;color:#fff;font-size:0.82rem">${m.from}</div>
+                    <div style="color:#555;font-size:0.7rem">${m.role} • ${m.time}</div>
+                  </div>
+                  ${m.unread ? `<div style="width:8px;height:8px;border-radius:50%;background:#E8131A;box-shadow:0 0 6px #E8131A;flex-shrink:0"></div>` : ''}
+                </div>
+                <p style="color:#aaa;font-size:0.82rem;line-height:1.5">${m.text}</p>
+              </div>
+            `).join('')}
+          </div>
+          <!-- Reply box -->
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" placeholder="Reply to Ms. Rachel..."
+              style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(0,217,232,0.25);border-radius:50px;padding:9px 16px;color:#fff;font-size:0.82rem;outline:none;font-family:'Nunito',sans-serif"
+              onfocus="this.style.borderColor='#00D9E8'" onblur="this.style.borderColor='rgba(0,217,232,0.25)'" />
+            <button style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#00D9E8,#0099bb);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0f0f1a;flex-shrink:0;transition:all 0.2s"
+              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+              <i class="fas fa-paper-plane" style="font-size:0.85rem"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS / PROGRESS BADGES -->
+      <div id="reports" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,215,0,0.12);border-radius:18px;padding:1.75rem;margin-bottom:2rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <h3 style="font-family:'Bangers',cursive;font-size:1.3rem;color:#FFD700;letter-spacing:2px">
+            <i class="fas fa-trophy mr-2"></i>Achievement Badges
+          </h3>
+          <button style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);color:#FFD700;border-radius:8px;padding:6px 16px;font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.2s"
+            onmouseover="this.style.background='rgba(255,215,0,0.16)'" onmouseout="this.style.background='rgba(255,215,0,0.08)'">
+            <i class="fas fa-download mr-1"></i>Download Report
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem">
+          ${[
+            {emoji:'⭐', title:'Super Reader',        desc:'Completed 5 story books',     color:'#FFD700', earned:true},
+            {emoji:'🔬', title:'Science Explorer',    desc:'STEAM fair participant',       color:'#00D9E8', earned:true},
+            {emoji:'🎨', title:'Creative Genius',     desc:'Art exhibition showcase',      color:'#E8131A', earned:true},
+            {emoji:'🤝', title:'Team Player',         desc:'Excellent cooperation',        color:'#00D9E8', earned:true},
+            {emoji:'🏃', title:'Sporty Superhero',    desc:'Sports Day participant',       color:'#FFD700', earned:true},
+            {emoji:'🌱', title:'Garden Hero',         desc:'Planted & grew a sunflower',   color:'#00D9E8', earned:true},
+            {emoji:'🎵', title:'Music Master',        desc:'Sang solo in assembly',        color:'#E8131A', earned:true},
+            {emoji:'🔢', title:'Math Champion',       desc:'10 sums streak',              color:'#FFD700', earned:false},
+            {emoji:'📖', title:'Book Worm',           desc:'Read 10 books',               color:'#00D9E8', earned:false},
+          ].map(b => `
+            <div style="background:${b.earned?b.color+'0e':'rgba(255,255,255,0.02)'};border:1px solid ${b.earned?b.color+'33':'rgba(255,255,255,0.06)'};border-radius:12px;padding:1rem;text-align:center;opacity:${b.earned?'1':'0.4'}">
+              <div style="font-size:2rem;margin-bottom:0.4rem">${b.emoji}</div>
+              <div style="font-weight:800;color:${b.earned?'#fff':'#666'};font-size:0.78rem;margin-bottom:2px">${b.title}</div>
+              <div style="color:${b.earned?b.color:'#555'};font-size:0.68rem">${b.desc}</div>
+              ${b.earned ? `<div style="margin-top:6px;font-size:0.65rem;color:${b.color}"><i class="fas fa-check-circle mr-1"></i>Earned</div>` : `<div style="margin-top:6px;font-size:0.65rem;color:#555"><i class="fas fa-lock mr-1"></i>Locked</div>`}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem">
+        ${[
+          {icon:'fa-phone-alt',    color:'#00D9E8', label:'Call Teacher',         action:'tel:+919822977644'},
+          {icon:'fa-envelope',     color:'#FFD700', label:'Email School',          action:'mailto:superkidsenrollment@gmail.com'},
+          {icon:'fa-file-download',color:'#E8131A', label:'Download Report',       action:'#'},
+          {icon:'fa-camera',       color:'#00D9E8', label:'Request Photos',        action:'#'},
+          {icon:'fa-calendar-plus',color:'#FFD700', label:'Book Meeting',          action:'#'},
+          {icon:'fa-exclamation-circle',color:'#E8131A',label:'Report Absence',    action:'#'},
+        ].map(a => `
+          <a href="${a.action}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.25rem;background:${a.color}0a;border:1px solid ${a.color}22;border-radius:14px;text-decoration:none;transition:all 0.25s;cursor:pointer"
+            onmouseover="this.style.background='${a.color}18';this.style.borderColor='${a.color}55';this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.background='${a.color}0a';this.style.borderColor='${a.color}22';this.style.transform='translateY(0)'">
+            <div style="width:44px;height:44px;background:${a.color}18;border-radius:12px;display:flex;align-items:center;justify-content:center">
+              <i class="fas ${a.icon}" style="color:${a.color};font-size:1.1rem"></i>
+            </div>
+            <span style="color:#ccc;font-size:0.8rem;font-weight:700;text-align:center">${a.label}</span>
+          </a>
+        `).join('')}
+      </div>
+
+      <!-- Portal footer -->
+      <div style="text-align:center;padding:1.5rem 0;border-top:1px solid rgba(255,255,255,0.06)">
+        <p style="color:#444;font-size:0.78rem">SuperKids Parent Portal &nbsp;•&nbsp; <a href="/" style="color:#FFD700;text-decoration:none">Back to Website</a> &nbsp;•&nbsp; <a href="/parent-portal" style="color:#E8131A;text-decoration:none">Logout</a></p>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    @media (max-width:900px) {
+      #portal-sidebar { display:none; }
+      .lg-two-col { grid-template-columns:1fr !important; }
+    }
+  </style>
+
+  <script>
+    // Sidebar smooth scroll
+    document.querySelectorAll('.portal-sidebar-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          const target = document.getElementById(href.slice(1));
+          if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+          document.querySelectorAll('.portal-sidebar-link').forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
+        }
+      });
+    });
+  </script>
+  `
+  return c.html(Layout({ children: content, title: 'Dashboard - SuperKids Parent Portal' }))
 })
 
 // API: Contact form handler

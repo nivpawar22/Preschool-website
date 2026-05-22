@@ -501,10 +501,10 @@ const Navbar = (active: string) => `
           <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#0F2050' : '#2A3B60'}">Programs</a>
           <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#0F2050' : '#2A3B60'}">Gallery</a>
           <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#0F2050' : '#2A3B60'}">Contact</a>
-          <a href="/parent-portal" class="nav-link ${active === 'portal' ? 'active' : ''}" style="color:#0F2050;border:1.5px solid #0F2050;border-radius:8px;padding:7px 13px">
+          <a href="/contact" class="btn-primary ml-3" style="font-size:0.82rem;padding:10px 22px;letter-spacing:1px">Enroll Now</a>
+          <a href="/parent-portal" class="nav-link ${active === 'portal' ? 'active' : ''}" style="color:#0F2050;border:1.5px solid #0F2050;border-radius:8px;padding:7px 13px;margin-left:6px">
             <i class="fas fa-shield-alt mr-1" style="font-size:0.8rem"></i>Parent Portal
           </a>
-          <a href="/contact" class="btn-primary ml-3" style="font-size:0.82rem;padding:10px 22px;letter-spacing:1px">Enroll Now</a>
         </div>
 
         <button id="menu-btn" class="md:hidden" style="color:#0F2050;font-size:1.6rem;background:none;border:none;cursor:pointer">
@@ -528,8 +528,8 @@ const Navbar = (active: string) => `
       <a href="/programs" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Programs</a>
       <a href="/gallery" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Gallery</a>
       <a href="/contact" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Contact</a>
-      <a href="/parent-portal" style="color:#0F2050;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none;border:1.5px solid #0F2050" onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background=''">🛡️ Parent Portal</a>
       <a href="/contact" class="btn-primary" style="text-align:center;margin-top:8px;display:block">Enroll Now</a>
+      <a href="/parent-portal" style="color:#0F2050;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none;border:1.5px solid #0F2050;margin-top:6px" onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background=''">🛡️ Parent Portal</a>
     </div>
   </div>
 </nav>
@@ -549,10 +549,9 @@ const Footer = () => `
         </a>
         <p style="color:#7B90B5;font-size:0.9rem;line-height:1.8">Empowering little superheroes to grow, learn, and shine every single day!</p>
         <div class="flex gap-4 mt-5">
-          <a href="#" style="color:#1AA6CA;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-facebook"></i></a>
-          <a href="#" style="color:#C4893A;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-instagram"></i></a>
-          <a href="#" style="color:#E8B020;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-youtube"></i></a>
-          <a href="#" style="color:#1AA6CA;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-twitter"></i></a>
+          <a href="https://www.facebook.com/superkidsindiapreschool/" target="_blank" rel="noopener" style="color:#1AA6CA;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-facebook"></i></a>
+          <a href="https://www.instagram.com/superkidsindiapreschool/" target="_blank" rel="noopener" style="color:#C4893A;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@SuperKidsIndiaPreschool" target="_blank" rel="noopener" style="color:#E8B020;font-size:1.3rem;transition:all 0.3s" class="hover:scale-125"><i class="fab fa-youtube"></i></a>
         </div>
       </div>
 
@@ -1267,11 +1266,11 @@ app.get('/gallery', (c) => {
       <p style="color:#6B7A9D;margin-bottom:2rem">Join our community and see daily updates, super moments, and more!</p>
       <div class="flex flex-wrap justify-center gap-4">
         ${[
-          {icon:'fab fa-instagram', label:'@SuperKidsPreschool', color:'#C4893A'},
-          {icon:'fab fa-facebook', label:'SuperKids Preschool', color:'#0F2050'},
-          {icon:'fab fa-youtube', label:'SuperKids TV', color:'#E8B020'},
+          {icon:'fab fa-instagram', label:'@superkidsindiapreschool', color:'#C4893A', url:'https://www.instagram.com/superkidsindiapreschool/'},
+          {icon:'fab fa-facebook', label:'superkidsindiapreschool', color:'#0F2050', url:'https://www.facebook.com/superkidsindiapreschool/'},
+          {icon:'fab fa-youtube', label:'SuperKidsIndiaPreschool', color:'#E8B020', url:'https://www.youtube.com/@SuperKidsIndiaPreschool'},
         ].map(s => `
-          <a href="#" style="display:flex;align-items:center;gap:10px;padding:12px 24px;border-radius:50px;border:2px solid ${s.color}44;background:${s.color}11;color:${s.color};text-decoration:none;font-weight:700;transition:all 0.3s"
+          <a href="${s.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:12px 24px;border-radius:50px;border:2px solid ${s.color}44;background:${s.color}11;color:${s.color};text-decoration:none;font-weight:700;transition:all 0.3s"
             onmouseover="this.style.background='${s.color}22';this.style.boxShadow='0 4px 20px ${s.color}33'"
             onmouseout="this.style.background='${s.color}11';this.style.boxShadow='none'">
             <i class="${s.icon} text-xl"></i> ${s.label}

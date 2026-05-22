@@ -49,6 +49,16 @@ app.delete('/api/upload', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+app.get('/api/gallery', async (c) => {
+  try {
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+    if (!row) return c.json({ items: [] })
+    const data = JSON.parse(row.value)
+    const published = (data.gallery || []).filter((item: any) => item.published === true)
+    return c.json({ items: published })
+  } catch { return c.json({ items: [] }) }
+})
+
 const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -1332,29 +1342,15 @@ app.get('/gallery', (c) => {
   window.openPubLightbox = openPubLightbox;
   window.openPubVideoLightbox = openPubVideoLightbox;
 
-  // Read from localStorage first (published from portal on same device), then static JSON
   function loadGallery() {
-    var localItems = [];
-    try {
-      var stored = localStorage.getItem('sk_gallery_published');
-      if (stored) { var d = JSON.parse(stored); localItems = d.items || []; }
-    } catch(e) {}
-    fetch('/static/gallery-data.json?t='+Date.now())
+    fetch('/api/gallery?t='+Date.now())
       .then(function(r){ return r.ok ? r.json() : {items:[]}; })
       .then(function(d){
-        var jsonItems = d.items || [];
-        // Merge: local items override (same id), then append new from JSON
-        var merged = localItems.slice();
-        jsonItems.forEach(function(ji){
-          var exists = false;
-          for(var k=0;k<merged.length;k++){ if(merged[k].id===ji.id){ exists=true; break; } }
-          if(!exists) merged.push(ji);
-        });
-        _allItems = merged;
+        _allItems = d.items || [];
         renderItems(_allItems);
       })
       .catch(function(){
-        _allItems = localItems;
+        _allItems = [];
         renderItems(_allItems);
       });
   }

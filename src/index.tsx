@@ -482,14 +482,16 @@ const Navbar = (active: string) => `
     <div style="position:absolute;top:50%;left:0;transform:translateY(-50%);width:500px;height:160px;background:radial-gradient(ellipse,rgba(15,32,80,0.04) 0%,transparent 70%);pointer-events:none"></div>
     <div class="max-w-7xl mx-auto px-6" style="position:relative;z-index:2">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">
-        <a href="/" style="text-decoration:none;display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0">
-          <img src="/static/logo.png" alt="SuperKids Preschool"
-            style="display:block;width:480px;height:112px;min-width:480px;max-width:480px;max-height:112px;object-fit:contain;object-position:left center;filter:drop-shadow(0px 3px 10px rgba(15,32,80,0.12));transition:filter 0.3s,transform 0.3s"
-            onmouseover="this.style.filter='drop-shadow(0px 4px 14px rgba(15,32,80,0.22))';this.style.transform='scale(1.02)'"
-            onmouseout="this.style.filter='drop-shadow(0px 3px 10px rgba(15,32,80,0.12))';this.style.transform='scale(1)'"
+        <a href="/" style="text-decoration:none;display:flex;align-items:center;gap:14px;flex-shrink:0">
+          <img src="/static/logo.png" alt="SuperKids India Preschool"
+            style="height:88px;width:88px;object-fit:contain;filter:drop-shadow(0px 4px 12px rgba(15,32,80,0.18));transition:transform 0.3s,filter 0.3s;flex-shrink:0"
+            onmouseover="this.style.transform='scale(1.06)';this.style.filter='drop-shadow(0px 6px 16px rgba(15,32,80,0.28))'"
+            onmouseout="this.style.transform='scale(1)';this.style.filter='drop-shadow(0px 4px 12px rgba(15,32,80,0.18))'"
           />
-          <div style="margin-top:-10px;font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:2px;color:#C4893A;white-space:nowrap;width:480px">
-            ✦ Where Every Child is a SuperHero ✦
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:800;color:#0F2050;line-height:1.15;letter-spacing:0.3px">SuperKids India</div>
+            <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#C4893A;line-height:1.2;letter-spacing:0.3px">Preschool</div>
+            <div style="font-family:'Nunito',sans-serif;font-size:0.7rem;font-weight:800;letter-spacing:1.5px;color:#1AA6CA;margin-top:3px;white-space:nowrap">✦ Where Every Child is a SuperHero ✦</div>
           </div>
         </a>
 
@@ -513,7 +515,14 @@ const Navbar = (active: string) => `
   </div>
 
   <div id="mobile-menu" class="md:hidden px-4 pb-4" style="background:#ffffff;border-bottom:2px solid #DCE1EF">
-    <div class="flex flex-col gap-1" style="padding:12px 0">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 12px 8px;border-bottom:1px solid #DCE1EF;margin-bottom:8px">
+      <img src="/static/logo.png" style="height:52px;width:52px;object-fit:contain" alt="SuperKids"/>
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;color:#0F2050">SuperKids India</div>
+        <div style="font-size:0.7rem;font-weight:700;color:#C4893A">Preschool</div>
+      </div>
+    </div>
+    <div class="flex flex-col gap-1" style="padding:4px 0">
       <a href="/" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">🏠 Home</a>
       <a href="/about" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">About Us</a>
       <a href="/programs" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Programs</a>
@@ -533,10 +542,10 @@ const Footer = () => `
     <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
       <div>
         <a href="/" style="display:inline-block;margin-bottom:1.2rem;text-decoration:none">
-          <img src="/static/logo.png" alt="SuperKids Preschool"
-            style="height:80px;width:auto;object-fit:contain;filter:drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(26,166,202,0.25));transition:filter 0.3s"
-            onmouseover="this.style.filter='drop-shadow(2px 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(26,166,202,0.45))'"
-            onmouseout="this.style.filter='drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(26,166,202,0.25))'"/>
+          <img src="/static/logo.png" alt="SuperKids India Preschool"
+            style="height:80px;width:80px;object-fit:contain;filter:drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(26,166,202,0.25));transition:filter 0.3s,transform 0.3s"
+            onmouseover="this.style.filter='drop-shadow(2px 4px 12px rgba(0,0,0,0.6)) drop-shadow(0 0 22px rgba(26,166,202,0.45))';this.style.transform='scale(1.06)'"
+            onmouseout="this.style.filter='drop-shadow(2px 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(26,166,202,0.25))';this.style.transform='scale(1)'"/>
         </a>
         <p style="color:#7B90B5;font-size:0.9rem;line-height:1.8">Empowering little superheroes to grow, learn, and shine every single day!</p>
         <div class="flex gap-4 mt-5">
@@ -907,7 +916,7 @@ app.get('/about', (c) => {
         <div class="fade-in flex justify-center">
           <div style="position:relative;width:350px;height:350px">
             <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:130px;height:130px;border-radius:50%;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(15,32,80,0.18);z-index:10;border:3px solid #C4893A;overflow:hidden">
-              <img src="/static/logo.png" alt="SuperKids" style="width:118px;height:auto;object-fit:contain"/>
+              <img src="/static/logo.png" alt="SuperKids" style="width:120px;height:120px;object-fit:contain"/>
             </div>
             ${[
               {emoji:'🎨', label:'Creative', angle:0},

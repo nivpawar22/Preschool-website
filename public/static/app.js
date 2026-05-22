@@ -77,7 +77,7 @@ function initials(name) {
 }
 
 function avatarHtml(name, color, size = '') {
-  return `<div class="avatar ${size}" style="background:${color || '#6366f1'}">${initials(name)}</div>`;
+  return `<div class="avatar ${size}" style="background:${color || '#0F2050'}">${initials(name)}</div>`;
 }
 
 function formatDate(d) {
@@ -103,7 +103,7 @@ function gradeColor(g) {
 
 function scoreBarHtml(score, max) {
   const pct = Math.min(100, Math.round((score / max) * 100));
-  const color = pct >= 90 ? '#10b981' : pct >= 75 ? '#6366f1' : pct >= 60 ? '#f59e0b' : '#ef4444';
+  const color = pct >= 90 ? '#10b981' : pct >= 75 ? '#1AA6CA' : pct >= 60 ? '#E8B020' : '#ef4444';
   return `<div style="display:flex;align-items:center;gap:10px">
     <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
     <span style="font-size:12px;font-weight:700;color:${color};width:36px;text-align:right">${score}/${max}</span>
@@ -216,7 +216,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     </div>`).join('');
 
   const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
-  const roleColor = user.role === 'superadmin' ? '#6366f1' : user.role === 'subadmin' ? '#10b981' : '#f59e0b';
+  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
 
   document.getElementById('app').innerHTML = `
     <!-- Sidebar -->
@@ -229,14 +229,14 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
             <p style="margin:0;font-size:10px;color:#90C4E0">Preschool</p>
           </div>
         </div>
-        <p style="font-size:10px;color:#c7d2fe;margin:0;padding-top:4px;border-top:1px solid rgba(255,255,255,0.1)">${data.meta.schoolName}</p>
+        <p style="font-size:10px;color:#90C4E0;margin:0;padding-top:4px;border-top:1px solid rgba(255,255,255,0.1)">${data.meta.schoolName}</p>
       </div>
 
       ${isImp ? `
       <div class="impersonate-bar">
         <i class="fas fa-eye"></i>
         Viewing: ${user.name}
-        <button class="btn btn-xs" style="background:#fff;color:#92400e;margin-left:auto" onclick="exitImpersonate()">
+        <button class="btn btn-xs" style="background:#fff;color:#0F1E3D;margin-left:auto" onclick="exitImpersonate()">
           <i class="fas fa-sign-out-alt"></i> Exit
         </button>
       </div>` : ''}
@@ -247,7 +247,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
           <div class="name">${user.name}</div>
           <div class="role" style="color:${roleColor}">${roleLabel}</div>
         </div>
-        ${user.role === 'superadmin' && !isImp ? '<i class="fas fa-edit" style="margin-left:auto;font-size:11px;color:#a5b4fc"></i>' : ''}
+        ${user.role === 'superadmin' && !isImp ? '<i class="fas fa-edit" style="margin-left:auto;font-size:11px;color:#90C4E0"></i>' : ''}
       </div>
 
       <div style="flex:1">
@@ -282,10 +282,10 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
           </button>
           <div class="topbar-school-info" style="display:flex;align-items:center;gap:8px">
             <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="Logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #DCE1EF;background:#f8fafc;object-fit:contain;"/>
-            <span style="font-size:13px;color:#64748b;font-weight:600">${data.meta.schoolName}</span>
+            <span style="font-size:13px;color:#6B7A9D;font-weight:600">${data.meta.schoolName}</span>
           </div>
-          <div class="topbar-divider" style="width:1px;height:20px;background:#e2e8f0"></div>
-          <span class="topbar-username" style="font-size:13px;color:#64748b">${user.name}</span>
+          <div class="topbar-divider" style="width:1px;height:20px;background:#DCE1EF"></div>
+          <span class="topbar-username" style="font-size:13px;color:#6B7A9D">${user.name}</span>
           ${avatarHtml(user.name, user.avatar)}
         </div>
       </div>
@@ -293,7 +293,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       ${isImp ? `
       <div class="imp-banner">
         <span><i class="fas fa-user-secret"></i> You are viewing ${user.name}'s account (${user.assignedClass ? (DB.getClass(user.assignedClass) || {}).name : 'No class'})</span>
-        <button class="btn btn-xs" style="background:rgba(0,0,0,0.15);color:#1e1b4b" onclick="exitImpersonate()">
+        <button class="btn btn-xs" style="background:rgba(0,0,0,0.15);color:#0F1E3D" onclick="exitImpersonate()">
           <i class="fas fa-sign-out-alt"></i> Return to Super Admin
         </button>
       </div>` : ''}
@@ -411,9 +411,9 @@ function renderLogin() {
 
         <!-- Sign In Button -->
         <button onclick="doLogin()" id="login-btn"
-          style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(99,102,241,0.45);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.3px"
-          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 36px rgba(99,102,241,0.55)'"
-          onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 28px rgba(99,102,241,0.45)'">
+          style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(15,32,80,0.35);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.3px"
+          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 36px rgba(15,32,80,0.5)'"
+          onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 28px rgba(15,32,80,0.35)'">
           <i class="fas fa-sign-in-alt"></i> Sign In
         </button>
 

@@ -223,7 +223,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <img src="${data.meta.schoolLogo || '/static/school-logo.png'}" alt="School Logo" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:#fff;object-fit:cover;flex-shrink:0;"/>
+          <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="School Logo" style="width:48px;height:48px;border-radius:50%;border:2px solid rgba(196,137,58,0.5);background:#fff;object-fit:contain;flex-shrink:0;"/>
           <div>
             <h1 style="font-size:16px;font-weight:900;color:#fff;margin:0;line-height:1.2">SuperKids India</h1>
             <p style="margin:0;font-size:10px;color:#a5b4fc">Preschool</p>
@@ -281,7 +281,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
             <i class="fas fa-download"></i><span class="topbar-username">Install App</span>
           </button>
           <div class="topbar-school-info" style="display:flex;align-items:center;gap:8px">
-            <img src="${data.meta.schoolLogo || '/static/school-logo.png'}" alt="Logo" style="width:30px;height:30px;border-radius:50%;border:1px solid #e2e8f0;background:#f8fafc;object-fit:cover;"/>
+            <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="Logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #DCE1EF;background:#f8fafc;object-fit:contain;"/>
             <span style="font-size:13px;color:#64748b;font-weight:600">${data.meta.schoolName}</span>
           </div>
           <div class="topbar-divider" style="width:1px;height:20px;background:#e2e8f0"></div>
@@ -347,18 +347,18 @@ function navigate(tab) {
 function renderLogin() {
   document.getElementById('app').innerHTML = `
     <div class="login-bg">
-      <div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(139,92,246,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>
-      <div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(59,130,246,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>
-      <div class="login-orb" style="width:160px;height:160px;background:radial-gradient(circle,rgba(236,72,153,0.15) 0%,transparent 70%);top:45%;left:3%;animation-delay:-1s"></div>
+      <div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(26,166,202,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>
+      <div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(196,137,58,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>
+      <div class="login-orb" style="width:160px;height:160px;background:radial-gradient(circle,rgba(232,176,32,0.15) 0%,transparent 70%);top:45%;left:3%;animation-delay:-1s"></div>
 
       <div class="login-card">
 
         <!-- Logo & Branding -->
         <div style="text-align:center;margin-bottom:36px">
           <div style="position:relative;display:inline-block;margin-bottom:18px">
-            <img src="/static/school-logo.png" alt="SuperKids Logo"
-              style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.2);box-shadow:0 8px 32px rgba(0,0,0,0.5);display:block;margin:0 auto;background:#fff"/>
-            <div style="position:absolute;bottom:2px;right:2px;width:20px;height:20px;background:#10b981;border-radius:50%;border:2px solid #1e1b4b;display:flex;align-items:center;justify-content:center">
+            <img src="/static/logo.png" alt="SuperKids Logo"
+              style="width:110px;height:110px;border-radius:50%;object-fit:contain;border:3px solid rgba(196,137,58,0.6);box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 6px rgba(26,166,202,0.15);display:block;margin:0 auto;background:#fff"/>
+            <div style="position:absolute;bottom:2px;right:2px;width:20px;height:20px;background:#10b981;border-radius:50%;border:2px solid #0F2050;display:flex;align-items:center;justify-content:center">
               <i class="fas fa-check" style="font-size:7px;color:#fff"></i>
             </div>
           </div>

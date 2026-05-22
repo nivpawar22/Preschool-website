@@ -2048,6 +2048,7 @@ function sendMessage(toId) {
 
 let _galFilterClass = '';
 let _galSelectedFiles = []; // array of {name, dataUrl}
+let _galCurrentTab = 'photo';
 
 function renderGallery() {
   const data = DB.get();
@@ -2079,11 +2080,14 @@ function renderGallery() {
           <option value="">All Classes</option>
           ${data.classes.map(c => `<option value="${c.id}"${_galFilterClass===c.id?' selected':''}>${c.name}</option>`).join('')}
         </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
-        <span style="font-size:13px;color:#6B7A9D">${photos.length} photo${photos.length!==1?'s':''}</span>
+        <span style="font-size:13px;color:#6B7A9D">${photos.length} item${photos.length!==1?'s':''}</span>
       </div>
-      <button class="btn btn-primary" onclick="openGalleryUpload()">
-        <i class="fas fa-cloud-upload-alt"></i> Upload Photo
-      </button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${!isSubAdmin ? `<button class="btn btn-secondary" onclick="publishGalleryToWebsite()"><i class="fas fa-globe"></i> Publish to Website</button>` : ''}
+        <button class="btn btn-primary" onclick="openGalleryUpload()">
+          <i class="fas fa-cloud-upload-alt"></i> Upload Photo / Video
+        </button>
+      </div>
     </div>
 
     ${photos.length === 0 ? `
@@ -2105,27 +2109,56 @@ function renderGallery() {
     <div class="modal-overlay" id="gallery-upload-modal" style="display:none">
       <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
-          <h3 class="modal-title"><i class="fas fa-cloud-upload-alt" style="color:#1AA6CA"></i> Upload Activity Photo</h3>
+          <h3 class="modal-title"><i class="fas fa-cloud-upload-alt" style="color:#1AA6CA"></i> Upload Photo / Video</h3>
           <button class="modal-close" onclick="closeGalleryModal()">×</button>
         </div>
         <div class="modal-body">
-          <div id="gallery-upload-area"
-               style="border:2px dashed #c7d2fe;border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:#f8faff;margin-bottom:20px;transition:border-color 0.2s"
-               onclick="document.getElementById('gallery-file-input').click()"
-               ondragover="event.preventDefault();this.style.borderColor='#1AA6CA'"
-               ondragleave="this.style.borderColor='#c7d2fe'"
-               ondrop="handleGalleryDrop(event)">
-            <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#1AA6CA;margin-bottom:12px"></i>
-            <p style="font-weight:600;color:#334155;margin:0 0 4px">Click to select or drag &amp; drop</p>
-            <p style="font-size:12px;color:#6B7A9D;margin:0">JPG, PNG, GIF up to 5MB</p>
-            <input type="file" id="gallery-file-input" accept="image/*" multiple style="display:none" onchange="previewGalleryImages(this)">
+          <!-- Tabs -->
+          <div style="display:flex;gap:4px;background:#F1F3F9;border-radius:10px;padding:4px;margin-bottom:20px">
+            <button id="gal-tab-photo" onclick="switchGalleryTab('photo')"
+              style="flex:1;padding:9px;border-radius:8px;border:none;background:#0F2050;color:#fff;font-weight:700;cursor:pointer;font-size:13px">
+              📷 Photo
+            </button>
+            <button id="gal-tab-video" onclick="switchGalleryTab('video')"
+              style="flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:#6B7A9D;font-weight:700;cursor:pointer;font-size:13px">
+              ▶ YouTube Video
+            </button>
           </div>
-          <div id="gallery-preview-wrap" style="display:none;margin-bottom:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <span id="gallery-preview-count" style="font-size:13px;font-weight:600;color:#0F1E3D"></span>
-              <button onclick="clearGalleryFiles()" style="font-size:12px;color:#ef4444;background:none;border:none;cursor:pointer"><i class="fas fa-times"></i> Clear all</button>
+
+          <!-- Photo Section -->
+          <div id="gal-photo-section">
+            <div id="gallery-upload-area"
+                 style="border:2px dashed #c7d2fe;border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:#f8faff;margin-bottom:20px;transition:border-color 0.2s"
+                 onclick="document.getElementById('gallery-file-input').click()"
+                 ondragover="event.preventDefault();this.style.borderColor='#1AA6CA'"
+                 ondragleave="this.style.borderColor='#c7d2fe'"
+                 ondrop="handleGalleryDrop(event)">
+              <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#1AA6CA;margin-bottom:12px"></i>
+              <p style="font-weight:600;color:#334155;margin:0 0 4px">Click to select or drag &amp; drop</p>
+              <p style="font-size:12px;color:#6B7A9D;margin:0">JPG, PNG, GIF up to 5MB</p>
+              <input type="file" id="gallery-file-input" accept="image/*" multiple style="display:none" onchange="previewGalleryImages(this)">
             </div>
-            <div id="gallery-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px"></div>
+            <div id="gallery-preview-wrap" style="display:none;margin-bottom:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <span id="gallery-preview-count" style="font-size:13px;font-weight:600;color:#0F1E3D"></span>
+                <button onclick="clearGalleryFiles()" style="font-size:12px;color:#ef4444;background:none;border:none;cursor:pointer"><i class="fas fa-times"></i> Clear all</button>
+              </div>
+              <div id="gallery-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px"></div>
+            </div>
+          </div>
+
+          <!-- Video Section -->
+          <div id="gal-video-section" style="display:none;margin-bottom:20px">
+            <div style="margin-bottom:16px">
+              <label class="form-label">YouTube URL <span style="color:#ef4444">*</span></label>
+              <div style="display:flex;gap:8px">
+                <input id="gal-youtube-url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." oninput="previewYoutubeUrl()" style="flex:1">
+              </div>
+              <p style="font-size:12px;color:#6B7A9D;margin:6px 0 0">Paste a YouTube video link — the thumbnail will be shown automatically.</p>
+            </div>
+            <div id="gal-video-preview" style="display:none;border-radius:12px;overflow:hidden;border:1px solid #DCE1EF">
+              <img id="gal-video-thumb" src="" style="width:100%;max-height:200px;object-fit:cover;display:block" alt="Video thumbnail">
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Title <span style="color:#ef4444">*</span></label>
@@ -2187,18 +2220,26 @@ function renderGalleryCard(p) {
   const bgColors = ['#0F2050','#1AA6CA','#10b981','#E8B020','#ef4444','#1AA6CA'];
   const bg = bgColors[Math.abs(p.id.charCodeAt(3) || 0) % bgColors.length];
 
+  const isVideo = p.type === 'video';
+  const thumb = isVideo ? p.thumbnail : p.imageData;
+
   return `
     <div class="card" style="padding:0;overflow:hidden;border-radius:14px;transition:box-shadow 0.2s;cursor:pointer"
          onclick="openGalleryLightbox('${p.id}')"
          onmouseenter="this.style.boxShadow='0 8px 30px rgba(26,166,202,0.18)'"
          onmouseleave="this.style.boxShadow=''">
       <div style="position:relative;height:190px;overflow:hidden;background:#f1f5f9">
-        ${p.imageData ?
-          `<img src="${p.imageData}" style="width:100%;height:100%;object-fit:cover" alt="${p.title}">` :
+        ${thumb ?
+          `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover" alt="${p.title}">` :
           `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,${bg},${bg}cc)">
-            <i class="fas fa-image" style="font-size:44px;color:rgba(255,255,255,0.5)"></i>
+            <i class="fas ${isVideo ? 'fa-youtube' : 'fa-image'}" style="font-size:44px;color:rgba(255,255,255,0.5)"></i>
           </div>`
         }
+        ${isVideo ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.15)">
+          <div style="width:52px;height:52px;background:rgba(196,137,58,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,137,58,0.4)">
+            <i class="fas fa-play" style="color:#fff;font-size:1.1rem;margin-left:3px"></i>
+          </div>
+        </div>` : ''}
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.35));pointer-events:none"></div>
         ${cls ? `<span style="position:absolute;top:10px;left:10px;background:rgba(26,166,202,0.9);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${cls.name}</span>` : ''}
         ${canDel ? `
@@ -2231,14 +2272,21 @@ function openGalleryLightbox(photoId) {
   const cls = p.classId ? DB.getClass(p.classId) : null;
   const taggedStudents = (p.studentIds || []).map(sid => DB.getStudent(sid)).filter(Boolean);
   const uploader = DB.getUser(p.uploadedBy);
+  const isVideo = p.type === 'video';
 
   document.getElementById('gallery-lightbox-content').innerHTML = `
     <div style="position:relative">
-      ${p.imageData ?
-        `<img src="${p.imageData}" style="width:100%;max-height:460px;object-fit:cover;display:block" alt="${p.title}">` :
-        `<div style="height:280px;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center">
-          <i class="fas fa-image" style="font-size:64px;color:rgba(255,255,255,0.4)"></i>
-        </div>`
+      ${isVideo ?
+        `<div style="position:relative;padding-bottom:56.25%;height:0;background:#000;border-radius:16px 16px 0 0;overflow:hidden">
+          <iframe src="https://www.youtube.com/embed/${p.youtubeId}?autoplay=1&rel=0"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"
+            allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+        </div>` :
+        p.imageData ?
+          `<img src="${p.imageData}" style="width:100%;max-height:460px;object-fit:cover;display:block" alt="${p.title}">` :
+          `<div style="height:280px;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center">
+            <i class="fas fa-image" style="font-size:64px;color:rgba(255,255,255,0.4)"></i>
+          </div>`
       }
       <button onclick="closeGalleryLightbox()" style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:18px;line-height:36px;text-align:center">×</button>
     </div>
@@ -2291,6 +2339,20 @@ function openGalleryUpload() {
   document.querySelectorAll('.gal-student-cb').forEach(cb => { cb.checked = false; });
   const btn = document.getElementById('gal-upload-btn-text');
   if (btn) btn.textContent = 'Upload Photos';
+  // Reset tab state
+  _galCurrentTab = 'photo';
+  const photoSec = document.getElementById('gal-photo-section');
+  const videoSec = document.getElementById('gal-video-section');
+  if (photoSec) photoSec.style.display = '';
+  if (videoSec) videoSec.style.display = 'none';
+  const photoTab = document.getElementById('gal-tab-photo');
+  const videoTab = document.getElementById('gal-tab-video');
+  if (photoTab) photoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:#0F2050;color:#fff;font-weight:700;cursor:pointer;font-size:13px';
+  if (videoTab) videoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:#6B7A9D;font-weight:700;cursor:pointer;font-size:13px';
+  const ytUrl = document.getElementById('gal-youtube-url');
+  if (ytUrl) ytUrl.value = '';
+  const ytPreview = document.getElementById('gal-video-preview');
+  if (ytPreview) ytPreview.style.display = 'none';
   updateGalleryStudentList();
 }
 
@@ -2385,6 +2447,30 @@ function updateGalleryStudentList() {
 function saveGalleryItem() {
   const title = document.getElementById('gal-title').value.trim();
   if (!title) { showToast('Please enter a title', 'warning'); return; }
+
+  if (_galCurrentTab === 'video') {
+    const url = (document.getElementById('gal-youtube-url').value || '').trim();
+    const ytId = extractYoutubeId(url);
+    if (!ytId) { showToast('Please enter a valid YouTube URL', 'warning'); return; }
+    const classId = document.getElementById('gal-class').value || null;
+    const description = document.getElementById('gal-desc').value.trim();
+    const date = document.getElementById('gal-date').value || new Date().toISOString().split('T')[0];
+    const user = Session.current();
+    DB.addGalleryItem({
+      id: DB.genId('gal'), title, description,
+      type: 'video', youtubeId: ytId,
+      thumbnail: 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg',
+      imageData: '', date, classId, studentIds: [],
+      uploadedBy: user.id, createdAt: new Date().toISOString()
+    });
+    DB.log(user.id, 'GALLERY_VIDEO', 'Added YouTube video: ' + title);
+    closeGalleryModal();
+    showToast('Video added to gallery!', 'success');
+    navigate('gallery');
+    return;
+  }
+
+  // Photo upload logic
   if (!_galSelectedFiles.length) { showToast('Please select at least one image', 'warning'); return; }
   const classId = document.getElementById('gal-class').value || null;
   const studentIds = [...document.querySelectorAll('.gal-student-cb:checked')].map(cb => cb.value);
@@ -2397,6 +2483,7 @@ function saveGalleryItem() {
       id: DB.genId('gal'),
       title: _galSelectedFiles.length === 1 ? title : `${title} (${i + 1})`,
       description,
+      type: 'image',
       imageData: file.dataUrl,
       date,
       classId,
@@ -2413,11 +2500,76 @@ function saveGalleryItem() {
 }
 
 function deleteGalleryPhoto(id) {
-  confirmDialog('Delete this photo? This cannot be undone.', () => {
+  confirmDialog('Delete this item? This cannot be undone.', () => {
     DB.deleteGalleryItem(id);
-    showToast('Photo deleted', 'success');
+    showToast('Item deleted', 'success');
     navigate('gallery');
   });
+}
+
+function switchGalleryTab(tab) {
+  _galCurrentTab = tab;
+  const photoTab = document.getElementById('gal-tab-photo');
+  const videoTab = document.getElementById('gal-tab-video');
+  const photoSec = document.getElementById('gal-photo-section');
+  const videoSec = document.getElementById('gal-video-section');
+  if (!photoTab || !videoTab) return;
+  if (tab === 'photo') {
+    photoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:#0F2050;color:#fff;font-weight:700;cursor:pointer;font-size:13px';
+    videoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:#6B7A9D;font-weight:700;cursor:pointer;font-size:13px';
+    photoSec.style.display = '';
+    videoSec.style.display = 'none';
+  } else {
+    videoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:#0F2050;color:#fff;font-weight:700;cursor:pointer;font-size:13px';
+    photoTab.style.cssText = 'flex:1;padding:9px;border-radius:8px;border:none;background:transparent;color:#6B7A9D;font-weight:700;cursor:pointer;font-size:13px';
+    photoSec.style.display = 'none';
+    videoSec.style.display = '';
+  }
+}
+
+function extractYoutubeId(url) {
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function previewYoutubeUrl() {
+  const url = document.getElementById('gal-youtube-url').value.trim();
+  const ytId = extractYoutubeId(url);
+  const preview = document.getElementById('gal-video-preview');
+  const thumb = document.getElementById('gal-video-thumb');
+  if (ytId && preview && thumb) {
+    thumb.src = 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg';
+    preview.style.display = 'block';
+  } else if (preview) {
+    preview.style.display = 'none';
+  }
+}
+
+function publishGalleryToWebsite() {
+  const data = DB.get();
+  const gallery = data.gallery || [];
+  const exportData = {
+    items: gallery.map(function(item) {
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description || '',
+        type: item.type || 'image',
+        imageData: item.type === 'video' ? '' : (item.imageData || ''),
+        youtubeId: item.youtubeId || '',
+        thumbnail: item.thumbnail || '',
+        date: item.date
+      };
+    }),
+    publishedAt: new Date().toISOString()
+  };
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gallery-data.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Downloaded! Upload gallery-data.json to public/static/ in your repo to publish.', 'success');
 }
 
 // ---- Events ----

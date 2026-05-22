@@ -1288,13 +1288,33 @@ app.get('/gallery', (c) => {
   window.openPubLightbox = openPubLightbox;
   window.openPubVideoLightbox = openPubVideoLightbox;
 
-  fetch('/static/gallery-data.json?t='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : {items:[]}; })
-    .then(function(d){
-      _allItems = d.items || [];
-      renderItems(_allItems);
-    })
-    .catch(function(){ renderItems([]); });
+  // Read from localStorage first (published from portal on same device), then static JSON
+  function loadGallery() {
+    var localItems = [];
+    try {
+      var stored = localStorage.getItem('sk_gallery_published');
+      if (stored) { var d = JSON.parse(stored); localItems = d.items || []; }
+    } catch(e) {}
+    fetch('/static/gallery-data.json?t='+Date.now())
+      .then(function(r){ return r.ok ? r.json() : {items:[]}; })
+      .then(function(d){
+        var jsonItems = d.items || [];
+        // Merge: local items override (same id), then append new from JSON
+        var merged = localItems.slice();
+        jsonItems.forEach(function(ji){
+          var exists = false;
+          for(var k=0;k<merged.length;k++){ if(merged[k].id===ji.id){ exists=true; break; } }
+          if(!exists) merged.push(ji);
+        });
+        _allItems = merged;
+        renderItems(_allItems);
+      })
+      .catch(function(){
+        _allItems = localItems;
+        renderItems(_allItems);
+      });
+  }
+  loadGallery();
 })();
 </script>
 

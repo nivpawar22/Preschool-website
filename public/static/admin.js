@@ -2192,6 +2192,17 @@ function renderGallery() {
               `).join('')}
             </div>
           </div>
+
+          <!-- Publish to Website -->
+          <div style="margin-top:16px;padding:14px;background:#E8F7FC;border-radius:10px;border:1px solid rgba(26,166,202,0.3)">
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+              <input type="checkbox" id="gal-publish" checked style="width:18px;height:18px;accent-color:#0F2050;cursor:pointer;flex-shrink:0">
+              <div>
+                <div style="font-weight:700;color:#0F2050;font-size:14px"><i class="fas fa-globe" style="color:#1AA6CA;margin-right:6px"></i>Publish to Website Gallery</div>
+                <div style="font-size:12px;color:#6B7A9D;margin-top:2px">When checked, this item will appear on the public gallery page immediately</div>
+              </div>
+            </label>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeGalleryModal()">Cancel</button>
@@ -2242,6 +2253,7 @@ function renderGalleryCard(p) {
         </div>` : ''}
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.35));pointer-events:none"></div>
         ${cls ? `<span style="position:absolute;top:10px;left:10px;background:rgba(26,166,202,0.9);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${cls.name}</span>` : ''}
+        ${p.published ? `<span style="position:absolute;bottom:10px;left:10px;background:rgba(15,32,80,0.88);color:#90C4E0;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700"><i class="fas fa-globe" style="margin-right:4px"></i>Live</span>` : '<span style="position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.55);color:rgba(255,255,255,0.6);padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700">Draft</span>'}
         ${canDel ? `
           <button class="btn btn-danger btn-xs"
             style="position:absolute;top:8px;right:8px;opacity:0.9"
@@ -2353,6 +2365,8 @@ function openGalleryUpload() {
   if (ytUrl) ytUrl.value = '';
   const ytPreview = document.getElementById('gal-video-preview');
   if (ytPreview) ytPreview.style.display = 'none';
+  const pubCb = document.getElementById('gal-publish');
+  if (pubCb) pubCb.checked = true;
   updateGalleryStudentList();
 }
 
@@ -2448,6 +2462,8 @@ function saveGalleryItem() {
   const title = document.getElementById('gal-title').value.trim();
   if (!title) { showToast('Please enter a title', 'warning'); return; }
 
+  const publish = document.getElementById('gal-publish') ? document.getElementById('gal-publish').checked : true;
+
   if (_galCurrentTab === 'video') {
     const url = (document.getElementById('gal-youtube-url').value || '').trim();
     const ytId = extractYoutubeId(url);
@@ -2461,11 +2477,13 @@ function saveGalleryItem() {
       type: 'video', youtubeId: ytId,
       thumbnail: 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg',
       imageData: '', date, classId, studentIds: [],
+      published: publish,
       uploadedBy: user.id, createdAt: new Date().toISOString()
     });
     DB.log(user.id, 'GALLERY_VIDEO', 'Added YouTube video: ' + title);
+    if (publish) syncPublishedGallery();
     closeGalleryModal();
-    showToast('Video added to gallery!', 'success');
+    showToast('Video added to gallery' + (publish ? ' & published to website!' : '!'), 'success');
     navigate('gallery');
     return;
   }
@@ -2481,21 +2499,23 @@ function saveGalleryItem() {
   _galSelectedFiles.forEach((file, i) => {
     DB.addGalleryItem({
       id: DB.genId('gal'),
-      title: _galSelectedFiles.length === 1 ? title : `${title} (${i + 1})`,
+      title: _galSelectedFiles.length === 1 ? title : title + ' (' + (i + 1) + ')',
       description,
       type: 'image',
       imageData: file.dataUrl,
       date,
       classId,
       studentIds,
+      published: publish,
       uploadedBy: user.id,
       createdAt: new Date(Date.now() + i).toISOString()
     });
   });
 
-  DB.log(user.id, 'GALLERY_UPLOAD', `Uploaded ${_galSelectedFiles.length} photo(s): ${title}`);
+  DB.log(user.id, 'GALLERY_UPLOAD', 'Uploaded ' + _galSelectedFiles.length + ' photo(s): ' + title);
+  if (publish) syncPublishedGallery();
   closeGalleryModal();
-  showToast(`${_galSelectedFiles.length} photo${_galSelectedFiles.length !== 1 ? 's' : ''} uploaded!`, 'success');
+  showToast(_galSelectedFiles.length + ' photo' + (_galSelectedFiles.length !== 1 ? 's' : '') + ' uploaded' + (publish ? ' & published to website!' : '!'), 'success');
   navigate('gallery');
 }
 
@@ -2545,11 +2565,11 @@ function previewYoutubeUrl() {
   }
 }
 
-function publishGalleryToWebsite() {
+function syncPublishedGallery() {
   const data = DB.get();
-  const gallery = data.gallery || [];
+  const published = (data.gallery || []).filter(function(item) { return item.published; });
   const exportData = {
-    items: gallery.map(function(item) {
+    items: published.map(function(item) {
       return {
         id: item.id,
         title: item.title,
@@ -2563,13 +2583,29 @@ function publishGalleryToWebsite() {
     }),
     publishedAt: new Date().toISOString()
   };
+  try { localStorage.setItem('sk_gallery_published', JSON.stringify(exportData)); } catch(e) {}
+  return exportData;
+}
+
+function publishGalleryToWebsite() {
+  const data = DB.get();
+  const published = (data.gallery || []).filter(function(item) { return item.published; });
+  if (!published.length) {
+    showToast('No items are marked for publishing. Check "Publish to Website" when uploading.', 'warning');
+    return;
+  }
+  const exportData = syncPublishedGallery();
   const json = JSON.stringify(exportData, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'gallery-data.json'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('Downloaded! Upload gallery-data.json to public/static/ in your repo to publish.', 'success');
+  a.href = url;
+  a.download = 'gallery-data.json';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  showToast(published.length + ' item(s) published to website & JSON downloaded!', 'success');
 }
 
 // ---- Events ----

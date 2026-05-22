@@ -14,6 +14,7 @@ app.get('/api/init', async (c) => {
 
 app.get('/api/db', async (c) => {
   try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
     return c.json(row ? JSON.parse(row.value) : null)
   } catch { return c.json(null) }
@@ -21,6 +22,7 @@ app.get('/api/db', async (c) => {
 
 app.post('/api/db', async (c) => {
   try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const data = await c.req.json()
     await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('main', JSON.stringify(data), new Date().toISOString()).run()
     return c.json({ ok: true })
@@ -51,6 +53,7 @@ app.delete('/api/upload', async (c) => {
 
 app.get('/api/gallery', async (c) => {
   try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
     if (!row) return c.json({ items: [] })
     const data = JSON.parse(row.value)
@@ -1243,10 +1246,9 @@ app.get('/gallery', (c) => {
       </div>
 
       <div id="pub-gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <!-- Loading state, replaced by JS -->
-        <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D">
+        <div id="pub-gallery-placeholder" style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D">
           <i class="fas fa-images" style="font-size:3rem;margin-bottom:1rem;display:block;color:#DCE1EF"></i>
-          Loading gallery...
+          No photos yet. Check back soon!
         </div>
       </div>
 
@@ -1343,16 +1345,19 @@ app.get('/gallery', (c) => {
   window.openPubVideoLightbox = openPubVideoLightbox;
 
   function loadGallery() {
+    var done = false;
+    function finish(items) {
+      if (done) return;
+      done = true;
+      _allItems = items || [];
+      renderItems(_allItems);
+    }
+    // Fallback: if fetch takes too long, show empty state
+    setTimeout(function(){ finish([]); }, 10000);
     fetch('/api/gallery?t='+Date.now())
       .then(function(r){ return r.ok ? r.json() : {items:[]}; })
-      .then(function(d){
-        _allItems = d.items || [];
-        renderItems(_allItems);
-      })
-      .catch(function(){
-        _allItems = [];
-        renderItems(_allItems);
-      });
+      .then(function(d){ finish(d.items || []); })
+      .catch(function(){ finish([]); });
   }
   loadGallery();
 })();

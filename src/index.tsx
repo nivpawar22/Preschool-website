@@ -1,9 +1,53 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 
-const app = new Hono()
+type Bindings = { DB: any; MEDIA: any }
+const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/static/*', serveStatic({ root: './public' }))
+
+// ── DB API ──────────────────────────────────────────────
+app.get('/api/init', async (c) => {
+  await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  return c.json({ ok: true })
+})
+
+app.get('/api/db', async (c) => {
+  try {
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+    return c.json(row ? JSON.parse(row.value) : null)
+  } catch { return c.json(null) }
+})
+
+app.post('/api/db', async (c) => {
+  try {
+    const data = await c.req.json()
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('main', JSON.stringify(data), new Date().toISOString()).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── R2 Upload API ────────────────────────────────────────
+app.post('/api/upload', async (c) => {
+  try {
+    const form = await c.req.formData()
+    const file = form.get('file') as File | null
+    if (!file) return c.json({ error: 'No file provided' }, 400)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const key = `gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
+    const url = `https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev/${key}`
+    return c.json({ ok: true, url, key })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/upload', async (c) => {
+  try {
+    const { key } = await c.req.json()
+    if (key) await c.env.MEDIA.delete(key)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
 
 const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
 <!DOCTYPE html>

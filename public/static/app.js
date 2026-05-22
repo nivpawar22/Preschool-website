@@ -454,5 +454,10 @@ function doLogin() {
 
 // ---- Init ----
 window.addEventListener('DOMContentLoaded', () => {
-  renderLogin();
+  // Show loading while fetching data from server
+  document.getElementById('app').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0F2050"><img src="/static/logo.png" style="width:80px;height:80px;border-radius:50%;object-fit:contain"><div style="color:#90C4E0;font-size:14px;font-weight:600">Loading SuperKids Portal...</div></div>';
+
+  DB.initFromServer().then(function() {
+    renderLogin();
+  });
 });

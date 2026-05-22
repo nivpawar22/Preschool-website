@@ -2535,43 +2535,76 @@ function saveGalleryItem() {
     return;
   }
 
-  // Photo upload logic
+  // Photo upload - upload to R2 first, then save URL
   if (!_galSelectedFiles.length) { showToast('Please select at least one image', 'warning'); return; }
   const classId = document.getElementById('gal-class').value || null;
-  const studentIds = [...document.querySelectorAll('.gal-student-cb:checked')].map(cb => cb.value);
-  const eventTags = [...document.querySelectorAll('.gal-event-cb:checked')].map(cb => cb.value);
+  const studentIds = [...document.querySelectorAll('.gal-student-cb:checked')].map(function(cb) { return cb.value; });
+  const eventTags = [...document.querySelectorAll('.gal-event-cb:checked')].map(function(cb) { return cb.value; });
   const description = document.getElementById('gal-desc').value.trim();
   const date = document.getElementById('gal-date').value || new Date().toISOString().split('T')[0];
   const user = Session.current();
+  const btn = document.getElementById('gal-upload-btn-text');
+  if (btn) btn.textContent = 'Uploading...';
 
-  _galSelectedFiles.forEach((file, i) => {
-    DB.addGalleryItem({
-      id: DB.genId('gal'),
-      title: _galSelectedFiles.length === 1 ? title : title + ' (' + (i + 1) + ')',
-      description,
-      type: 'image',
-      imageData: file.dataUrl,
-      date,
-      classId,
-      studentIds,
-      eventTags,
-      published: publish,
-      uploadedBy: user.id,
-      createdAt: new Date(Date.now() + i).toISOString()
-    });
+  // Upload all files to R2
+  var uploadPromises = _galSelectedFiles.map(function(file, i) {
+    // Convert dataUrl back to blob
+    var arr = file.dataUrl.split(',');
+    var mime = arr[0].match(/:(.*?);/)[1];
+    var bstr = atob(arr[1]);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    while(n--) { u8arr[n] = bstr.charCodeAt(n); }
+    var blob = new Blob([u8arr], { type: mime });
+    var formData = new FormData();
+    formData.append('file', blob, file.name || ('photo-' + i + '.jpg'));
+    return fetch('/api/upload', { method: 'POST', body: formData })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        if (!result.ok) throw new Error(result.error || 'Upload failed');
+        return { url: result.url, key: result.key, index: i };
+      });
   });
 
-  DB.log(user.id, 'GALLERY_UPLOAD', 'Uploaded ' + _galSelectedFiles.length + ' photo(s): ' + title);
-  if (publish) syncPublishedGallery();
-  closeGalleryModal();
-  showToast(_galSelectedFiles.length + ' photo' + (_galSelectedFiles.length !== 1 ? 's' : '') + ' uploaded' + (publish ? ' & published to website!' : '!'), 'success');
-  navigate('gallery');
+  Promise.all(uploadPromises).then(function(results) {
+    results.forEach(function(result, i) {
+      DB.addGalleryItem({
+        id: DB.genId('gal'),
+        title: _galSelectedFiles.length === 1 ? title : title + ' (' + (i + 1) + ')',
+        description: description,
+        type: 'image',
+        imageData: result.url,  // R2 URL instead of base64
+        r2Key: result.key,
+        date: date,
+        classId: classId,
+        studentIds: studentIds,
+        eventTags: eventTags,
+        published: publish,
+        uploadedBy: user.id,
+        createdAt: new Date(Date.now() + i).toISOString()
+      });
+    });
+    DB.log(user.id, 'GALLERY_UPLOAD', 'Uploaded ' + _galSelectedFiles.length + ' photo(s): ' + title);
+    if (publish) syncPublishedGallery();
+    closeGalleryModal();
+    showToast(_galSelectedFiles.length + ' photo' + (_galSelectedFiles.length !== 1 ? 's' : '') + ' uploaded' + (publish ? ' & published!' : '!'), 'success');
+    navigate('gallery');
+  }).catch(function(err) {
+    showToast('Upload failed: ' + err.message, 'error');
+    if (btn) btn.textContent = 'Upload Photos';
+  });
+  return; // early return, async continues above
 }
 
 function deleteGalleryPhoto(id) {
-  confirmDialog('Delete this item? This cannot be undone.', () => {
+  confirmDialog('Delete this photo? This cannot be undone.', function() {
+    var data = DB.get();
+    var item = (data.gallery || []).find(function(g) { return g.id === id; });
+    if (item && item.r2Key) {
+      fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
+    }
     DB.deleteGalleryItem(id);
-    showToast('Item deleted', 'success');
+    showToast('Photo deleted', 'success');
     navigate('gallery');
   });
 }

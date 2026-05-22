@@ -6,6 +6,29 @@
 const DB = (() => {
   const STORE_KEY = 'edutrack_v3';
 
+  const R2_BASE = 'https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev';
+
+  async function loadFromServer() {
+    try {
+      const res = await fetch('/api/db');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          return { ...JSON.parse(JSON.stringify(defaults)), ...data };
+        }
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  function saveToServer(data) {
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).catch(function() {});
+  }
+
   const defaults = {
     meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '+1-800-SUPERKIDS', schoolEmail: 'info@superkidsindia.edu', schoolAddress: '123 Education Lane, Mumbai, Maharashtra 400001', schoolLogo: '/static/school-logo.png', principalName: 'Dr. Sarah Mitchell', academicYear: '' },
     users: [
@@ -192,7 +215,15 @@ const DB = (() => {
 
   function get() { return _data; }
 
-  function commit() { save(_data); }
+  function commit() { save(_data); saveToServer(_data); }
+
+  async function initFromServer() {
+    const serverData = await loadFromServer();
+    if (serverData) {
+      _data = serverData;
+      save(_data);
+    }
+  }
 
   function genId(prefix) {
     return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -407,7 +438,8 @@ const DB = (() => {
     getEvents, addEvent, deleteEvent,
     calcGrade, calcBMI,
     getMeta, updateMeta,
-    defaults
+    defaults,
+    initFromServer, R2_BASE
   };
 })();
 

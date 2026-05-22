@@ -2182,12 +2182,30 @@ function renderGallery() {
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label"><i class="fas fa-user-tag"></i> Tag Students <span style="font-size:12px;font-weight:400;color:#6B7A9D">(optional)</span></label>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <label class="form-label" style="margin:0"><i class="fas fa-user-tag"></i> Tag Students <span style="font-size:12px;font-weight:400;color:#6B7A9D">(optional)</span></label>
+              <button type="button" onclick="tagAllStudents()" style="font-size:12px;color:#1AA6CA;background:none;border:1px solid #1AA6CA;border-radius:20px;padding:2px 10px;cursor:pointer;font-weight:600">Tag All</button>
+            </div>
             <div id="gallery-student-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#F8F9FB;border-radius:8px;border:1px solid #DCE1EF;min-height:52px">
               ${DB.getStudents(myClassId).map(s => `
                 <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #DCE1EF;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
                   <input type="checkbox" class="gal-student-cb" value="${s.id}" style="cursor:pointer">
                   ${avatarHtml(s.name,'#0F2050','avatar-xs')} ${s.name}
+                </label>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <label class="form-label" style="margin:0"><i class="fas fa-tag"></i> Tag Events <span style="font-size:12px;font-weight:400;color:#6B7A9D">(optional)</span></label>
+              <button type="button" onclick="tagAllEvents()" style="font-size:12px;color:#C4893A;background:none;border:1px solid #C4893A;border-radius:20px;padding:2px 10px;cursor:pointer;font-weight:600">Tag All</button>
+            </div>
+            <div id="gallery-event-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#F8F9FB;border-radius:8px;border:1px solid #DCE1EF">
+              ${['Art Time','Science Lab','Outdoor Play','Story Time','Music Class','Sport Day','Cooking Class','Block Building','Drama Class','Garden Time','SuperHero Day','Rainbow Art','Birthday Fun','Team Work'].map(ev => `
+                <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #DCE1EF;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
+                  <input type="checkbox" class="gal-event-cb" value="${ev}" style="cursor:pointer;accent-color:#C4893A">
+                  ${ev}
                 </label>
               `).join('')}
             </div>
@@ -2265,13 +2283,20 @@ function renderGalleryCard(p) {
         <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0F1E3D">${p.title}</div>
         <div style="font-size:12px;color:#6B7A9D;margin-bottom:8px"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>${formatDate(p.date)}</div>
         ${taggedStudents.length ? `
-          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">
             <i class="fas fa-user-tag" style="font-size:11px;color:#6B7A9D"></i>
-            ${taggedStudents.slice(0,3).map(s => `<span style="font-size:11px;background:#E8EDF5;color:#5b21b6;padding:2px 8px;border-radius:10px">${s.name.split(' ')[0]}</span>`).join('')}
+            ${taggedStudents.slice(0,3).map(s => `<span style="font-size:11px;background:#E8EDF5;color:#0F2050;padding:2px 8px;border-radius:10px">${s.name.split(' ')[0]}</span>`).join('')}
             ${taggedStudents.length > 3 ? `<span style="font-size:11px;color:#6B7A9D">+${taggedStudents.length-3}</span>` : ''}
           </div>
-        ` : `<span style="font-size:11px;color:#cbd5e1"><i class="fas fa-users"></i> All students</span>`}
-        ${uploader ? `<div style="font-size:11px;color:#6B7A9D;margin-top:6px">By ${uploader.name}</div>` : ''}
+        ` : ''}
+        ${(p.eventTags && p.eventTags.length) ? `
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+            <i class="fas fa-tag" style="font-size:11px;color:#C4893A"></i>
+            ${p.eventTags.slice(0,2).map(ev => `<span style="font-size:11px;background:#FEF8F0;color:#C4893A;padding:2px 8px;border-radius:10px;border:1px solid #C4893A33">${ev}</span>`).join('')}
+            ${p.eventTags.length > 2 ? `<span style="font-size:11px;color:#6B7A9D">+${p.eventTags.length-2}</span>` : ''}
+          </div>
+        ` : ''}
+        ${uploader ? `<div style="font-size:11px;color:#6B7A9D;margin-top:4px">By ${uploader.name}</div>` : ''}
       </div>
     </div>
   `;
@@ -2313,17 +2338,25 @@ function openGalleryLightbox(photoId) {
         ${uploader ? `<span><i class="fas fa-user"></i> ${uploader.name}</span>` : ''}
       </div>
       ${taggedStudents.length ? `
-        <div>
-          <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Students in this photo</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em"><i class="fas fa-user-tag" style="margin-right:4px"></i>Students</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             ${taggedStudents.map(s => {
               const scls = DB.getClass(s.classId);
-              return `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#f1f5f9;border-radius:20px;font-size:13px">
+              return `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#F8F9FB;border-radius:20px;font-size:13px;border:1px solid #DCE1EF">
                 ${avatarHtml(s.name,'#0F2050','avatar-xs')}
                 <span style="font-weight:600">${s.name}</span>
                 ${scls ? `<span style="color:#6B7A9D">${scls.name}</span>` : ''}
               </div>`;
             }).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${(p.eventTags && p.eventTags.length) ? `
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em"><i class="fas fa-tag" style="margin-right:4px;color:#C4893A"></i>Events</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${p.eventTags.map(ev => `<span style="padding:5px 14px;background:#FEF8F0;color:#C4893A;border-radius:20px;font-size:13px;font-weight:600;border:1px solid #C4893A33">${ev}</span>`).join('')}
           </div>
         </div>
       ` : ''}
@@ -2349,6 +2382,7 @@ function openGalleryUpload() {
   document.getElementById('gallery-preview-wrap').style.display = 'none';
   document.getElementById('gallery-upload-area').style.display = 'block';
   document.querySelectorAll('.gal-student-cb').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('.gal-event-cb').forEach(cb => { cb.checked = false; });;
   const btn = document.getElementById('gal-upload-btn-text');
   if (btn) btn.textContent = 'Upload Photos';
   // Reset tab state
@@ -2443,6 +2477,18 @@ function clearGalleryFiles() {
   if (btn) btn.textContent = 'Upload Photos';
 }
 
+function tagAllStudents() {
+  const cbs = document.querySelectorAll('.gal-student-cb');
+  const allChecked = [...cbs].every(cb => cb.checked);
+  cbs.forEach(cb => { cb.checked = !allChecked; });
+}
+
+function tagAllEvents() {
+  const cbs = document.querySelectorAll('.gal-event-cb');
+  const allChecked = [...cbs].every(cb => cb.checked);
+  cbs.forEach(cb => { cb.checked = !allChecked; });
+}
+
 function updateGalleryStudentList() {
   const classId = document.getElementById('gal-class') ? document.getElementById('gal-class').value : '';
   const user = Session.current();
@@ -2471,12 +2517,13 @@ function saveGalleryItem() {
     const classId = document.getElementById('gal-class').value || null;
     const description = document.getElementById('gal-desc').value.trim();
     const date = document.getElementById('gal-date').value || new Date().toISOString().split('T')[0];
+    const eventTags = [...document.querySelectorAll('.gal-event-cb:checked')].map(cb => cb.value);
     const user = Session.current();
     DB.addGalleryItem({
       id: DB.genId('gal'), title, description,
       type: 'video', youtubeId: ytId,
       thumbnail: 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg',
-      imageData: '', date, classId, studentIds: [],
+      imageData: '', date, classId, studentIds: [], eventTags,
       published: publish,
       uploadedBy: user.id, createdAt: new Date().toISOString()
     });
@@ -2492,6 +2539,7 @@ function saveGalleryItem() {
   if (!_galSelectedFiles.length) { showToast('Please select at least one image', 'warning'); return; }
   const classId = document.getElementById('gal-class').value || null;
   const studentIds = [...document.querySelectorAll('.gal-student-cb:checked')].map(cb => cb.value);
+  const eventTags = [...document.querySelectorAll('.gal-event-cb:checked')].map(cb => cb.value);
   const description = document.getElementById('gal-desc').value.trim();
   const date = document.getElementById('gal-date').value || new Date().toISOString().split('T')[0];
   const user = Session.current();
@@ -2506,6 +2554,7 @@ function saveGalleryItem() {
       date,
       classId,
       studentIds,
+      eventTags,
       published: publish,
       uploadedBy: user.id,
       createdAt: new Date(Date.now() + i).toISOString()

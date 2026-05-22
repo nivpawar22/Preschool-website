@@ -25,34 +25,40 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       --cyan: #00D9E8;
       --red: #E8131A;
       --yellow: #FFD700;
-      --dark: #1a1a2e;
-      --dark2: #16213e;
+      --orange: #FF6B35;
+      --purple: #9B4DCA;
+      --green: #2ECC71;
+      --dark: #1e0f3a;
+      --dark2: #2a1050;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Nunito', sans-serif;
-      background-color: #0f0f1a;
+      background-color: #180e32;
       color: #fff;
       overflow-x: hidden;
     }
 
     /* ===== NEON GLOW EFFECTS ===== */
-    .neon-cyan { text-shadow: 0 0 6px rgba(0,217,232,0.5), 0 0 12px rgba(0,217,232,0.25); }
-    .neon-red  { text-shadow: 0 0 6px rgba(232,19,26,0.5),  0 0 12px rgba(232,19,26,0.25); }
-    .neon-yellow { text-shadow: 0 0 6px rgba(255,215,0,0.5), 0 0 12px rgba(255,215,0,0.25); }
+    .neon-cyan   { text-shadow: 0 0 8px rgba(0,217,232,0.8), 0 0 16px rgba(0,217,232,0.4); }
+    .neon-red    { text-shadow: 0 0 8px rgba(232,19,26,0.8),  0 0 16px rgba(232,19,26,0.4); }
+    .neon-yellow { text-shadow: 0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.4); }
+    .neon-purple { text-shadow: 0 0 8px rgba(155,77,202,0.8), 0 0 16px rgba(155,77,202,0.4); }
+    .neon-orange { text-shadow: 0 0 8px rgba(255,107,53,0.8), 0 0 16px rgba(255,107,53,0.4); }
 
-    .glow-box-cyan  { box-shadow: 0 0 15px #00D9E8, 0 0 30px rgba(0,217,232,0.3); }
-    .glow-box-red   { box-shadow: 0 0 15px #E8131A, 0 0 30px rgba(232,19,26,0.3); }
-    .glow-box-yellow{ box-shadow: 0 0 15px #FFD700, 0 0 30px rgba(255,215,0,0.3); }
+    .glow-box-cyan   { box-shadow: 0 0 18px #00D9E8, 0 0 36px rgba(0,217,232,0.35); }
+    .glow-box-red    { box-shadow: 0 0 18px #E8131A, 0 0 36px rgba(232,19,26,0.35); }
+    .glow-box-yellow { box-shadow: 0 0 18px #FFD700, 0 0 36px rgba(255,215,0,0.35); }
+    .glow-box-purple { box-shadow: 0 0 18px #9B4DCA, 0 0 36px rgba(155,77,202,0.35); }
 
     /* ===== NAVBAR ===== */
     nav {
-      background: linear-gradient(180deg, #0a0e1a 0%, #0d1525 100%);
+      background: linear-gradient(180deg, #120a28 0%, #1e0f3a 100%);
       backdrop-filter: blur(12px);
-      border-bottom: 2px solid #00D9E8;
-      box-shadow: 0 2px 30px rgba(0,217,232,0.25), 0 4px 60px rgba(0,0,0,0.6);
+      border-bottom: 3px solid #00D9E8;
+      box-shadow: 0 2px 30px rgba(0,217,232,0.3), 0 4px 60px rgba(0,0,0,0.6), 0 0 60px rgba(155,77,202,0.1);
       position: sticky;
       top: 0;
       z-index: 1000;
@@ -98,7 +104,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     /* ===== HERO ===== */
     .hero {
       min-height: 100vh;
-      background: radial-gradient(ellipse at top, #1a1a3e 0%, #0f0f1a 70%);
+      background: radial-gradient(ellipse at top, #2e1060 0%, #180e32 70%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -110,9 +116,10 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       content: '';
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(circle at 20% 50%, rgba(0,217,232,0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(232,19,26,0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 60% 80%, rgba(255,215,0,0.03) 0%, transparent 40%);
+      background-image: radial-gradient(circle at 20% 50%, rgba(0,217,232,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(232,19,26,0.07) 0%, transparent 50%),
+                        radial-gradient(circle at 60% 80%, rgba(255,215,0,0.05) 0%, transparent 40%),
+                        radial-gradient(circle at 40% 30%, rgba(155,77,202,0.06) 0%, transparent 45%);
     }
 
     /* Stars */
@@ -167,11 +174,11 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* ===== CARDS ===== */
     .card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(0,217,232,0.2);
-      border-radius: 16px;
+      background: rgba(255,255,255,0.07);
+      border: 2px solid rgba(0,217,232,0.25);
+      border-radius: 22px;
       padding: 2rem;
-      transition: all 0.3s;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: visible;
     }
@@ -179,8 +186,8 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(0,217,232,0.05), transparent);
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(0,217,232,0.07), rgba(155,77,202,0.04), transparent);
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
@@ -188,44 +195,44 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     }
     .card:hover {
       border-color: #00D9E8;
-      transform: translateY(-6px);
-      box-shadow: 0 20px 40px rgba(0,217,232,0.15);
+      transform: translateY(-8px) scale(1.01);
+      box-shadow: 0 24px 48px rgba(0,217,232,0.18), 0 0 0 1px rgba(0,217,232,0.1);
     }
     .card:hover::before { opacity: 1; }
 
     .card-red {
-      border-color: rgba(232,19,26,0.2);
+      border-color: rgba(232,19,26,0.25);
     }
     .card-red::before {
-      background: linear-gradient(135deg, rgba(232,19,26,0.05), transparent);
+      background: linear-gradient(135deg, rgba(232,19,26,0.07), rgba(255,107,53,0.04), transparent);
     }
     .card-red:hover {
       border-color: #E8131A;
-      box-shadow: 0 20px 40px rgba(232,19,26,0.15);
+      box-shadow: 0 24px 48px rgba(232,19,26,0.18);
     }
 
     .card-yellow {
-      border-color: rgba(255,215,0,0.2);
+      border-color: rgba(255,215,0,0.25);
     }
     .card-yellow::before {
-      background: linear-gradient(135deg, rgba(255,215,0,0.05), transparent);
+      background: linear-gradient(135deg, rgba(255,215,0,0.07), rgba(255,107,53,0.04), transparent);
     }
     .card-yellow:hover {
       border-color: #FFD700;
-      box-shadow: 0 20px 40px rgba(255,215,0,0.15);
+      box-shadow: 0 24px 48px rgba(255,215,0,0.18);
     }
 
     /* ===== PROGRAM CARDS ===== */
     .program-card {
-      border-radius: 20px;
+      border-radius: 24px;
       overflow: hidden;
-      transition: transform 0.3s;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .program-card:hover { transform: scale(1.03); }
+    .program-card:hover { transform: scale(1.04) translateY(-4px); }
 
     /* ===== BUTTONS ===== */
     .btn-primary {
-      background: linear-gradient(135deg, #E8131A, #FF4444);
+      background: linear-gradient(135deg, #E8131A, #FF4444, #FF6B35);
       color: #fff;
       font-family: 'Bangers', cursive;
       font-size: 1.2rem;
@@ -234,18 +241,18 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       border-radius: 50px;
       border: none;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       text-decoration: none;
       display: inline-block;
-      box-shadow: 0 0 20px rgba(232,19,26,0.4);
+      box-shadow: 0 0 20px rgba(232,19,26,0.45), 0 4px 15px rgba(0,0,0,0.3);
     }
     .btn-primary:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 35px rgba(232,19,26,0.7);
+      transform: scale(1.08) translateY(-2px);
+      box-shadow: 0 0 40px rgba(232,19,26,0.75), 0 8px 25px rgba(0,0,0,0.3);
     }
 
     .btn-secondary {
-      background: transparent;
+      background: rgba(0,217,232,0.08);
       color: #00D9E8;
       font-family: 'Bangers', cursive;
       font-size: 1.2rem;
@@ -254,14 +261,14 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
       border-radius: 50px;
       border: 2px solid #00D9E8;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       text-decoration: none;
       display: inline-block;
     }
     .btn-secondary:hover {
-      background: rgba(0,217,232,0.15);
-      box-shadow: 0 0 25px rgba(0,217,232,0.5);
-      transform: scale(1.05);
+      background: rgba(0,217,232,0.2);
+      box-shadow: 0 0 30px rgba(0,217,232,0.55), 0 4px 15px rgba(0,0,0,0.2);
+      transform: scale(1.08) translateY(-2px);
     }
 
     /* ===== STAT COUNTERS ===== */
@@ -299,22 +306,22 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* ===== GALLERY ===== */
     .gallery-item {
-      border-radius: 12px;
+      border-radius: 18px;
       overflow: hidden;
       aspect-ratio: 1;
-      background: linear-gradient(135deg, #1a2a4a, #0f1f3f);
+      background: linear-gradient(135deg, #1e1a4a, #1a0f3f);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 3rem;
-      border: 1px solid rgba(0,217,232,0.2);
-      transition: all 0.3s;
+      border: 2px solid rgba(0,217,232,0.2);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       cursor: pointer;
     }
     .gallery-item:hover {
       border-color: #00D9E8;
-      transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(0,217,232,0.3);
+      transform: scale(1.06);
+      box-shadow: 0 0 28px rgba(0,217,232,0.35), 0 8px 20px rgba(0,0,0,0.3);
     }
 
     /* ===== FORM ===== */
@@ -341,8 +348,8 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* ===== FOOTER ===== */
     footer {
-      background: rgba(0,0,0,0.6);
-      border-top: 2px solid rgba(0,217,232,0.2);
+      background: rgba(10,4,25,0.85);
+      border-top: 2px solid rgba(0,217,232,0.25);
     }
 
     /* ===== DIVIDER ===== */
@@ -356,7 +363,7 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     .fade-in {
       opacity: 0;
       transform: translateY(30px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
+      transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .fade-in.visible {
       opacity: 1;
@@ -365,28 +372,42 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* ===== MOBILE MENU ===== */
     #mobile-menu {
-      display: none;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.4s ease-in-out, opacity 0.3s ease;
     }
     #mobile-menu.open {
-      display: block;
+      max-height: 600px;
+      opacity: 1;
+    }
+    #menu-btn {
+      transition: transform 0.3s ease;
+    }
+    #menu-btn.open {
+      transform: rotate(90deg);
     }
 
     /* ===== BADGE ===== */
     .badge {
       display: inline-block;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 50px;
       font-size: 0.75rem;
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
+      transition: transform 0.2s ease;
     }
+    .badge:hover { transform: scale(1.05); }
 
     /* ===== MARQUEE ===== */
     .marquee-wrap {
       overflow: hidden;
-      background: linear-gradient(90deg, #E8131A, #E8131A);
-      padding: 10px 0;
+      background: linear-gradient(90deg, #E8131A, #c5000a, #E8131A);
+      padding: 12px 0;
+      border-top: 2px solid rgba(255,107,53,0.5);
+      border-bottom: 2px solid rgba(255,107,53,0.5);
     }
     .marquee-track {
       display: flex;
@@ -406,15 +427,38 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
 
     /* Testimonial */
     .testimonial-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,215,0,0.2);
-      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,215,0,0.25);
+      border-radius: 22px;
       padding: 2rem;
-      transition: all 0.3s;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .testimonial-card:hover {
       border-color: #FFD700;
-      box-shadow: 0 0 20px rgba(255,215,0,0.15);
+      box-shadow: 0 0 28px rgba(255,215,0,0.2), 0 12px 30px rgba(0,0,0,0.2);
+      transform: translateY(-6px);
+    }
+
+    /* ===== CHILD-FRIENDLY EXTRAS ===== */
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+    .wiggle:hover { animation: wiggle 0.4s ease-in-out 2; }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+    .pop:hover { animation: pop 0.3s ease; }
+
+    /* Rainbow divider */
+    .divider-rainbow {
+      height: 3px;
+      background: linear-gradient(90deg, #E8131A, #FF6B35, #FFD700, #2ECC71, #00D9E8, #9B4DCA);
+      border-radius: 3px;
+      margin: 4rem 0;
     }
   </style>
 </head>
@@ -433,7 +477,11 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
     const mobileMenu = document.getElementById('mobile-menu');
     if (menuBtn) {
       menuBtn.addEventListener('click', () => {
-        mobileMenu.classList.toggle('open');
+        const isOpen = mobileMenu.classList.toggle('open');
+        menuBtn.classList.toggle('open', isOpen);
+        menuBtn.innerHTML = isOpen
+          ? '<i class="fas fa-times"></i>'
+          : '<i class="fas fa-bars"></i>';
       });
     }
 
@@ -557,11 +605,11 @@ const Navbar = (active: string) => `
 
   <!-- ── TOP HEADER BAR: full-width logo banner matching screenshot ── -->
   <div style="
-    background: linear-gradient(180deg,#08101e 0%,#0d1828 100%);
+    background: linear-gradient(180deg,#120a28 0%,#1e0f3a 100%);
     position:relative;
     overflow:hidden;
-    border-bottom:2px solid #00D9E8;
-    box-shadow:0 2px 30px rgba(0,217,232,0.22),0 4px 60px rgba(0,0,0,0.7);
+    border-bottom:3px solid #00D9E8;
+    box-shadow:0 2px 30px rgba(0,217,232,0.28),0 0 40px rgba(155,77,202,0.12),0 4px 60px rgba(0,0,0,0.7);
   ">
     <!-- Radial cyan glow — left-anchored -->
     <div style="
@@ -641,7 +689,7 @@ const Navbar = (active: string) => `
   </div>
 
   <!-- Mobile Menu -->
-  <div id="mobile-menu" class="md:hidden px-4 pb-4" style="background:#0d1828;border-bottom:1px solid rgba(0,217,232,0.2)">
+  <div id="mobile-menu" class="md:hidden px-4 pb-4" style="background:#1a0f3a;border-bottom:2px solid rgba(0,217,232,0.25)">
     <div class="flex flex-col gap-1" style="padding:12px 0">
       <a href="/" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">🏠 Home</a>
       <a href="/about" style="color:#ccc;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='rgba(0,217,232,0.08)'" onmouseout="this.style.background=''">⚡ About</a>
@@ -764,7 +812,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- HERO SECTION -->
-  <section class="hero" style="min-height:95vh">
+  <section class="hero" style="min-height:95vh;background:radial-gradient(ellipse at top, #2e1060 0%, #180e32 70%)">
     <!-- Floating stars -->
     ${Array.from({length:20}).map(() => {
       const size = Math.random()*3+1
@@ -871,7 +919,7 @@ app.get('/', (c) => {
   </section>
 
   <!-- WHY SUPERKIDS -->
-  <section style="padding:6rem 0;background:linear-gradient(180deg,#0f0f1a,#0d1628)">
+  <section style="padding:6rem 0;background:linear-gradient(180deg,#180e32,#1e1040)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="text-center mb-12 fade-in">
         <div class="badge mb-4" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3)">Why Choose Us</div>
@@ -919,7 +967,7 @@ app.get('/', (c) => {
   </section>
 
   <!-- PROGRAMS PREVIEW -->
-  <section style="padding:6rem 0;background:#0f0f1a">
+  <section style="padding:6rem 0;background:linear-gradient(180deg,#1e1040,#180e32)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="text-center mb-12 fade-in">
         <div class="badge mb-4" style="background:rgba(232,19,26,0.1);color:#E8131A;border:1px solid rgba(232,19,26,0.3)">Programs</div>
@@ -953,7 +1001,7 @@ app.get('/', (c) => {
   </section>
 
   <!-- TESTIMONIALS -->
-  <section style="padding:6rem 0;background:linear-gradient(180deg,#0d1628,#0f0f1a)">
+  <section style="padding:6rem 0;background:linear-gradient(180deg,#1a0d38,#200e3a)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="text-center mb-12 fade-in">
         <div class="badge mb-4" style="background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.3)">Testimonials</div>
@@ -987,8 +1035,8 @@ app.get('/', (c) => {
   </section>
 
   <!-- CTA SECTION -->
-  <section style="padding:6rem 0;background:linear-gradient(135deg,#1a1a3e,#0f0f1a);position:relative;overflow:hidden">
-    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,217,232,0.08),transparent 60%)"></div>
+  <section style="padding:6rem 0;background:linear-gradient(135deg,#2a1060,#180e32);position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(155,77,202,0.12),rgba(0,217,232,0.05) 50%,transparent 70%)"></div>
     <div class="max-w-3xl mx-auto px-4 text-center" style="position:relative;z-index:1">
       <div style="font-size:4rem;margin-bottom:1rem;animation:float 3s ease-in-out infinite">🦸</div>
       <h2 style="font-family:'Bangers',cursive;font-size:clamp(2.5rem,5vw,4rem);color:#fff;letter-spacing:2px;margin-bottom:1rem">
@@ -1023,7 +1071,7 @@ app.get('/about', (c) => {
   ${Navbar('about')}
 
   <!-- About Hero -->
-  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#1a1a3e,#0f0f1a);position:relative;overflow:hidden">
+  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#2e1060,#180e32);position:relative;overflow:hidden">
     <div style="position:absolute;top:20%;left:5%;font-family:'Bangers',cursive;font-size:1.2rem;color:#FFD700;text-shadow:0 0 5px rgba(255,215,0,0.4);animation:float 3s ease-in-out infinite">POW!</div>
     <div style="position:absolute;top:30%;right:8%;font-family:'Bangers',cursive;font-size:1rem;color:#E8131A;text-shadow:0 0 5px rgba(232,19,26,0.4);animation:float 2.5s ease-in-out infinite 1s">ZAP!</div>
     <div class="max-w-4xl mx-auto px-4 text-center">
@@ -1036,7 +1084,7 @@ app.get('/about', (c) => {
   </section>
 
   <!-- Mission & Vision -->
-  <section style="padding:5rem 0;background:#0f0f1a">
+  <section style="padding:5rem 0;background:linear-gradient(180deg,#180e32,#1e1040)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div class="fade-in">
@@ -1106,7 +1154,7 @@ app.get('/about', (c) => {
   <div class="divider" style="max-width:1200px;margin:0 auto"></div>
 
   <!-- TIMELINE -->
-  <section style="padding:4rem 0;background:#0f0f1a">
+  <section style="padding:4rem 0;background:linear-gradient(180deg,#1e1040,#180e32)">
     <div class="max-w-4xl mx-auto px-4">
       <div class="text-center mb-10 fade-in">
         <h2 class="section-title neon-yellow" style="color:#FFD700">Our Hero's Journey</h2>
@@ -1137,7 +1185,7 @@ app.get('/about', (c) => {
   </section>
 
   <!-- TEAM -->
-  <section style="padding:5rem 0;background:linear-gradient(180deg,#0f0f1a,#0d1628)">
+  <section style="padding:5rem 0;background:linear-gradient(180deg,#180e32,#220e42)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="text-center mb-12 fade-in">
         <div class="badge mb-4" style="background:rgba(0,217,232,0.1);color:#00D9E8;border:1px solid rgba(0,217,232,0.3)">Meet The Team</div>
@@ -1179,7 +1227,7 @@ app.get('/programs', (c) => {
   ${Navbar('programs')}
 
   <!-- Programs Hero -->
-  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#1a0020,#0f0f1a);position:relative;overflow:hidden">
+  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#3a0840,#180e32);position:relative;overflow:hidden">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <div class="badge mb-4" style="background:rgba(232,19,26,0.1);color:#E8131A;border:1px solid rgba(232,19,26,0.3)">Learning Programs</div>
       <h1 class="section-title neon-red" style="color:#E8131A;font-size:clamp(2.5rem,6vw,4.5rem)">Our Programs</h1>
@@ -1190,7 +1238,7 @@ app.get('/programs', (c) => {
   </section>
 
   <!-- Age filter tabs -->
-  <section style="padding:2rem 0;background:#0f0f1a;border-bottom:1px solid rgba(0,217,232,0.1)">
+  <section style="padding:2rem 0;background:#1e0f3a;border-bottom:1px solid rgba(0,217,232,0.15)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex flex-wrap justify-center gap-3">
         ${[
@@ -1211,7 +1259,7 @@ app.get('/programs', (c) => {
   </section>
 
   <!-- Programs Grid -->
-  <section style="padding:5rem 0;background:#0f0f1a">
+  <section style="padding:5rem 0;background:linear-gradient(180deg,#180e32,#1e1040)">
     <div class="max-w-7xl mx-auto px-4">
       <!-- All programs visible by default -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -1262,7 +1310,7 @@ app.get('/programs', (c) => {
   </section>
 
   <!-- Daily Schedule -->
-  <section style="padding:5rem 0;background:linear-gradient(180deg,#0d1628,#0f0f1a)">
+  <section style="padding:5rem 0;background:linear-gradient(180deg,#1e1040,#180e32)">
     <div class="max-w-4xl mx-auto px-4">
       <div class="text-center mb-10 fade-in">
         <h2 class="section-title neon-yellow" style="color:#FFD700">A Super Day at SuperKids</h2>
@@ -1296,7 +1344,7 @@ app.get('/programs', (c) => {
   </section>
 
   <!-- Contact CTA (replaces Pricing) -->
-  <section style="padding:4rem 0;background:#0f0f1a">
+  <section style="padding:4rem 0;background:linear-gradient(180deg,#180e32,#220e42)">
     <div class="max-w-3xl mx-auto px-4 text-center fade-in">
       <div class="card" style="border-color:rgba(0,217,232,0.3);padding:3rem">
         <div style="font-size:3rem;margin-bottom:1rem">📞</div>
@@ -1331,7 +1379,7 @@ app.get('/gallery', (c) => {
   ${Navbar('gallery')}
 
   <!-- Gallery Hero -->
-  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#001a1a,#0f0f1a)">
+  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#2a1060,#180e32)">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <div class="badge mb-4" style="background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.3)">Gallery</div>
       <h1 class="section-title neon-yellow" style="color:#FFD700;font-size:clamp(2.5rem,6vw,4.5rem)">Super Moments</h1>
@@ -1342,7 +1390,7 @@ app.get('/gallery', (c) => {
   </section>
 
   <!-- Gallery Grid -->
-  <section style="padding:3rem 0 6rem;background:#0f0f1a">
+  <section style="padding:3rem 0 6rem;background:linear-gradient(180deg,#180e32,#1e1040)">
     <div class="max-w-7xl mx-auto px-4">
 
       <!-- Category filters -->
@@ -1425,7 +1473,7 @@ app.get('/gallery', (c) => {
   </section>
 
   <!-- Social CTA -->
-  <section style="padding:4rem 0;background:linear-gradient(135deg,#1a1a3e,#0f0f1a)">
+  <section style="padding:4rem 0;background:linear-gradient(135deg,#2a1060,#180e32)">
     <div class="max-w-3xl mx-auto px-4 text-center">
       <h2 style="font-family:'Bangers',cursive;font-size:2.5rem;color:#FFD700;letter-spacing:2px;margin-bottom:1rem">
         Follow Our Super Journey!
@@ -1461,7 +1509,7 @@ app.get('/contact', (c) => {
   ${Navbar('contact')}
 
   <!-- Contact Hero -->
-  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#1a1a0a,#0f0f1a)">
+  <section style="padding:6rem 0 4rem;background:radial-gradient(ellipse at top,#2e1060,#180e32)">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <div class="badge mb-4" style="background:rgba(255,215,0,0.1);color:#FFD700;border:1px solid rgba(255,215,0,0.3)">Contact & Enrollment</div>
       <h1 class="section-title neon-yellow" style="color:#FFD700;font-size:clamp(2.5rem,6vw,4.5rem)">Join The Team!</h1>
@@ -1472,7 +1520,7 @@ app.get('/contact', (c) => {
   </section>
 
   <!-- Contact Content -->
-  <section style="padding:4rem 0 6rem;background:#0f0f1a">
+  <section style="padding:4rem 0 6rem;background:linear-gradient(180deg,#180e32,#1e1040)">
     <div class="max-w-7xl mx-auto px-4">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
@@ -1664,7 +1712,7 @@ app.get('/contact', (c) => {
   </section>
 
   <!-- FAQ Section -->
-  <section style="padding:5rem 0;background:linear-gradient(180deg,#0d1628,#0f0f1a)">
+  <section style="padding:5rem 0;background:linear-gradient(180deg,#1e1040,#180e32)">
     <div class="max-w-4xl mx-auto px-4">
       <div class="text-center mb-10 fade-in">
         <h2 class="section-title neon-cyan" style="color:#00D9E8">Super FAQs</h2>

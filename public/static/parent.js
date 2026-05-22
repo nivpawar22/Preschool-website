@@ -29,9 +29,9 @@ function renderChildSelector(selected) {
         const cls = DB.getClass(c.classId);
         return `
         <div class="student-card ${selected && selected.id === c.id ? 'border-indigo-500' : ''}"
-             style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid ${selected && selected.id === c.id ? '#6366f1' : '#e2e8f0'};cursor:pointer;min-width:180px"
+             style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid ${selected && selected.id === c.id ? '#1AA6CA' : '#DCE1EF'};cursor:pointer;min-width:180px"
              onclick="parentSelectedChild='${c.id}';navigate(currentParentTab)">
-          ${avatarHtml(c.name, '#6366f1')}
+          ${avatarHtml(c.name, '#0F2050')}
           <div>
             <div style="font-weight:600">${c.name}</div>
             <div class="text-muted">${cls ? cls.name : ''}</div>
@@ -85,8 +85,8 @@ function renderParentHome() {
     ${renderChildSelector(child)}
 
     <!-- Child header -->
-    <div class="card" style="background:linear-gradient(135deg,#312e81,#4f46e5);color:#fff;margin-bottom:20px">
-      <div style="font-size:13px;color:#a5b4fc;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+    <div class="card" style="background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;margin-bottom:20px">
+      <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
         <span><i class="fas fa-sun" style="margin-right:6px"></i>${getGreeting()}, ${user.name.split(' ')[0]}!</span>
         <span>${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
       </div>
@@ -94,12 +94,12 @@ function renderParentHome() {
         <div class="avatar avatar-xl" style="background:rgba(255,255,255,0.2);font-size:32px">${initials(child.name)}</div>
         <div style="flex:1">
           <div style="font-size:24px;font-weight:900">${child.name}</div>
-          <div style="color:#c7d2fe;font-size:15px">${cls ? cls.name : ''} · Roll: ${child.rollNo}</div>
-          <div style="color:#a5b4fc;font-size:13px">DOB: ${formatDate(child.dob)} · ${child.gender} · ${child.bloodGroup}</div>
+          <div style="color:#90C4E0;font-size:15px">${cls ? cls.name : ''} · Roll: ${child.rollNo}</div>
+          <div style="color:rgba(255,255,255,0.65);font-size:13px">DOB: ${formatDate(child.dob)} · ${child.gender} · ${child.bloodGroup}</div>
         </div>
         ${teacher ? `
         <div style="text-align:right">
-          <div style="font-size:13px;color:#a5b4fc">Class Teacher</div>
+          <div style="font-size:13px;color:#90C4E0">Class Teacher</div>
           <div style="font-weight:700">${teacher.name}</div>
           <button class="btn btn-whatsapp btn-sm" style="margin-top:8px" onclick="wa('${teacher.phone}','Hello ${teacher.name}, I am ${user.name}, parent of ${child.name}. I would like to discuss my child\\'s progress.')">
             <i class="fab fa-whatsapp"></i> WhatsApp Teacher
@@ -111,11 +111,11 @@ function renderParentHome() {
     <!-- Quick actions -->
     <div class="quick-actions">
       <div class="quick-btn" onclick="navigate('parent-leaves')">
-        <i class="fas fa-calendar-plus" style="color:#f59e0b"></i>
+        <i class="fas fa-calendar-plus" style="color:#E8B020"></i>
         <span>Apply Leave</span>
       </div>
       <div class="quick-btn" onclick="navigate('parent-messages')">
-        <i class="fas fa-comment-dots" style="color:#6366f1"></i>
+        <i class="fas fa-comment-dots" style="color:#1AA6CA"></i>
         <span>Message Teacher</span>
       </div>
       <div class="quick-btn" onclick="navigate('parent-reports')">
@@ -134,9 +134,9 @@ function renderParentHome() {
         <div style="display:flex;align-items:center;gap:14px">
           ${progressRingHtml(att.pct, '#10b981', 60)}
           <div>
-            <div style="font-size:14px;font-weight:700;color:#1e293b">Attendance</div>
-            <div style="font-size:12px;color:#94a3b8;margin-top:3px">${att.present}P · ${att.absent}A · ${att.late}L</div>
-            <div style="margin-top:6px;font-size:11px;font-weight:600;color:${att.pct >= 90 ? '#10b981' : att.pct >= 75 ? '#f59e0b' : '#ef4444'}">
+            <div style="font-size:14px;font-weight:700;color:#0F1E3D">Attendance</div>
+            <div style="font-size:12px;color:#6B7A9D;margin-top:3px">${att.present}P · ${att.absent}A · ${att.late}L</div>
+            <div style="margin-top:6px;font-size:11px;font-weight:600;color:${att.pct >= 90 ? '#10b981' : att.pct >= 75 ? '#E8B020' : '#ef4444'}">
               <i class="fas fa-${att.pct >= 90 ? 'check-circle' : att.pct >= 75 ? 'exclamation-circle' : 'times-circle'}"></i>
               ${att.pct >= 90 ? 'Excellent' : att.pct >= 75 ? 'Average' : 'Needs attention'}
             </div>
@@ -145,11 +145,11 @@ function renderParentHome() {
       </div>
       <div class="stat-card" onclick="navigate('parent-reports')" style="cursor:pointer">
         <div style="display:flex;align-items:center;gap:14px">
-          ${progressRingHtml(avgScore !== null ? avgScore : 0, '#6366f1', 60)}
+          ${progressRingHtml(avgScore !== null ? avgScore : 0, '#1AA6CA', 60)}
           <div>
-            <div style="font-size:14px;font-weight:700;color:#1e293b">Avg. Grade</div>
-            <div style="font-size:12px;color:#94a3b8;margin-top:3px">${grades.length} subject${grades.length !== 1 ? 's' : ''}</div>
-            <div style="margin-top:6px;font-size:11px;font-weight:600;color:${avgScore !== null && avgScore >= 80 ? '#10b981' : avgScore !== null && avgScore >= 60 ? '#f59e0b' : '#ef4444'}">
+            <div style="font-size:14px;font-weight:700;color:#0F1E3D">Avg. Grade</div>
+            <div style="font-size:12px;color:#6B7A9D;margin-top:3px">${grades.length} subject${grades.length !== 1 ? 's' : ''}</div>
+            <div style="margin-top:6px;font-size:11px;font-weight:600;color:${avgScore !== null && avgScore >= 80 ? '#10b981' : avgScore !== null && avgScore >= 60 ? '#E8B020' : '#ef4444'}">
               <i class="fas fa-star"></i>
               ${avgScore !== null ? (avgScore >= 80 ? 'Performing well' : avgScore >= 60 ? 'Average' : 'Needs improvement') : 'No data yet'}
             </div>
@@ -160,13 +160,13 @@ function renderParentHome() {
         <div class="stat-icon" style="background:#d1fae5"><i class="fas fa-chart-line" style="color:#10b981"></i></div>
         <div style="font-size:28px;font-weight:900;color:#10b981">${lastGrowth ? lastGrowth.height + 'cm' : 'N/A'}</div>
         <div class="text-muted">Height</div>
-        <div style="font-size:12px;color:#94a3b8">${lastGrowth ? lastGrowth.weight + 'kg · BMI ' + lastGrowth.bmi : 'No data'}</div>
+        <div style="font-size:12px;color:#6B7A9D">${lastGrowth ? lastGrowth.weight + 'kg · BMI ' + lastGrowth.bmi : 'No data'}</div>
       </div>
       <div class="stat-card" onclick="navigate('parent-leaves')" style="cursor:pointer">
-        <div class="stat-icon" style="background:${pendingLeaves ? '#fef3c7' : '#f0fdf4'}"><i class="fas fa-calendar-times" style="color:${pendingLeaves ? '#f59e0b' : '#10b981'}"></i></div>
-        <div style="font-size:28px;font-weight:900;color:${pendingLeaves ? '#f59e0b' : '#10b981'}">${pendingLeaves}</div>
+        <div class="stat-icon" style="background:${pendingLeaves ? '#FEF7E0' : '#f0fdf4'}"><i class="fas fa-calendar-times" style="color:${pendingLeaves ? '#E8B020' : '#10b981'}"></i></div>
+        <div style="font-size:28px;font-weight:900;color:${pendingLeaves ? '#E8B020' : '#10b981'}">${pendingLeaves}</div>
         <div class="text-muted">Pending Leaves</div>
-        <div style="font-size:12px;color:#94a3b8">${leaves.length} total applied</div>
+        <div style="font-size:12px;color:#6B7A9D">${leaves.length} total applied</div>
       </div>
     </div>
 
@@ -174,14 +174,14 @@ function renderParentHome() {
       <!-- Recent Grades -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="fas fa-star" style="color:#6366f1"></i> Recent Grades</div>
+          <div class="card-title"><i class="fas fa-star" style="color:#1AA6CA"></i> Recent Grades</div>
           <button class="btn btn-sm btn-secondary" onclick="navigate('parent-reports')">View All</button>
         </div>
         ${grades.slice(0, 5).map(g => `
           <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:13px;font-weight:600">${g.subject}</div>
             <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-size:13px;color:#64748b">${g.score}/${g.maxScore}</span>
+              <span style="font-size:13px;color:#6B7A9D">${g.score}/${g.maxScore}</span>
               <span class="grade-badge ${gradeColor(g.grade)}">${g.grade}</span>
             </div>
           </div>`).join('')}
@@ -191,14 +191,14 @@ function renderParentHome() {
       <!-- Announcements -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="fas fa-bullhorn" style="color:#f59e0b"></i> Announcements</div>
+          <div class="card-title"><i class="fas fa-bullhorn" style="color:#E8B020"></i> Announcements</div>
           <button class="btn btn-sm btn-secondary" onclick="navigate('parent-announcements')">View All</button>
         </div>
         ${anns.slice(0, 3).map(a => `
           <div style="padding:10px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:13px;font-weight:600">${a.title}</div>
             <div class="text-muted" style="font-size:12px">${a.body.slice(0, 70)}...</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:4px">${formatDate(a.date)}</div>
+            <div style="font-size:11px;color:#6B7A9D;margin-top:4px">${formatDate(a.date)}</div>
           </div>`).join('')}
         ${!anns.length ? '<p class="text-muted">No announcements</p>' : ''}
       </div>
@@ -208,23 +208,23 @@ function renderParentHome() {
     <!-- Upcoming Events -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-calendar-alt" style="color:#6366f1"></i> Upcoming Events</div>
+        <div class="card-title"><i class="fas fa-calendar-alt" style="color:#1AA6CA"></i> Upcoming Events</div>
         <button class="btn btn-sm btn-secondary" onclick="navigate('parent-events')">View All</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
         ${upcomingEvents.map(ev => {
-          const typeColors = { sports:'#10b981', academic:'#6366f1', cultural:'#8b5cf6', holiday:'#ef4444', meeting:'#f59e0b' };
+          const typeColors = { sports:'#10b981', academic:'#1AA6CA', cultural:'#C4893A', holiday:'#ef4444', meeting:'#E8B020' };
           const evCls = ev.classId ? DB.getClass(ev.classId) : null;
-          const color = typeColors[ev.type] || '#6366f1';
+          const color = typeColors[ev.type] || '#1AA6CA';
           const d = new Date(ev.date);
           return `<div style="border:2px solid ${color}30;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="navigate('parent-events')">
             <div style="text-align:center;background:${color}15;border-radius:10px;padding:8px 12px;min-width:52px;flex-shrink:0">
               <div style="font-size:20px;font-weight:900;color:${color};line-height:1">${d.getDate()}</div>
-              <div style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:600">${d.toLocaleDateString('en-US',{month:'short'})}</div>
+              <div style="font-size:10px;color:#6B7A9D;text-transform:uppercase;font-weight:600">${d.toLocaleDateString('en-US',{month:'short'})}</div>
             </div>
             <div style="flex:1;overflow:hidden">
               <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.title}</div>
-              <div style="font-size:11px;color:#64748b">${ev.time || ''} ${evCls ? '· ' + evCls.name : '· All School'}</div>
+              <div style="font-size:11px;color:#6B7A9D">${ev.time || ''} ${evCls ? '· ' + evCls.name : '· All School'}</div>
               <span style="font-size:10px;font-weight:700;color:${color};text-transform:capitalize">${ev.type}</span>
             </div>
           </div>`;
@@ -256,7 +256,7 @@ function renderParentReports() {
     ${renderChildSelector(child)}
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-file-alt" style="color:#6366f1"></i> Report Card – ${child.name}</div>
+        <div class="card-title"><i class="fas fa-file-alt" style="color:#1AA6CA"></i> Report Card – ${child.name}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${terms.map(t => `<button class="btn btn-sm ${termFilter===t ? (t==='Final Result'?'btn-warning':'btn-primary') : 'btn-secondary'}" onclick="window._parentTermFilter='${t}';renderParentReports()">${t==='Final Result'?'<i class=\\"fas fa-trophy\\"></i> ':''} ${t}</button>`).join('')}
         </div>
@@ -265,8 +265,8 @@ function renderParentReports() {
       <!-- Summary -->
       <div class="grid-3" style="margin-bottom:24px">
         <div class="stat-card">
-          <div class="stat-icon" style="background:#ede9fe"><i class="fas fa-percentage" style="color:#6366f1"></i></div>
-          <div style="font-size:28px;font-weight:900;color:#6366f1">${avg}%</div>
+          <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-percentage" style="color:#1AA6CA"></i></div>
+          <div style="font-size:28px;font-weight:900;color:#1AA6CA">${avg}%</div>
           <div class="text-muted">Overall Average</div>
         </div>
         <div class="stat-card">
@@ -275,8 +275,8 @@ function renderParentReports() {
           <div class="text-muted">Subjects Graded</div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background:#fef3c7"><i class="fas fa-school" style="color:#f59e0b"></i></div>
-          <div style="font-size:24px;font-weight:900;color:#f59e0b">${cls ? cls.name : '-'}</div>
+          <div class="stat-icon" style="background:#FEF7E0"><i class="fas fa-school" style="color:#E8B020"></i></div>
+          <div style="font-size:24px;font-weight:900;color:#E8B020">${cls ? cls.name : '-'}</div>
           <div class="text-muted">Class</div>
         </div>
       </div>
@@ -291,7 +291,7 @@ function renderParentReports() {
               <td><strong>${g.subject}</strong></td>
               <td style="width:200px">${scoreBarHtml(g.score, g.maxScore)}</td>
               <td><span class="grade-badge ${gradeColor(g.grade)}">${g.grade}</span></td>
-              <td style="color:#64748b;font-size:13px">${g.teacherComment || '-'}</td>
+              <td style="color:#6B7A9D;font-size:13px">${g.teacherComment || '-'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -313,7 +313,7 @@ function renderParentReports() {
         type: 'radar',
         data: {
           labels: grades.map(g => g.subject),
-          datasets: [{ label: 'Score %', data: grades.map(g => Math.round(g.score/g.maxScore*100)), backgroundColor: 'rgba(99,102,241,0.2)', borderColor: '#6366f1', pointBackgroundColor: '#6366f1' }]
+          datasets: [{ label: 'Score %', data: grades.map(g => Math.round(g.score/g.maxScore*100)), backgroundColor: 'rgba(26,166,202,0.2)', borderColor: '#1AA6CA', pointBackgroundColor: '#1AA6CA' }]
         },
         options: { responsive: true, scales: { r: { min: 0, max: 100 } } }
       });
@@ -344,19 +344,19 @@ function renderParentAttendance() {
         <div class="text-muted">Days Absent</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon" style="background:#fef3c7"><i class="fas fa-clock" style="color:#f59e0b"></i></div>
-        <div style="font-size:28px;font-weight:900;color:#f59e0b">${att.late}</div>
+        <div class="stat-icon" style="background:#FEF7E0"><i class="fas fa-clock" style="color:#E8B020"></i></div>
+        <div style="font-size:28px;font-weight:900;color:#E8B020">${att.late}</div>
         <div class="text-muted">Days Late</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon" style="background:#ede9fe"><i class="fas fa-percentage" style="color:#6366f1"></i></div>
-        <div style="font-size:28px;font-weight:900;color:#6366f1">${att.pct}%</div>
+        <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-percentage" style="color:#1AA6CA"></i></div>
+        <div style="font-size:28px;font-weight:900;color:#1AA6CA">${att.pct}%</div>
         <div class="text-muted">Attendance Rate</div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-calendar" style="color:#6366f1"></i> Attendance Records</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> Attendance Records</div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Date</th><th>Status</th><th>Day</th></tr></thead>
@@ -398,13 +398,13 @@ function renderParentGrowth() {
         <div class="text-muted">Current Height</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon" style="background:#ede9fe"><i class="fas fa-weight" style="color:#6366f1"></i></div>
-        <div style="font-size:28px;font-weight:900;color:#6366f1">${last.weight} kg</div>
+        <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-weight" style="color:#1AA6CA"></i></div>
+        <div style="font-size:28px;font-weight:900;color:#1AA6CA">${last.weight} kg</div>
         <div class="text-muted">Current Weight</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon" style="background:#fef3c7"><i class="fas fa-heartbeat" style="color:#f59e0b"></i></div>
-        <div style="font-size:28px;font-weight:900;color:${last.bmi < 18.5 ? '#f59e0b' : last.bmi < 25 ? '#10b981' : '#ef4444'}">${last.bmi}</div>
+        <div class="stat-icon" style="background:#FEF7E0"><i class="fas fa-heartbeat" style="color:#E8B020"></i></div>
+        <div style="font-size:28px;font-weight:900;color:${last.bmi < 18.5 ? '#E8B020' : last.bmi < 25 ? '#10b981' : '#ef4444'}">${last.bmi}</div>
         <div class="text-muted">BMI – ${last.bmi < 18.5 ? 'Underweight' : last.bmi < 25 ? 'Normal' : 'Overweight'}</div>
       </div>
     </div>` : ''}
@@ -418,7 +418,7 @@ function renderParentGrowth() {
           <tbody>
             ${records.length ? records.map(r => {
               const bmiStatus = r.bmi < 18.5 ? 'Underweight' : r.bmi < 25 ? 'Normal' : 'Overweight';
-              const bmiColor = r.bmi < 18.5 ? '#f59e0b' : r.bmi < 25 ? '#10b981' : '#ef4444';
+              const bmiColor = r.bmi < 18.5 ? '#E8B020' : r.bmi < 25 ? '#10b981' : '#ef4444';
               return `<tr>
                 <td>${formatDate(r.date)}</td>
                 <td><strong>${r.height} cm</strong></td>
@@ -443,7 +443,7 @@ function renderParentGrowth() {
         data: {
           labels: records.map(r => formatDate(r.date)),
           datasets: [
-            { label: 'Height (cm)', data: records.map(r => r.height), borderColor: '#6366f1', tension: 0.4, fill: false },
+            { label: 'Height (cm)', data: records.map(r => r.height), borderColor: '#1AA6CA', tension: 0.4, fill: false },
             { label: 'Weight (kg)', data: records.map(r => r.weight), borderColor: '#10b981', tension: 0.4, fill: false }
           ]
         },
@@ -465,12 +465,12 @@ function renderParentActivities() {
   const content = `
     ${renderChildSelector(child)}
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-running" style="color:#8b5cf6"></i> ${child.name}'s Activities</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-running" style="color:#C4893A"></i> ${child.name}'s Activities</div>
       ${childActivities.length ? `
         <div class="grid-2">
           ${childActivities.map(a => `
-            <div style="padding:16px;border:2px solid #ede9fe;border-radius:14px">
-              <div style="font-size:16px;font-weight:700;color:#6366f1;margin-bottom:6px">${a.name}</div>
+            <div style="padding:16px;border:2px solid #E8EDF5;border-radius:14px">
+              <div style="font-size:16px;font-weight:700;color:#1AA6CA;margin-bottom:6px">${a.name}</div>
               <div class="text-muted"><i class="fas fa-calendar-day"></i> ${a.day}</div>
               <div class="text-muted"><i class="fas fa-clock"></i> ${a.time}</div>
               <div class="text-muted"><i class="fas fa-user"></i> ${a.instructor}</div>
@@ -513,7 +513,7 @@ function renderParentSyllabus() {
     ${renderChildSelector(child)}
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-book-open" style="color:#8b5cf6"></i> Syllabus – ${cls ? cls.name : ''}</div>
+        <div class="card-title"><i class="fas fa-book-open" style="color:#C4893A"></i> Syllabus – ${cls ? cls.name : ''}</div>
         <div style="display:flex;gap:6px">
           ${['Term 1','Term 2','Term 3'].map(t => `<button class="btn btn-sm ${termFilter===t?'btn-primary':'btn-secondary'}" onclick="window._parentSylTerm='${t}';renderParentSyllabus()">${t}</button>`).join('')}
         </div>
@@ -532,10 +532,10 @@ function renderParentSyllabus() {
             <div class="progress-fill" style="width:${total?Math.round(done/total*100):0}%"></div>
           </div>
           ${syl.topics.map(t => {
-            const statusColors = { completed: '#10b981', in_progress: '#f59e0b', pending: '#94a3b8' };
+            const statusColors = { completed: '#10b981', in_progress: '#E8B020', pending: '#6B7A9D' };
             const statusLabels = { completed: 'Completed', in_progress: 'In Progress', pending: 'Upcoming' };
             return `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #DCE1EF;margin-bottom:8px">
               <div style="width:32px;height:32px;border-radius:50%;background:${statusColors[t.status]}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 <i class="fas ${t.status==='completed'?'fa-check':t.status==='in_progress'?'fa-spinner':'fa-clock'}" style="color:${statusColors[t.status]}"></i>
               </div>
@@ -568,11 +568,11 @@ function renderParentLeaves() {
     <div class="grid-2">
       <!-- Apply Leave Form -->
       <div class="card">
-        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-plus-circle" style="color:#6366f1"></i> Apply for Leave</div>
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-plus-circle" style="color:#1AA6CA"></i> Apply for Leave</div>
         <div class="form-group">
           <label class="form-label">Student</label>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f8fafc;border-radius:10px">
-            ${avatarHtml(child.name, '#6366f1')}
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F8F9FB;border-radius:10px">
+            ${avatarHtml(child.name, '#0F2050')}
             <strong>${child.name}</strong>
           </div>
         </div>
@@ -597,7 +597,7 @@ function renderParentLeaves() {
 
       <!-- Leave History -->
       <div class="card">
-        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-history" style="color:#64748b"></i> Leave History</div>
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-history" style="color:#6B7A9D"></i> Leave History</div>
         ${leaves.length ? leaves.map(l => {
           const colors = { pending: 'yellow', approved: 'green', rejected: 'red' };
           const icons = { pending: 'fa-clock', approved: 'fa-check-circle', rejected: 'fa-times-circle' };
@@ -606,12 +606,12 @@ function renderParentLeaves() {
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div>
                 <div style="font-weight:700;margin-bottom:4px">
-                  <i class="fas ${icons[l.status]}" style="color:${l.status==='approved'?'#10b981':l.status==='pending'?'#f59e0b':'#ef4444'}"></i>
+                  <i class="fas ${icons[l.status]}" style="color:${l.status==='approved'?'#10b981':l.status==='pending'?'#E8B020':'#ef4444'}"></i>
                   ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}
                 </div>
-                <div style="font-size:13px;color:#374151">${l.reason}</div>
-                ${l.reviewNote ? `<div style="font-size:12px;color:#64748b;margin-top:4px;padding:8px;background:#f8fafc;border-radius:6px">💬 ${l.reviewNote}</div>` : ''}
-                <div style="font-size:11px;color:#94a3b8;margin-top:4px">Applied: ${formatDate(l.appliedOn)}</div>
+                <div style="font-size:13px;color:#2A3B60">${l.reason}</div>
+                ${l.reviewNote ? `<div style="font-size:12px;color:#6B7A9D;margin-top:4px;padding:8px;background:#F8F9FB;border-radius:6px">💬 ${l.reviewNote}</div>` : ''}
+                <div style="font-size:11px;color:#6B7A9D;margin-top:4px">Applied: ${formatDate(l.appliedOn)}</div>
               </div>
               <span class="badge badge-${colors[l.status]}">${l.status.toUpperCase()}</span>
             </div>
@@ -653,18 +653,18 @@ function renderParentAnnouncements() {
   const content = `
     ${child ? renderChildSelector(child) : ''}
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-bullhorn" style="color:#f59e0b"></i> School Announcements</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-bullhorn" style="color:#E8B020"></i> School Announcements</div>
       ${anns.map(a => {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
         return `
-        <div style="padding:16px;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:12px">
+        <div style="padding:16px;border:1px solid #DCE1EF;border-radius:12px;margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
             <div style="font-size:16px;font-weight:700">${a.title}</div>
             ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>'}
           </div>
-          <p style="color:#374151;font-size:14px;margin:0 0 10px;line-height:1.6">${a.body}</p>
-          <div style="font-size:12px;color:#94a3b8">
+          <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.6">${a.body}</p>
+          <div style="font-size:12px;color:#6B7A9D">
             <i class="fas fa-user"></i> ${poster ? poster.name : 'School'}
             &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}
           </div>
@@ -698,14 +698,14 @@ function renderParentMessages() {
     <div class="grid-2" style="height:600px">
       <!-- Teacher list -->
       <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:16px;border-bottom:1px solid #e2e8f0;font-weight:700">Your Teachers</div>
+        <div style="padding:16px;border-bottom:1px solid #DCE1EF;font-weight:700">Your Teachers</div>
         <div style="overflow-y:auto;height:calc(100% - 56px)">
           ${teachers.map(t => {
             const tMsgs = myMsgs.filter(m => m.from === t.id || m.to === t.id);
             const lastMsg = tMsgs[tMsgs.length - 1];
             const tClass = t.assignedClass ? DB.getClass(t.assignedClass) : null;
             return `
-            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${parentMsgTeacherId===t.id?'background:#ede9fe':''}" onclick="parentMsgTeacherId='${t.id}';renderParentMessages()">
+            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${parentMsgTeacherId===t.id?'background:#E8EDF5':''}" onclick="parentMsgTeacherId='${t.id}';renderParentMessages()">
               ${avatarHtml(t.name, t.avatar)}
               <div style="flex:1;overflow:hidden">
                 <div style="font-weight:600;font-size:14px">${t.name}</div>
@@ -726,7 +726,7 @@ function renderParentMessages() {
       <!-- Chat window -->
       <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column" id="parent-chat-window">
         ${parentMsgTeacherId ? renderParentChatWindow(parentMsgTeacherId) : `
-        <div class="flex-center" style="height:100%;flex-direction:column;color:#94a3b8">
+        <div class="flex-center" style="height:100%;flex-direction:column;color:#6B7A9D">
           <i class="fas fa-comment-dots" style="font-size:48px;margin-bottom:16px;opacity:0.4"></i>
           <p>Select a teacher to start chatting</p>
         </div>`}
@@ -746,7 +746,7 @@ function renderParentChatWindow(teacherId) {
   ).sort((a, b) => a.time.localeCompare(b.time));
 
   return `
-    <div style="padding:16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+    <div style="padding:16px;border-bottom:1px solid #DCE1EF;display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:10px">
         ${teacher ? avatarHtml(teacher.name, teacher.avatar) : ''}
         <div>
@@ -766,7 +766,7 @@ function renderParentChatWindow(teacherId) {
         </div>`).join('')}
       ${!msgs.length ? '<div class="text-muted" style="text-align:center;margin:auto">Start the conversation with ${teacher ? teacher.name : "the teacher"}</div>' : ''}
     </div>
-    <div style="padding:14px;border-top:1px solid #e2e8f0;display:flex;gap:10px">
+    <div style="padding:14px;border-top:1px solid #DCE1EF;display:flex;gap:10px">
       <input class="form-control" id="parent-msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')parentSendMessage('${teacherId}')"/>
       <button class="btn btn-primary" onclick="parentSendMessage('${teacherId}')"><i class="fas fa-paper-plane"></i></button>
     </div>`;
@@ -811,8 +811,8 @@ function renderParentGallery() {
     ${renderChildSelector(child)}
 
     <div style="margin-bottom:20px">
-      <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin:0 0 4px">Activity Gallery</h3>
-      <p style="color:#64748b;font-size:13px;margin:0">${photos.length} photo${photos.length!==1?'s':''} featuring ${child.name}</p>
+      <h3 style="font-size:16px;font-weight:700;color:#0F1E3D;margin:0 0 4px">Activity Gallery</h3>
+      <p style="color:#6B7A9D;font-size:13px;margin:0">${photos.length} photo${photos.length!==1?'s':''} featuring ${child.name}</p>
     </div>
 
     ${photos.length === 0 ? `
@@ -838,13 +838,13 @@ function renderParentGallery() {
 function renderParentGalleryCard(p, child) {
   const cls = p.classId ? DB.getClass(p.classId) : null;
   const isTagged = (p.studentIds || []).includes(child.id);
-  const bgColors = ['#667eea','#764ba2','#10b981','#f59e0b','#ef4444','#6366f1'];
+  const bgColors = ['#0F2050','#1AA6CA','#10b981','#E8B020','#ef4444','#1AA6CA'];
   const bg = bgColors[Math.abs((p.id.charCodeAt(3) || 0)) % bgColors.length];
 
   return `
     <div class="card" style="padding:0;overflow:hidden;border-radius:14px;cursor:pointer;transition:box-shadow 0.2s"
          onclick="openParentGalleryLightbox('${p.id}')"
-         onmouseenter="this.style.boxShadow='0 8px 30px rgba(99,102,241,0.18)'"
+         onmouseenter="this.style.boxShadow='0 8px 30px rgba(26,166,202,0.18)'"
          onmouseleave="this.style.boxShadow=''">
       <div style="position:relative;height:175px;overflow:hidden;background:#f1f5f9">
         ${p.imageData ?
@@ -854,7 +854,7 @@ function renderParentGalleryCard(p, child) {
           </div>`
         }
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,0.35));pointer-events:none"></div>
-        ${isTagged ? `<span style="position:absolute;top:10px;left:10px;background:#6366f1;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px"><i class="fas fa-star"></i> Featured</span>` : ''}
+        ${isTagged ? `<span style="position:absolute;top:10px;left:10px;background:#1AA6CA;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px"><i class="fas fa-star"></i> Featured</span>` : ''}
         ${p.imageData ? `
           <a href="${p.imageData}" download="${p.title.replace(/[^a-z0-9]/gi,'_')}.jpg"
              onclick="event.stopPropagation()"
@@ -864,9 +864,9 @@ function renderParentGalleryCard(p, child) {
           </a>` : ''}
       </div>
       <div style="padding:12px">
-        <div style="font-weight:700;font-size:13px;color:#1e293b;margin-bottom:4px">${p.title}</div>
-        <div style="font-size:12px;color:#64748b"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>${formatDate(p.date)}</div>
-        ${cls ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px">${cls.name}</div>` : ''}
+        <div style="font-weight:700;font-size:13px;color:#0F1E3D;margin-bottom:4px">${p.title}</div>
+        <div style="font-size:12px;color:#6B7A9D"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>${formatDate(p.date)}</div>
+        ${cls ? `<div style="font-size:11px;color:#6B7A9D;margin-top:4px">${cls.name}</div>` : ''}
       </div>
     </div>
   `;
@@ -885,7 +885,7 @@ function openParentGalleryLightbox(photoId) {
     <div style="position:relative">
       ${p.imageData ?
         `<img src="${p.imageData}" style="width:100%;max-height:420px;object-fit:cover;display:block" alt="${p.title}">` :
-        `<div style="height:260px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center">
+        `<div style="height:260px;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center">
           <i class="fas fa-image" style="font-size:64px;color:rgba(255,255,255,0.4)"></i>
         </div>`
       }
@@ -899,24 +899,24 @@ function openParentGalleryLightbox(photoId) {
     </div>
     <div style="padding:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <h3 style="margin:0;font-size:17px;font-weight:800;color:#1e293b;flex:1">${p.title}</h3>
+        <h3 style="margin:0;font-size:17px;font-weight:800;color:#0F1E3D;flex:1">${p.title}</h3>
         ${cls ? `<span class="badge badge-indigo">${cls.name}</span>` : ''}
       </div>
-      ${p.description ? `<p style="color:#64748b;margin:0 0 12px;font-size:14px">${p.description}</p>` : ''}
-      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:${taggedStudents.length?'14px':'0'}">
+      ${p.description ? `<p style="color:#6B7A9D;margin:0 0 12px;font-size:14px">${p.description}</p>` : ''}
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#6B7A9D;margin-bottom:${taggedStudents.length?'14px':'0'}">
         <span><i class="fas fa-calendar-alt"></i> ${formatDate(p.date)}</span>
         ${uploader ? `<span><i class="fas fa-chalkboard-teacher"></i> ${uploader.name}</span>` : ''}
       </div>
       ${taggedStudents.length ? `
         <div style="background:#f8faff;border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Students in this photo</div>
+          <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Students in this photo</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             ${taggedStudents.map(s => {
               const isThisChild = s.id === (child||{}).id;
-              return '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:' + (isThisChild?'#ede9fe':'#fff') + ';border:1px solid ' + (isThisChild?'#6366f1':'#e2e8f0') + ';border-radius:20px;font-size:13px">'
-                + avatarHtml(s.name,'#6366f1','avatar-xs')
-                + '<span style="font-weight:600;color:' + (isThisChild?'#4f46e5':'#1e293b') + '">' + s.name + '</span>'
-                + (isThisChild ? '<i class="fas fa-star" style="font-size:10px;color:#6366f1"></i>' : '')
+              return '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:' + (isThisChild?'#E8EDF5':'#fff') + ';border:1px solid ' + (isThisChild?'#1AA6CA':'#DCE1EF') + ';border-radius:20px;font-size:13px">'
+                + avatarHtml(s.name,'#0F2050','avatar-xs')
+                + '<span style="font-weight:600;color:' + (isThisChild?'#0F2050':'#0F1E3D') + '">' + s.name + '</span>'
+                + (isThisChild ? '<i class="fas fa-star" style="font-size:10px;color:#E8B020"></i>' : '')
                 + '</div>';
             }).join('')}
           </div>
@@ -965,14 +965,14 @@ function renderParentFinalResult(child) {
 
     <!-- Controls -->
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-      <div class="card-title" style="font-size:18px"><i class="fas fa-trophy" style="color:#f59e0b"></i> Final Result Card – ${child.name}</div>
+      <div class="card-title" style="font-size:18px"><i class="fas fa-trophy" style="color:#E8B020"></i> Final Result Card – ${child.name}</div>
       <button class="btn btn-primary" onclick="printFinalResult('${child.id}')">
         <i class="fas fa-file-pdf"></i> Export / Print PDF
       </button>
     </div>
 
     <!-- School header -->
-    <div class="card" style="background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;margin-bottom:16px">
+    <div class="card" style="background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
         <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" style="width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);background:#fff;object-fit:cover;flex-shrink:0"/>
         <div style="flex:1">
@@ -996,31 +996,31 @@ function renderParentFinalResult(child) {
     <!-- Overall performance -->
     <div class="grid-3" style="margin-bottom:16px">
       <div class="stat-card" style="display:flex;align-items:center;gap:14px">
-        ${progressRingHtml(overallAvg, overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#f59e0b' : '#ef4444', 68)}
+        ${progressRingHtml(overallAvg, overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#E8B020' : '#ef4444', 68)}
         <div>
           <div style="font-size:13px;font-weight:700">Overall Score</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:3px">${subjectData.length} subjects</div>
-          <div style="font-size:11px;font-weight:600;color:${overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#f59e0b' : '#ef4444'};margin-top:4px">
+          <div style="font-size:12px;color:#6B7A9D;margin-top:3px">${subjectData.length} subjects</div>
+          <div style="font-size:11px;font-weight:600;color:${overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#E8B020' : '#ef4444'};margin-top:4px">
             ${overallAvg >= 90 ? 'Outstanding' : overallAvg >= 80 ? 'Excellent' : overallAvg >= 70 ? 'Good' : overallAvg >= 60 ? 'Average' : 'Needs Improvement'}
           </div>
         </div>
       </div>
       <div class="stat-card" style="text-align:center">
-        <div style="font-size:52px;font-weight:900;color:${overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#f59e0b' : '#ef4444'};line-height:1">${overallGrade}</div>
-        <div style="font-size:13px;color:#64748b;margin-top:6px">Final Grade</div>
+        <div style="font-size:52px;font-weight:900;color:${overallAvg >= 80 ? '#10b981' : overallAvg >= 60 ? '#E8B020' : '#ef4444'};line-height:1">${overallGrade}</div>
+        <div style="font-size:13px;color:#6B7A9D;margin-top:6px">Final Grade</div>
       </div>
       <div class="stat-card" style="display:flex;flex-direction:column;gap:10px;justify-content:center">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:#64748b"><i class="fas fa-calendar-check" style="color:#10b981;margin-right:6px"></i>Attendance</span>
-          <span style="font-weight:700;color:${att.pct >= 90 ? '#10b981' : '#f59e0b'}">${att.pct}%</span>
+          <span style="font-size:13px;color:#6B7A9D"><i class="fas fa-calendar-check" style="color:#10b981;margin-right:6px"></i>Attendance</span>
+          <span style="font-weight:700;color:${att.pct >= 90 ? '#10b981' : '#E8B020'}">${att.pct}%</span>
         </div>
         ${lastGrowth ? `
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:#64748b"><i class="fas fa-ruler-vertical" style="color:#6366f1;margin-right:6px"></i>Height</span>
+          <span style="font-size:13px;color:#6B7A9D"><i class="fas fa-ruler-vertical" style="color:#1AA6CA;margin-right:6px"></i>Height</span>
           <span style="font-weight:700">${lastGrowth.height}cm</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:#64748b"><i class="fas fa-weight" style="color:#f59e0b;margin-right:6px"></i>Weight</span>
+          <span style="font-size:13px;color:#6B7A9D"><i class="fas fa-weight" style="color:#E8B020;margin-right:6px"></i>Weight</span>
           <span style="font-weight:700">${lastGrowth.weight}kg</span>
         </div>` : ''}
       </div>
@@ -1028,7 +1028,7 @@ function renderParentFinalResult(child) {
 
     <!-- Subject table -->
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-table" style="color:#6366f1"></i> Subject-wise Performance</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-table" style="color:#1AA6CA"></i> Subject-wise Performance</div>
       ${subjectData.length ? `
       <div class="table-wrap">
         <table>
@@ -1038,13 +1038,13 @@ function renderParentFinalResult(child) {
               <td><strong>${d.subject}</strong></td>
               <td style="text-align:center">${d.s1Pct !== null ? d.s1Pct + '%' : '<span class="text-muted">—</span>'}</td>
               <td style="text-align:center">${d.s2Pct !== null ? d.s2Pct + '%' : '<span class="text-muted">—</span>'}</td>
-              <td style="text-align:center;font-weight:700;color:${d.avgPct >= 80 ? '#10b981' : d.avgPct >= 60 ? '#6366f1' : '#ef4444'}">${d.avgPct}%</td>
+              <td style="text-align:center;font-weight:700;color:${d.avgPct >= 80 ? '#10b981' : d.avgPct >= 60 ? '#1AA6CA' : '#ef4444'}">${d.avgPct}%</td>
               <td><span class="grade-badge ${gradeColor(d.grade)}">${d.grade}</span></td>
               <td style="min-width:120px">${scoreBarHtml(d.avgPct, 100)}</td>
             </tr>`).join('')}
-            <tr style="background:#f8fafc">
+            <tr style="background:#F8F9FB">
               <td colspan="3"><strong>Overall Average</strong></td>
-              <td style="text-align:center;font-weight:900;color:${overallAvg >= 80 ? '#10b981' : '#f59e0b'}">${overallAvg}%</td>
+              <td style="text-align:center;font-weight:900;color:${overallAvg >= 80 ? '#10b981' : '#E8B020'}">${overallAvg}%</td>
               <td><span class="grade-badge ${gradeColor(overallGrade)}">${overallGrade}</span></td>
               <td></td>
             </tr>
@@ -1056,7 +1056,7 @@ function renderParentFinalResult(child) {
     <!-- Chart -->
     ${subjectData.length >= 2 ? `
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-chart-bar" style="color:#6366f1"></i> Semester Comparison Chart</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-chart-bar" style="color:#1AA6CA"></i> Semester Comparison Chart</div>
       <div style="height:260px"><canvas id="final-result-chart"></canvas></div>
     </div>` : ''}
 
@@ -1064,17 +1064,17 @@ function renderParentFinalResult(child) {
     <div class="card">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;padding:8px 0">
         <div style="text-align:center">
-          <div style="height:56px;border-bottom:2px solid #1e293b;margin-bottom:8px"></div>
+          <div style="height:56px;border-bottom:2px solid #0F1E3D;margin-bottom:8px"></div>
           <div style="font-size:13px;font-weight:700">Class Teacher</div>
-          <div style="font-size:12px;color:#64748b">${teacher ? teacher.name : ''}</div>
+          <div style="font-size:12px;color:#6B7A9D">${teacher ? teacher.name : ''}</div>
         </div>
         <div style="text-align:center">
-          <div style="height:56px;border-bottom:2px solid #1e293b;margin-bottom:8px"></div>
+          <div style="height:56px;border-bottom:2px solid #0F1E3D;margin-bottom:8px"></div>
           <div style="font-size:13px;font-weight:700">Principal</div>
-          <div style="font-size:12px;color:#64748b">${schoolMeta.principalName || ''}</div>
+          <div style="font-size:12px;color:#6B7A9D">${schoolMeta.principalName || ''}</div>
         </div>
         <div style="text-align:center">
-          <div style="height:56px;border-bottom:2px solid #1e293b;margin-bottom:8px;display:flex;align-items:flex-end;justify-content:center">
+          <div style="height:56px;border-bottom:2px solid #0F1E3D;margin-bottom:8px;display:flex;align-items:flex-end;justify-content:center">
             <div style="font-size:14px;font-weight:700;padding-bottom:8px">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
           </div>
           <div style="font-size:13px;font-weight:700">Date of Issue</div>
@@ -1093,9 +1093,9 @@ function renderParentFinalResult(child) {
         data: {
           labels: subjectData.map(d => d.subject),
           datasets: [
-            { label: 'Semester 1', data: subjectData.map(d => d.s1Pct), backgroundColor: 'rgba(99,102,241,0.65)', borderColor: '#6366f1', borderWidth: 1 },
+            { label: 'Semester 1', data: subjectData.map(d => d.s1Pct), backgroundColor: 'rgba(26,166,202,0.65)', borderColor: '#1AA6CA', borderWidth: 1 },
             { label: 'Semester 2', data: subjectData.map(d => d.s2Pct), backgroundColor: 'rgba(16,185,129,0.65)', borderColor: '#10b981', borderWidth: 1 },
-            { label: 'Final Avg', data: subjectData.map(d => d.avgPct), backgroundColor: 'rgba(245,158,11,0.5)', borderColor: '#f59e0b', borderWidth: 2, type: 'line', tension: 0.3 }
+            { label: 'Final Avg', data: subjectData.map(d => d.avgPct), backgroundColor: 'rgba(245,158,11,0.5)', borderColor: '#E8B020', borderWidth: 2, type: 'line', tension: 0.3 }
           ]
         },
         options: {
@@ -1130,36 +1130,36 @@ function printFinalResult(childId) {
   const schoolMeta = DB.getMeta();
   const academicYear = schoolMeta.academicYear || getAcademicYear();
 
-  const gradeBg ={ 'A+':'#d1fae5','A':'#d1fae5','A-':'#d1fae5','B+':'#dbeafe','B':'#dbeafe','B-':'#dbeafe','C+':'#fef3c7','C':'#fef3c7','C-':'#fef3c7','D':'#ffedd5','F':'#fee2e2' };
-  const gradeFg = { 'A+':'#065f46','A':'#065f46','A-':'#065f46','B+':'#1e40af','B':'#1e40af','B-':'#1e40af','C+':'#92400e','C':'#92400e','C-':'#92400e','D':'#9a3412','F':'#991b1b' };
-  const scoreColor = (pct) => pct >= 80 ? '#10b981' : pct >= 60 ? '#6366f1' : '#ef4444';
+  const gradeBg ={ 'A+':'#d1fae5','A':'#d1fae5','A-':'#d1fae5','B+':'#dbeafe','B':'#dbeafe','B-':'#dbeafe','C+':'#FEF7E0','C':'#FEF7E0','C-':'#FEF7E0','D':'#ffedd5','F':'#fee2e2' };
+  const gradeFg = { 'A+':'#065f46','A':'#065f46','A-':'#065f46','B+':'#1e40af','B':'#1e40af','B-':'#1e40af','C+':'#9A6A00','C':'#9A6A00','C-':'#9A6A00','D':'#9a3412','F':'#991b1b' };
+  const scoreColor = (pct) => pct >= 80 ? '#10b981' : pct >= 60 ? '#1AA6CA' : '#ef4444';
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><title>Final Result – ${child.name}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;color:#1e293b;padding:24px;background:#fff}
-.header{display:flex;align-items:center;gap:20px;padding:20px 24px;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#fff;border-radius:10px;margin-bottom:18px}
+body{font-family:Arial,sans-serif;color:#0F1E3D;padding:24px;background:#fff}
+.header{display:flex;align-items:center;gap:20px;padding:20px 24px;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;border-radius:10px;margin-bottom:18px}
 .logo{width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);object-fit:cover;background:#fff;flex-shrink:0}
 .school-name{font-size:22px;font-weight:900}
 .report-title{font-size:15px;color:#fbbf24;font-weight:700;margin-top:6px;letter-spacing:.5px}
-.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px}
-.info-label{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}
+.info-label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.05em}
 .info-value{font-size:13px;font-weight:700;margin-top:3px}
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
-.s-card{border:1px solid #e2e8f0;border-radius:8px;padding:14px;text-align:center}
-table{width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px}
-th{background:#f1f5f9;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;text-align:left;border-bottom:2px solid #e2e8f0}
+.s-card{border:1px solid #DCE1EF;border-radius:8px;padding:14px;text-align:center}
+table{width:100%;border-collapse:collapse;border:1px solid #DCE1EF;border-radius:8px;overflow:hidden;margin-bottom:16px}
+th{background:#f1f5f9;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6B7A9D;text-align:left;border-bottom:2px solid #DCE1EF}
 td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
-.tfoot td{background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0}
+.tfoot td{background:#F8F9FB;font-weight:700;border-top:2px solid #DCE1EF}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700}
-.bar-wrap{width:100%;background:#e2e8f0;border-radius:4px;height:7px}
+.bar-wrap{width:100%;background:#DCE1EF;border-radius:4px;height:7px}
 .bar-fill{height:7px;border-radius:4px}
-.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;padding:16px;border:1px solid #e2e8f0;border-radius:8px}
-.sig-line{height:52px;border-bottom:1.5px solid #1e293b;margin-bottom:6px}
-.sig-date{height:52px;border-bottom:1.5px solid #1e293b;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
+.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;padding:16px;border:1px solid #DCE1EF;border-radius:8px}
+.sig-line{height:52px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+.sig-date{height:52px;border-bottom:1.5px solid #0F1E3D;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
 .sig-label{font-size:12px;font-weight:700;text-align:center}
-.sig-name{font-size:11px;color:#64748b;text-align:center;margin-top:3px}
+.sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
 @media print{body{padding:0}@page{margin:1cm}}
 </style></head><body>
 <div class="header">
@@ -1181,9 +1181,9 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   <div><div class="info-label">Date of Birth</div><div class="info-value">${new Date(child.dob).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div></div>
 </div>
 <div class="summary">
-  <div class="s-card"><div style="font-size:36px;font-weight:900;color:${scoreColor(overallAvg)}">${overallAvg}%</div><div style="color:#64748b;margin-top:4px">Overall Score</div><div style="font-size:11px;color:#94a3b8">${subjectData.length} subjects</div></div>
-  <div class="s-card"><div style="font-size:48px;font-weight:900;color:${gradeFg[overallGrade]||'#374151'}">${overallGrade}</div><div style="color:#64748b;margin-top:4px">Final Grade</div><div style="font-size:11px;color:#94a3b8">${overallAvg>=90?'Outstanding':overallAvg>=80?'Excellent':overallAvg>=70?'Good':overallAvg>=60?'Average':'Needs Improvement'}</div></div>
-  <div class="s-card"><div style="font-size:28px;font-weight:900;color:${att.pct>=90?'#10b981':'#f59e0b'}">${att.pct}%</div><div style="color:#64748b;margin-top:4px">Attendance Rate</div><div style="font-size:11px;color:#94a3b8">${att.present}P · ${att.absent}A · ${att.late}L</div></div>
+  <div class="s-card"><div style="font-size:36px;font-weight:900;color:${scoreColor(overallAvg)}">${overallAvg}%</div><div style="color:#6B7A9D;margin-top:4px">Overall Score</div><div style="font-size:11px;color:#6B7A9D">${subjectData.length} subjects</div></div>
+  <div class="s-card"><div style="font-size:48px;font-weight:900;color:${gradeFg[overallGrade]||'#2A3B60'}">${overallGrade}</div><div style="color:#6B7A9D;margin-top:4px">Final Grade</div><div style="font-size:11px;color:#6B7A9D">${overallAvg>=90?'Outstanding':overallAvg>=80?'Excellent':overallAvg>=70?'Good':overallAvg>=60?'Average':'Needs Improvement'}</div></div>
+  <div class="s-card"><div style="font-size:28px;font-weight:900;color:${att.pct>=90?'#10b981':'#E8B020'}">${att.pct}%</div><div style="color:#6B7A9D;margin-top:4px">Attendance Rate</div><div style="font-size:11px;color:#6B7A9D">${att.present}P · ${att.absent}A · ${att.late}L</div></div>
 </div>
 <table>
   <thead><tr><th>Subject</th><th>Semester 1</th><th>Semester 2</th><th>Final %</th><th>Grade</th><th style="width:130px">Performance</th></tr></thead>
@@ -1193,7 +1193,7 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
       <td style="text-align:center">${d.s1Pct!==null?d.s1Pct+'%':'—'}</td>
       <td style="text-align:center">${d.s2Pct!==null?d.s2Pct+'%':'—'}</td>
       <td style="text-align:center;font-weight:700;color:${scoreColor(d.avgPct)}">${d.avgPct}%</td>
-      <td><span class="badge" style="background:${gradeBg[d.grade]||'#f1f5f9'};color:${gradeFg[d.grade]||'#374151'}">${d.grade}</span></td>
+      <td><span class="badge" style="background:${gradeBg[d.grade]||'#f1f5f9'};color:${gradeFg[d.grade]||'#2A3B60'}">${d.grade}</span></td>
       <td><div class="bar-wrap"><div class="bar-fill" style="width:${d.avgPct}%;background:${scoreColor(d.avgPct)}"></div></div></td>
     </tr>`).join('')}
     <tr class="tfoot"><td colspan="3"><strong>Overall Average</strong></td><td style="text-align:center;font-weight:900;color:${scoreColor(overallAvg)}">${overallAvg}%</td><td><span class="badge" style="background:${gradeBg[overallGrade]};color:${gradeFg[overallGrade]}">${overallGrade}</span></td><td></td></tr>
@@ -1212,8 +1212,8 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   const chartCanvas = document.getElementById('final-result-chart');
   const chartImg = chartCanvas ? chartCanvas.toDataURL('image/png') : null;
   const chartSection = chartImg
-    ? `<div style="margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">Semester Comparison Chart</div>
+    ? `<div style="margin-bottom:16px;border:1px solid #DCE1EF;border-radius:8px;padding:16px">
+         <div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">Semester Comparison Chart</div>
          <img src="${chartImg}" style="width:100%;border-radius:6px"/>
        </div>`
     : '';
@@ -1234,11 +1234,11 @@ function renderParentEvents() {
   const upcoming = events.filter(e => e.date >= today);
   const past = events.filter(e => e.date < today);
 
-  const typeColors = { sports:'#10b981', academic:'#6366f1', cultural:'#8b5cf6', holiday:'#ef4444', meeting:'#f59e0b' };
+  const typeColors = { sports:'#10b981', academic:'#1AA6CA', cultural:'#C4893A', holiday:'#ef4444', meeting:'#E8B020' };
   const typeIcons = { sports:'fa-running', academic:'fa-book', cultural:'fa-music', holiday:'fa-star', meeting:'fa-users' };
 
   const evCard = (ev) => {
-    const color = typeColors[ev.type] || '#6366f1';
+    const color = typeColors[ev.type] || '#1AA6CA';
     const icon = typeIcons[ev.type] || 'fa-calendar';
     const evCls = ev.classId ? DB.getClass(ev.classId) : null;
     const d = new Date(ev.date);
@@ -1246,15 +1246,15 @@ function renderParentEvents() {
     <div style="border:2px solid ${color}30;border-radius:14px;padding:18px;background:#fff;display:flex;gap:14px">
       <div style="text-align:center;background:${color}15;border-radius:12px;padding:12px 14px;min-width:56px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
         <div style="font-size:22px;font-weight:900;color:${color};line-height:1">${d.getDate()}</div>
-        <div style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:600">${d.toLocaleDateString('en-US',{month:'short'})}</div>
+        <div style="font-size:10px;color:#6B7A9D;text-transform:uppercase;font-weight:600">${d.toLocaleDateString('en-US',{month:'short'})}</div>
         <i class="fas ${icon}" style="color:${color};font-size:14px;margin-top:4px"></i>
       </div>
       <div style="flex:1">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px">${ev.title}</div>
-        ${ev.description ? `<div style="font-size:13px;color:#64748b;margin-bottom:8px">${ev.description}</div>` : ''}
-        <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:#374151">
+        ${ev.description ? `<div style="font-size:13px;color:#6B7A9D;margin-bottom:8px">${ev.description}</div>` : ''}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:#2A3B60">
           ${ev.time ? `<span><i class="fas fa-clock" style="color:#10b981;margin-right:4px"></i>${ev.time}</span>` : ''}
-          <span><i class="fas fa-map-marker-alt" style="color:#6366f1;margin-right:4px"></i>${evCls ? evCls.name : 'All School'}</span>
+          <span><i class="fas fa-map-marker-alt" style="color:#1AA6CA;margin-right:4px"></i>${evCls ? evCls.name : 'All School'}</span>
           <span style="background:${color}20;color:${color};padding:2px 8px;border-radius:10px;font-weight:700;text-transform:capitalize">${ev.type}</span>
         </div>
       </div>
@@ -1265,14 +1265,14 @@ function renderParentEvents() {
     ${child ? renderChildSelector(child) : ''}
     ${upcoming.length ? `
     <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-calendar-alt" style="color:#6366f1"></i> Upcoming Events</div>
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-calendar-alt" style="color:#1AA6CA"></i> Upcoming Events</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
         ${upcoming.map(evCard).join('')}
       </div>
     </div>` : `<div class="empty-state" style="padding:60px"><i class="fas fa-calendar-alt" style="font-size:48px;color:#c7d2fe"></i><h3>No upcoming events</h3><p>Events scheduled by your school will appear here</p></div>`}
     ${past.length ? `
     <div class="card">
-      <div class="card-title" style="margin-bottom:16px;color:#94a3b8"><i class="fas fa-history"></i> Past Events</div>
+      <div class="card-title" style="margin-bottom:16px;color:#6B7A9D"><i class="fas fa-history"></i> Past Events</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;opacity:0.6">
         ${past.map(evCard).join('')}
       </div>

@@ -19,9 +19,9 @@ function renderDashboard() {
   const todayAtt = data.attendance.filter(a => a.date === today && (!myClassId || (DB.getStudent(a.studentId) || {}).classId === myClassId));
 
   const stats = [
-    { label: 'Students', value: allStudents.length, icon: 'fa-user-graduate', color: '#6366f1', bg: '#ede9fe' },
+    { label: 'Students', value: allStudents.length, icon: 'fa-user-graduate', color: '#1AA6CA', bg: '#E8EDF5' },
     { label: 'Classes', value: allClasses.length, icon: 'fa-school', color: '#10b981', bg: '#d1fae5' },
-    { label: 'Pending Leaves', value: pendingLeaves.length, icon: 'fa-calendar-times', color: '#f59e0b', bg: '#fef3c7' },
+    { label: 'Pending Leaves', value: pendingLeaves.length, icon: 'fa-calendar-times', color: '#E8B020', bg: '#FEF7E0' },
     { label: "Today's Attendance", value: todayAtt.length + ' marked', icon: 'fa-calendar-check', color: '#ef4444', bg: '#fee2e2' },
   ];
 
@@ -33,7 +33,7 @@ function renderDashboard() {
             <i class="fas ${s.icon}" style="color:${s.color}"></i>
           </div>
           <div style="font-size:28px;font-weight:900;color:${s.color}">${s.value}</div>
-          <div style="font-size:13px;color:#64748b;margin-top:4px">${s.label}</div>
+          <div style="font-size:13px;color:#6B7A9D;margin-top:4px">${s.label}</div>
         </div>`).join('')}
     </div>
 
@@ -41,7 +41,7 @@ function renderDashboard() {
       <!-- Recent Students -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="fas fa-user-graduate" style="color:#6366f1"></i> Recent Students</div>
+          <div class="card-title"><i class="fas fa-user-graduate" style="color:#1AA6CA"></i> Recent Students</div>
           <button class="btn btn-primary btn-sm" onclick="navigate('students')">View All</button>
         </div>
         ${allStudents.slice(0, 5).map(s => {
@@ -50,7 +50,7 @@ function renderDashboard() {
           return `
           <div class="flex-between" style="padding:10px 0;border-bottom:1px solid #f1f5f9">
             <div class="flex gap-3 align-items-center" style="align-items:center">
-              ${avatarHtml(s.name, '#6366f1')}
+              ${avatarHtml(s.name, '#0F2050')}
               <div>
                 <div style="font-size:14px;font-weight:600">${s.name}</div>
                 <div class="text-muted">${cls ? cls.name : '-'} · Roll: ${s.rollNo}</div>
@@ -65,14 +65,14 @@ function renderDashboard() {
       <!-- Announcements -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="fas fa-bullhorn" style="color:#f59e0b"></i> Announcements</div>
+          <div class="card-title"><i class="fas fa-bullhorn" style="color:#E8B020"></i> Announcements</div>
           <button class="btn btn-primary btn-sm" onclick="navigate('announcements')">View All</button>
         </div>
         ${recentAnn.length ? recentAnn.map(a => `
           <div style="padding:12px 0;border-bottom:1px solid #f1f5f9">
             <div style="font-size:14px;font-weight:600;margin-bottom:4px">${a.title}</div>
             <div class="text-muted" style="font-size:12px">${a.body.slice(0, 80)}...</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:4px">${formatDate(a.date)}</div>
+            <div style="font-size:11px;color:#6B7A9D;margin-top:4px">${formatDate(a.date)}</div>
           </div>`).join('') : '<div class="empty-state"><i class="fas fa-bullhorn"></i><p>No announcements</p></div>'}
       </div>
     </div>
@@ -129,7 +129,7 @@ function renderStudents() {
   const content = `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-user-graduate" style="color:#6366f1"></i> Students (${students.length})</div>
+        <div class="card-title"><i class="fas fa-user-graduate" style="color:#1AA6CA"></i> Students (${students.length})</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <div class="search-box">
             <i class="fas fa-search icon"></i>
@@ -155,7 +155,7 @@ function renderStudents() {
               return `<tr>
                 <td>
                   <div style="display:flex;align-items:center;gap:10px">
-                    ${avatarHtml(s.name, '#6366f1')}
+                    ${avatarHtml(s.name, '#0F2050')}
                     <div>
                       <div style="font-weight:600">${s.name}</div>
                       <div class="text-muted">${s.gender} · ${s.bloodGroup}</div>
@@ -211,10 +211,10 @@ function openStudentProfile(sid) {
     <div class="modal modal-xl">
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:16px">
-          ${avatarHtml(s.name, '#6366f1', 'avatar-lg')}
+          ${avatarHtml(s.name, '#0F2050', 'avatar-lg')}
           <div>
             <div class="modal-title">${s.name}</div>
-            <div style="color:#64748b;font-size:13px">${cls ? cls.name : '-'} · Roll: ${s.rollNo} · ${s.gender} · ${s.bloodGroup}</div>
+            <div style="color:#6B7A9D;font-size:13px">${cls ? cls.name : '-'} · Roll: ${s.rollNo} · ${s.gender} · ${s.bloodGroup}</div>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -232,22 +232,22 @@ function openStudentProfile(sid) {
             <div class="text-muted">Attendance (${att.present}P / ${att.absent}A / ${att.late}L)</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background:#ede9fe"><i class="fas fa-star" style="color:#6366f1"></i></div>
-            <div style="font-size:24px;font-weight:800;color:#6366f1">${grades.length ? Math.round(grades.reduce((s,g) => s + (g.score/g.maxScore*100), 0) / grades.length) : '-'}%</div>
+            <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-star" style="color:#1AA6CA"></i></div>
+            <div style="font-size:24px;font-weight:800;color:#1AA6CA">${grades.length ? Math.round(grades.reduce((s,g) => s + (g.score/g.maxScore*100), 0) / grades.length) : '-'}%</div>
             <div class="text-muted">Average Grade (${grades.length} subjects)</div>
           </div>
         </div>
 
         <!-- Grades Table -->
         <div class="card" style="margin-bottom:16px">
-          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-star" style="color:#6366f1"></i> Grades - Term 1 2024</div>
+          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-star" style="color:#1AA6CA"></i> Grades - Term 1 2024</div>
           ${grades.length ? `<div class="table-wrap"><table>
             <thead><tr><th>Subject</th><th>Score</th><th>Grade</th><th>Teacher Comment</th><th>Actions</th></tr></thead>
             <tbody>${grades.map(g => `<tr>
               <td><strong>${g.subject}</strong></td>
               <td>${scoreBarHtml(g.score, g.maxScore)}</td>
               <td><span class="grade-badge ${gradeColor(g.grade)}">${g.grade}</span></td>
-              <td style="font-size:12px;color:#64748b">${g.teacherComment || '-'}</td>
+              <td style="font-size:12px;color:#6B7A9D">${g.teacherComment || '-'}</td>
               <td><button class="btn btn-xs btn-secondary" onclick="openEditGradeModal('${g.id}')"><i class="fas fa-edit"></i></button></td>
             </tr>`).join('')}</tbody>
           </table></div>` : '<p class="text-muted">No grades recorded</p>'}
@@ -274,7 +274,7 @@ function openStudentProfile(sid) {
         <!-- Parent Info -->
         ${par ? `
         <div class="card" style="margin-bottom:16px">
-          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-user" style="color:#f59e0b"></i> Parent / Guardian</div>
+          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-user" style="color:#E8B020"></i> Parent / Guardian</div>
           <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
             ${avatarHtml(par.name, par.avatar)}
             <div style="flex:1">
@@ -290,7 +290,7 @@ function openStudentProfile(sid) {
         <!-- Activities -->
         ${activities.length ? `
         <div class="card">
-          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-running" style="color:#8b5cf6"></i> Activities</div>
+          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-running" style="color:#C4893A"></i> Activities</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             ${activities.map(a => `<span class="badge badge-purple">${a.name} · ${a.day}</span>`).join('')}
           </div>
@@ -369,7 +369,7 @@ function openAddStudentModal(prefillClassId = null) {
             ${parents.map(p => `<option value="${p.id}">${p.name} (${p.username})</option>`).join('')}
           </select>
         </div>
-        <div style="background:#fef3c7;border-radius:10px;padding:12px;font-size:13px;color:#92400e;margin-top:8px">
+        <div style="background:#FEF7E0;border-radius:10px;padding:12px;font-size:13px;color:#9A6A00;margin-top:8px">
           <i class="fas fa-info-circle"></i> To create a new parent account and link this child, use the "Management → Parents" section.
         </div>
       </div>
@@ -556,7 +556,7 @@ function renderClasses() {
           const teacher = DB.getUser(cls.teacherId);
           const students = DB.getStudents(cls.id);
           return `
-          <div class="card" style="cursor:pointer;border:2px solid #e2e8f0;padding:20px" onclick="">
+          <div class="card" style="cursor:pointer;border:2px solid #DCE1EF;padding:20px" onclick="">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
               <div class="stat-icon" style="background:#d1fae5;margin-bottom:0"><i class="fas fa-school" style="color:#10b981"></i></div>
               <div>
@@ -565,15 +565,15 @@ function renderClasses() {
               </div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-              <div><div style="font-size:22px;font-weight:800;color:#6366f1">${students.length}</div><div class="text-muted">Students</div></div>
+              <div><div style="font-size:22px;font-weight:800;color:#1AA6CA">${students.length}</div><div class="text-muted">Students</div></div>
               <div><div style="font-size:22px;font-weight:800;color:#10b981">${cls.subjects.length}</div><div class="text-muted">Subjects</div></div>
-              <div><div style="font-size:22px;font-weight:800;color:#f59e0b">${cls.capacity}</div><div class="text-muted">Capacity</div></div>
+              <div><div style="font-size:22px;font-weight:800;color:#E8B020">${cls.capacity}</div><div class="text-muted">Capacity</div></div>
             </div>
-            <div style="padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:12px">
-              <div style="font-size:12px;color:#64748b;margin-bottom:4px">Class Teacher</div>
-              ${teacher ? `<div style="font-weight:600">${teacher.name}</div>` : '<div style="color:#94a3b8">Not assigned</div>'}
+            <div style="padding:10px;background:#F8F9FB;border-radius:10px;margin-bottom:12px">
+              <div style="font-size:12px;color:#6B7A9D;margin-bottom:4px">Class Teacher</div>
+              ${teacher ? `<div style="font-weight:600">${teacher.name}</div>` : '<div style="color:#6B7A9D">Not assigned</div>'}
             </div>
-            <div style="font-size:12px;color:#64748b;margin-bottom:8px">Subjects</div>
+            <div style="font-size:12px;color:#6B7A9D;margin-bottom:8px">Subjects</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px">
               ${cls.subjects.map(sub => `<span class="badge badge-blue" style="font-size:11px">${sub}</span>`).join('')}
             </div>
@@ -790,7 +790,7 @@ function renderAttendance() {
               return `<tr id="att-row-${s.id}">
                 <td>
                   <div style="display:flex;align-items:center;gap:10px">
-                    ${avatarHtml(s.name, '#6366f1')}
+                    ${avatarHtml(s.name, '#0F2050')}
                     <strong>${s.name}</strong>
                   </div>
                 </td>
@@ -813,7 +813,7 @@ function renderAttendance() {
         const att = DB.getAttendanceSummary(s.id);
         return `<div class="flex-between" style="margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:10px;min-width:180px">
-            ${avatarHtml(s.name, '#6366f1')}
+            ${avatarHtml(s.name, '#0F2050')}
             <span style="font-size:13px;font-weight:600">${s.name}</span>
           </div>
           <div style="flex:1;margin:0 16px">${scoreBarHtml(att.present, att.total || 1)}</div>
@@ -872,7 +872,7 @@ function renderGrades() {
   const content = `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-star" style="color:#6366f1"></i> Grades Management</div>
+        <div class="card-title"><i class="fas fa-star" style="color:#1AA6CA"></i> Grades Management</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           ${!isSubAdmin ? `<select class="form-control" style="width:150px" onchange="gradesClassFilter=this.value;gradesStudentFilter='';renderGrades()">
             <option value="">All Classes</option>
@@ -1160,7 +1160,7 @@ function renderGrowth() {
               const last = growthRecs[growthRecs.length - 1];
               const cls = DB.getClass(s.classId);
               const bmiStatus = last ? (last.bmi < 18.5 ? 'Underweight' : last.bmi < 25 ? 'Normal' : 'Overweight') : '-';
-              const bmiColor = last ? (last.bmi < 18.5 ? '#f59e0b' : last.bmi < 25 ? '#10b981' : '#ef4444') : '#94a3b8';
+              const bmiColor = last ? (last.bmi < 18.5 ? '#E8B020' : last.bmi < 25 ? '#10b981' : '#ef4444') : '#6B7A9D';
               return `<tr>
                 <td>
                   <div style="display:flex;align-items:center;gap:10px">
@@ -1310,7 +1310,7 @@ function viewGrowthHistory(sid) {
             <tbody>
               ${records.map(r => {
                 const bmiStatus = r.bmi < 18.5 ? 'Underweight' : r.bmi < 25 ? 'Normal' : 'Overweight';
-                const bmiColor = r.bmi < 18.5 ? '#f59e0b' : r.bmi < 25 ? '#10b981' : '#ef4444';
+                const bmiColor = r.bmi < 18.5 ? '#E8B020' : r.bmi < 25 ? '#10b981' : '#ef4444';
                 return `<tr>
                   <td>${formatDate(r.date)}</td>
                   <td><strong>${r.height} cm</strong></td>
@@ -1335,7 +1335,7 @@ function viewGrowthHistory(sid) {
       data: {
         labels: records.map(r => formatDate(r.date)),
         datasets: [
-          { label: 'Height (cm)', data: records.map(r => r.height), borderColor: '#6366f1', tension: 0.4, fill: false },
+          { label: 'Height (cm)', data: records.map(r => r.height), borderColor: '#1AA6CA', tension: 0.4, fill: false },
           { label: 'Weight (kg)', data: records.map(r => r.weight), borderColor: '#10b981', tension: 0.4, fill: false }
         ]
       },
@@ -1356,14 +1356,14 @@ function renderActivities() {
   const content = `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-running" style="color:#8b5cf6"></i> Activities & Clubs</div>
+        <div class="card-title"><i class="fas fa-running" style="color:#C4893A"></i> Activities & Clubs</div>
         <button class="btn btn-primary" onclick="openAddActivityModal()"><i class="fas fa-plus"></i> Add Activity</button>
       </div>
       <div class="grid-2">
         ${activities.map(act => {
           const enrolled = act.studentIds.map(sid => DB.getStudent(sid)).filter(Boolean);
           return `
-          <div class="card" style="border:2px solid #e2e8f0;padding:20px">
+          <div class="card" style="border:2px solid #DCE1EF;padding:20px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
               <div>
                 <div style="font-size:16px;font-weight:800">${act.name}</div>
@@ -1374,7 +1374,7 @@ function renderActivities() {
                 ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteActivity('${act.id}')"><i class="fas fa-trash"></i></button>` : ''}
               </div>
             </div>
-            <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">Enrolled Students (${enrolled.length})</div>
+            <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px">Enrolled Students (${enrolled.length})</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px">
               ${enrolled.map(s => `<span class="badge badge-purple">${s.name}</span>`).join('')}
               ${!enrolled.length ? '<span class="text-muted">No students enrolled</span>' : ''}
@@ -1452,9 +1452,9 @@ function openEnrollModal(actId) {
       <div class="modal-header"><h2 class="modal-title">Manage Enrollment - ${act.name}</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
       <div class="modal-body">
         ${students.map(s => `
-          <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;margin-bottom:6px">
-            <input type="checkbox" id="enroll-${s.id}" ${act.studentIds.includes(s.id)?'checked':''} style="width:16px;height:16px;accent-color:#6366f1"/>
-            ${avatarHtml(s.name, '#6366f1')}
+          <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid #DCE1EF;margin-bottom:6px">
+            <input type="checkbox" id="enroll-${s.id}" ${act.studentIds.includes(s.id)?'checked':''} style="width:16px;height:16px;accent-color:#1AA6CA"/>
+            ${avatarHtml(s.name, '#0F2050')}
             ${s.name}
           </label>`).join('')}
       </div>
@@ -1547,7 +1547,7 @@ function renderSyllabus() {
   const content = `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-book-open" style="color:#8b5cf6"></i> Syllabus Management</div>
+        <div class="card-title"><i class="fas fa-book-open" style="color:#C4893A"></i> Syllabus Management</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           ${!isSubAdmin ? `<select class="form-control" style="width:150px" onchange="syllabusClassFilter2=this.value;renderSyllabus()">
             <option value="">Select Class</option>
@@ -1566,7 +1566,7 @@ function renderSyllabus() {
         const done = syl.topics.filter(t => t.status === 'completed').length;
         const inprog = syl.topics.filter(t => t.status === 'in_progress').length;
         return `
-        <div class="card" style="margin-bottom:20px;border:2px solid #e2e8f0">
+        <div class="card" style="margin-bottom:20px;border:2px solid #DCE1EF">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <div>
               <div style="font-size:18px;font-weight:800">${syl.subject}</div>
@@ -1584,7 +1584,7 @@ function renderSyllabus() {
             <div class="progress-fill" style="width:${Math.round(done/totalTopics*100)||0}%"></div>
           </div>
           ${syl.topics.map(t => {
-            const statusColors = { completed: '#10b981', in_progress: '#f59e0b', pending: '#94a3b8' };
+            const statusColors = { completed: '#10b981', in_progress: '#E8B020', pending: '#6B7A9D' };
             const statusLabels = { completed: 'Completed', in_progress: 'In Progress', pending: 'Pending' };
             return `
             <div class="topic-row">
@@ -1759,13 +1759,13 @@ function renderLeaves() {
             <div>
               <div style="font-weight:700;font-size:16px">${stu ? stu.name : '-'}</div>
               <div class="text-muted">${par ? par.name + ' (Parent)' : ''}</div>
-              <div style="margin:8px 0;font-size:14px"><i class="fas fa-calendar" style="color:#6366f1"></i> ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}</div>
-              <div style="font-size:14px;color:#374151"><strong>Reason:</strong> ${l.reason}</div>
-              ${l.reviewNote ? `<div style="font-size:13px;color:#64748b;margin-top:4px"><strong>Note:</strong> ${l.reviewNote}</div>` : ''}
+              <div style="margin:8px 0;font-size:14px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}</div>
+              <div style="font-size:14px;color:#2A3B60"><strong>Reason:</strong> ${l.reason}</div>
+              ${l.reviewNote ? `<div style="font-size:13px;color:#6B7A9D;margin-top:4px"><strong>Note:</strong> ${l.reviewNote}</div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
               <span class="badge badge-${colors[l.status]}">${l.status.toUpperCase()}</span>
-              <span style="font-size:11px;color:#94a3b8">Applied: ${formatDate(l.appliedOn)}</span>
+              <span style="font-size:11px;color:#6B7A9D">Applied: ${formatDate(l.appliedOn)}</span>
               ${l.status === 'pending' ? `
                 <div style="display:flex;gap:6px">
                   <button class="btn btn-xs btn-success" onclick="reviewLeave('${l.id}','approved')"><i class="fas fa-check"></i> Approve</button>
@@ -1832,7 +1832,7 @@ function renderAnnouncements() {
   const content = `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-bullhorn" style="color:#f59e0b"></i> Announcements</div>
+        <div class="card-title"><i class="fas fa-bullhorn" style="color:#E8B020"></i> Announcements</div>
         <button class="btn btn-primary" onclick="openAddAnnouncementModal()"><i class="fas fa-plus"></i> Post Announcement</button>
       </div>
       ${anns.map(a => {
@@ -1847,8 +1847,8 @@ function renderAnnouncements() {
               ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>` : ''}
             </div>
           </div>
-          <p style="color:#374151;font-size:14px;margin:0 0 8px">${a.body}</p>
-          <div style="font-size:12px;color:#94a3b8">Posted by ${poster ? poster.name : '-'} · ${formatDate(a.date)}</div>
+          <p style="color:#2A3B60;font-size:14px;margin:0 0 8px">${a.body}</p>
+          <div style="font-size:12px;color:#6B7A9D">Posted by ${poster ? poster.name : '-'} · ${formatDate(a.date)}</div>
         </div>`;
       }).join('')}
       ${!anns.length ? '<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>' : ''}
@@ -1940,14 +1940,14 @@ function renderMessages() {
     <div class="grid-2" style="height:600px">
       <!-- Conversations list -->
       <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:16px;border-bottom:1px solid #e2e8f0;font-weight:700">Conversations</div>
+        <div style="padding:16px;border-bottom:1px solid #DCE1EF;font-weight:700">Conversations</div>
         <div style="overflow-y:auto;height:calc(100% - 56px)">
           ${parents.map(p => {
             const pMsgs = myMsgs.filter(m => m.from === p.id || m.to === p.id);
             const lastMsg = pMsgs[pMsgs.length - 1];
             const childrenOfParent = DB.getStudentsByParent(p.id).filter(s => students.some(st => st.id === s.id));
             return `
-            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${msgTargetId===p.id?'background:#ede9fe':''}" onclick="openConversation('${p.id}','${childrenOfParent[0]?.id||''}')">
+            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${msgTargetId===p.id?'background:#E8EDF5':''}" onclick="openConversation('${p.id}','${childrenOfParent[0]?.id||''}')">
               ${avatarHtml(p.name, p.avatar)}
               <div style="flex:1;overflow:hidden">
                 <div style="font-weight:600;font-size:14px">${p.name}</div>
@@ -1970,7 +1970,7 @@ function renderMessages() {
       <!-- Chat window -->
       <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column" id="chat-window">
         ${msgTargetId ? renderChatWindow(msgTargetId) : `
-        <div class="flex-center" style="height:100%;flex-direction:column;color:#94a3b8">
+        <div class="flex-center" style="height:100%;flex-direction:column;color:#6B7A9D">
           <i class="fas fa-comment-dots" style="font-size:48px;margin-bottom:16px;opacity:0.4"></i>
           <p>Select a conversation</p>
         </div>`}
@@ -1996,7 +1996,7 @@ function renderChatWindow(parentId) {
   ).sort((a, b) => a.time.localeCompare(b.time));
 
   return `
-    <div style="padding:16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+    <div style="padding:16px;border-bottom:1px solid #DCE1EF;display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:10px">
         ${parent ? avatarHtml(parent.name, parent.avatar) : ''}
         <div>
@@ -2016,7 +2016,7 @@ function renderChatWindow(parentId) {
         </div>`).join('')}
       ${!msgs.length ? '<div class="text-muted" style="text-align:center;margin:auto">No messages yet. Start the conversation!</div>' : ''}
     </div>
-    <div style="padding:14px;border-top:1px solid #e2e8f0;display:flex;gap:10px">
+    <div style="padding:14px;border-top:1px solid #DCE1EF;display:flex;gap:10px">
       <input class="form-control" id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage('${parentId}')"/>
       <button class="btn btn-primary" onclick="sendMessage('${parentId}')"><i class="fas fa-paper-plane"></i></button>
     </div>`;
@@ -2079,7 +2079,7 @@ function renderGallery() {
           <option value="">All Classes</option>
           ${data.classes.map(c => `<option value="${c.id}"${_galFilterClass===c.id?' selected':''}>${c.name}</option>`).join('')}
         </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
-        <span style="font-size:13px;color:#64748b">${photos.length} photo${photos.length!==1?'s':''}</span>
+        <span style="font-size:13px;color:#6B7A9D">${photos.length} photo${photos.length!==1?'s':''}</span>
       </div>
       <button class="btn btn-primary" onclick="openGalleryUpload()">
         <i class="fas fa-cloud-upload-alt"></i> Upload Photo
@@ -2105,24 +2105,24 @@ function renderGallery() {
     <div class="modal-overlay" id="gallery-upload-modal" style="display:none">
       <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
-          <h3 class="modal-title"><i class="fas fa-cloud-upload-alt" style="color:#6366f1"></i> Upload Activity Photo</h3>
+          <h3 class="modal-title"><i class="fas fa-cloud-upload-alt" style="color:#1AA6CA"></i> Upload Activity Photo</h3>
           <button class="modal-close" onclick="closeGalleryModal()">×</button>
         </div>
         <div class="modal-body">
           <div id="gallery-upload-area"
                style="border:2px dashed #c7d2fe;border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:#f8faff;margin-bottom:20px;transition:border-color 0.2s"
                onclick="document.getElementById('gallery-file-input').click()"
-               ondragover="event.preventDefault();this.style.borderColor='#6366f1'"
+               ondragover="event.preventDefault();this.style.borderColor='#1AA6CA'"
                ondragleave="this.style.borderColor='#c7d2fe'"
                ondrop="handleGalleryDrop(event)">
-            <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#6366f1;margin-bottom:12px"></i>
+            <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#1AA6CA;margin-bottom:12px"></i>
             <p style="font-weight:600;color:#334155;margin:0 0 4px">Click to select or drag &amp; drop</p>
-            <p style="font-size:12px;color:#94a3b8;margin:0">JPG, PNG, GIF up to 5MB</p>
+            <p style="font-size:12px;color:#6B7A9D;margin:0">JPG, PNG, GIF up to 5MB</p>
             <input type="file" id="gallery-file-input" accept="image/*" multiple style="display:none" onchange="previewGalleryImages(this)">
           </div>
           <div id="gallery-preview-wrap" style="display:none;margin-bottom:20px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <span id="gallery-preview-count" style="font-size:13px;font-weight:600;color:#1e293b"></span>
+              <span id="gallery-preview-count" style="font-size:13px;font-weight:600;color:#0F1E3D"></span>
               <button onclick="clearGalleryFiles()" style="font-size:12px;color:#ef4444;background:none;border:none;cursor:pointer"><i class="fas fa-times"></i> Clear all</button>
             </div>
             <div id="gallery-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px"></div>
@@ -2149,12 +2149,12 @@ function renderGallery() {
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label"><i class="fas fa-user-tag"></i> Tag Students <span style="font-size:12px;font-weight:400;color:#94a3b8">(optional)</span></label>
-            <div id="gallery-student-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:52px">
+            <label class="form-label"><i class="fas fa-user-tag"></i> Tag Students <span style="font-size:12px;font-weight:400;color:#6B7A9D">(optional)</span></label>
+            <div id="gallery-student-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#F8F9FB;border-radius:8px;border:1px solid #DCE1EF;min-height:52px">
               ${DB.getStudents(myClassId).map(s => `
-                <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
+                <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #DCE1EF;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
                   <input type="checkbox" class="gal-student-cb" value="${s.id}" style="cursor:pointer">
-                  ${avatarHtml(s.name,'#6366f1','avatar-xs')} ${s.name}
+                  ${avatarHtml(s.name,'#0F2050','avatar-xs')} ${s.name}
                 </label>
               `).join('')}
             </div>
@@ -2184,13 +2184,13 @@ function renderGalleryCard(p) {
   const uploader = DB.getUser(p.uploadedBy);
   const user = Session.current();
   const canDel = Session.canDelete() || (user && p.uploadedBy === user.id);
-  const bgColors = ['#667eea','#764ba2','#10b981','#f59e0b','#ef4444','#6366f1'];
+  const bgColors = ['#0F2050','#1AA6CA','#10b981','#E8B020','#ef4444','#1AA6CA'];
   const bg = bgColors[Math.abs(p.id.charCodeAt(3) || 0) % bgColors.length];
 
   return `
     <div class="card" style="padding:0;overflow:hidden;border-radius:14px;transition:box-shadow 0.2s;cursor:pointer"
          onclick="openGalleryLightbox('${p.id}')"
-         onmouseenter="this.style.boxShadow='0 8px 30px rgba(99,102,241,0.18)'"
+         onmouseenter="this.style.boxShadow='0 8px 30px rgba(26,166,202,0.18)'"
          onmouseleave="this.style.boxShadow=''">
       <div style="position:relative;height:190px;overflow:hidden;background:#f1f5f9">
         ${p.imageData ?
@@ -2200,7 +2200,7 @@ function renderGalleryCard(p) {
           </div>`
         }
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.35));pointer-events:none"></div>
-        ${cls ? `<span style="position:absolute;top:10px;left:10px;background:rgba(99,102,241,0.9);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${cls.name}</span>` : ''}
+        ${cls ? `<span style="position:absolute;top:10px;left:10px;background:rgba(26,166,202,0.9);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${cls.name}</span>` : ''}
         ${canDel ? `
           <button class="btn btn-danger btn-xs"
             style="position:absolute;top:8px;right:8px;opacity:0.9"
@@ -2209,16 +2209,16 @@ function renderGalleryCard(p) {
           </button>` : ''}
       </div>
       <div style="padding:14px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#1e293b">${p.title}</div>
-        <div style="font-size:12px;color:#64748b;margin-bottom:8px"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>${formatDate(p.date)}</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0F1E3D">${p.title}</div>
+        <div style="font-size:12px;color:#6B7A9D;margin-bottom:8px"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>${formatDate(p.date)}</div>
         ${taggedStudents.length ? `
           <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-            <i class="fas fa-user-tag" style="font-size:11px;color:#94a3b8"></i>
-            ${taggedStudents.slice(0,3).map(s => `<span style="font-size:11px;background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px">${s.name.split(' ')[0]}</span>`).join('')}
-            ${taggedStudents.length > 3 ? `<span style="font-size:11px;color:#94a3b8">+${taggedStudents.length-3}</span>` : ''}
+            <i class="fas fa-user-tag" style="font-size:11px;color:#6B7A9D"></i>
+            ${taggedStudents.slice(0,3).map(s => `<span style="font-size:11px;background:#E8EDF5;color:#5b21b6;padding:2px 8px;border-radius:10px">${s.name.split(' ')[0]}</span>`).join('')}
+            ${taggedStudents.length > 3 ? `<span style="font-size:11px;color:#6B7A9D">+${taggedStudents.length-3}</span>` : ''}
           </div>
         ` : `<span style="font-size:11px;color:#cbd5e1"><i class="fas fa-users"></i> All students</span>`}
-        ${uploader ? `<div style="font-size:11px;color:#94a3b8;margin-top:6px">By ${uploader.name}</div>` : ''}
+        ${uploader ? `<div style="font-size:11px;color:#6B7A9D;margin-top:6px">By ${uploader.name}</div>` : ''}
       </div>
     </div>
   `;
@@ -2236,7 +2236,7 @@ function openGalleryLightbox(photoId) {
     <div style="position:relative">
       ${p.imageData ?
         `<img src="${p.imageData}" style="width:100%;max-height:460px;object-fit:cover;display:block" alt="${p.title}">` :
-        `<div style="height:280px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center">
+        `<div style="height:280px;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center">
           <i class="fas fa-image" style="font-size:64px;color:rgba(255,255,255,0.4)"></i>
         </div>`
       }
@@ -2244,24 +2244,24 @@ function openGalleryLightbox(photoId) {
     </div>
     <div style="padding:20px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
-        <h3 style="margin:0;font-size:18px;font-weight:800;color:#1e293b">${p.title}</h3>
+        <h3 style="margin:0;font-size:18px;font-weight:800;color:#0F1E3D">${p.title}</h3>
         ${cls ? `<span class="badge badge-indigo">${cls.name}</span>` : ''}
       </div>
-      ${p.description ? `<p style="color:#64748b;margin:0 0 12px;font-size:14px">${p.description}</p>` : ''}
-      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:14px">
+      ${p.description ? `<p style="color:#6B7A9D;margin:0 0 12px;font-size:14px">${p.description}</p>` : ''}
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#6B7A9D;margin-bottom:14px">
         <span><i class="fas fa-calendar-alt"></i> ${formatDate(p.date)}</span>
         ${uploader ? `<span><i class="fas fa-user"></i> ${uploader.name}</span>` : ''}
       </div>
       ${taggedStudents.length ? `
         <div>
-          <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Students in this photo</div>
+          <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Students in this photo</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             ${taggedStudents.map(s => {
               const scls = DB.getClass(s.classId);
               return `<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#f1f5f9;border-radius:20px;font-size:13px">
-                ${avatarHtml(s.name,'#6366f1','avatar-xs')}
+                ${avatarHtml(s.name,'#0F2050','avatar-xs')}
                 <span style="font-weight:600">${s.name}</span>
-                ${scls ? `<span style="color:#94a3b8">${scls.name}</span>` : ''}
+                ${scls ? `<span style="color:#6B7A9D">${scls.name}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -2375,11 +2375,11 @@ function updateGalleryStudentList() {
   const list = document.getElementById('gallery-student-list');
   if (!list) return;
   list.innerHTML = students.length ? students.map(s => `
-    <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
+    <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid #DCE1EF;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;user-select:none">
       <input type="checkbox" class="gal-student-cb" value="${s.id}" style="cursor:pointer">
-      ${avatarHtml(s.name,'#6366f1','avatar-xs')} ${s.name}
+      ${avatarHtml(s.name,'#0F2050','avatar-xs')} ${s.name}
     </label>
-  `).join('') : '<span style="font-size:13px;color:#94a3b8">No students found</span>';
+  `).join('') : '<span style="font-size:13px;color:#6B7A9D">No students found</span>';
 }
 
 function saveGalleryItem() {
@@ -2423,10 +2423,10 @@ function deleteGalleryPhoto(id) {
 // ---- Events ----
 const _evTypeStyles = {
   sports:   { bg: '#d1fae5', color: '#065f46', icon: 'fa-running' },
-  academic: { bg: '#ede9fe', color: '#5b21b6', icon: 'fa-book' },
+  academic: { bg: '#E8EDF5', color: '#5b21b6', icon: 'fa-book' },
   cultural: { bg: '#fce7f3', color: '#9d174d', icon: 'fa-music' },
   holiday:  { bg: '#fee2e2', color: '#991b1b', icon: 'fa-star' },
-  meeting:  { bg: '#fef3c7', color: '#92400e', icon: 'fa-users' },
+  meeting:  { bg: '#FEF7E0', color: '#9A6A00', icon: 'fa-users' },
 };
 
 function renderEvents() {
@@ -2443,7 +2443,7 @@ function renderEvents() {
     const creator = DB.getUser(ev.createdBy);
     const canDel = user.role === 'superadmin' || ev.createdBy === user.id;
     return `
-    <div style="border:2px solid #e2e8f0;border-radius:14px;padding:18px;background:#fff;display:flex;flex-direction:column;gap:10px">
+    <div style="border:2px solid #DCE1EF;border-radius:14px;padding:18px;background:#fff;display:flex;flex-direction:column;gap:10px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;border-radius:12px;background:${tc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2451,17 +2451,17 @@ function renderEvents() {
           </div>
           <div>
             <div style="font-size:15px;font-weight:700">${ev.title}</div>
-            <div style="font-size:12px;color:#64748b">${cls ? cls.name : 'All School'}</div>
+            <div style="font-size:12px;color:#6B7A9D">${cls ? cls.name : 'All School'}</div>
           </div>
         </div>
         ${canDel ? `<button class="btn btn-xs btn-danger" onclick="deleteEventById('${ev.id}')"><i class="fas fa-trash"></i></button>` : ''}
       </div>
-      ${ev.description ? `<div style="font-size:13px;color:#64748b">${ev.description}</div>` : ''}
+      ${ev.description ? `<div style="font-size:13px;color:#6B7A9D">${ev.description}</div>` : ''}
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="background:${tc.bg};color:${tc.color};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:capitalize">${ev.type}</span>
-        <span style="font-size:13px;color:#374151"><i class="fas fa-calendar" style="color:#6366f1;margin-right:4px"></i>${formatDate(ev.date)}</span>
-        ${ev.time ? `<span style="font-size:13px;color:#374151"><i class="fas fa-clock" style="color:#10b981;margin-right:4px"></i>${ev.time}</span>` : ''}
-        ${creator ? `<span style="font-size:11px;color:#94a3b8">by ${creator.name}</span>` : ''}
+        <span style="font-size:13px;color:#2A3B60"><i class="fas fa-calendar" style="color:#1AA6CA;margin-right:4px"></i>${formatDate(ev.date)}</span>
+        ${ev.time ? `<span style="font-size:13px;color:#2A3B60"><i class="fas fa-clock" style="color:#10b981;margin-right:4px"></i>${ev.time}</span>` : ''}
+        ${creator ? `<span style="font-size:11px;color:#6B7A9D">by ${creator.name}</span>` : ''}
       </div>
     </div>`;
   };
@@ -2469,7 +2469,7 @@ function renderEvents() {
   const content = `
     <div class="card" style="margin-bottom:20px">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-calendar-alt" style="color:#6366f1"></i> Upcoming Events</div>
+        <div class="card-title"><i class="fas fa-calendar-alt" style="color:#1AA6CA"></i> Upcoming Events</div>
         <button class="btn btn-primary" onclick="openAddEventModal()"><i class="fas fa-plus"></i> Add Event</button>
       </div>
       ${upcoming.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">${upcoming.map(eventCard).join('')}</div>`
@@ -2478,7 +2478,7 @@ function renderEvents() {
     ${past.length ? `
     <div class="card">
       <div class="card-header">
-        <div class="card-title" style="color:#94a3b8"><i class="fas fa-history"></i> Past Events</div>
+        <div class="card-title" style="color:#6B7A9D"><i class="fas fa-history"></i> Past Events</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;opacity:0.6">
         ${past.map(eventCard).join('')}
@@ -2494,7 +2494,7 @@ function openAddEventModal() {
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title"><i class="fas fa-calendar-plus" style="color:#6366f1;margin-right:8px"></i>Add Event</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+      <div class="modal-header"><h2 class="modal-title"><i class="fas fa-calendar-plus" style="color:#1AA6CA;margin-right:8px"></i>Add Event</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Event Title *</label>
@@ -2594,7 +2594,7 @@ function renderSchoolSettings() {
   const content = `
     <div style="max-width:680px;margin:0 auto">
       <div class="card">
-        <div class="card-title" style="margin-bottom:24px"><i class="fas fa-school" style="color:#6366f1"></i> School Settings</div>
+        <div class="card-title" style="margin-bottom:24px"><i class="fas fa-school" style="color:#1AA6CA"></i> School Settings</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px">
           <div class="form-group">
@@ -2618,9 +2618,9 @@ function renderSchoolSettings() {
             <input class="form-control" id="ss-address" type="text" value="${meta.schoolAddress || ''}" placeholder="Street, City, State, PIN"/>
           </div>
           <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label">Academic Year <span style="font-size:12px;color:#94a3b8;font-weight:400">(leave blank to auto-compute)</span></label>
+            <label class="form-label">Academic Year <span style="font-size:12px;color:#6B7A9D;font-weight:400">(leave blank to auto-compute)</span></label>
             <input class="form-control" id="ss-year" type="text" value="${meta.academicYear || ''}" placeholder="e.g. 2025-2026"/>
-            <div style="font-size:12px;color:#94a3b8;margin-top:5px"><i class="fas fa-info-circle"></i> Auto-compute: July–Dec = current year start, Jan–June = previous year start. Currently: <strong>${getAcademicYear()}</strong></div>
+            <div style="font-size:12px;color:#6B7A9D;margin-top:5px"><i class="fas fa-info-circle"></i> Auto-compute: July–Dec = current year start, Jan–June = previous year start. Currently: <strong>${getAcademicYear()}</strong></div>
           </div>
         </div>
 

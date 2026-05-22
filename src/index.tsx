@@ -1188,73 +1188,115 @@ app.get('/gallery', (c) => {
         `).join('')}
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        ${[
-          {emoji:'🎨', label:'Art Time', caption:'Creative Expression', bg:'linear-gradient(135deg,#E8EDF5,#FEF8F0)'},
-          {emoji:'🔬', label:'Science Lab', caption:'STEAM Discovery', bg:'linear-gradient(135deg,#E8F7FC,#E8EDF5)', tall:true},
-          {emoji:'🌳', label:'Outdoor Play', caption:'Hero Training Grounds', bg:'linear-gradient(135deg,#E8F0EC,#FEF7E0)'},
-          {emoji:'📚', label:'Story Time', caption:'Reading Adventures', bg:'linear-gradient(135deg,#FEF7E0,#FEF8F0)'},
-          {emoji:'🎵', label:'Music Class', caption:'Rhythm & Beats', bg:'linear-gradient(135deg,#E8EDF5,#E8F7FC)', wide:true},
-          {emoji:'🏃', label:'Sports Day', caption:'Superhero Olympics', bg:'linear-gradient(135deg,#FEF8F0,#FEF7E0)'},
-          {emoji:'🍳', label:'Cooking Class', caption:'Little Chefs', bg:'linear-gradient(135deg,#FEF7E0,#E8F0EC)', tall:true},
-          {emoji:'🧩', label:'Block Building', caption:'Engineering Minds', bg:'linear-gradient(135deg,#E8EDF5,#E8F7FC)'},
-          {emoji:'🎭', label:'Drama Class', caption:'Star Performers', bg:'linear-gradient(135deg,#FEF8F0,#E8EDF5)'},
-          {emoji:'🌸', label:'Garden Time', caption:'Little Gardeners', bg:'linear-gradient(135deg,#E8F0EC,#FEF8F0)', wide:true},
-          {emoji:'🎪', label:'Superhero Day', caption:'Annual Hero Parade', bg:'linear-gradient(135deg,#FEF7E0,#E8EDF5)'},
-          {emoji:'🤸', label:'Gymnastics', caption:'Flexible Superheroes', bg:'linear-gradient(135deg,#FEF8F0,#E8F7FC)'},
-          {emoji:'🌈', label:'Rainbow Art', caption:'Colorful Creations', bg:'linear-gradient(135deg,#E8EDF5,#FEF8F0)'},
-          {emoji:'🚀', label:'Space Theme', caption:'Cosmic Explorers', bg:'linear-gradient(135deg,#E8EDF5,#E8F7FC)', tall:true},
-          {emoji:'🎂', label:'Birthday Fun', caption:'Super Celebrations', bg:'linear-gradient(135deg,#FEF7E0,#FEF8F0)'},
-          {emoji:'🤝', label:'Team Work', caption:'Heroes Together', bg:'linear-gradient(135deg,#E8F7FC,#E8EDF5)'},
-        ].map((item, i) => `
-          <div class="gallery-item fade-in ${item.tall ? 'row-span-2' : ''}"
-            style="background:${item.bg};${item.tall ? 'aspect-ratio:1/2;' : ''}min-height:${item.tall?'300px':'150px'};flex-direction:column;gap:0.5rem;${item.wide ? 'grid-column:span 2;aspect-ratio:2/1;' : ''}">
-            <div style="font-size:${item.tall?'4rem':'3rem'}">${item.emoji}</div>
-            <div style="font-weight:800;color:#0F1E3D;font-size:0.9rem">${item.label}</div>
-            <div style="color:#6B7A9D;font-size:0.75rem">${item.caption}</div>
-            <div style="position:absolute;inset:0;background:rgba(15,32,80,0.08);opacity:0;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;border-radius:12px"
-              onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-              <i class="fas fa-expand-alt" style="color:#0F2050;font-size:1.5rem"></i>
-            </div>
-          </div>
-        `).join('')}
+      <div id="pub-gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Loading state, replaced by JS -->
+        <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D">
+          <i class="fas fa-images" style="font-size:3rem;margin-bottom:1rem;display:block;color:#DCE1EF"></i>
+          Loading gallery...
+        </div>
       </div>
 
       <!-- Videos -->
-      <div class="mt-16 fade-in">
-        <div class="text-center mb-8">
+      <div id="pub-video-section" class="mt-16 fade-in" style="display:none">
+        <div id="pub-video-heading" class="text-center mb-8">
           <div class="section-accent" style="margin:0 auto 1rem"></div>
           <h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;color:#C4893A;font-weight:800">
             See SuperKids In Action
           </h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          ${[
-            {emoji:'🎬', title:'A Day at SuperKids', duration:'2:45', views:'1.2K views'},
-            {emoji:'🏆', title:'Superhero Graduation 2024', duration:'5:30', views:'3.8K views'},
-            {emoji:'🔬', title:'STEAM Fair Highlights', duration:'3:15', views:'956 views'},
-          ].map(v => `
-            <div class="card" style="cursor:pointer;border-color:#FEF8F0"
-              onmouseover="this.style.borderColor='#C4893A'" onmouseout="this.style.borderColor='#FEF8F0'">
-              <div style="background:linear-gradient(135deg,#E8EDF5,#FEF8F0);border-radius:10px;padding:3rem 2rem;text-align:center;margin-bottom:1rem;position:relative">
-                <div style="font-size:3rem">${v.emoji}</div>
-                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-                  <div style="width:56px;height:56px;background:rgba(196,137,58,0.88);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,137,58,0.3)">
-                    <i class="fas fa-play" style="color:#fff;font-size:1.2rem;margin-left:3px"></i>
-                  </div>
-                </div>
-              </div>
-              <h4 style="font-weight:800;color:#0F1E3D;margin-bottom:0.5rem">${v.title}</h4>
-              <div class="flex justify-between" style="color:#6B7A9D;font-size:0.85rem">
-                <span><i class="fas fa-clock mr-1"></i>${v.duration}</span>
-                <span><i class="fas fa-eye mr-1"></i>${v.views}</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+        <div id="pub-gallery-videos" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
       </div>
     </div>
   </section>
+
+  <script>
+(function(){
+  var _allItems = [];
+
+  function ytThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+
+  function renderItems(items){
+    var grid = document.getElementById('pub-gallery-grid');
+    var vidSec = document.getElementById('pub-video-section');
+    var vidGrid = document.getElementById('pub-gallery-videos');
+    var photos = items.filter(function(i){ return i.type !== 'video'; });
+    var videos = items.filter(function(i){ return i.type === 'video'; });
+
+    if(!photos.length){
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D"><i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:1rem;color:#DCE1EF"></i>No photos yet. Check back soon!</div>';
+    } else {
+      grid.innerHTML = photos.map(function(p){
+        var src = p.imageData || p.thumbnail || '';
+        return '<div class="gallery-item fade-in" style="min-height:180px;flex-direction:column;gap:0;padding:0;overflow:hidden;border-radius:14px;background:#F8F9FB;cursor:pointer" onclick="openPubLightbox(\''+p.id+'\')">'
+          + (src ? '<img src="'+src+'" style="width:100%;height:180px;object-fit:cover;display:block" loading="lazy" alt="'+p.title+'">'
+                 : '<div style="height:180px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);display:flex;align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>')
+          + '<div style="padding:10px 12px"><div style="font-weight:700;color:#0F1E3D;font-size:0.85rem;margin-bottom:2px">'+p.title+'</div>'
+          + '<div style="color:#6B7A9D;font-size:0.72rem">'+p.date+'</div></div></div>';
+      }).join('');
+    }
+
+    if(!videos.length){
+      if(vidSec) vidSec.style.display = 'none';
+    } else {
+      if(vidSec) vidSec.style.display = '';
+      if(vidGrid) vidGrid.innerHTML = videos.map(function(v){
+        var thumb = v.thumbnail || ytThumb(v.youtubeId);
+        return '<div class="card" style="cursor:pointer;border-color:#FEF8F0;padding:0;overflow:hidden;border-radius:14px" onclick="openPubVideoLightbox(\''+v.youtubeId+'\')" onmouseover="this.style.borderColor=\'#C4893A\'" onmouseout="this.style.borderColor=\'#FEF8F0\'">'
+          + '<div style="position:relative">'
+          + '<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" loading="lazy" alt="'+v.title+'">'
+          + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2)">'
+          + '<div style="width:56px;height:56px;background:rgba(196,137,58,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,137,58,0.4)">'
+          + '<i class="fas fa-play" style="color:#fff;font-size:1.2rem;margin-left:3px"></i></div></div></div>'
+          + '<div style="padding:14px"><h4 style="font-weight:800;color:#0F1E3D;margin-bottom:6px">'+v.title+'</h4>'
+          + (v.description ? '<p style="color:#6B7A9D;font-size:13px;margin:0">'+v.description+'</p>' : '')
+          + '</div></div>';
+      }).join('');
+    }
+  }
+
+  function openPubLightbox(id){
+    var p = null;
+    for(var i=0;i<_allItems.length;i++){ if(_allItems[i].id===id){ p=_allItems[i]; break; } }
+    if(!p) return;
+    var src = p.imageData || p.thumbnail || '';
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:780px;width:100%;overflow:hidden;position:relative">'
+      + (src ? '<img src="'+src+'" style="width:100%;max-height:500px;object-fit:contain;display:block;background:#000">' : '')
+      + '<div style="padding:16px"><div style="font-weight:800;font-size:16px;color:#0F1E3D">'+p.title+'</div>'
+      + (p.description ? '<p style="color:#6B7A9D;margin:6px 0 0;font-size:14px">'+p.description+'</p>' : '')
+      + '<div style="font-size:12px;color:#6B7A9D;margin-top:6px">'+p.date+'</div></div>'
+      + '<button onclick="this.closest(\'div\').parentNode.remove()" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:18px">x</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+  }
+
+  function openPubVideoLightbox(ytId){
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+    ov.innerHTML = '<div style="background:#000;border-radius:16px;max-width:900px;width:100%;position:relative">'
+      + '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px">'
+      + '<iframe src="https://www.youtube.com/embed/'+ytId+'?autoplay=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>'
+      + '</div>'
+      + '<button onclick="this.parentNode.parentNode.remove()" style="position:absolute;top:-14px;right:-14px;width:34px;height:34px;border-radius:50%;background:#C4893A;border:none;color:#fff;cursor:pointer;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">x</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+  }
+
+  window.openPubLightbox = openPubLightbox;
+  window.openPubVideoLightbox = openPubVideoLightbox;
+
+  fetch('/static/gallery-data.json?t='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : {items:[]}; })
+    .then(function(d){
+      _allItems = d.items || [];
+      renderItems(_allItems);
+    })
+    .catch(function(){ renderItems([]); });
+})();
+</script>
 
   <!-- Social CTA -->
   <section style="padding:4rem 0;background:linear-gradient(135deg,#E8EDF5,#FEF8F0)">

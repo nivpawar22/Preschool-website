@@ -2353,13 +2353,21 @@ function openGalleryLightbox(photoId) {
         </div>
       ` : ''}
       ${(p.eventTags && p.eventTags.length) ? `
-        <div>
+        <div style="margin-bottom:14px">
           <div style="font-size:12px;font-weight:600;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em"><i class="fas fa-tag" style="margin-right:4px;color:#C4893A"></i>Events</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
             ${p.eventTags.map(ev => `<span style="padding:5px 14px;background:#FEF8F0;color:#C4893A;border-radius:20px;font-size:13px;font-weight:600;border:1px solid #C4893A33">${ev}</span>`).join('')}
           </div>
         </div>
       ` : ''}
+      <div style="border-top:1px solid #DCE1EF;padding-top:16px;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="gal-lb-publish-btn"
+          onclick="toggleGalleryPublish('${p.id}')"
+          style="flex:1;padding:10px 18px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;${p.published ? 'background:#FEF7E0;color:#E8B020' : 'background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff'}">
+          <i class="fas ${p.published ? 'fa-eye-slash' : 'fa-globe'}"></i>
+          ${p.published ? 'Unpublish from Website' : 'Publish to Website'}
+        </button>
+      </div>
     </div>
   `;
   document.getElementById('gallery-lightbox').style.display = 'flex';
@@ -2368,6 +2376,44 @@ function openGalleryLightbox(photoId) {
 function closeGalleryLightbox() {
   const lb = document.getElementById('gallery-lightbox');
   if (lb) lb.style.display = 'none';
+}
+
+async function toggleGalleryPublish(photoId) {
+  const data = DB.get();
+  const item = (data.gallery || []).find(function(g) { return g.id === photoId; });
+  if (!item) return;
+
+  const btn = document.getElementById('gal-lb-publish-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please wait...'; }
+
+  // If publishing a base64 photo, upload it to R2 first
+  if (!item.published && item.imageData && item.imageData.startsWith('data:')) {
+    try {
+      var arr = item.imageData.split(',');
+      var mime = arr[0].match(/:(.*?);/)[1];
+      var bstr = atob(arr[1]);
+      var n = bstr.length;
+      var u8arr = new Uint8Array(n);
+      while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+      var blob = new Blob([u8arr], { type: mime });
+      var ext = mime.split('/')[1] || 'jpg';
+      var formData = new FormData();
+      formData.append('file', blob, 'photo.' + ext);
+      var r = await fetch('/api/upload', { method: 'POST', body: formData });
+      var result = await r.json();
+      if (result.ok) {
+        item.imageData = result.url;
+        item.r2Key = result.key;
+      }
+    } catch(e) {}
+  }
+
+  item.published = !item.published;
+  DB.commit();
+  syncPublishedGallery();
+  closeGalleryLightbox();
+  showToast(item.published ? 'Photo published to website!' : 'Photo unpublished.', item.published ? 'success' : 'info');
+  navigate('gallery');
 }
 
 function openGalleryUpload() {

@@ -1,0 +1,27 @@
+{
+  "name": "SuperKids India – Parent Portal",
+  "short_name": "SuperKids",
+  "description": "SuperKids India Preschool – School Management & Parent Portal",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1e1b4b",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["education"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/static/school-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/school-logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

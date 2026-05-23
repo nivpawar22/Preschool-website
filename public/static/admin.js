@@ -2048,60 +2048,16 @@ function sendMessage(toId) {
 
 let _galFilterClass = '';
 let _galSelectedFiles = []; // array of {name, dataUrl}
+let _galleryPhotos = []; // R2 photo cache for lightbox
 
 function renderGallery() {
   const data = DB.get();
   const user = Session.current();
   const isSubAdmin = user.role === 'subadmin';
   const myClassId = isSubAdmin ? user.assignedClass : null;
-
-  let photos = DB.getGallery();
-  if (myClassId) {
-    photos = photos.filter(p =>
-      !p.classId || p.classId === myClassId ||
-      (p.studentIds || []).some(sid => (DB.getStudent(sid) || {}).classId === myClassId)
-    );
-  }
-  if (_galFilterClass) {
-    photos = photos.filter(p =>
-      !p.classId || p.classId === _galFilterClass ||
-      (p.studentIds || []).some(sid => (DB.getStudent(sid) || {}).classId === _galFilterClass)
-    );
-  }
-
   const allClasses = myClassId ? [DB.getClass(myClassId)].filter(Boolean) : data.classes;
 
-  const content = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        ${!myClassId ? `
-        <select class="form-control" style="width:180px" onchange="_galFilterClass=this.value;navigate('gallery')">
-          <option value="">All Classes</option>
-          ${data.classes.map(c => `<option value="${c.id}"${_galFilterClass===c.id?' selected':''}>${c.name}</option>`).join('')}
-        </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
-        <span style="font-size:13px;color:#64748b">${photos.length} photo${photos.length!==1?'s':''}</span>
-      </div>
-      <button class="btn btn-primary" onclick="openGalleryUpload()">
-        <i class="fas fa-cloud-upload-alt"></i> Upload Photo
-      </button>
-    </div>
-
-    ${photos.length === 0 ? `
-      <div class="empty-state" style="padding:80px">
-        <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
-        <h3 style="margin:16px 0 8px">No Photos Yet</h3>
-        <p>Upload activity photos to share with parents</p>
-        <button class="btn btn-primary" style="margin-top:12px" onclick="openGalleryUpload()">
-          <i class="fas fa-plus"></i> Upload First Photo
-        </button>
-      </div>
-    ` : `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px">
-        ${photos.map(p => renderGalleryCard(p)).join('')}
-      </div>
-    `}
-
-    <!-- Upload Modal -->
+  const uploadModal = `
     <div class="modal-overlay" id="gallery-upload-modal" style="display:none">
       <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
@@ -2117,7 +2073,7 @@ function renderGallery() {
                ondrop="handleGalleryDrop(event)">
             <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#6366f1;margin-bottom:12px"></i>
             <p style="font-weight:600;color:#334155;margin:0 0 4px">Click to select or drag &amp; drop</p>
-            <p style="font-size:12px;color:#94a3b8;margin:0">JPG, PNG, GIF up to 5MB</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0">JPG, PNG, GIF, WEBP — any size</p>
             <input type="file" id="gallery-file-input" accept="image/*" multiple style="display:none" onchange="previewGalleryImages(this)">
           </div>
           <div id="gallery-preview-wrap" style="display:none;margin-bottom:20px">
@@ -2168,14 +2124,72 @@ function renderGallery() {
         </div>
       </div>
     </div>
-
-    <!-- Lightbox -->
     <div class="modal-overlay" id="gallery-lightbox" style="display:none" onclick="if(event.target===this)closeGalleryLightbox()">
       <div id="gallery-lightbox-content" style="background:#fff;border-radius:16px;max-width:780px;width:95%;overflow:hidden"></div>
-    </div>
-  `;
+    </div>`;
 
-  renderLayout('gallery', content, 'Gallery', 'Activity Photos & Daily Life');
+  const filterBar = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        ${!myClassId ? `
+        <select class="form-control" style="width:180px" onchange="_galFilterClass=this.value;renderGallery()">
+          <option value="">All Classes</option>
+          ${data.classes.map(c => `<option value="${c.id}"${_galFilterClass===c.id?' selected':''}>${c.name}</option>`).join('')}
+        </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
+        <span id="gal-count" style="font-size:13px;color:#64748b">Loading…</span>
+      </div>
+      <button class="btn btn-primary" onclick="openGalleryUpload()">
+        <i class="fas fa-cloud-upload-alt"></i> Upload Photo
+      </button>
+    </div>
+    <div id="gallery-body" style="min-height:200px">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8">
+        <i class="fas fa-spinner fa-spin" style="font-size:28px"></i>
+      </div>
+    </div>
+    ${uploadModal}`;
+
+  renderLayout('gallery', filterBar, 'Gallery', 'Activity Photos & Daily Life');
+
+  // Async fetch from R2
+  fetch('/api/gallery')
+    .then(r => r.json())
+    .then(({ items = [] }) => {
+      _galleryPhotos = items;
+      let photos = items;
+      if (myClassId) {
+        photos = photos.filter(p =>
+          !p.classId || p.classId === myClassId ||
+          (p.studentIds || []).some(sid => (DB.getStudent(sid) || {}).classId === myClassId)
+        );
+      }
+      if (_galFilterClass) {
+        photos = photos.filter(p =>
+          !p.classId || p.classId === _galFilterClass ||
+          (p.studentIds || []).some(sid => (DB.getStudent(sid) || {}).classId === _galFilterClass)
+        );
+      }
+      const countEl = document.getElementById('gal-count');
+      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''}`;
+      const bodyEl = document.getElementById('gallery-body');
+      if (!bodyEl) return;
+      bodyEl.innerHTML = photos.length === 0
+        ? `<div class="empty-state" style="padding:80px">
+            <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
+            <h3 style="margin:16px 0 8px">No Photos Yet</h3>
+            <p>Upload activity photos to share with parents</p>
+            <button class="btn btn-primary" style="margin-top:12px" onclick="openGalleryUpload()">
+              <i class="fas fa-plus"></i> Upload First Photo
+            </button>
+          </div>`
+        : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px">
+            ${photos.map(p => renderGalleryCard(p)).join('')}
+          </div>`;
+    })
+    .catch(() => {
+      const bodyEl = document.getElementById('gallery-body');
+      if (bodyEl) bodyEl.innerHTML = '<div class="empty-state" style="padding:60px"><p style="color:#ef4444">Failed to load gallery. Please refresh.</p></div>';
+    });
 }
 
 function renderGalleryCard(p) {
@@ -2225,8 +2239,7 @@ function renderGalleryCard(p) {
 }
 
 function openGalleryLightbox(photoId) {
-  const data = DB.get();
-  const p = (data.gallery || []).find(g => g.id === photoId);
+  const p = _galleryPhotos.find(g => g.id === photoId);
   if (!p) return;
   const cls = p.classId ? DB.getClass(p.classId) : null;
   const taggedStudents = (p.studentIds || []).map(sid => DB.getStudent(sid)).filter(Boolean);
@@ -2302,9 +2315,7 @@ function closeGalleryModal() {
 function previewGalleryImages(input) {
   const files = [...input.files];
   if (!files.length) return;
-  const oversized = files.filter(f => f.size > 5 * 1024 * 1024);
-  if (oversized.length) showToast(`${oversized.length} file(s) over 5MB skipped`, 'warning');
-  const valid = files.filter(f => f.size <= 5 * 1024 * 1024 && f.type.startsWith('image/'));
+  const valid = files.filter(f => f.type.startsWith('image/'));
   if (!valid.length) return;
   let loaded = 0;
   valid.forEach(file => {
@@ -2382,41 +2393,67 @@ function updateGalleryStudentList() {
   `).join('') : '<span style="font-size:13px;color:#94a3b8">No students found</span>';
 }
 
-function saveGalleryItem() {
+function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const ab = new ArrayBuffer(bytes.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < bytes.length; i++) ia[i] = bytes.charCodeAt(i);
+  return new Blob([ab], { type: mime });
+}
+
+async function saveGalleryItem() {
   const title = document.getElementById('gal-title').value.trim();
   if (!title) { showToast('Please enter a title', 'warning'); return; }
   if (!_galSelectedFiles.length) { showToast('Please select at least one image', 'warning'); return; }
-  const classId = document.getElementById('gal-class').value || null;
+  const classId = document.getElementById('gal-class').value || '';
   const studentIds = [...document.querySelectorAll('.gal-student-cb:checked')].map(cb => cb.value);
   const description = document.getElementById('gal-desc').value.trim();
   const date = document.getElementById('gal-date').value || new Date().toISOString().split('T')[0];
   const user = Session.current();
 
-  _galSelectedFiles.forEach((file, i) => {
-    DB.addGalleryItem({
-      id: DB.genId('gal'),
-      title: _galSelectedFiles.length === 1 ? title : `${title} (${i + 1})`,
-      description,
-      imageData: file.dataUrl,
-      date,
-      classId,
-      studentIds,
-      uploadedBy: user.id,
-      createdAt: new Date(Date.now() + i).toISOString()
-    });
-  });
+  const btnText = document.getElementById('gal-upload-btn-text');
+  const btn = btnText?.closest('button');
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = `Uploading 0 / ${_galSelectedFiles.length}…`;
 
-  DB.log(user.id, 'GALLERY_UPLOAD', `Uploaded ${_galSelectedFiles.length} photo(s): ${title}`);
-  closeGalleryModal();
-  showToast(`${_galSelectedFiles.length} photo${_galSelectedFiles.length !== 1 ? 's' : ''} uploaded!`, 'success');
-  navigate('gallery');
+  try {
+    for (let i = 0; i < _galSelectedFiles.length; i++) {
+      const file = _galSelectedFiles[i];
+      if (btnText) btnText.textContent = `Uploading ${i + 1} / ${_galSelectedFiles.length}…`;
+      const fd = new FormData();
+      fd.append('file', dataUrlToBlob(file.dataUrl), file.name);
+      fd.append('title', _galSelectedFiles.length === 1 ? title : `${title} (${i + 1})`);
+      fd.append('description', description);
+      fd.append('date', date);
+      fd.append('classId', classId);
+      fd.append('studentIds', JSON.stringify(studentIds));
+      fd.append('uploadedBy', user.id);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Upload failed');
+    }
+    DB.log(user.id, 'GALLERY_UPLOAD', `Uploaded ${_galSelectedFiles.length} photo(s): ${title}`);
+    closeGalleryModal();
+    showToast(`${_galSelectedFiles.length} photo${_galSelectedFiles.length !== 1 ? 's' : ''} uploaded to R2!`, 'success');
+    navigate('gallery');
+  } catch (e) {
+    showToast('Upload failed: ' + e.message, 'error');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Upload Photos';
+  }
 }
 
 function deleteGalleryPhoto(id) {
-  confirmDialog('Delete this photo? This cannot be undone.', () => {
-    DB.deleteGalleryItem(id);
-    showToast('Photo deleted', 'success');
-    navigate('gallery');
+  confirmDialog('Delete this photo from R2? This cannot be undone.', async () => {
+    try {
+      await fetch(`/api/gallery/${id}`, { method: 'DELETE' });
+      _galleryPhotos = _galleryPhotos.filter(p => p.id !== id);
+      showToast('Photo deleted', 'success');
+      navigate('gallery');
+    } catch (e) {
+      showToast('Delete failed: ' + e.message, 'error');
+    }
   });
 }
 

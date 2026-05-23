@@ -793,6 +793,8 @@ function parentSendMessage(toId) {
 }
 
 // ---- Gallery ----
+let _parentGalleryPhotos = [];
+
 function renderParentGallery() {
   currentParentTab = 'parent-gallery';
   const child = getSelectedChild();
@@ -801,38 +803,49 @@ function renderParentGallery() {
     return;
   }
 
-  const data = DB.get();
-  const allPhotos = data.gallery || [];
-  const photos = allPhotos.filter(p =>
-    (p.studentIds || []).includes(child.id) || p.classId === child.classId
-  ).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
   const content = `
     ${renderChildSelector(child)}
-
     <div style="margin-bottom:20px">
       <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin:0 0 4px">Activity Gallery</h3>
-      <p style="color:#64748b;font-size:13px;margin:0">${photos.length} photo${photos.length!==1?'s':''} featuring ${child.name}</p>
+      <p id="parent-gal-count" style="color:#64748b;font-size:13px;margin:0">Loading…</p>
     </div>
-
-    ${photos.length === 0 ? `
-      <div class="empty-state" style="padding:80px">
-        <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
-        <h3 style="margin:16px 0 8px">No Photos Yet</h3>
-        <p>Activity photos of ${child.name} will appear here when uploaded by the school</p>
+    <div id="parent-gallery-body">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8">
+        <i class="fas fa-spinner fa-spin" style="font-size:28px"></i>
       </div>
-    ` : `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
-        ${photos.map(p => renderParentGalleryCard(p, child)).join('')}
-      </div>
-    `}
-
+    </div>
     <div class="modal-overlay" id="parent-gallery-lightbox" style="display:none" onclick="if(event.target===this)closeParentGalleryLightbox()">
       <div id="parent-gallery-lightbox-content" style="background:#fff;border-radius:16px;max-width:720px;width:95%;overflow:hidden"></div>
     </div>
   `;
 
   renderLayout('parent-gallery', content, 'Gallery', child.name);
+
+  fetch('/api/gallery')
+    .then(r => r.json())
+    .then(({ items = [] }) => {
+      const photos = items.filter(p =>
+        (p.studentIds || []).includes(child.id) || p.classId === child.classId
+      );
+      _parentGalleryPhotos = items;
+      const countEl = document.getElementById('parent-gal-count');
+      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} featuring ${child.name}`;
+      const bodyEl = document.getElementById('parent-gallery-body');
+      if (!bodyEl) return;
+      bodyEl.innerHTML = photos.length === 0
+        ? `<div class="empty-state" style="padding:80px">
+            <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
+            <h3 style="margin:16px 0 8px">No Photos Yet</h3>
+            <p>Activity photos of ${child.name} will appear here when uploaded by the school</p>
+          </div>`
+        : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
+            ${photos.map(p => renderParentGalleryCard(p, child)).join('')}
+          </div>`;
+    })
+    .catch(() => {
+      const bodyEl = document.getElementById('parent-gallery-body');
+      if (bodyEl) bodyEl.innerHTML = '<div class="empty-state" style="padding:60px"><p style="color:#ef4444">Failed to load gallery. Please refresh.</p></div>';
+    });
 }
 
 function renderParentGalleryCard(p, child) {
@@ -873,8 +886,7 @@ function renderParentGalleryCard(p, child) {
 }
 
 function openParentGalleryLightbox(photoId) {
-  const data = DB.get();
-  const p = (data.gallery || []).find(g => g.id === photoId);
+  const p = _parentGalleryPhotos.find(g => g.id === photoId);
   if (!p) return;
   const child = getSelectedChild();
   const cls = p.classId ? DB.getClass(p.classId) : null;

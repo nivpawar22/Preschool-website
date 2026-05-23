@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 
-const app = new Hono()
+type Bindings = { GALLERY_BUCKET: any }
+
+const app = new Hono<{ Bindings: Bindings }>()
 
 // Serve static files — public/static/* is served at /static/*
 app.use('/static/*', serveStatic({ root: './public' }))
@@ -1351,7 +1353,23 @@ app.get('/programs', (c) => {
 // ================================================================
 // GALLERY PAGE
 // ================================================================
-app.get('/gallery', (c) => {
+app.get('/gallery', async (c) => {
+  const bucket = c.env.GALLERY_BUCKET
+  let r2Items: Array<{ key: string; title: string; description: string; date: string }> = []
+  if (bucket) {
+    try {
+      const listed = await bucket.list({ limit: 200 })
+      r2Items = (listed.objects as any[])
+        .sort((a: any, b: any) => b.uploaded - a.uploaded)
+        .map((obj: any) => ({
+          key: obj.key,
+          title: obj.customMetadata?.title || 'Activity Photo',
+          description: obj.customMetadata?.description || '',
+          date: obj.customMetadata?.date || obj.uploaded.toISOString().split('T')[0],
+        }))
+    } catch (_) {}
+  }
+
   const content = `
   ${Navbar('gallery')}
 
@@ -1381,38 +1399,33 @@ app.get('/gallery', (c) => {
         `).join('')}
       </div>
 
-      <!-- Masonry-style gallery -->
+      <!-- Gallery grid: real R2 images or coming-soon placeholder -->
+      ${r2Items.length > 0 ? `
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        ${[
-          {emoji:'🎨', label:'Art Time', caption:'Creative Expression', bg:'linear-gradient(135deg,#EDE9FE,#FDF2F8)'},
-          {emoji:'🔬', label:'Science Lab', caption:'STEAM Discovery', bg:'linear-gradient(135deg,#F0FDF4,#EDE9FE)', tall:true},
-          {emoji:'🌳', label:'Outdoor Play', caption:'Hero Training Grounds', bg:'linear-gradient(135deg,#F0FDF4,#FEF3C7)'},
-          {emoji:'📚', label:'Story Time', caption:'Reading Adventures', bg:'linear-gradient(135deg,#FEF3C7,#FDF2F8)'},
-          {emoji:'🎵', label:'Music Class', caption:'Rhythm & Beats', bg:'linear-gradient(135deg,#EDE9FE,#F5F3FF)', wide:true},
-          {emoji:'🏃', label:'Sports Day', caption:'Superhero Olympics', bg:'linear-gradient(135deg,#FDF2F8,#FEF3C7)'},
-          {emoji:'🍳', label:'Cooking Class', caption:'Little Chefs', bg:'linear-gradient(135deg,#FEF3C7,#F0FDF4)', tall:true},
-          {emoji:'🧩', label:'Block Building', caption:'Engineering Minds', bg:'linear-gradient(135deg,#EDE9FE,#F0FDF4)'},
-          {emoji:'🎭', label:'Drama Class', caption:'Star Performers', bg:'linear-gradient(135deg,#FDF2F8,#EDE9FE)'},
-          {emoji:'🌸', label:'Garden Time', caption:'Little Gardeners', bg:'linear-gradient(135deg,#F0FDF4,#FDF2F8)', wide:true},
-          {emoji:'🎪', label:'Superhero Day', caption:'Annual Hero Parade', bg:'linear-gradient(135deg,#FEF3C7,#EDE9FE)'},
-          {emoji:'🤸', label:'Gymnastics', caption:'Flexible Superheroes', bg:'linear-gradient(135deg,#FDF2F8,#F5F3FF)'},
-          {emoji:'🌈', label:'Rainbow Art', caption:'Colorful Creations', bg:'linear-gradient(135deg,#EDE9FE,#FDF2F8)'},
-          {emoji:'🚀', label:'Space Theme', caption:'Cosmic Explorers', bg:'linear-gradient(135deg,#F5F3FF,#EDE9FE)', tall:true},
-          {emoji:'🎂', label:'Birthday Fun', caption:'Super Celebrations', bg:'linear-gradient(135deg,#FEF3C7,#FDF2F8)'},
-          {emoji:'🤝', label:'Team Work', caption:'Heroes Together', bg:'linear-gradient(135deg,#F0FDF4,#EDE9FE)'},
-        ].map((item, i) => `
-          <div class="gallery-item fade-in ${item.tall ? 'row-span-2' : ''}"
-            style="background:${item.bg};${item.tall ? 'aspect-ratio:1/2;' : ''}min-height:${item.tall?'300px':'150px'};flex-direction:column;gap:0.5rem;${item.wide ? 'grid-column:span 2;aspect-ratio:2/1;' : ''}">
-            <div style="font-size:${item.tall?'4rem':'3rem'}">${item.emoji}</div>
-            <div style="font-weight:800;color:#1F2937;font-size:0.9rem">${item.label}</div>
-            <div style="color:#6B7280;font-size:0.75rem">${item.caption}</div>
-            <div style="position:absolute;inset:0;background:rgba(124,58,237,0.08);opacity:0;transition:opacity 0.3s;display:flex;align-items:center;justify-content:center;border-radius:12px"
+        ${r2Items.map(item => `
+          <div class="gallery-item fade-in" style="padding:0;overflow:hidden;background:#F1F5F9;position:relative">
+            <img src="/gallery-media/${item.key}" alt="${item.title}"
+              style="width:100%;height:100%;object-fit:cover;display:block"
+              loading="lazy"
+              onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#EDE9FE,#FDF2F8);gap:6px\\'><div style=\\'font-size:2.5rem\\'>📷</div><div style=\\'color:#6B7280;font-size:0.75rem;text-align:center;padding:0 8px\\'>${item.title}</div></div>'">
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);opacity:0;transition:opacity 0.3s;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;padding:12px"
               onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-              <i class="fas fa-expand-alt" style="color:#7C3AED;font-size:1.5rem"></i>
+              <i class="fas fa-expand-alt" style="color:#fff;font-size:1.3rem;margin-bottom:6px"></i>
+              <div style="color:#fff;font-weight:700;font-size:0.8rem;text-align:center">${item.title}</div>
+              ${item.date ? `<div style="color:rgba(255,255,255,0.75);font-size:0.7rem;margin-top:2px">${item.date}</div>` : ''}
             </div>
           </div>
         `).join('')}
       </div>
+      ` : `
+      <div style="text-align:center;padding:5rem 1rem">
+        <div style="font-size:5rem;margin-bottom:1.5rem;opacity:0.5">📷</div>
+        <h3 style="font-family:'Bangers',cursive;font-size:2rem;color:#F59E0B;letter-spacing:2px;margin-bottom:0.75rem">Photos Coming Soon!</h3>
+        <p style="color:#6B7280;font-size:1rem;max-width:480px;margin:0 auto;line-height:1.8">
+          Our gallery is being filled with magical SuperKids moments. Check back soon to see our little heroes in action!
+        </p>
+      </div>
+      `}
 
       <!-- Video section -->
       <div class="mt-16 fade-in">
@@ -1819,6 +1832,86 @@ app.get('/parent-portal', (c) => {
 </html>`)
 })
 
+
+// ================================================================
+// R2 GALLERY API
+// ================================================================
+
+// Serve a single R2 object
+app.get('/gallery-media/:key', async (c) => {
+  const bucket = c.env.GALLERY_BUCKET
+  if (!bucket) return c.notFound()
+  const key = c.req.param('key')
+  const obj = await bucket.get(key)
+  if (!obj) return c.notFound()
+  const headers = new Headers()
+  obj.writeHttpMetadata(headers)
+  headers.set('etag', obj.httpEtag)
+  headers.set('cache-control', 'public, max-age=31536000')
+  return new Response(obj.body, { headers })
+})
+
+// List all gallery items
+app.get('/api/gallery', async (c) => {
+  const bucket = c.env.GALLERY_BUCKET
+  if (!bucket) return c.json({ items: [] })
+  try {
+    const listed = await bucket.list({ limit: 500 })
+    const items = listed.objects.map((obj: any) => ({
+      id: obj.key,
+      key: obj.key,
+      title: obj.customMetadata?.title || obj.key,
+      description: obj.customMetadata?.description || '',
+      date: obj.customMetadata?.date || obj.uploaded.toISOString().split('T')[0],
+      classId: obj.customMetadata?.classid || null,
+      studentIds: obj.customMetadata?.studentids ? JSON.parse(obj.customMetadata.studentids) : [],
+      uploadedBy: obj.customMetadata?.uploadedby || '',
+      createdAt: obj.customMetadata?.createdat || obj.uploaded.toISOString(),
+      imageData: `/gallery-media/${obj.key}`,
+      size: obj.size,
+    }))
+    items.sort((a: any, b: any) => b.createdAt.localeCompare(a.createdAt))
+    return c.json({ items })
+  } catch (e) {
+    return c.json({ items: [], error: String(e) })
+  }
+})
+
+// Upload image to R2
+app.post('/api/upload', async (c) => {
+  const bucket = c.env.GALLERY_BUCKET
+  if (!bucket) return c.json({ error: 'Storage not configured' }, 500)
+  try {
+    const form = await c.req.formData()
+    const file = form.get('file') as File
+    if (!file) return c.json({ error: 'No file provided' }, 400)
+    const title = String(form.get('title') || file.name)
+    const description = String(form.get('description') || '')
+    const date = String(form.get('date') || new Date().toISOString().split('T')[0])
+    const classId = String(form.get('classId') || '')
+    const studentIds = String(form.get('studentIds') || '[]')
+    const uploadedBy = String(form.get('uploadedBy') || '')
+    const createdAt = new Date().toISOString()
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    await bucket.put(key, file.stream(), {
+      httpMetadata: { contentType: file.type || 'image/jpeg' },
+      customMetadata: { title, description, date, classid: classId, studentids: studentIds, uploadedby: uploadedBy, createdat: createdAt },
+    })
+    return c.json({ success: true, key, id: key, imageData: `/gallery-media/${key}` })
+  } catch (e) {
+    return c.json({ error: String(e) }, 500)
+  }
+})
+
+// Delete image from R2
+app.delete('/api/gallery/:key', async (c) => {
+  const bucket = c.env.GALLERY_BUCKET
+  if (!bucket) return c.json({ error: 'Storage not configured' }, 500)
+  const key = c.req.param('key')
+  await bucket.delete(key)
+  return c.json({ success: true })
+})
 
 // API: Contact form handler
 app.post('/api/contact', async (c) => {

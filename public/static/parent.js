@@ -824,19 +824,21 @@ function renderParentGallery() {
   fetch('/api/gallery')
     .then(r => r.json())
     .then(({ items = [] }) => {
-      const photos = items.filter(p =>
+      _parentGalleryPhotos = items;
+      // Show all school photos (R2 direct uploads have no studentIds/classId)
+      const tagged = items.filter(p =>
         (p.studentIds || []).includes(child.id) || p.classId === child.classId
       );
-      _parentGalleryPhotos = items;
+      const photos = tagged.length > 0 ? tagged : items;
       const countEl = document.getElementById('parent-gal-count');
-      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} featuring ${child.name}`;
+      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} in gallery`;
       const bodyEl = document.getElementById('parent-gallery-body');
       if (!bodyEl) return;
       bodyEl.innerHTML = photos.length === 0
         ? `<div class="empty-state" style="padding:80px">
             <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
             <h3 style="margin:16px 0 8px">No Photos Yet</h3>
-            <p>Activity photos of ${child.name} will appear here when uploaded by the school</p>
+            <p>Activity photos will appear here when uploaded by the school</p>
           </div>`
         : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
             ${photos.map(p => renderParentGalleryCard(p, child)).join('')}

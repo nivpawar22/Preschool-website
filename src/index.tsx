@@ -36,7 +36,8 @@ app.post('/api/upload', async (c) => {
     const file = form.get('file') as File | null
     if (!file) return c.json({ error: 'No file provided' }, 400)
     const ext = file.name.split('.').pop() || 'jpg'
-    const key = `gallery/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const folder = (c.req.query('folder') || 'gallery').replace(/[^a-z0-9_-]/gi, '')
+    const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
     const url = `https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev/${key}`
     return c.json({ ok: true, url, key })
@@ -135,6 +136,7 @@ app.get('/api/gallery', async (c) => {
     const d1Keys = new Set(d1Items.map((i: any) => (i.r2Key || (i.imageData?.startsWith('/r2/') ? i.imageData.slice(4) : null))).filter(Boolean))
     const listed = await c.env.MEDIA.list({ limit: 500 })
     r2Items = (listed.objects as any[])
+      .filter((obj: any) => obj.key.startsWith('gallery/'))
       .filter((obj: any) => /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(obj.key))
       .filter((obj: any) => !d1Keys.has(obj.key))
       .map((obj: any) => {
@@ -1354,7 +1356,7 @@ app.get('/gallery', async (c) => {
   // 1. R2 listing (primary source — no D1 dependency)
   try {
     const listed = await c.env.MEDIA.list({ limit: 500 })
-    photos = (listed.objects as any[]).map((obj: any) => {
+    photos = (listed.objects as any[]).filter((obj: any) => obj.key.startsWith('gallery/')).map((obj: any) => {
       const name = (obj.key.split('/').pop() || obj.key).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
       return {
         key: obj.key,
@@ -1874,15 +1876,15 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=6"/>
+  <link rel="stylesheet" href="/static/style.css?v=7"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=6"></script>
-  <script src="/static/app.js?v=6"></script>
-  <script src="/static/admin.js?v=6"></script>
-  <script src="/static/management.js?v=6"></script>
-  <script src="/static/parent.js?v=6"></script>
+  <script src="/static/data.js?v=7"></script>
+  <script src="/static/app.js?v=7"></script>
+  <script src="/static/admin.js?v=7"></script>
+  <script src="/static/management.js?v=7"></script>
+  <script src="/static/parent.js?v=7"></script>
 </body>
 </html>`)
 })

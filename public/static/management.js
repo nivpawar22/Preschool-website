@@ -1168,7 +1168,7 @@ function saveTeamMember() {
   if (photoFile) {
     var form = new FormData();
     form.append('file', photoFile);
-    fetch('/api/upload', { method: 'POST', body: form })
+    fetch('/api/upload?folder=team', { method: 'POST', body: form })
       .then(function(r) { return r.json(); })
       .then(function(res) {
         if (res.key) doSave(res.key);

@@ -2196,9 +2196,15 @@ function renderGallery() {
         </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
         <span id="gal-count" style="font-size:13px;color:#64748b">Loading…</span>
       </div>
-      <button class="btn btn-primary" onclick="openGalleryUpload()">
-        <i class="fas fa-cloud-upload-alt"></i> Upload Photo
-      </button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <span id="db-status-badge" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#F8F9FB;color:#6B7A9D;border:1px solid #DCE1EF;cursor:pointer" onclick="checkDbStatus()" title="Click to check DB connection">
+          <i class="fas fa-circle" style="font-size:8px;margin-right:5px"></i>Checking DB...
+        </span>
+        ${!isSubAdmin ? `<button class="btn btn-secondary" onclick="forceSyncGallery()" title="Sync published photos to website"><i class="fas fa-sync-alt"></i> Sync to Website</button>` : ''}
+        <button class="btn btn-primary" onclick="openGalleryUpload()">
+          <i class="fas fa-cloud-upload-alt"></i> Upload Photo / Video
+        </button>
+      </div>
     </div>
     <div id="gallery-body" style="min-height:200px">
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8">
@@ -2208,6 +2214,7 @@ function renderGallery() {
     ${uploadModal}`;
 
   renderLayout('gallery', filterBar, 'Gallery', 'Activity Photos & Daily Life');
+  setTimeout(checkDbStatus, 500);
 
   // Async fetch from R2
   fetch('/api/gallery')
@@ -2639,7 +2646,7 @@ async function saveGalleryItem() {
       uploadedBy: user.id, createdAt: new Date().toISOString()
     });
     DB.log(user.id, 'GALLERY_VIDEO', 'Added YouTube video: ' + title);
-    if (publish) syncPublishedGallery();
+    if (publish) autoSyncToWebsite();
     closeGalleryModal();
     showToast('Video added to gallery' + (publish ? ' & published to website!' : '!'), 'success');
     navigate('gallery');
@@ -2696,7 +2703,7 @@ async function saveGalleryItem() {
       });
     });
     DB.log(user.id, 'GALLERY_UPLOAD', 'Uploaded ' + _galSelectedFiles.length + ' photo(s): ' + title);
-    if (publish) syncPublishedGallery();
+    if (publish) autoSyncToWebsite();
     closeGalleryModal();
     showToast(_galSelectedFiles.length + ' photo' + (_galSelectedFiles.length !== 1 ? 's' : '') + ' uploaded' + (publish ? ' & published!' : '!'), 'success');
     navigate('gallery');
@@ -2756,6 +2763,18 @@ function previewYoutubeUrl() {
   } else if (preview) {
     preview.style.display = 'none';
   }
+}
+
+function autoSyncToWebsite() {
+  const data = DB.get();
+  const published = (data.gallery || []).filter(function(item) { return item.published; });
+  syncPublishedGallery();
+  if (!published.length) return;
+  fetch('/api/gallery/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: published })
+  }).catch(function() {});
 }
 
 function syncPublishedGallery() {

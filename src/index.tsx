@@ -116,8 +116,8 @@ app.get('/api/gallery', async (c) => {
             title: title.charAt(0).toUpperCase() + title.slice(1),
             description: '',
             type: 'image',
-            imageData: `/r2/${obj.key}`,
-            date: obj.uploaded.toISOString().split('T')[0],
+            imageData: `https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev/${obj.key}`,
+            date: obj.uploaded ? obj.uploaded.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           }
         })
     } catch (_) {}

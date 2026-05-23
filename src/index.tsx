@@ -1244,23 +1244,7 @@ app.get('/programs', (c) => {
 // ================================================================
 // GALLERY PAGE
 // ================================================================
-app.get('/gallery', async (c) => {
-  const bucket = c.env.GALLERY_BUCKET
-  let r2Items: Array<{ key: string; title: string; description: string; date: string }> = []
-  if (bucket) {
-    try {
-      const listed = await bucket.list({ limit: 200 })
-      r2Items = (listed.objects as any[])
-        .sort((a: any, b: any) => b.uploaded - a.uploaded)
-        .map((obj: any) => ({
-          key: obj.key,
-          title: obj.customMetadata?.title || 'Activity Photo',
-          description: obj.customMetadata?.description || '',
-          date: obj.customMetadata?.date || obj.uploaded.toISOString().split('T')[0],
-        }))
-    } catch (_) {}
-  }
-
+app.get('/gallery', (c) => {
   const content = `
   ${Navbar('gallery')}
 
@@ -1293,15 +1277,6 @@ app.get('/gallery', async (c) => {
           No photos yet. Check back soon!
         </div>
       </div>
-      ` : `
-      <div style="text-align:center;padding:5rem 1rem">
-        <div style="font-size:5rem;margin-bottom:1.5rem;opacity:0.5">📷</div>
-        <h3 style="font-family:'Bangers',cursive;font-size:2rem;color:#F59E0B;letter-spacing:2px;margin-bottom:0.75rem">Photos Coming Soon!</h3>
-        <p style="color:#6B7280;font-size:1rem;max-width:480px;margin:0 auto;line-height:1.8">
-          Our gallery is being filled with magical SuperKids moments. Check back soon to see our little heroes in action!
-        </p>
-      </div>
-      `}
 
       <!-- Videos -->
       <div id="pub-video-section" class="mt-16 fade-in" style="display:none">

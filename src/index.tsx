@@ -1024,7 +1024,24 @@ app.get('/', async (c) => {
 // ================================================================
 // ABOUT PAGE
 // ================================================================
-app.get('/about', (c) => {
+app.get('/about', async (c) => {
+  // Load team from D1, fall back to hardcoded if empty
+  const fallbackTeam = [
+    {id:'f1', name:'Dr. Amanda Powers', role:'Founder & Director', experience:'15+ yrs', certification:'PhD Child Development', color:'#0F2050', photoKey:''},
+    {id:'f2', name:'Ms. Rachel Storm', role:'Lead Educator (Toddlers)', experience:'8 yrs', certification:'ECE Certified', color:'#C4893A', photoKey:''},
+    {id:'f3', name:'Mr. Carlos Bright', role:'Creative Arts Director', experience:'10 yrs', certification:'Arts Education MA', color:'#E8B020', photoKey:''},
+    {id:'f4', name:'Ms. Priya Nova', role:'STEAM Coordinator', experience:'6 yrs', certification:'STEM Specialist', color:'#1AA6CA', photoKey:''},
+  ]
+  let teamMembers: any[] = fallbackTeam
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('team').first<{ value: string }>()
+    if (row) {
+      const d1Team = JSON.parse(row.value)
+      if (d1Team.length > 0) teamMembers = d1Team
+    }
+  } catch { /* fall back to hardcoded */ }
+
   const content = `
   ${Navbar('about')}
 
@@ -1148,20 +1165,22 @@ app.get('/about', (c) => {
         <p style="color:#6B7A9D;margin-top:1rem">A dream team of certified, passionate educators dedicated to your child's success.</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        ${[
-          {emoji:'👩‍🏫', name:'Dr. Amanda Powers', role:'Founder & Director', exp:'15+ yrs', color:'#0F2050', cert:'PhD Child Development'},
-          {emoji:'🦸‍♀️', name:'Ms. Rachel Storm', role:'Lead Educator (Toddlers)', exp:'8 yrs', color:'#C4893A', cert:'ECE Certified'},
-          {emoji:'🧑‍🎨', name:'Mr. Carlos Bright', role:'Creative Arts Director', exp:'10 yrs', color:'#E8B020', cert:'Arts Education MA'},
-          {emoji:'👩‍💻', name:'Ms. Priya Nova', role:'STEAM Coordinator', exp:'6 yrs', color:'#1AA6CA', cert:'STEM Specialist'},
-        ].map(t => `
+        ${teamMembers.map((t: any) => {
+          const avatarHtml = t.photoKey
+            ? `<img src="/r2/${t.photoKey}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentNode.innerHTML='🦸'"/>`
+            : `<span style="font-size:2.2rem">🦸</span>`
+          return `
           <div class="card fade-in text-center">
-            <div class="teacher-avatar" style="border-color:${t.color};box-shadow:0 0 0 6px ${t.color}18">${t.emoji}</div>
+            <div style="width:90px;height:90px;border-radius:50%;border:3px solid ${t.color};box-shadow:0 0 0 6px ${t.color}18;margin:0 auto 1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f8faff;flex-shrink:0">
+              ${avatarHtml}
+            </div>
             <h3 style="font-weight:800;color:#0F1E3D;margin-bottom:0.25rem">${t.name}</h3>
             <p style="color:${t.color};font-size:0.85rem;font-weight:700;margin-bottom:0.5rem">${t.role}</p>
-            <div class="badge mb-2" style="background:${t.color}18;color:${t.color};border:1px solid ${t.color}33;font-size:0.7rem">${t.cert}</div>
-            <p style="color:#6B7A9D;font-size:0.8rem">${t.exp} experience</p>
-          </div>
-        `).join('')}
+            ${t.certification ? `<div class="badge mb-2" style="background:${t.color}18;color:${t.color};border:1px solid ${t.color}33;font-size:0.7rem">${t.certification}</div>` : ''}
+            ${t.experience ? `<p style="color:#6B7A9D;font-size:0.8rem">${t.experience} experience</p>` : ''}
+            ${t.bio ? `<p style="color:#6B7A9D;font-size:0.78rem;margin-top:6px;line-height:1.5">${t.bio}</p>` : ''}
+          </div>`
+        }).join('')}
       </div>
     </div>
   </section>
@@ -1855,17 +1874,35 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=5"/>
+  <link rel="stylesheet" href="/static/style.css?v=6"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=5"></script>
-  <script src="/static/app.js?v=5"></script>
-  <script src="/static/admin.js?v=5"></script>
-  <script src="/static/management.js?v=5"></script>
-  <script src="/static/parent.js?v=5"></script>
+  <script src="/static/data.js?v=6"></script>
+  <script src="/static/app.js?v=6"></script>
+  <script src="/static/admin.js?v=6"></script>
+  <script src="/static/management.js?v=6"></script>
+  <script src="/static/parent.js?v=6"></script>
 </body>
 </html>`)
+})
+
+// ── Team API ─────────────────────────────────────────────────
+app.get('/api/team', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('team').first<{ value: string }>()
+    return c.json({ members: row ? JSON.parse(row.value) : [] })
+  } catch (e: any) { return c.json({ members: [], error: e.message }) }
+})
+
+app.post('/api/team', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const { members } = await c.req.json()
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('team', JSON.stringify(members || []), new Date().toISOString()).run()
+    return c.json({ ok: true, count: (members || []).length })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
 // ── Parent Reviews API ───────────────────────────────────────

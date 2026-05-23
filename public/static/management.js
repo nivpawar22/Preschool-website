@@ -16,6 +16,7 @@ function renderManagement() {
   const tabs = [
     { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
     { id: 'parents', label: 'Parents', icon: 'fa-users' },
+    { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
     { id: 'log', label: 'Activity Log', icon: 'fa-history' },
     { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
   ];
@@ -23,6 +24,7 @@ function renderManagement() {
   const tabContent = {
     subadmins: renderSubAdminsTab(),
     parents: renderParentsTab(),
+    team: renderTeamTab(),
     log: renderActivityLogTab(),
     settings: renderSettingsTab()
   };
@@ -36,6 +38,7 @@ function renderManagement() {
     ${tabContent[mgmtTab] || ''}`;
 
   renderLayout('management', content, 'Management', 'Super Admin Only');
+  if (mgmtTab === 'team') setTimeout(loadTeamMembers, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -922,6 +925,273 @@ function changePassword() {
   document.getElementById('pw-new').value = '';
   document.getElementById('pw-confirm').value = '';
   showToast('Password changed successfully!', 'success');
+}
+
+// ---- Our Team Tab ----
+var _teamMembers = [];
+var _editingTeamId = null;
+
+function renderTeamTab() {
+  var colors = ['#0F2050','#1AA6CA','#C4893A','#E8B020','#10b981','#8b5cf6'];
+  var modalHtml = `
+    <div class="modal-overlay" id="team-modal" style="display:none" onclick="if(event.target===this)closeTeamModal()">
+      <div style="background:#fff;border-radius:18px;max-width:520px;width:95%;padding:28px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <h3 id="team-modal-title" style="font-size:17px;font-weight:800;color:#0F1E3D;margin:0">Add Team Member</h3>
+          <button onclick="closeTeamModal()" style="width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;font-size:16px">×</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;background:#f8faff;border-radius:12px">
+            <div id="team-photo-preview" style="width:90px;height:90px;border-radius:50%;border:3px solid #1AA6CA;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#e8edf5;font-size:2rem">🦸</div>
+            <button onclick="document.getElementById('team-photo-input').click()" style="padding:7px 16px;border-radius:8px;border:1.5px solid #1AA6CA;background:#fff;color:#1AA6CA;font-weight:700;font-size:13px;cursor:pointer">
+              <i class="fas fa-camera" style="margin-right:6px"></i>Upload Photo
+            </button>
+            <input type="file" id="team-photo-input" accept="image/*" style="display:none" onchange="previewTeamPhoto(this)">
+            <span id="team-photo-status" style="font-size:11px;color:#94a3b8"></span>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Full Name *</label>
+            <input id="team-name" type="text" placeholder="e.g. Dr. Amanda Powers" maxlength="60"
+                   style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Role / Title *</label>
+            <input id="team-role" type="text" placeholder="e.g. Lead Educator (Toddlers)" maxlength="80"
+                   style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Experience</label>
+              <input id="team-experience" type="text" placeholder="e.g. 8 yrs" maxlength="30"
+                     style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Certification</label>
+              <input id="team-cert" type="text" placeholder="e.g. ECE Certified" maxlength="60"
+                     style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Bio <span style="color:#94a3b8;text-transform:none;font-weight:400">(optional)</span></label>
+            <textarea id="team-bio" placeholder="Short description about this team member…" maxlength="200" rows="3"
+                      style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none;resize:none;font-family:inherit"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6B7A9D;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Accent Colour</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              ${colors.map(function(col) {
+                return '<div onclick="selectTeamColor(\'' + col + '\')" data-color="' + col + '" style="width:32px;height:32px;border-radius:50%;background:' + col + ';cursor:pointer;border:3px solid transparent;transition:border 0.15s" title="' + col + '"></div>';
+              }).join('')}
+            </div>
+            <input type="hidden" id="team-color" value="${colors[0]}">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button onclick="closeTeamModal()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #DCE1EF;background:#fff;color:#6B7A9D;font-weight:700;cursor:pointer">Cancel</button>
+          <button onclick="saveTeamMember()" id="team-save-btn" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;font-weight:700;cursor:pointer">
+            <i class="fas fa-save" style="margin-right:6px"></i>Save Member
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-chalkboard-teacher" style="color:#1AA6CA"></i> Our Team <span style="font-size:12px;color:#94a3b8" id="team-count"></span></div>
+        <button class="btn btn-primary" onclick="openAddTeamMemberModal()"><i class="fas fa-plus"></i> Add Member</button>
+      </div>
+      <p style="color:#6B7A9D;font-size:13px;margin:0 0 16px">Team members added here will automatically appear on the public About page.</p>
+      <div id="team-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+        <div style="text-align:center;padding:40px;color:#94a3b8"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+      </div>
+    </div>
+    ${modalHtml}`;
+}
+
+function loadTeamMembers() {
+  fetch('/api/team')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      _teamMembers = res.members || [];
+      renderTeamCards();
+    })
+    .catch(function() {
+      var b = document.getElementById('team-body');
+      if (b) b.innerHTML = '<p style="color:#ef4444;padding:20px">Failed to load team. Please try again.</p>';
+    });
+}
+
+function renderTeamCards() {
+  var body = document.getElementById('team-body');
+  var count = document.getElementById('team-count');
+  if (count) count.textContent = '(' + _teamMembers.length + ')';
+  if (!body) return;
+  if (!_teamMembers.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;grid-column:1/-1"><i class="fas fa-users" style="font-size:40px;margin-bottom:12px;display:block"></i><p>No team members yet. Click "Add Member" to get started.</p></div>';
+    return;
+  }
+  body.innerHTML = _teamMembers.map(function(t) {
+    var photoHtml = t.photoKey
+      ? '<img src="/r2/' + t.photoKey + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.parentNode.innerHTML=\'🦸\'">'
+      : '<span style="font-size:2rem">🦸</span>';
+    return '<div style="background:#fff;border-radius:14px;padding:20px;text-align:center;border:1.5px solid #DCE1EF;box-shadow:0 2px 8px rgba(15,32,80,0.06)">'
+      + '<div style="width:80px;height:80px;border-radius:50%;border:3px solid ' + t.color + ';margin:0 auto 12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f8faff">'
+      + photoHtml + '</div>'
+      + '<div style="font-weight:800;color:#0F1E3D;font-size:14px;margin-bottom:4px">' + t.name + '</div>'
+      + '<div style="color:' + t.color + ';font-size:12px;font-weight:700;margin-bottom:6px">' + t.role + '</div>'
+      + (t.certification ? '<div style="font-size:11px;background:' + t.color + '18;color:' + t.color + ';border-radius:8px;padding:2px 8px;display:inline-block;margin-bottom:6px">' + t.certification + '</div><br>' : '')
+      + (t.experience ? '<div style="font-size:11px;color:#94a3b8">' + t.experience + ' experience</div>' : '')
+      + '<div style="display:flex;gap:8px;justify-content:center;margin-top:14px">'
+      + '<button onclick="editTeamMember(\'' + t.id + '\')" style="flex:1;padding:7px;border-radius:8px;border:1.5px solid #DCE1EF;background:#fff;color:#0F2050;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-edit"></i> Edit</button>'
+      + '<button onclick="deleteTeamMember(\'' + t.id + '\')" style="padding:7px 12px;border-radius:8px;border:none;background:#fee2e2;color:#ef4444;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-trash"></i></button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function openAddTeamMemberModal() {
+  _editingTeamId = null;
+  document.getElementById('team-modal-title').textContent = 'Add Team Member';
+  document.getElementById('team-name').value = '';
+  document.getElementById('team-role').value = '';
+  document.getElementById('team-experience').value = '';
+  document.getElementById('team-cert').value = '';
+  document.getElementById('team-bio').value = '';
+  document.getElementById('team-color').value = '#0F2050';
+  document.getElementById('team-photo-preview').innerHTML = '🦸';
+  document.getElementById('team-photo-status').textContent = '';
+  document.getElementById('team-photo-input').value = '';
+  selectTeamColor('#0F2050');
+  document.getElementById('team-modal').style.display = 'flex';
+}
+
+function editTeamMember(id) {
+  var t = _teamMembers.find(function(m) { return m.id === id; });
+  if (!t) return;
+  _editingTeamId = id;
+  document.getElementById('team-modal-title').textContent = 'Edit Team Member';
+  document.getElementById('team-name').value = t.name || '';
+  document.getElementById('team-role').value = t.role || '';
+  document.getElementById('team-experience').value = t.experience || '';
+  document.getElementById('team-cert').value = t.certification || '';
+  document.getElementById('team-bio').value = t.bio || '';
+  document.getElementById('team-color').value = t.color || '#0F2050';
+  selectTeamColor(t.color || '#0F2050');
+  var preview = document.getElementById('team-photo-preview');
+  if (t.photoKey) {
+    preview.innerHTML = '<img src="/r2/' + t.photoKey + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+  } else {
+    preview.innerHTML = '🦸';
+  }
+  document.getElementById('team-photo-status').textContent = '';
+  document.getElementById('team-photo-input').value = '';
+  document.getElementById('team-modal').style.display = 'flex';
+}
+
+function closeTeamModal() {
+  document.getElementById('team-modal').style.display = 'none';
+  _editingTeamId = null;
+}
+
+function selectTeamColor(color) {
+  document.getElementById('team-color').value = color;
+  document.querySelectorAll('[data-color]').forEach(function(el) {
+    el.style.border = el.dataset.color === color ? '3px solid #0F1E3D' : '3px solid transparent';
+  });
+}
+
+function previewTeamPhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('team-photo-preview').innerHTML =
+      '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('team-photo-status').textContent = file.name + ' selected';
+}
+
+function saveTeamMember() {
+  var name = (document.getElementById('team-name').value || '').trim();
+  var role = (document.getElementById('team-role').value || '').trim();
+  if (!name || !role) { showToast('Name and Role are required', 'warning'); return; }
+
+  var btn = document.getElementById('team-save-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
+
+  var photoFile = document.getElementById('team-photo-input').files[0];
+
+  function doSave(photoKey) {
+    var existing = _editingTeamId ? _teamMembers.find(function(m) { return m.id === _editingTeamId; }) : null;
+    var member = {
+      id: _editingTeamId || ('team_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+      name: name,
+      role: role,
+      experience: (document.getElementById('team-experience').value || '').trim(),
+      certification: (document.getElementById('team-cert').value || '').trim(),
+      bio: (document.getElementById('team-bio').value || '').trim(),
+      color: document.getElementById('team-color').value || '#0F2050',
+      photoKey: photoKey !== undefined ? photoKey : (existing ? existing.photoKey || '' : ''),
+    };
+
+    if (_editingTeamId) {
+      _teamMembers = _teamMembers.map(function(m) { return m.id === _editingTeamId ? member : m; });
+    } else {
+      _teamMembers.push(member);
+    }
+
+    fetch('/api/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ members: _teamMembers })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.ok) {
+        showToast('Team member saved! Changes are now live on the website.', 'success');
+        closeTeamModal();
+        renderTeamCards();
+      } else {
+        showToast('Save failed: ' + (res.error || 'Unknown error'), 'error');
+      }
+    })
+    .catch(function() { showToast('Network error. Please try again.', 'error'); })
+    .finally(function() {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save" style="margin-right:6px"></i>Save Member'; }
+    });
+  }
+
+  if (photoFile) {
+    var form = new FormData();
+    form.append('file', photoFile);
+    fetch('/api/upload', { method: 'POST', body: form })
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        if (res.key) doSave(res.key);
+        else { showToast('Photo upload failed', 'error'); doSave(undefined); }
+      })
+      .catch(function() { showToast('Photo upload failed', 'error'); doSave(undefined); });
+  } else {
+    doSave(undefined);
+  }
+}
+
+function deleteTeamMember(id) {
+  confirmDialog('Remove this team member from the website?', function() {
+    _teamMembers = _teamMembers.filter(function(m) { return m.id !== id; });
+    fetch('/api/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ members: _teamMembers })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() { showToast('Team member removed', 'success'); renderTeamCards(); })
+    .catch(function() { showToast('Failed to remove member', 'error'); });
+  });
 }
 
 // Register route

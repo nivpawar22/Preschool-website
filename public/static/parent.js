@@ -824,21 +824,19 @@ function renderParentGallery() {
   fetch('/api/gallery')
     .then(r => r.json())
     .then(({ items = [] }) => {
-      _parentGalleryPhotos = items;
-      // Show all school photos (R2 direct uploads have no studentIds/classId)
-      const tagged = items.filter(p =>
-        (p.studentIds || []).includes(child.id) || p.classId === child.classId
-      );
-      const photos = tagged.length > 0 ? tagged : items;
+      // Only show photos explicitly tagged to this child — never leak other students' photos
+      const photos = items.filter(p => (p.studentIds || []).includes(child.id));
+      // Store only the authorized subset so lightbox can't access untagged photos
+      _parentGalleryPhotos = photos;
       const countEl = document.getElementById('parent-gal-count');
-      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} in gallery`;
+      if (countEl) countEl.textContent = `${photos.length} photo${photos.length !== 1 ? 's' : ''} shared for ${child.name}`;
       const bodyEl = document.getElementById('parent-gallery-body');
       if (!bodyEl) return;
       bodyEl.innerHTML = photos.length === 0
         ? `<div class="empty-state" style="padding:80px">
             <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
-            <h3 style="margin:16px 0 8px">No Photos Yet</h3>
-            <p>Activity photos will appear here when uploaded by the school</p>
+            <h3 style="margin:16px 0 8px">No Photos Shared Yet</h3>
+            <p style="color:#6B7A9D;max-width:320px;margin:0 auto">Photos tagged to ${child.name} by the school will appear here.</p>
           </div>`
         : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px">
             ${photos.map(p => renderParentGalleryCard(p, child)).join('')}
@@ -852,7 +850,6 @@ function renderParentGallery() {
 
 function renderParentGalleryCard(p, child) {
   const cls = p.classId ? DB.getClass(p.classId) : null;
-  const isTagged = (p.studentIds || []).includes(child.id);
   const bgColors = ['#0F2050','#1AA6CA','#10b981','#E8B020','#ef4444','#1AA6CA'];
   const bg = bgColors[Math.abs((p.id.charCodeAt(3) || 0)) % bgColors.length];
 
@@ -869,7 +866,6 @@ function renderParentGalleryCard(p, child) {
           </div>`
         }
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,0.35));pointer-events:none"></div>
-        ${isTagged ? `<span style="position:absolute;top:10px;left:10px;background:#1AA6CA;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px"><i class="fas fa-star"></i> Featured</span>` : ''}
         ${(p.r2Key || p.imageData) ? `
           <a href="/api/download?key=${encodeURIComponent(p.r2Key || (p.imageData || '').replace(/^\/r2\//, ''))}"
              onclick="event.stopPropagation()"

@@ -1304,16 +1304,22 @@ app.get('/gallery', (c) => {
     var photos = items.filter(function(i){ return i.type !== 'video'; });
     var videos = items.filter(function(i){ return i.type === 'video'; });
 
+    console.log('[Gallery] total items:', items.length, 'photos:', photos.length, 'videos:', videos.length);
+
     if(!photos.length){
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D"><i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:1rem;color:#DCE1EF"></i>No photos yet. Check back soon!</div>';
     } else {
       grid.innerHTML = photos.map(function(p){
         var src = p.imageData || p.thumbnail || '';
-        return '<div class="gallery-item fade-in" style="min-height:180px;flex-direction:column;gap:0;padding:0;overflow:hidden;border-radius:14px;background:#F8F9FB;cursor:pointer" onclick="openPubLightbox(\''+p.id+'\')">'
-          + (src ? '<img src="'+src+'" style="width:100%;height:180px;object-fit:cover;display:block" loading="lazy" alt="'+p.title+'">'
-                 : '<div style="height:180px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);display:flex;align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>')
-          + '<div style="padding:10px 12px"><div style="font-weight:700;color:#0F1E3D;font-size:0.85rem;margin-bottom:2px">'+p.title+'</div>'
-          + '<div style="color:#6B7A9D;font-size:0.72rem">'+p.date+'</div></div></div>';
+        console.log('[Gallery] photo:', p.id, 'src:', src ? src.substring(0,60) : '(none)');
+        return '<div style="border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(15,32,80,0.08);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" '
+          + 'onclick="openPubLightbox(\''+p.id+'\')" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(15,32,80,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 12px rgba(15,32,80,0.08)\'">'
+          + (src
+            ? '<img src="'+src+'" style="width:100%;height:200px;object-fit:cover;display:block" loading="lazy" alt="'+p.title+'" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">'
+              + '<div style="display:none;height:200px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>'
+            : '<div style="height:200px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);display:flex;align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>')
+          + '<div style="padding:12px 14px"><div style="font-weight:700;color:#0F1E3D;font-size:0.88rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.title+'</div>'
+          + '<div style="color:#6B7A9D;font-size:0.75rem">'+p.date+'</div></div></div>';
       }).join('');
     }
 
@@ -1323,13 +1329,14 @@ app.get('/gallery', (c) => {
       if(vidSec) vidSec.style.display = '';
       if(vidGrid) vidGrid.innerHTML = videos.map(function(v){
         var thumb = v.thumbnail || ytThumb(v.youtubeId);
-        return '<div class="card" style="cursor:pointer;border-color:#FEF8F0;padding:0;overflow:hidden;border-radius:14px" onclick="openPubVideoLightbox(\''+v.youtubeId+'\')" onmouseover="this.style.borderColor=\'#C4893A\'" onmouseout="this.style.borderColor=\'#FEF8F0\'">'
+        return '<div style="border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(15,32,80,0.08);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" '
+          + 'onclick="openPubVideoLightbox(\''+v.youtubeId+'\')" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(15,32,80,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 12px rgba(15,32,80,0.08)\'">'
           + '<div style="position:relative">'
           + '<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" loading="lazy" alt="'+v.title+'">'
           + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2)">'
           + '<div style="width:56px;height:56px;background:rgba(196,137,58,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,137,58,0.4)">'
           + '<i class="fas fa-play" style="color:#fff;font-size:1.2rem;margin-left:3px"></i></div></div></div>'
-          + '<div style="padding:14px"><h4 style="font-weight:800;color:#0F1E3D;margin-bottom:6px">'+v.title+'</h4>'
+          + '<div style="padding:14px"><h4 style="font-weight:800;color:#0F1E3D;margin-bottom:6px;font-size:15px">'+v.title+'</h4>'
           + (v.description ? '<p style="color:#6B7A9D;font-size:13px;margin:0">'+v.description+'</p>' : '')
           + '</div></div>';
       }).join('');
@@ -1378,12 +1385,20 @@ app.get('/gallery', (c) => {
       _allItems = items || [];
       renderItems(_allItems);
     }
-    // Fallback: if fetch takes too long, show empty state
     setTimeout(function(){ finish([]); }, 10000);
     fetch('/api/gallery?t='+Date.now())
-      .then(function(r){ return r.ok ? r.json() : {items:[]}; })
-      .then(function(d){ finish(d.items || []); })
-      .catch(function(){ finish([]); });
+      .then(function(r){
+        console.log('[Gallery] /api/gallery status:', r.status, r.ok);
+        return r.ok ? r.json() : {items:[]};
+      })
+      .then(function(d){
+        console.log('[Gallery] API returned items:', (d.items||[]).length, d);
+        finish(d.items || []);
+      })
+      .catch(function(e){
+        console.error('[Gallery] fetch error:', e);
+        finish([]);
+      });
   }
   loadGallery();
 })();

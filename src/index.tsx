@@ -70,21 +70,59 @@ app.post('/api/gallery/sync', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Proxy R2 objects through the worker (no need for a public bucket URL)
+app.get('/r2/*', async (c) => {
+  const key = c.req.path.replace('/r2/', '')
+  if (!key) return c.notFound()
+  try {
+    const obj = await c.env.MEDIA.get(key)
+    if (!obj) return c.notFound()
+    const headers = new Headers()
+    obj.writeHttpMetadata(headers)
+    headers.set('cache-control', 'public, max-age=31536000')
+    return new Response(obj.body, { headers })
+  } catch { return c.notFound() }
+})
+
 app.get('/api/gallery', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
-    // Try dedicated gallery key first (faster, smaller)
+
+    // 1. Get published items from D1 (have metadata: title, description, etc.)
+    let d1Items: any[] = []
     const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
     if (galleryRow) {
-      const d = JSON.parse(galleryRow.value)
-      return c.json({ items: d.items || [] })
+      d1Items = JSON.parse(galleryRow.value).items || []
+    } else {
+      const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+      if (row) {
+        const data = JSON.parse(row.value)
+        d1Items = (data.gallery || []).filter((item: any) => item.published === true)
+      }
     }
-    // Fall back to main data key
-    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
-    if (!row) return c.json({ items: [] })
-    const data = JSON.parse(row.value)
-    const published = (data.gallery || []).filter((item: any) => item.published === true)
-    return c.json({ items: published })
+
+    // 2. Also list R2 bucket to include photos uploaded directly (not via admin panel)
+    let r2Items: any[] = []
+    try {
+      const d1Keys = new Set(d1Items.map((i: any) => i.r2Key).filter(Boolean))
+      const listed = await c.env.MEDIA.list({ limit: 500 })
+      r2Items = (listed.objects as any[])
+        .filter((obj: any) => !d1Keys.has(obj.key))
+        .map((obj: any) => {
+          const name = obj.key.split('/').pop() || obj.key
+          const title = name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+          return {
+            id: obj.key,
+            title: title.charAt(0).toUpperCase() + title.slice(1),
+            description: '',
+            type: 'image',
+            imageData: `/r2/${obj.key}`,
+            date: obj.uploaded.toISOString().split('T')[0],
+          }
+        })
+    } catch (_) {}
+
+    return c.json({ items: [...d1Items, ...r2Items] })
   } catch { return c.json({ items: [] }) }
 })
 

@@ -807,7 +807,7 @@ function renderParentGallery() {
     ${renderChildSelector(child)}
     <div style="margin-bottom:20px">
       <h3 style="font-size:16px;font-weight:700;color:#0F1E3D;margin:0 0 4px">Activity Gallery</h3>
-      <p style="color:#6B7A9D;font-size:13px;margin:0">${photos.length} photo${photos.length!==1?'s':''} featuring ${child.name}</p>
+      <p id="parent-gal-count" style="color:#6B7A9D;font-size:13px;margin:0">Loading…</p>
     </div>
     <div id="parent-gallery-body">
       <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#94a3b8">

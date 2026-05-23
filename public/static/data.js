@@ -26,7 +26,25 @@ const DB = (() => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
-    }).catch(function() {});
+    })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(e) {
+        window._dbError = e.error || ('DB save failed: HTTP ' + r.status);
+        if (typeof showToast === 'function') showToast('⚠️ Server sync failed: ' + window._dbError, 'error');
+      });
+      window._dbError = null;
+    })
+    .catch(function(e) { window._dbError = e.message; });
+
+    // Also push published gallery items to a dedicated small endpoint
+    var gallery = (data.gallery || []).filter(function(g) { return g.published; });
+    if (gallery.length) {
+      fetch('/api/gallery/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: gallery })
+      }).catch(function() {});
+    }
   }
 
   const defaults = {

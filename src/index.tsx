@@ -51,9 +51,35 @@ app.delete('/api/upload', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+app.get('/api/dbstatus', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM app_data').first<{ cnt: number }>()
+    return c.json({ ok: true, message: 'D1 connected', rows: row?.cnt ?? 0 })
+  } catch (e: any) { return c.json({ ok: false, message: e.message || 'D1 not available' }) }
+})
+
+// Dedicated gallery sync — accepts just published items array (small payload)
+app.post('/api/gallery/sync', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const body = await c.req.json()
+    const items = body.items || []
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('gallery', JSON.stringify({ items }), new Date().toISOString()).run()
+    return c.json({ ok: true, count: items.length })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 app.get('/api/gallery', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    // Try dedicated gallery key first (faster, smaller)
+    const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
+    if (galleryRow) {
+      const d = JSON.parse(galleryRow.value)
+      return c.json({ items: d.items || [] })
+    }
+    // Fall back to main data key
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
     if (!row) return c.json({ items: [] })
     const data = JSON.parse(row.value)

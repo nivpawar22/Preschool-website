@@ -2082,13 +2082,17 @@ function renderGallery() {
         </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
         <span style="font-size:13px;color:#6B7A9D">${photos.length} item${photos.length!==1?'s':''}</span>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${!isSubAdmin ? `<button class="btn btn-secondary" onclick="publishGalleryToWebsite()"><i class="fas fa-globe"></i> Publish to Website</button>` : ''}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <span id="db-status-badge" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#F8F9FB;color:#6B7A9D;border:1px solid #DCE1EF;cursor:pointer" onclick="checkDbStatus()" title="Click to check DB connection">
+          <i class="fas fa-circle" style="font-size:8px;margin-right:5px"></i>Checking DB...
+        </span>
+        ${!isSubAdmin ? `<button class="btn btn-secondary" onclick="forceSyncGallery()" title="Sync published photos to website"><i class="fas fa-sync-alt"></i> Sync to Website</button>` : ''}
         <button class="btn btn-primary" onclick="openGalleryUpload()">
           <i class="fas fa-cloud-upload-alt"></i> Upload Photo / Video
         </button>
       </div>
     </div>
+    <script>setTimeout(checkDbStatus, 500);</script>
 
     ${photos.length === 0 ? `
       <div class="empty-state" style="padding:80px">
@@ -2376,6 +2380,54 @@ function openGalleryLightbox(photoId) {
 function closeGalleryLightbox() {
   const lb = document.getElementById('gallery-lightbox');
   if (lb) lb.style.display = 'none';
+}
+
+function checkDbStatus() {
+  var badge = document.getElementById('db-status-badge');
+  if (!badge) return;
+  badge.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:8px;margin-right:5px"></i>Checking...';
+  fetch('/api/dbstatus')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        badge.style.background = '#E8F7EC'; badge.style.color = '#1a7a3c'; badge.style.borderColor = '#1a7a3c44';
+        badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px;margin-right:5px;color:#1a7a3c"></i>DB Connected (' + d.rows + ' row' + (d.rows!==1?'s':'') + ')';
+      } else {
+        badge.style.background = '#FEF2F2'; badge.style.color = '#b91c1c'; badge.style.borderColor = '#b91c1c44';
+        badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px;margin-right:5px;color:#b91c1c"></i>DB Error: ' + d.message;
+      }
+    })
+    .catch(function() {
+      badge.style.background = '#FEF2F2'; badge.style.color = '#b91c1c'; badge.style.borderColor = '#b91c1c44';
+      badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px;margin-right:5px;color:#b91c1c"></i>DB Unreachable';
+    });
+}
+
+function forceSyncGallery() {
+  var data = DB.get();
+  var published = (data.gallery || []).filter(function(g) { return g.published; });
+  if (!published.length) { showToast('No published photos to sync. Mark photos as published first.', 'warning'); return; }
+  var btn = event && event.target ? event.target.closest('button') : null;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; }
+  fetch('/api/gallery/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: published })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Sync to Website'; }
+    if (d.ok) {
+      showToast(d.count + ' photo' + (d.count!==1?'s':'') + ' synced to website gallery!', 'success');
+      checkDbStatus();
+    } else {
+      showToast('Sync failed: ' + (d.error || 'unknown error'), 'error');
+    }
+  })
+  .catch(function(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Sync to Website'; }
+    showToast('Sync failed: ' + e.message, 'error');
+  });
 }
 
 async function toggleGalleryPublish(photoId) {

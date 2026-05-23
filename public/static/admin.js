@@ -2722,6 +2722,14 @@ function deleteGalleryPhoto(id) {
       fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
     }
     DB.deleteGalleryItem(id);
+    // Sync updated gallery to D1 so deleted item doesn't reappear on public gallery
+    var updatedData = DB.get();
+    var published = (updatedData.gallery || []).filter(function(i) { return i.published; });
+    fetch('/api/gallery/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: published })
+    }).catch(function(){});
     showToast('Photo deleted', 'success');
     navigate('gallery');
   });

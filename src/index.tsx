@@ -51,6 +51,22 @@ app.delete('/api/upload', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Download endpoint — streams R2 object as attachment (same-origin, bypasses cross-origin download restriction)
+app.get('/api/download', async (c) => {
+  const key = c.req.query('key')
+  if (!key) return c.json({ error: 'Missing key' }, 400)
+  try {
+    const obj = await c.env.MEDIA.get(key)
+    if (!obj) return c.notFound()
+    const headers = new Headers()
+    obj.writeHttpMetadata(headers)
+    const filename = key.split('/').pop() || 'photo.jpg'
+    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
+    headers.set('cache-control', 'private, max-age=3600')
+    return new Response(obj.body, { headers })
+  } catch { return c.notFound() }
+})
+
 app.get('/api/dbstatus', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
@@ -1299,7 +1315,7 @@ app.get('/gallery', async (c) => {
   // ── Fetch data server-side so page renders fully without client JS ──
   const R2_PUBLIC = 'https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev'
 
-  let photos: Array<{ key: string; title: string; proxyUrl: string; publicUrl: string; date: string }> = []
+  let photos: Array<{ key: string; title: string; proxyUrl: string; publicUrl: string; date: string; eventTags: string[] }> = []
   let videos: Array<any> = []
   let r2Error = ''
   let d1Error = ''
@@ -1315,11 +1331,12 @@ app.get('/gallery', async (c) => {
         proxyUrl: `/r2/${obj.key}`,
         publicUrl: `${R2_PUBLIC}/${obj.key}`,
         date: obj.uploaded ? new Date(obj.uploaded).toISOString().split('T')[0] : '',
+        eventTags: [] as string[],
       }
     })
   } catch (e: any) { r2Error = e?.message || String(e) }
 
-  // 2. D1 published items (adds video support + richer metadata)
+  // 2. D1 published items (adds video support + richer metadata + eventTags)
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
@@ -1327,16 +1344,16 @@ app.get('/gallery', async (c) => {
       const d1 = JSON.parse(row.value).items || []
       // Add videos from D1
       videos = d1.filter((i: any) => i.type === 'video' && i.youtubeId)
-      // Merge D1 photo metadata onto matching R2 objects (richer title/desc)
+      // Merge D1 photo metadata (title + eventTags) onto matching R2 objects
       const d1Map = new Map(d1.filter((i: any) => i.r2Key).map((i: any) => [i.r2Key, i]))
       photos = photos.map(p => {
         const d1Item = d1Map.get(p.key) as any
-        if (d1Item) return { ...p, title: d1Item.title || p.title }
+        if (d1Item) return { ...p, title: d1Item.title || p.title, eventTags: Array.isArray(d1Item.eventTags) ? d1Item.eventTags : [] }
         return p
       })
       // Add D1 photos that are NOT in R2 listing (e.g. base64 ones — rare)
       d1.filter((i: any) => i.type !== 'video' && !i.r2Key && i.imageData && !i.imageData.startsWith('/r2/')).forEach((i: any) => {
-        photos.push({ key: i.id, title: i.title, proxyUrl: i.imageData, publicUrl: i.imageData, date: i.date || '' })
+        photos.push({ key: i.id, title: i.title, proxyUrl: i.imageData, publicUrl: i.imageData, date: i.date || '', eventTags: Array.isArray(i.eventTags) ? i.eventTags : [] })
       })
     }
   } catch (e: any) { d1Error = e?.message || String(e) }
@@ -1344,18 +1361,50 @@ app.get('/gallery', async (c) => {
   const photoCount = photos.length
   const debugInfo = `R2: ${photoCount} photos${r2Error ? ' (error: ' + r2Error + ')' : ''} | D1: ${videos.length} videos${d1Error ? ' (error: ' + d1Error + ')' : ''}`
 
-  // ── Server-render the photo grid ──
-  const photoCardsHtml = photos.map((p, i) => `
-    <div style="break-inside:avoid;margin-bottom:12px;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 2px 10px rgba(15,32,80,0.1);background:#e8edf5;transition:transform 0.2s,box-shadow 0.2s"
-         onclick="openLightbox(${i})"
-         onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 28px rgba(15,32,80,0.2)'"
-         onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 2px 10px rgba(15,32,80,0.1)'">
-      <img src="${p.publicUrl}"
-           alt="${p.title}"
-           loading="lazy"
-           style="width:100%;height:auto;display:block;min-height:80px"
-           onerror="this.onerror=null;this.src='${p.proxyUrl}'">
-    </div>`).join('')
+  // ── Group photos by first eventTag, fallback to "School Life" ──
+  interface PhotoEntry { photo: typeof photos[0]; idx: number }
+  const groups = new Map<string, PhotoEntry[]>()
+  photos.forEach((p, idx) => {
+    const tag = (p.eventTags && p.eventTags.length > 0) ? p.eventTags[0] : 'School Life'
+    if (!groups.has(tag)) groups.set(tag, [])
+    groups.get(tag)!.push({ photo: p, idx })
+  })
+
+  // ── Server-render compact tag-grouped photo sections ──
+  const tagAccentColors: Record<string, string> = {
+    'Art Time': '#E8B020', 'Science Lab': '#1AA6CA', 'Outdoor Play': '#10b981',
+    'Story Time': '#C4893A', 'Music Class': '#8b5cf6', 'Sport Day': '#ef4444',
+    'Cooking Class': '#f97316', 'Block Building': '#0F2050', 'Drama Class': '#ec4899',
+    'Garden Time': '#16a34a', 'SuperHero Day': '#dc2626', 'Rainbow Art': '#7c3aed',
+    'Birthday Fun': '#E8B020', 'Team Work': '#1AA6CA', 'School Life': '#6B7A9D',
+  }
+
+  const groupsHtml = Array.from(groups.entries()).map(([tag, items]) => {
+    const accent = tagAccentColors[tag] || '#1AA6CA'
+    const cardsHtml = items.map(({ photo: p, idx: i }) => `
+      <div style="border-radius:8px;overflow:hidden;cursor:pointer;background:#e8edf5;position:relative;height:160px;box-shadow:0 1px 4px rgba(15,32,80,0.08)"
+           onclick="openLightbox(${i})"
+           onmouseover="this.querySelector('img') && (this.querySelector('img').style.transform='scale(1.06)')"
+           onmouseout="this.querySelector('img') && (this.querySelector('img').style.transform='scale(1)')">
+        <img src="${p.publicUrl}" alt="${p.title}" loading="lazy"
+             style="width:100%;height:100%;object-fit:cover;transition:transform 0.35s;display:block"
+             onerror="this.onerror=null;this.src='${p.proxyUrl}'">
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.55));pointer-events:none"></div>
+        <span style="position:absolute;bottom:7px;left:8px;right:8px;color:#fff;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,0.6)">${p.title}</span>
+      </div>`).join('')
+
+    return `
+      <div style="margin-bottom:2.8rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <span style="display:inline-block;width:4px;height:22px;background:${accent};border-radius:2px;flex-shrink:0"></span>
+          <h3 style="font-size:1.05rem;font-weight:800;color:#0F1E3D;margin:0">${tag}</h3>
+          <span style="background:#E8EDF5;color:#6B7A9D;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px">${items.length}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+          ${cardsHtml}
+        </div>
+      </div>`
+  }).join('')
 
   const emptyHtml = `
     <div style="text-align:center;padding:80px 20px;background:#fff;border-radius:14px;border:2px dashed #DCE1EF">
@@ -1401,10 +1450,7 @@ app.get('/gallery', async (c) => {
 
       ${r2Error ? `<div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:13px;border:1px solid #fca5a5">R2 error: ${r2Error}</div>` : ''}
 
-      ${photoCount === 0 ? emptyHtml : `
-      <div id="gal-grid" style="column-count:2;column-gap:12px">
-        ${photoCardsHtml}
-      </div>`}
+      ${photoCount === 0 ? emptyHtml : groupsHtml}
 
       ${videos.length > 0 ? `
       <div style="margin-top:4rem">
@@ -1478,15 +1524,6 @@ app.get('/gallery', async (c) => {
         + '</div>';
       document.body.appendChild(ov);
     }
-    // Responsive column count
-    function setColumns() {
-      var g = document.getElementById('gal-grid');
-      if (!g) return;
-      var w = window.innerWidth;
-      g.style.columnCount = w >= 1280 ? '4' : w >= 900 ? '3' : '2';
-    }
-    setColumns();
-    window.addEventListener('resize', setColumns);
   </script>
 
   <!-- Social CTA -->

@@ -870,8 +870,8 @@ function renderParentGalleryCard(p, child) {
         }
         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(0,0,0,0.35));pointer-events:none"></div>
         ${isTagged ? `<span style="position:absolute;top:10px;left:10px;background:#1AA6CA;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px"><i class="fas fa-star"></i> Featured</span>` : ''}
-        ${p.imageData ? `
-          <a href="${p.imageData}" download="${p.title.replace(/[^a-z0-9]/gi,'_')}.jpg"
+        ${(p.r2Key || p.imageData) ? `
+          <a href="/api/download?key=${encodeURIComponent(p.r2Key || (p.imageData || '').replace(/^\/r2\//, ''))}"
              onclick="event.stopPropagation()"
              title="Download"
              style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;text-decoration:none">
@@ -904,8 +904,8 @@ function openParentGalleryLightbox(photoId) {
         </div>`
       }
       <button onclick="closeParentGalleryLightbox()" style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:18px;line-height:36px;text-align:center">×</button>
-      ${p.imageData ? `
-        <a href="${p.imageData}" download="${p.title.replace(/[^a-z0-9]/gi,'_')}.jpg"
+      ${(p.r2Key || p.imageData) ? `
+        <a href="/api/download?key=${encodeURIComponent(p.r2Key || (p.imageData || '').replace(/^\/r2\//, ''))}"
            style="position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(0,0,0,0.5);color:#fff;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;backdrop-filter:blur(4px)"
            onclick="event.stopPropagation()">
           <i class="fas fa-download"></i> Download

@@ -2057,44 +2057,7 @@ function renderGallery() {
   const myClassId = isSubAdmin ? user.assignedClass : null;
   const allClasses = myClassId ? [DB.getClass(myClassId)].filter(Boolean) : data.classes;
 
-  const content = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        ${!myClassId ? `
-        <select class="form-control" style="width:180px" onchange="_galFilterClass=this.value;navigate('gallery')">
-          <option value="">All Classes</option>
-          ${data.classes.map(c => `<option value="${c.id}"${_galFilterClass===c.id?' selected':''}>${c.name}</option>`).join('')}
-        </select>` : `<span class="badge badge-indigo">${(DB.getClass(myClassId)||{}).name||''}</span>`}
-        <span style="font-size:13px;color:#6B7A9D">${photos.length} item${photos.length!==1?'s':''}</span>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <span id="db-status-badge" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#F8F9FB;color:#6B7A9D;border:1px solid #DCE1EF;cursor:pointer" onclick="checkDbStatus()" title="Click to check DB connection">
-          <i class="fas fa-circle" style="font-size:8px;margin-right:5px"></i>Checking DB...
-        </span>
-        ${!isSubAdmin ? `<button class="btn btn-secondary" onclick="forceSyncGallery()" title="Sync published photos to website"><i class="fas fa-sync-alt"></i> Sync to Website</button>` : ''}
-        <button class="btn btn-primary" onclick="openGalleryUpload()">
-          <i class="fas fa-cloud-upload-alt"></i> Upload Photo / Video
-        </button>
-      </div>
-    </div>
-    <script>setTimeout(checkDbStatus, 500);</script>
-
-    ${photos.length === 0 ? `
-      <div class="empty-state" style="padding:80px">
-        <i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i>
-        <h3 style="margin:16px 0 8px">No Photos Yet</h3>
-        <p>Upload activity photos to share with parents</p>
-        <button class="btn btn-primary" style="margin-top:12px" onclick="openGalleryUpload()">
-          <i class="fas fa-plus"></i> Upload First Photo
-        </button>
-      </div>
-    ` : `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px">
-        ${photos.map(p => renderGalleryCard(p)).join('')}
-      </div>
-    `}
-
-    <!-- Upload Modal -->
+  const uploadModal = `
     <div class="modal-overlay" id="gallery-upload-modal" style="display:none">
       <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">

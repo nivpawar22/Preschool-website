@@ -77,7 +77,7 @@ function initials(name) {
 }
 
 function avatarHtml(name, color, size = '') {
-  return `<div class="avatar ${size}" style="background:${color || '#6366f1'}">${initials(name)}</div>`;
+  return `<div class="avatar ${size}" style="background:${color || '#0F2050'}">${initials(name)}</div>`;
 }
 
 function formatDate(d) {
@@ -103,7 +103,7 @@ function gradeColor(g) {
 
 function scoreBarHtml(score, max) {
   const pct = Math.min(100, Math.round((score / max) * 100));
-  const color = pct >= 90 ? '#10b981' : pct >= 75 ? '#6366f1' : pct >= 60 ? '#f59e0b' : '#ef4444';
+  const color = pct >= 90 ? '#10b981' : pct >= 75 ? '#1AA6CA' : pct >= 60 ? '#E8B020' : '#ef4444';
   return `<div style="display:flex;align-items:center;gap:10px">
     <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
     <span style="font-size:12px;font-weight:700;color:${color};width:36px;text-align:right">${score}/${max}</span>
@@ -216,27 +216,27 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     </div>`).join('');
 
   const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
-  const roleColor = user.role === 'superadmin' ? '#6366f1' : user.role === 'subadmin' ? '#10b981' : '#f59e0b';
+  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
 
   document.getElementById('app').innerHTML = `
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <img src="${data.meta.schoolLogo || '/static/school-logo.png'}" alt="School Logo" style="width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);background:#fff;object-fit:cover;flex-shrink:0;"/>
+          <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="School Logo" style="width:52px;height:52px;border-radius:50%;border:2px solid rgba(196,137,58,0.5);background:#fff;object-fit:contain;flex-shrink:0;"/>
           <div>
-            <h1 style="font-size:16px;font-weight:900;color:#fff;margin:0;line-height:1.2">SuperKids India</h1>
-            <p style="margin:0;font-size:10px;color:#a5b4fc">Preschool</p>
+            <h1 style="font-size:15px;font-weight:900;color:#fff;margin:0;line-height:1.2">SuperKids India</h1>
+            <p style="margin:0;font-size:10px;color:#90C4E0">Preschool</p>
           </div>
         </div>
-        <p style="font-size:10px;color:#c7d2fe;margin:0;padding-top:4px;border-top:1px solid rgba(255,255,255,0.1)">${data.meta.schoolName}</p>
+        <p style="font-size:10px;color:#90C4E0;margin:0;padding-top:4px;border-top:1px solid rgba(255,255,255,0.1)">${data.meta.schoolName}</p>
       </div>
 
       ${isImp ? `
       <div class="impersonate-bar">
         <i class="fas fa-eye"></i>
         Viewing: ${user.name}
-        <button class="btn btn-xs" style="background:#fff;color:#92400e;margin-left:auto" onclick="exitImpersonate()">
+        <button class="btn btn-xs" style="background:#fff;color:#0F1E3D;margin-left:auto" onclick="exitImpersonate()">
           <i class="fas fa-sign-out-alt"></i> Exit
         </button>
       </div>` : ''}
@@ -247,7 +247,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
           <div class="name">${user.name}</div>
           <div class="role" style="color:${roleColor}">${roleLabel}</div>
         </div>
-        ${user.role === 'superadmin' && !isImp ? '<i class="fas fa-edit" style="margin-left:auto;font-size:11px;color:#a5b4fc"></i>' : ''}
+        ${user.role === 'superadmin' && !isImp ? '<i class="fas fa-edit" style="margin-left:auto;font-size:11px;color:#90C4E0"></i>' : ''}
       </div>
 
       <div style="flex:1">
@@ -281,11 +281,11 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
             <i class="fas fa-download"></i><span class="topbar-username">Install App</span>
           </button>
           <div class="topbar-school-info" style="display:flex;align-items:center;gap:8px">
-            <img src="${data.meta.schoolLogo || '/static/school-logo.png'}" alt="Logo" style="width:30px;height:30px;border-radius:50%;border:1px solid #e2e8f0;background:#f8fafc;object-fit:cover;"/>
-            <span style="font-size:13px;color:#64748b;font-weight:600">${data.meta.schoolName}</span>
+            <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="Logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #DCE1EF;background:#f8fafc;object-fit:contain;"/>
+            <span style="font-size:13px;color:#6B7A9D;font-weight:600">${data.meta.schoolName}</span>
           </div>
-          <div class="topbar-divider" style="width:1px;height:20px;background:#e2e8f0"></div>
-          <span class="topbar-username" style="font-size:13px;color:#64748b">${user.name}</span>
+          <div class="topbar-divider" style="width:1px;height:20px;background:#DCE1EF"></div>
+          <span class="topbar-username" style="font-size:13px;color:#6B7A9D">${user.name}</span>
           ${avatarHtml(user.name, user.avatar)}
         </div>
       </div>
@@ -293,7 +293,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       ${isImp ? `
       <div class="imp-banner">
         <span><i class="fas fa-user-secret"></i> You are viewing ${user.name}'s account (${user.assignedClass ? (DB.getClass(user.assignedClass) || {}).name : 'No class'})</span>
-        <button class="btn btn-xs" style="background:rgba(0,0,0,0.15);color:#1e1b4b" onclick="exitImpersonate()">
+        <button class="btn btn-xs" style="background:rgba(0,0,0,0.15);color:#0F1E3D" onclick="exitImpersonate()">
           <i class="fas fa-sign-out-alt"></i> Return to Super Admin
         </button>
       </div>` : ''}
@@ -347,18 +347,18 @@ function navigate(tab) {
 function renderLogin() {
   document.getElementById('app').innerHTML = `
     <div class="login-bg">
-      <div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(139,92,246,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>
-      <div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(59,130,246,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>
-      <div class="login-orb" style="width:160px;height:160px;background:radial-gradient(circle,rgba(236,72,153,0.15) 0%,transparent 70%);top:45%;left:3%;animation-delay:-1s"></div>
+      <div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(26,166,202,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>
+      <div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(196,137,58,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>
+      <div class="login-orb" style="width:160px;height:160px;background:radial-gradient(circle,rgba(232,176,32,0.15) 0%,transparent 70%);top:45%;left:3%;animation-delay:-1s"></div>
 
       <div class="login-card">
 
         <!-- Logo & Branding -->
         <div style="text-align:center;margin-bottom:36px">
           <div style="position:relative;display:inline-block;margin-bottom:18px">
-            <img src="/static/school-logo.png" alt="SuperKids Logo"
-              style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.2);box-shadow:0 8px 32px rgba(0,0,0,0.5);display:block;margin:0 auto;background:#fff"/>
-            <div style="position:absolute;bottom:2px;right:2px;width:20px;height:20px;background:#10b981;border-radius:50%;border:2px solid #1e1b4b;display:flex;align-items:center;justify-content:center">
+            <img src="/static/logo.png" alt="SuperKids Logo"
+              style="width:110px;height:110px;border-radius:50%;object-fit:contain;border:3px solid rgba(196,137,58,0.6);box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 0 6px rgba(26,166,202,0.15);display:block;margin:0 auto;background:#fff"/>
+            <div style="position:absolute;bottom:2px;right:2px;width:20px;height:20px;background:#10b981;border-radius:50%;border:2px solid #0F2050;display:flex;align-items:center;justify-content:center">
               <i class="fas fa-check" style="font-size:7px;color:#fff"></i>
             </div>
           </div>
@@ -411,9 +411,9 @@ function renderLogin() {
 
         <!-- Sign In Button -->
         <button onclick="doLogin()" id="login-btn"
-          style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(99,102,241,0.45);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.3px"
-          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 36px rgba(99,102,241,0.55)'"
-          onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 28px rgba(99,102,241,0.45)'">
+          style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(15,32,80,0.35);transition:transform 0.15s,box-shadow 0.15s;letter-spacing:0.3px"
+          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 36px rgba(15,32,80,0.5)'"
+          onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 28px rgba(15,32,80,0.35)'">
           <i class="fas fa-sign-in-alt"></i> Sign In
         </button>
 
@@ -454,5 +454,10 @@ function doLogin() {
 
 // ---- Init ----
 window.addEventListener('DOMContentLoaded', () => {
-  renderLogin();
+  // Show loading while fetching data from server
+  document.getElementById('app').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0F2050"><img src="/static/logo.png" style="width:80px;height:80px;border-radius:50%;object-fit:contain"><div style="color:#90C4E0;font-size:14px;font-weight:600">Loading SuperKids Portal...</div></div>';
+
+  DB.initFromServer().then(function() {
+    renderLogin();
+  });
 });

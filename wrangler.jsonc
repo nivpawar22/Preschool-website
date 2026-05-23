@@ -5,30 +5,18 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
-  ]
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  "r2_buckets": [
+  ],
+  "d1_databases": [
     {
-      "binding": "GALLERY_BUCKET",
-      "bucket_name": "superkidsindiar2bucket"
+      "binding": "DB",
+      "database_name": "superkids-db",
+      "database_id": "49487ce4-2d09-4b8a-a473-65ca13227cbc"
     }
   ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // }
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "superkidsindiar2bucket"
+    }
+  ]
 }

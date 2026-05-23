@@ -46,7 +46,7 @@ function renderSubAdminsTab() {
   return `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-user-tie" style="color:#6366f1"></i> Sub Admins / Teachers (${subadmins.length})</div>
+        <div class="card-title"><i class="fas fa-user-tie" style="color:#1AA6CA"></i> Sub Admins / Teachers (${subadmins.length})</div>
         <button class="btn btn-primary" onclick="openAddSubAdminModal()"><i class="fas fa-plus"></i> Add Sub Admin</button>
       </div>
       <div class="table-wrap">
@@ -75,14 +75,14 @@ function renderSubAdminsTab() {
                 <td>
                   <div style="display:flex;align-items:center;gap:6px">
                     <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${Math.round(permCount/8*100)}%"></div></div>
-                    <span style="font-size:12px;color:#64748b">${permCount}/8</span>
+                    <span style="font-size:12px;color:#6B7A9D">${permCount}/8</span>
                   </div>
                 </td>
                 <td>
                   <div style="display:flex;gap:4px;flex-wrap:wrap">
                     <button class="btn btn-xs btn-primary" title="Edit" onclick="openEditSubAdminModal('${sa.id}')"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-xs btn-warning" title="Permissions" onclick="openPermissionsModal('${sa.id}')"><i class="fas fa-key"></i></button>
-                    <button class="btn btn-xs" style="${sa.active?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleSubAdminStatus('${sa.id}')">
+                    <button class="btn btn-xs" style="${sa.active?'background:#FEF7E0;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleSubAdminStatus('${sa.id}')">
                       <i class="fas ${sa.active?'fa-user-slash':'fa-user-check'}"></i>
                     </button>
                     <button class="btn btn-xs" style="background:#e0e7ff;color:#3730a3" title="Switch to account" onclick="impersonateSubAdmin('${sa.id}')">
@@ -132,10 +132,10 @@ function openAddSubAdminModal() {
         <div class="form-group">
           <label class="form-label">Avatar Color</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316'].map(c => `
+            ${['#1AA6CA','#10b981','#E8B020','#ef4444','#C4893A','#06b6d4','#84cc16','#f97316'].map(c => `
               <div onclick="document.getElementById('sa-avatar').value='${c}';this.parentElement.querySelectorAll('.av-opt').forEach(el=>el.style.outline='none');this.style.outline='3px solid #1e293b'" 
                    class="av-opt" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer"></div>`).join('')}
-            <input type="hidden" id="sa-avatar" value="#6366f1"/>
+            <input type="hidden" id="sa-avatar" value="#1AA6CA"/>
           </div>
         </div>
         <hr class="divider"/>
@@ -178,7 +178,7 @@ function saveNewSubAdmin() {
   const sa = {
     id: DB.genId('u'), role: 'subadmin', name, email, username, password,
     phone: document.getElementById('sa-phone').value,
-    avatar: document.getElementById('sa-avatar').value || '#6366f1',
+    avatar: document.getElementById('sa-avatar').value || '#1AA6CA',
     active: true, deleted: false,
     createdAt: new Date().toISOString().split('T')[0],
     assignedClass: classId, permissions
@@ -272,7 +272,7 @@ function openPermissionsModal(saId) {
         <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
       </div>
       <div class="modal-body">
-        <div style="background:#fef3c7;border-radius:10px;padding:12px;font-size:13px;color:#92400e;margin-bottom:16px">
+        <div style="background:#FEF7E0;border-radius:10px;padding:12px;font-size:13px;color:#92400e;margin-bottom:16px">
           <i class="fas fa-info-circle"></i> Sub Admins cannot permanently delete records. Only Super Admin can delete data.
           Sub Admins do NOT have access to the Management tab.
         </div>
@@ -280,11 +280,11 @@ function openPermissionsModal(saId) {
           ${PERM_KEYS.map(p => `
             <label class="perm-item">
               <input type="checkbox" id="ep-${p}" ${perms[p]?'checked':''}/>
-              <i class="fas ${PERM_ICONS[p] || 'fa-check'}" style="color:#6366f1"></i>
+              <i class="fas ${PERM_ICONS[p] || 'fa-check'}" style="color:#1AA6CA"></i>
               <span style="text-transform:capitalize">${p}</span>
             </label>`).join('')}
         </div>
-        <div style="margin-top:16px;padding:12px;background:#f1f5f9;border-radius:10px;font-size:13px;color:#374151">
+        <div style="margin-top:16px;padding:12px;background:#f1f5f9;border-radius:10px;font-size:13px;color:#2A3B60">
           <strong>Always Allowed:</strong> Dashboard, Classes, Messages (view only)
         </div>
       </div>
@@ -395,7 +395,7 @@ function renderParentsTab() {
                 <td>
                   <div style="display:flex;gap:4px;flex-wrap:wrap">
                     <button class="btn btn-xs btn-secondary" onclick="openEditParentModal('${p.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-xs" style="${p.active?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleParentStatus('${p.id}')">
+                    <button class="btn btn-xs" style="${p.active?'background:#FEF7E0;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleParentStatus('${p.id}')">
                       <i class="fas ${p.active?'fa-user-slash':'fa-user-check'}"></i>
                     </button>
                     <button class="btn btn-xs btn-primary" onclick="openLinkChildModal('${p.id}')"><i class="fas fa-user-plus"></i> Link Child</button>
@@ -433,14 +433,14 @@ function openAddParentModal() {
         <hr class="divider"/>
         <div class="form-group">
           <label class="form-label">Link Children (check all that apply)</label>
-          <div style="max-height:250px;overflow-y:auto;border:2px solid #e2e8f0;border-radius:10px;padding:12px">
+          <div style="max-height:250px;overflow-y:auto;border:2px solid #DCE1EF;border-radius:10px;padding:12px">
             ${allStudents.length ? allStudents.map(s => {
               const cls = DB.getClass(s.classId);
               const existingParent = s.parentId ? DB.getUser(s.parentId) : null;
               return `
               <label style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;margin-bottom:4px;${existingParent?'opacity:0.6':''}">
-                <input type="checkbox" name="par-child" value="${s.id}" style="width:16px;height:16px;accent-color:#6366f1" ${existingParent?'disabled title="Already has parent"':''}/>
-                ${avatarHtml(s.name, '#6366f1')}
+                <input type="checkbox" name="par-child" value="${s.id}" style="width:16px;height:16px;accent-color:#1AA6CA" ${existingParent?'disabled title="Already has parent"':''}/>
+                ${avatarHtml(s.name, '#1AA6CA')}
                 <span style="flex:1">${s.name}</span>
                 <span class="badge badge-blue">${cls ? cls.name : '-'}</span>
                 ${existingParent ? `<span class="badge badge-yellow">Has parent: ${existingParent.name}</span>` : ''}
@@ -557,9 +557,9 @@ function openLinkChildModal(parentId) {
             const isLinked = existing.includes(s.id);
             const otherParent = (!isLinked && s.parentId) ? DB.getUser(s.parentId) : null;
             return `
-            <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;margin-bottom:6px">
-              <input type="checkbox" name="link-child" value="${s.id}" ${isLinked?'checked':''} style="width:16px;height:16px;accent-color:#6366f1"/>
-              ${avatarHtml(s.name, '#6366f1')}
+            <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid #DCE1EF;margin-bottom:6px">
+              <input type="checkbox" name="link-child" value="${s.id}" ${isLinked?'checked':''} style="width:16px;height:16px;accent-color:#1AA6CA"/>
+              ${avatarHtml(s.name, '#1AA6CA')}
               <span style="flex:1">${s.name}</span>
               <span class="badge badge-blue">${cls ? cls.name : '-'}</span>
               ${otherParent ? `<span class="badge badge-yellow">${otherParent.name}</span>` : ''}
@@ -639,7 +639,7 @@ function renderActivityLogTab() {
   return `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-history" style="color:#6366f1"></i> Activity Log (Last ${logs.length})</div>
+        <div class="card-title"><i class="fas fa-history" style="color:#1AA6CA"></i> Activity Log (Last ${logs.length})</div>
         <button class="btn btn-secondary btn-sm" onclick="clearActivityLog()"><i class="fas fa-trash"></i> Clear Log</button>
       </div>
       ${logs.length ? `<div class="table-wrap"><table>
@@ -656,7 +656,7 @@ function renderActivityLogTab() {
               <td style="font-size:12px;white-space:nowrap">${formatDateTime(l.time)}</td>
               <td>${u ? u.name : l.userId}</td>
               <td><span class="badge ${actionColors[l.action] || 'badge-gray'}" style="font-size:11px">${l.action}</span></td>
-              <td style="font-size:13px;color:#64748b">${l.details}</td>
+              <td style="font-size:13px;color:#6B7A9D">${l.details}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -680,14 +680,14 @@ function renderSettingsTab() {
 
   return `
     <div class="card" style="max-width:600px">
-      <div class="card-title" style="margin-bottom:20px"><i class="fas fa-cog" style="color:#6366f1"></i> School Settings</div>
+      <div class="card-title" style="margin-bottom:20px"><i class="fas fa-cog" style="color:#1AA6CA"></i> School Settings</div>
       
       <!-- School Logo Preview -->
-      <div style="display:flex;align-items:center;gap:16px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:16px;padding:16px;background:#F8F9FB;border-radius:12px;border:1px solid #DCE1EF;margin-bottom:20px">
         <img src="${meta.schoolLogo || '/static/school-logo.png'}" alt="School Logo" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid #e0e7ff;background:#fff"/>
         <div>
           <div style="font-weight:700;color:#1e293b">${meta.schoolName}</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">School Logo & Name</div>
+          <div style="font-size:12px;color:#6B7A9D;margin-top:2px">School Logo & Name</div>
         </div>
       </div>
 
@@ -733,17 +733,17 @@ function renderMyProfile() {
       <!-- Profile Card -->
       <div class="card" style="margin-bottom:20px">
         <div class="card-title" style="margin-bottom:24px">
-          <i class="fas fa-user-circle" style="color:#6366f1"></i> My Profile
+          <i class="fas fa-user-circle" style="color:#1AA6CA"></i> My Profile
         </div>
 
         <div style="display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,#eef2ff,#fdf4ff);border-radius:14px;margin-bottom:24px">
-          <div style="width:80px;height:80px;border-radius:50%;background:${user.avatar || '#6366f1'};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(99,102,241,0.3)">
+          <div style="width:80px;height:80px;border-radius:50%;background:${user.avatar || '#1AA6CA'};display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(26,166,202,0.3)">
             ${(user.name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
           </div>
           <div>
             <div style="font-size:20px;font-weight:800;color:#1e293b">${user.name}</div>
-            <div style="font-size:13px;color:#6366f1;font-weight:600;margin-top:2px"><i class="fas fa-shield-alt"></i> Super Admin</div>
-            <div style="font-size:12px;color:#64748b;margin-top:4px"><i class="fas fa-envelope"></i> ${user.email || 'Not set'} &nbsp; <i class="fas fa-phone"></i> ${user.phone || 'Not set'}</div>
+            <div style="font-size:13px;color:#1AA6CA;font-weight:600;margin-top:2px"><i class="fas fa-shield-alt"></i> Super Admin</div>
+            <div style="font-size:12px;color:#6B7A9D;margin-top:4px"><i class="fas fa-envelope"></i> ${user.email || 'Not set'} &nbsp; <i class="fas fa-phone"></i> ${user.phone || 'Not set'}</div>
           </div>
         </div>
 
@@ -756,25 +756,25 @@ function renderMyProfile() {
           <div class="form-group">
             <label class="form-label">Email Address <span style="color:#ef4444">*</span></label>
             <input class="form-control" id="prof-email" type="email" value="${user.email || ''}" placeholder="admin@school.com" required/>
-            <div style="font-size:11px;color:#94a3b8;margin-top:4px"><i class="fas fa-info-circle"></i> Required for password reset</div>
+            <div style="font-size:11px;color:#6B7A9D;margin-top:4px"><i class="fas fa-info-circle"></i> Required for password reset</div>
           </div>
           <div class="form-group">
             <label class="form-label">Mobile Number <span style="color:#ef4444">*</span></label>
             <input class="form-control" id="prof-phone" type="tel" value="${user.phone || ''}" placeholder="+1-555-0100" required/>
-            <div style="font-size:11px;color:#94a3b8;margin-top:4px"><i class="fas fa-info-circle"></i> Required for password reset</div>
+            <div style="font-size:11px;color:#6B7A9D;margin-top:4px"><i class="fas fa-info-circle"></i> Required for password reset</div>
           </div>
           <div class="form-group">
             <label class="form-label">Username</label>
-            <input class="form-control" value="${user.username || ''}" disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed"/>
+            <input class="form-control" value="${user.username || ''}" disabled style="background:#f1f5f9;color:#6B7A9D;cursor:not-allowed"/>
           </div>
           <div class="form-group">
             <label class="form-label">Avatar Color</label>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px" id="avatar-picker">
-              ${['#6366f1','#ec4899','#10b981','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#84cc16'].map(c=>`
+              ${['#1AA6CA','#ec4899','#10b981','#E8B020','#ef4444','#06b6d4','#C4893A','#84cc16'].map(c=>`
                 <div onclick="selectAvatarColor('${c}')" style="width:30px;height:30px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${user.avatar===c?'#1e293b':'transparent'};transition:border 0.2s" data-color="${c}"></div>
               `).join('')}
             </div>
-            <input type="hidden" id="prof-avatar" value="${user.avatar || '#6366f1'}"/>
+            <input type="hidden" id="prof-avatar" value="${user.avatar || '#1AA6CA'}"/>
           </div>
         </div>
         <button class="btn btn-primary" onclick="saveProfile()" style="margin-top:8px">
@@ -785,17 +785,17 @@ function renderMyProfile() {
       <!-- Change Password Card -->
       <div class="card">
         <div class="card-title" style="margin-bottom:20px">
-          <i class="fas fa-key" style="color:#f59e0b"></i> Change Password
+          <i class="fas fa-key" style="color:#E8B020"></i> Change Password
         </div>
         
-        <div style="padding:12px;background:#fef3c7;border-radius:10px;margin-bottom:20px;font-size:13px;color:#92400e">
+        <div style="padding:12px;background:#FEF7E0;border-radius:10px;margin-bottom:20px;font-size:13px;color:#92400e">
           <i class="fas fa-exclamation-triangle"></i>
           <strong>Password Reset Requirements:</strong> You must have a valid <strong>Email</strong> and <strong>Mobile Number</strong> saved in your profile to reset your password.
           ${(!user.email || !user.phone) ? `<div style="margin-top:8px;color:#dc2626;font-weight:700"><i class="fas fa-times-circle"></i> Please complete your profile (email + mobile) before changing password.</div>` : `<div style="margin-top:8px;color:#065f46;font-weight:700"><i class="fas fa-check-circle"></i> Profile is complete. You can change your password.</div>`}
         </div>
 
         ${(!user.email || !user.phone) ? `
-        <div style="text-align:center;padding:20px;color:#94a3b8">
+        <div style="text-align:center;padding:20px;color:#6B7A9D">
           <i class="fas fa-lock" style="font-size:36px;margin-bottom:12px;opacity:0.4"></i>
           <p>Complete your profile above (set email &amp; mobile) to enable password change.</p>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('prof-email').focus()">
@@ -808,25 +808,25 @@ function renderMyProfile() {
             <label class="form-label">Current Password <span style="color:#ef4444">*</span></label>
             <div style="position:relative">
               <input class="form-control" id="pw-current" type="password" placeholder="Enter current password"/>
-              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;cursor:pointer" onclick="togglePwVis('pw-current',this)"></i>
+              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6B7A9D;cursor:pointer" onclick="togglePwVis('pw-current',this)"></i>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">New Password <span style="color:#ef4444">*</span></label>
             <div style="position:relative">
               <input class="form-control" id="pw-new" type="password" placeholder="Min 6 characters"/>
-              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;cursor:pointer" onclick="togglePwVis('pw-new',this)"></i>
+              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6B7A9D;cursor:pointer" onclick="togglePwVis('pw-new',this)"></i>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Confirm New Password <span style="color:#ef4444">*</span></label>
             <div style="position:relative">
               <input class="form-control" id="pw-confirm" type="password" placeholder="Repeat new password"/>
-              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94a3b8;cursor:pointer" onclick="togglePwVis('pw-confirm',this)"></i>
+              <i class="fas fa-eye" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6B7A9D;cursor:pointer" onclick="togglePwVis('pw-confirm',this)"></i>
             </div>
           </div>
         </div>
-        <div style="font-size:12px;color:#64748b;margin-bottom:16px">
+        <div style="font-size:12px;color:#6B7A9D;margin-bottom:16px">
           <i class="fas fa-shield-alt"></i> Password reset verification will be sent to: <strong>${user.email}</strong> &amp; <strong>${user.phone}</strong>
         </div>
         <button class="btn btn-warning" onclick="changePassword()">

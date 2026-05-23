@@ -88,26 +88,46 @@ app.get('/api/gallery', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
 
-    // 1. Get published items from D1 (have metadata: title, description, etc.)
+    // 1. Get published items from D1
     let d1Items: any[] = []
-    const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
-    if (galleryRow) {
-      d1Items = JSON.parse(galleryRow.value).items || []
-    } else {
-      const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
-      if (row) {
-        const data = JSON.parse(row.value)
-        d1Items = (data.gallery || []).filter((item: any) => item.published === true)
-      }
-    }
-
-    // 2. Also list R2 bucket to include photos uploaded directly (not via admin panel)
-    let r2Items: any[] = []
     try {
-      const d1Keys = new Set(d1Items.map((i: any) => i.r2Key).filter(Boolean))
+      const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
+      if (galleryRow) {
+        d1Items = JSON.parse(galleryRow.value).items || []
+      } else {
+        const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+        if (row) {
+          const data = JSON.parse(row.value)
+          d1Items = (data.gallery || []).filter((item: any) => item.published === true)
+        }
+      }
+    } catch (_) {}
+
+    // Normalize D1 item image URLs: prefer /r2/ proxy over public domain URL
+    d1Items = d1Items.map((item: any) => {
+      if (item.r2Key) return { ...item, imageData: `/r2/${item.r2Key}` }
+      if (item.imageData && item.imageData.startsWith('https://pub-')) {
+        const key = item.imageData.replace(/^https:\/\/[^/]+\//, '')
+        return { ...item, imageData: `/r2/${key}` }
+      }
+      return item
+    })
+
+    // 2. Also list R2 bucket to catch photos not yet in D1
+    let r2Items: any[] = []
+    let r2Error = ''
+    try {
+      const d1Keys = new Set([
+        ...d1Items.map((i: any) => i.r2Key).filter(Boolean),
+        ...d1Items.map((i: any) => {
+          if (i.imageData && i.imageData.startsWith('/r2/')) return i.imageData.replace('/r2/', '')
+          return null
+        }).filter(Boolean)
+      ])
       const listed = await c.env.MEDIA.list({ limit: 500 })
       r2Items = (listed.objects as any[])
         .filter((obj: any) => !d1Keys.has(obj.key))
+        .filter((obj: any) => /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(obj.key))
         .map((obj: any) => {
           const name = obj.key.split('/').pop() || obj.key
           const title = name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
@@ -116,14 +136,16 @@ app.get('/api/gallery', async (c) => {
             title: title.charAt(0).toUpperCase() + title.slice(1),
             description: '',
             type: 'image',
-            imageData: `https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev/${obj.key}`,
-            date: obj.uploaded ? obj.uploaded.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            imageData: `/r2/${obj.key}`,
+            r2Key: obj.key,
+            date: obj.uploaded ? new Date(obj.uploaded).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           }
         })
-    } catch (_) {}
+    } catch (e: any) { r2Error = e.message || 'R2 list failed' }
 
-    return c.json({ items: [...d1Items, ...r2Items] })
-  } catch { return c.json({ items: [] }) }
+    const items = [...d1Items, ...r2Items]
+    return c.json({ items, _debug: { d1Count: d1Items.length, r2Count: r2Items.length, r2Error } })
+  } catch (e: any) { return c.json({ items: [], _debug: { error: String(e) } }) }
 })
 
 const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
@@ -1286,159 +1308,211 @@ app.get('/gallery', (c) => {
   const content = `
   ${Navbar('gallery')}
 
-  <section style="padding:6rem 0 4rem;background:linear-gradient(135deg,#FEF7E0,#E8EDF5)">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <div class="badge mb-4" style="background:#FEF7E0;color:#E8B020;border:1px solid #E8B02033">Gallery</div>
-      <div class="section-accent" style="margin:0 auto 1rem"></div>
-      <h1 class="section-title" style="color:#E8B020;font-size:clamp(2.3rem,5.5vw,4rem)">Super Moments</h1>
-      <p style="color:#6B7A9D;font-size:1.1rem;line-height:1.8;margin-top:1.5rem">
+  <section style="padding:5rem 0 3rem;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);position:relative;overflow:hidden">
+    <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%2215%22 fill=%22rgba(255,255,255,0.04)%22/><circle cx=%2280%22 cy=%2270%22 r=%2225%22 fill=%22rgba(255,255,255,0.03)%22/><circle cx=%2260%22 cy=%2215%22 r=%228%22 fill=%22rgba(255,255,255,0.05)%22/></svg>') center/cover"></div>
+    <div class="max-w-4xl mx-auto px-4 text-center" style="position:relative">
+      <div style="display:inline-block;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:6px 18px;border-radius:50px;font-size:0.8rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:1.2rem">Our Gallery</div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;color:#fff;margin-bottom:1rem;line-height:1.2">Super Moments</h1>
+      <p style="color:rgba(255,255,255,0.85);font-size:1.05rem;line-height:1.8;max-width:560px;margin:0 auto 1.5rem">
         A glimpse into the magical, learning-filled world of SuperKids India Preschool.
       </p>
+      <div id="gal-stat" style="color:rgba(255,255,255,0.7);font-size:0.9rem">
+        <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Loading gallery…
+      </div>
     </div>
   </section>
 
-  <section style="padding:3rem 0 6rem;background:#ffffff">
+  <section style="padding:2.5rem 0 5rem;background:#F8F9FB">
     <div class="max-w-7xl mx-auto px-4">
-      <div class="flex flex-wrap justify-center gap-3 mb-10 fade-in">
-        ${['All', 'Learning', 'Art & Craft', 'Outdoor Play', 'Events', 'STEAM', 'Music'].map((cat, i) => `
-          <button style="padding:8px 20px;border-radius:50px;border:2px solid ${i===0?'#E8B020':'#DCE1EF'};background:${i===0?'#E8B020':'transparent'};color:${i===0?'#ffffff':'#2A3B60'};font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.3s"
-            onmouseover="if(this.style.borderColor!='rgb(232,176,32)'){this.style.background='#FEF7E0';this.style.color='#E8B020';this.style.borderColor='#E8B020'}"
-            onmouseout="if(this.style.background=='rgb(254,247,224)'){this.style.background='transparent';this.style.color='#2A3B60';this.style.borderColor='#DCE1EF'}">
-            ${cat}
-          </button>
-        `).join('')}
-      </div>
 
-      <div id="pub-gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div id="pub-gallery-placeholder" style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D">
-          <i class="fas fa-images" style="font-size:3rem;margin-bottom:1rem;display:block;color:#DCE1EF"></i>
-          No photos yet. Check back soon!
+      <!-- Status / debug banner (hidden by default, shown if error) -->
+      <div id="gal-error-bar" style="display:none;background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;border:1px solid #fca5a5"></div>
+
+      <!-- Photo grid -->
+      <div id="pub-gallery-grid" style="columns:2;gap:12px;column-fill:balance">
+        <div style="break-inside:avoid;text-align:center;padding:80px 20px;color:#6B7A9D;background:#fff;border-radius:14px">
+          <i class="fas fa-spinner fa-spin" style="font-size:2.5rem;display:block;margin-bottom:1rem;color:#DCE1EF"></i>
+          Loading photos…
         </div>
       </div>
 
-      <!-- Videos -->
-      <div id="pub-video-section" class="mt-16 fade-in" style="display:none">
-        <div id="pub-video-heading" class="text-center mb-8">
+      <!-- Video section -->
+      <div id="pub-video-section" style="display:none;margin-top:4rem">
+        <div class="text-center mb-8">
           <div class="section-accent" style="margin:0 auto 1rem"></div>
-          <h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;color:#C4893A;font-weight:800">
-            See SuperKids In Action
-          </h2>
+          <h2 style="font-family:'Playfair Display',serif;font-size:2rem;color:#C4893A;font-weight:800">See SuperKids In Action</h2>
         </div>
-        <div id="pub-gallery-videos" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        <div id="pub-gallery-videos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px"></div>
       </div>
+
     </div>
   </section>
+
+  <!-- Lightbox overlay -->
+  <div id="pub-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closePubLightbox()">
+    <button onclick="navPubLightbox(-1)" style="position:fixed;left:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:18px;cursor:pointer;z-index:10000;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&#8249;</button>
+    <button onclick="navPubLightbox(1)" style="position:fixed;right:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:18px;cursor:pointer;z-index:10000;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">&#8250;</button>
+    <button onclick="closePubLightbox()" style="position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;cursor:pointer;z-index:10000">&#x2715;</button>
+    <div id="pub-lightbox-inner" style="max-width:900px;width:100%;max-height:90vh;display:flex;flex-direction:column;align-items:center">
+      <img id="pub-lightbox-img" src="" alt="" style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+      <div id="pub-lightbox-info" style="margin-top:14px;text-align:center;color:#fff;max-width:600px"></div>
+      <div id="pub-lightbox-counter" style="margin-top:8px;color:rgba(255,255,255,0.5);font-size:13px"></div>
+    </div>
+  </div>
 
   <script>
 (function(){
-  var _allItems = [];
+  var _photos = [];
+  var _lbIdx = 0;
 
-  function ytThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+  function imgCard(p, idx) {
+    var src = p.imageData || '';
+    return '<div data-idx="'+idx+'" style="break-inside:avoid;margin-bottom:12px;border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:#e2e8f0;box-shadow:0 2px 10px rgba(15,32,80,0.08);transition:transform 0.2s,box-shadow 0.2s" onclick="openPubLightbox('+idx+')" onmouseover="this.style.transform=\'scale(1.02)\';this.style.boxShadow=\'0 8px 24px rgba(15,32,80,0.18)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'0 2px 10px rgba(15,32,80,0.08)\'">'
+      + '<img src="'+src+'" alt="'+p.title+'" loading="lazy" style="width:100%;height:auto;display:block;min-height:120px;background:#e2e8f0"'
+      + ' onerror="this.onerror=null;this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">'
+      + '<div style="display:none;min-height:160px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:20px">'
+      + '<i class="fas fa-image" style="font-size:2rem;color:#94a3b8"></i>'
+      + '<span style="font-size:11px;color:#94a3b8;text-align:center">'+p.title+'</span>'
+      + '</div>'
+      + '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(15,32,80,0.6) 0%,transparent 50%);opacity:0;transition:opacity 0.2s" class="gal-hover-overlay"></div>'
+      + '<div style="position:absolute;bottom:0;left:0;right:0;padding:10px 12px;color:#fff;font-size:12px;font-weight:700;opacity:0;transition:opacity 0.2s" class="gal-hover-label">'+p.title+'</div>'
+      + '</div>';
+  }
 
-  function renderItems(items){
+  function renderItems(items, debug) {
     var grid = document.getElementById('pub-gallery-grid');
-    var vidSec = document.getElementById('pub-video-section');
-    var vidGrid = document.getElementById('pub-gallery-videos');
-    var photos = items.filter(function(i){ return i.type !== 'video'; });
+    var stat = document.getElementById('gal-stat');
+    var errBar = document.getElementById('gal-error-bar');
+    _photos = items.filter(function(i){ return i.type !== 'video'; });
     var videos = items.filter(function(i){ return i.type === 'video'; });
 
-    console.log('[Gallery] total items:', items.length, 'photos:', photos.length, 'videos:', videos.length);
+    if(stat) stat.innerHTML = _photos.length + ' photo' + (_photos.length!==1?'s':'') + (videos.length ? ' &amp; '+videos.length+' video'+(videos.length!==1?'s':'') : '') + ' in gallery';
 
-    if(!photos.length){
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:#6B7A9D"><i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:1rem;color:#DCE1EF"></i>No photos yet. Check back soon!</div>';
-    } else {
-      grid.innerHTML = photos.map(function(p){
-        var src = p.imageData || p.thumbnail || '';
-        console.log('[Gallery] photo:', p.id, 'src:', src ? src.substring(0,60) : '(none)');
-        return '<div style="border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(15,32,80,0.08);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" '
-          + 'onclick="openPubLightbox(\''+p.id+'\')" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(15,32,80,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 12px rgba(15,32,80,0.08)\'">'
-          + (src
-            ? '<img src="'+src+'" style="width:100%;height:200px;object-fit:cover;display:block" loading="lazy" alt="'+p.title+'" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">'
-              + '<div style="display:none;height:200px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>'
-            : '<div style="height:200px;background:linear-gradient(135deg,#E8EDF5,#E8F7FC);display:flex;align-items:center;justify-content:center"><i class="fas fa-image" style="font-size:2.5rem;color:#DCE1EF"></i></div>')
-          + '<div style="padding:12px 14px"><div style="font-weight:700;color:#0F1E3D;font-size:0.88rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.title+'</div>'
-          + '<div style="color:#6B7A9D;font-size:0.75rem">'+p.date+'</div></div></div>';
-      }).join('');
+    if(debug && debug.r2Error) {
+      if(errBar){ errBar.style.display='block'; errBar.textContent='R2 listing error: '+debug.r2Error+'. Photos uploaded via admin panel will still appear after sync.'; }
     }
 
-    if(!videos.length){
-      if(vidSec) vidSec.style.display = 'none';
-    } else {
-      if(vidSec) vidSec.style.display = '';
-      if(vidGrid) vidGrid.innerHTML = videos.map(function(v){
-        var thumb = v.thumbnail || ytThumb(v.youtubeId);
-        return '<div style="border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(15,32,80,0.08);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" '
-          + 'onclick="openPubVideoLightbox(\''+v.youtubeId+'\')" onmouseover="this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 8px 24px rgba(15,32,80,0.15)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 2px 12px rgba(15,32,80,0.08)\'">'
-          + '<div style="position:relative">'
-          + '<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" loading="lazy" alt="'+v.title+'">'
-          + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2)">'
-          + '<div style="width:56px;height:56px;background:rgba(196,137,58,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(196,137,58,0.4)">'
-          + '<i class="fas fa-play" style="color:#fff;font-size:1.2rem;margin-left:3px"></i></div></div></div>'
-          + '<div style="padding:14px"><h4 style="font-weight:800;color:#0F1E3D;margin-bottom:6px;font-size:15px">'+v.title+'</h4>'
-          + (v.description ? '<p style="color:#6B7A9D;font-size:13px;margin:0">'+v.description+'</p>' : '')
-          + '</div></div>';
-      }).join('');
+    if(!_photos.length) {
+      grid.style.columns = '';
+      grid.innerHTML = '<div style="text-align:center;padding:80px 20px;color:#6B7A9D;background:#fff;border-radius:14px;border:2px dashed #DCE1EF">'
+        + '<i class="fas fa-images" style="font-size:3.5rem;display:block;margin-bottom:1rem;color:#DCE1EF"></i>'
+        + '<h3 style="font-size:1.2rem;font-weight:700;color:#0F1E3D;margin-bottom:8px">No Photos Yet</h3>'
+        + '<p style="color:#6B7A9D;font-size:0.9rem">Activity photos will appear here once uploaded by the school.</p>'
+        + (debug ? '<p style="margin-top:12px;font-size:11px;color:#94a3b8">D1: '+debug.d1Count+' items · R2: '+debug.r2Count+' items'+(debug.r2Error?' · R2 error: '+debug.r2Error:'')+'</p>' : '')
+        + '</div>';
+      return;
     }
-  }
 
-  function openPubLightbox(id){
-    var p = null;
-    for(var i=0;i<_allItems.length;i++){ if(_allItems[i].id===id){ p=_allItems[i]; break; } }
-    if(!p) return;
-    var src = p.imageData || p.thumbnail || '';
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:780px;width:100%;overflow:hidden;position:relative">'
-      + (src ? '<img src="'+src+'" style="width:100%;max-height:500px;object-fit:contain;display:block;background:#000">' : '')
-      + '<div style="padding:16px"><div style="font-weight:800;font-size:16px;color:#0F1E3D">'+p.title+'</div>'
-      + (p.description ? '<p style="color:#6B7A9D;margin:6px 0 0;font-size:14px">'+p.description+'</p>' : '')
-      + '<div style="font-size:12px;color:#6B7A9D;margin-top:6px">'+p.date+'</div></div>'
-      + '<button onclick="this.closest(\'div\').parentNode.remove()" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;cursor:pointer;font-size:18px">x</button>'
-      + '</div>';
-    document.body.appendChild(ov);
-  }
+    // Masonry-style columns — 2 cols on mobile, 3 on tablet, 4 on desktop
+    grid.style.cssText = 'column-count:2;column-gap:12px';
+    grid.innerHTML = _photos.map(function(p,i){ return imgCard(p,i); }).join('');
 
-  function openPubVideoLightbox(ytId){
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-    ov.innerHTML = '<div style="background:#000;border-radius:16px;max-width:900px;width:100%;position:relative">'
-      + '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px">'
-      + '<iframe src="https://www.youtube.com/embed/'+ytId+'?autoplay=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>'
-      + '</div>'
-      + '<button onclick="this.parentNode.parentNode.remove()" style="position:absolute;top:-14px;right:-14px;width:34px;height:34px;border-radius:50%;background:#C4893A;border:none;color:#fff;cursor:pointer;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">x</button>'
-      + '</div>';
-    document.body.appendChild(ov);
-  }
-
-  window.openPubLightbox = openPubLightbox;
-  window.openPubVideoLightbox = openPubVideoLightbox;
-
-  function loadGallery() {
-    var done = false;
-    function finish(items) {
-      if (done) return;
-      done = true;
-      _allItems = items || [];
-      renderItems(_allItems);
-    }
-    setTimeout(function(){ finish([]); }, 10000);
-    fetch('/api/gallery?t='+Date.now())
-      .then(function(r){
-        console.log('[Gallery] /api/gallery status:', r.status, r.ok);
-        return r.ok ? r.json() : {items:[]};
-      })
-      .then(function(d){
-        console.log('[Gallery] API returned items:', (d.items||[]).length, d);
-        finish(d.items || []);
-      })
-      .catch(function(e){
-        console.error('[Gallery] fetch error:', e);
-        finish([]);
+    // Hover overlay effect via CSS would be cleaner but we wire it inline
+    grid.querySelectorAll('[data-idx]').forEach(function(el){
+      el.addEventListener('mouseover',function(){
+        var ov=el.querySelector('.gal-hover-overlay');
+        var lb=el.querySelector('.gal-hover-label');
+        if(ov) ov.style.opacity='1';
+        if(lb) lb.style.opacity='1';
       });
+      el.addEventListener('mouseout',function(){
+        var ov=el.querySelector('.gal-hover-overlay');
+        var lb=el.querySelector('.gal-hover-label');
+        if(ov) ov.style.opacity='0';
+        if(lb) lb.style.opacity='0';
+      });
+    });
+
+    // Responsive columns
+    function setColumns(){
+      var w=window.innerWidth;
+      grid.style.columnCount = w>=1024?'4': w>=768?'3':'2';
+    }
+    setColumns();
+    window.addEventListener('resize',setColumns);
+
+    // Videos
+    var vidSec = document.getElementById('pub-video-section');
+    var vidGrid = document.getElementById('pub-gallery-videos');
+    if(!videos.length){ if(vidSec) vidSec.style.display='none'; return; }
+    if(vidSec) vidSec.style.display='';
+    if(vidGrid) vidGrid.innerHTML = videos.map(function(v){
+      var thumb = v.thumbnail || 'https://img.youtube.com/vi/'+(v.youtubeId||'')+'/hqdefault.jpg';
+      return '<div style="border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(15,32,80,0.08);cursor:pointer" onclick="openPubVideoLightbox(\''+v.youtubeId+'\')">'
+        +'<div style="position:relative"><img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" loading="lazy" alt="'+v.title+'">'
+        +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25)">'
+        +'<div style="width:56px;height:56px;background:rgba(196,137,58,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center">'
+        +'<i class="fas fa-play" style="color:#fff;font-size:1.2rem;margin-left:3px"></i></div></div></div>'
+        +'<div style="padding:14px"><h4 style="font-weight:800;color:#0F1E3D;margin-bottom:6px;font-size:15px">'+v.title+'</h4>'
+        +(v.description?'<p style="color:#6B7A9D;font-size:13px;margin:0">'+v.description+'</p>':'')+'</div></div>';
+    }).join('');
   }
-  loadGallery();
+
+  window.openPubLightbox = function(idx){
+    if(!_photos.length) return;
+    _lbIdx = Math.max(0,Math.min(idx,_photos.length-1));
+    showLightboxPhoto();
+    document.getElementById('pub-lightbox').style.display='flex';
+    document.body.style.overflow='hidden';
+  };
+
+  function showLightboxPhoto(){
+    var p = _photos[_lbIdx];
+    if(!p) return;
+    var img = document.getElementById('pub-lightbox-img');
+    var info = document.getElementById('pub-lightbox-info');
+    var counter = document.getElementById('pub-lightbox-counter');
+    img.src = p.imageData || '';
+    img.alt = p.title;
+    info.innerHTML = '<div style="font-weight:800;font-size:1.05rem;margin-bottom:4px">'+p.title+'</div>'
+      +(p.description?'<div style="font-size:0.88rem;color:rgba(255,255,255,0.7);margin-bottom:4px">'+p.description+'</div>':'')
+      +'<div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">'+p.date+'</div>';
+    counter.textContent = (_lbIdx+1)+' / '+_photos.length;
+  }
+
+  window.navPubLightbox = function(dir){
+    _lbIdx = (_lbIdx + dir + _photos.length) % _photos.length;
+    showLightboxPhoto();
+  };
+
+  window.closePubLightbox = function(){
+    document.getElementById('pub-lightbox').style.display='none';
+    document.body.style.overflow='';
+  };
+
+  document.addEventListener('keydown',function(e){
+    var lb=document.getElementById('pub-lightbox');
+    if(!lb||lb.style.display==='none') return;
+    if(e.key==='ArrowLeft') navPubLightbox(-1);
+    if(e.key==='ArrowRight') navPubLightbox(1);
+    if(e.key==='Escape') closePubLightbox();
+  });
+
+  window.openPubVideoLightbox = function(ytId){
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=function(e){if(e.target===ov)ov.remove();};
+    ov.innerHTML='<div style="background:#000;border-radius:16px;max-width:900px;width:100%;position:relative">'
+      +'<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px">'
+      +'<iframe src="https://www.youtube.com/embed/'+ytId+'?autoplay=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>'
+      +'</div>'
+      +'<button onclick="this.closest(\'div\').parentNode.remove()" style="position:absolute;top:-14px;right:-14px;width:36px;height:36px;border-radius:50%;background:#C4893A;border:none;color:#fff;cursor:pointer;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">&#x2715;</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+  };
+
+  // Load gallery data
+  var stat = document.getElementById('gal-stat');
+  fetch('/api/gallery?t='+Date.now())
+    .then(function(r){ return r.ok ? r.json() : {items:[],_debug:{error:'HTTP '+r.status}}; })
+    .then(function(d){
+      renderItems(d.items||[], d._debug);
+    })
+    .catch(function(e){
+      if(stat) stat.textContent = 'Failed to load gallery';
+      var grid=document.getElementById('pub-gallery-grid');
+      if(grid) grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:#ef4444">Failed to load gallery: '+e.message+'</div>';
+    });
 })();
 </script>
 

@@ -1291,6 +1291,106 @@ function renderParentEvents() {
   renderLayout('parent-events', content, 'School Events');
 }
 
+// ---- Write a Review ----
+function renderParentReview() {
+  currentParentTab = 'parent-review';
+  const user = Session.current();
+  const child = getSelectedChild();
+  const childInfo = child ? `Parent of ${child.name}` : 'SuperKids Parent';
+
+  const content = `
+    <div style="max-width:560px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:40px;margin-bottom:8px">⭐</div>
+        <h2 style="font-size:20px;font-weight:800;color:#0F1E3D;margin:0 0 6px">Share Your Experience</h2>
+        <p style="color:#6B7A9D;font-size:14px;margin:0">Your review will appear on our public website to help other families.</p>
+      </div>
+
+      <div class="card" style="padding:28px">
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">Your Rating</label>
+          <div id="star-rating" style="display:flex;gap:8px;font-size:32px;cursor:pointer">
+            ${[1,2,3,4,5].map(i => `<span data-star="${i}" onclick="setReviewStar(${i})" style="color:#DCE1EF;transition:color 0.15s;user-select:none">★</span>`).join('')}
+          </div>
+          <input type="hidden" id="review-stars" value="0">
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">Your Name</label>
+          <input id="review-name" type="text" class="form-input" value="${user ? user.name : ''}" placeholder="Your name" maxlength="60"
+                 style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">Your Role <span style="color:#94a3b8;font-weight:400">(optional)</span></label>
+          <input id="review-childinfo" type="text" class="form-input" value="${childInfo}" placeholder="e.g. Mom of Aryan, age 4" maxlength="80"
+                 style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none">
+        </div>
+
+        <div style="margin-bottom:24px">
+          <label style="display:block;font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">Your Review</label>
+          <textarea id="review-text" placeholder="Share your experience at SuperKids India Preschool…" maxlength="500"
+                    style="width:100%;padding:10px 14px;border:1.5px solid #DCE1EF;border-radius:10px;font-size:14px;outline:none;resize:vertical;min-height:110px;font-family:inherit"></textarea>
+          <div style="text-align:right;font-size:11px;color:#94a3b8;margin-top:4px"><span id="review-char">0</span>/500</div>
+        </div>
+
+        <button onclick="submitParentReview()" id="review-submit-btn"
+                style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;font-size:15px;font-weight:800;cursor:pointer">
+          <i class="fas fa-paper-plane" style="margin-right:8px"></i>Submit Review
+        </button>
+      </div>
+    </div>
+  `;
+
+  renderLayout('parent-review', content, 'Write a Review');
+
+  // Live char counter
+  const ta = document.getElementById('review-text');
+  const ch = document.getElementById('review-char');
+  if (ta && ch) ta.addEventListener('input', function() { ch.textContent = ta.value.length; });
+}
+
+function setReviewStar(n) {
+  document.getElementById('review-stars').value = n;
+  document.querySelectorAll('#star-rating span').forEach(function(s) {
+    s.style.color = parseInt(s.dataset.star) <= n ? '#E8B020' : '#DCE1EF';
+  });
+}
+
+function submitParentReview() {
+  var stars = parseInt(document.getElementById('review-stars').value);
+  var name = (document.getElementById('review-name').value || '').trim();
+  var childInfo = (document.getElementById('review-childinfo').value || '').trim();
+  var text = (document.getElementById('review-text').value || '').trim();
+
+  if (!stars) { showToast('Please select a star rating', 'warning'); return; }
+  if (!name) { showToast('Please enter your name', 'warning'); return; }
+  if (text.length < 20) { showToast('Please write at least 20 characters', 'warning'); return; }
+
+  var btn = document.getElementById('review-submit-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:8px"></i>Submitting…'; }
+
+  fetch('/api/reviews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parentName: name, childInfo: childInfo, text: text, stars: stars })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    if (res.ok) {
+      showToast('Thank you! Your review is now live on our website 🌟', 'success');
+      navigate('parent-home');
+    } else {
+      showToast('Failed to submit: ' + (res.error || 'Unknown error'), 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:8px"></i>Submit Review'; }
+    }
+  })
+  .catch(function() {
+    showToast('Network error. Please try again.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:8px"></i>Submit Review'; }
+  });
+}
+
 // ---- Register parent routes ----
 registerRoute('parent-home', renderParentHome);
 registerRoute('parent-reports', renderParentReports);
@@ -1303,3 +1403,4 @@ registerRoute('parent-announcements', renderParentAnnouncements);
 registerRoute('parent-events', renderParentEvents);
 registerRoute('parent-messages', renderParentMessages);
 registerRoute('parent-gallery', renderParentGallery);
+registerRoute('parent-review', renderParentReview);

@@ -204,6 +204,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'parent-events', icon: 'fa-calendar-alt', label: 'Events' },
       { id: 'parent-messages', icon: 'fa-comment-dots', label: 'Messages', badge: pUnreadMsgs },
       { id: 'parent-gallery', icon: 'fa-images', label: 'Gallery' },
+      { id: 'parent-review', icon: 'fa-star', label: 'Write a Review' },
     ];
   }
 

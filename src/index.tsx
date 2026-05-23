@@ -772,7 +772,23 @@ const Footer = () => `
 // ================================================================
 // HOME PAGE
 // ================================================================
-app.get('/', (c) => {
+app.get('/', async (c) => {
+  // Load parent reviews from D1 for testimonials section
+  const fallbackReviews = [
+    {parentName:'Sarah M.', childInfo:'Mom of Ethan, age 4', text:'SuperKids completely transformed my son! He went from being shy to the most confident kid in his kindergarten class. The teachers are absolute superheroes!', stars:5},
+    {parentName:'David & Lisa K.', childInfo:'Parents of twins, age 3', text:'Both our twins absolutely LOVE going to school every day! The curriculum is incredible — they\'re learning to read at 3! Best decision we ever made.', stars:5},
+    {parentName:'Maria R.', childInfo:'Mom of Sofia, age 2', text:'From day 1, Sofia felt safe and loved. The staff is incredibly professional and caring. I can\'t imagine sending her anywhere else. 10/10!', stars:5},
+  ]
+  let displayReviews: Array<{parentName: string; childInfo: string; text: string; stars: number}> = fallbackReviews
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
+    if (row) {
+      const d1Reviews = JSON.parse(row.value) as any[]
+      if (d1Reviews.length > 0) displayReviews = d1Reviews.slice(0, 6)
+    }
+  } catch { /* fall back to hardcoded */ }
+
   const content = `
   ${Navbar('home')}
 
@@ -957,23 +973,19 @@ app.get('/', (c) => {
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        ${[
-          {name:'Sarah M.', child:'Mom of Ethan, age 4', text:'SuperKids completely transformed my son! He went from being shy to the most confident kid in his kindergarten class. The teachers are absolute superheroes!', stars:5},
-          {name:'David & Lisa K.', child:'Parents of twins, age 3', text:'Both our twins absolutely LOVE going to school every day! The curriculum is incredible — they\'re learning to read at 3! Best decision we ever made.', stars:5},
-          {name:'Maria R.', child:'Mom of Sofia, age 2', text:'From day 1, Sofia felt safe and loved. The staff is incredibly professional and caring. I can\'t imagine sending her anywhere else. 10/10!', stars:5},
-        ].map(t => `
+        ${displayReviews.map(t => `
           <div class="testimonial-card fade-in">
             <div class="flex gap-1 mb-4">
-              ${Array(t.stars).fill('<span style="color:#E8B020">★</span>').join('')}
+              ${'<span style="color:#E8B020">★</span>'.repeat(t.stars)}${'<span style="color:#DCE1EF">★</span>'.repeat(5 - t.stars)}
             </div>
             <p style="color:#2A3B60;line-height:1.8;font-size:0.95rem;margin-bottom:1.5rem;font-style:italic">"${t.text}"</p>
             <div class="flex items-center gap-3">
               <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0">
-                ${t.name.charAt(0)}
+                ${t.parentName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style="font-weight:800;color:#0F1E3D">${t.name}</div>
-                <div style="color:#6B7A9D;font-size:0.85rem">${t.child}</div>
+                <div style="font-weight:800;color:#0F1E3D">${t.parentName}</div>
+                <div style="color:#6B7A9D;font-size:0.85rem">${t.childInfo}</div>
               </div>
             </div>
           </div>
@@ -1843,17 +1855,39 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=4"/>
+  <link rel="stylesheet" href="/static/style.css?v=5"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=4"></script>
-  <script src="/static/app.js?v=4"></script>
-  <script src="/static/admin.js?v=4"></script>
-  <script src="/static/management.js?v=4"></script>
-  <script src="/static/parent.js?v=4"></script>
+  <script src="/static/data.js?v=5"></script>
+  <script src="/static/app.js?v=5"></script>
+  <script src="/static/admin.js?v=5"></script>
+  <script src="/static/management.js?v=5"></script>
+  <script src="/static/parent.js?v=5"></script>
 </body>
 </html>`)
+})
+
+// ── Parent Reviews API ───────────────────────────────────────
+app.post('/api/reviews', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const { parentName, childInfo, text, stars } = await c.req.json()
+    if (!text || !parentName || !stars) return c.json({ error: 'Missing fields' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
+    const reviews = row ? JSON.parse(row.value) : []
+    const newReview = {
+      id: `rev_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      parentName: String(parentName).slice(0, 60),
+      childInfo: String(childInfo || '').slice(0, 80),
+      text: String(text).slice(0, 500),
+      stars: Math.min(5, Math.max(1, Number(stars))),
+      date: new Date().toISOString().split('T')[0],
+    }
+    reviews.unshift(newReview)
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('reviews', JSON.stringify(reviews), new Date().toISOString()).run()
+    return c.json({ ok: true, review: newReview })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
 app.post('/api/contact', async (c) => {

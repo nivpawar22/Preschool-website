@@ -85,67 +85,58 @@ app.get('/r2/*', async (c) => {
 })
 
 app.get('/api/gallery', async (c) => {
+  let d1Items: any[] = []
+  let d1Error = ''
+  let r2Items: any[] = []
+  let r2Error = ''
+
+  // 1. Try D1 — wrapped fully so a hung/missing DB never blocks the response
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
-
-    // 1. Get published items from D1
-    let d1Items: any[] = []
-    try {
-      const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
-      if (galleryRow) {
-        d1Items = JSON.parse(galleryRow.value).items || []
-      } else {
-        const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
-        if (row) {
-          const data = JSON.parse(row.value)
-          d1Items = (data.gallery || []).filter((item: any) => item.published === true)
-        }
+    const galleryRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('gallery').first<{ value: string }>()
+    if (galleryRow) {
+      d1Items = JSON.parse(galleryRow.value).items || []
+    } else {
+      const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+      if (row) {
+        const data = JSON.parse(row.value)
+        d1Items = (data.gallery || []).filter((item: any) => item.published === true)
       }
-    } catch (_) {}
-
-    // Normalize D1 item image URLs: prefer /r2/ proxy over public domain URL
+    }
+    // Normalise image URLs to use /r2/ proxy
     d1Items = d1Items.map((item: any) => {
       if (item.r2Key) return { ...item, imageData: `/r2/${item.r2Key}` }
-      if (item.imageData && item.imageData.startsWith('https://pub-')) {
+      if (item.imageData?.startsWith('https://pub-')) {
         const key = item.imageData.replace(/^https:\/\/[^/]+\//, '')
         return { ...item, imageData: `/r2/${key}` }
       }
       return item
     })
+  } catch (e: any) { d1Error = e?.message || String(e) }
 
-    // 2. Also list R2 bucket to catch photos not yet in D1
-    let r2Items: any[] = []
-    let r2Error = ''
-    try {
-      const d1Keys = new Set([
-        ...d1Items.map((i: any) => i.r2Key).filter(Boolean),
-        ...d1Items.map((i: any) => {
-          if (i.imageData && i.imageData.startsWith('/r2/')) return i.imageData.replace('/r2/', '')
-          return null
-        }).filter(Boolean)
-      ])
-      const listed = await c.env.MEDIA.list({ limit: 500 })
-      r2Items = (listed.objects as any[])
-        .filter((obj: any) => !d1Keys.has(obj.key))
-        .filter((obj: any) => /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(obj.key))
-        .map((obj: any) => {
-          const name = obj.key.split('/').pop() || obj.key
-          const title = name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
-          return {
-            id: obj.key,
-            title: title.charAt(0).toUpperCase() + title.slice(1),
-            description: '',
-            type: 'image',
-            imageData: `/r2/${obj.key}`,
-            r2Key: obj.key,
-            date: obj.uploaded ? new Date(obj.uploaded).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          }
-        })
-    } catch (e: any) { r2Error = e.message || 'R2 list failed' }
+  // 2. List R2 bucket — runs even when D1 is down
+  try {
+    const d1Keys = new Set(d1Items.map((i: any) => (i.r2Key || (i.imageData?.startsWith('/r2/') ? i.imageData.slice(4) : null))).filter(Boolean))
+    const listed = await c.env.MEDIA.list({ limit: 500 })
+    r2Items = (listed.objects as any[])
+      .filter((obj: any) => /\.(jpg|jpeg|png|gif|webp|avif|svg)$/i.test(obj.key))
+      .filter((obj: any) => !d1Keys.has(obj.key))
+      .map((obj: any) => {
+        const name = obj.key.split('/').pop() || obj.key
+        const title = name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+        return {
+          id: obj.key,
+          title: title.charAt(0).toUpperCase() + title.slice(1),
+          description: '',
+          type: 'image',
+          imageData: `/r2/${obj.key}`,
+          r2Key: obj.key,
+          date: obj.uploaded ? new Date(obj.uploaded).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        }
+      })
+  } catch (e: any) { r2Error = e?.message || String(e) }
 
-    const items = [...d1Items, ...r2Items]
-    return c.json({ items, _debug: { d1Count: d1Items.length, r2Count: r2Items.length, r2Error } })
-  } catch (e: any) { return c.json({ items: [], _debug: { error: String(e) } }) }
+  return c.json({ items: [...d1Items, ...r2Items], _debug: { d1Count: d1Items.length, r2Count: r2Items.length, d1Error, r2Error } })
 })
 
 const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
@@ -1501,17 +1492,24 @@ app.get('/gallery', (c) => {
     document.body.appendChild(ov);
   };
 
-  // Load gallery data
+  // Load gallery data (10 s abort so the spinner never hangs forever)
   var stat = document.getElementById('gal-stat');
-  fetch('/api/gallery?t='+Date.now())
-    .then(function(r){ return r.ok ? r.json() : {items:[],_debug:{error:'HTTP '+r.status}}; })
+  var ctrl = new AbortController();
+  var tId = setTimeout(function(){ ctrl.abort(); }, 10000);
+  fetch('/api/gallery?t='+Date.now(), { signal: ctrl.signal })
+    .then(function(r){
+      clearTimeout(tId);
+      return r.ok ? r.json() : { items: [], _debug: { error: 'HTTP ' + r.status } };
+    })
     .then(function(d){
-      renderItems(d.items||[], d._debug);
+      renderItems(d.items || [], d._debug);
     })
     .catch(function(e){
-      if(stat) stat.textContent = 'Failed to load gallery';
-      var grid=document.getElementById('pub-gallery-grid');
-      if(grid) grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;color:#ef4444">Failed to load gallery: '+e.message+'</div>';
+      clearTimeout(tId);
+      var msg = e.name === 'AbortError' ? 'Gallery load timed out — server may be slow. Try refreshing.' : ('Error: ' + e.message);
+      if(stat) stat.textContent = msg;
+      var grid = document.getElementById('pub-gallery-grid');
+      if(grid) grid.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ef4444;background:#fff;border-radius:14px"><i class="fas fa-exclamation-circle" style="font-size:2.5rem;display:block;margin-bottom:1rem"></i>' + msg + '</div>';
     });
 })();
 </script>

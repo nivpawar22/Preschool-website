@@ -223,8 +223,12 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div style="display:flex;align-items:center;justify-content:center">
-          <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="School Logo" style="width:56px;height:56px;border-radius:50%;border:2px solid rgba(196,137,58,0.5);background:#fff;object-fit:contain;"/>
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="${data.meta.schoolLogo || '/static/logo.png'}" alt="School Logo" style="width:52px;height:52px;border-radius:50%;border:2px solid rgba(196,137,58,0.5);background:#fff;object-fit:contain;flex-shrink:0;"/>
+          <div>
+            <h1 style="font-size:15px;font-weight:900;color:#fff;margin:0;line-height:1.2">SuperKids India</h1>
+            <p style="margin:0;font-size:10px;color:#90C4E0">Preschool</p>
+          </div>
         </div>
       </div>
 

@@ -787,7 +787,8 @@ app.get('/', async (c) => {
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
     if (row) {
       const d1Reviews = JSON.parse(row.value) as any[]
-      if (d1Reviews.length > 0) displayReviews = d1Reviews.slice(0, 6)
+      const approved = d1Reviews.filter((r: any) => r.status === 'approved')
+      if (approved.length > 0) displayReviews = approved.slice(0, 6)
     }
   } catch { /* fall back to hardcoded */ }
 
@@ -1908,6 +1909,15 @@ app.post('/api/team', async (c) => {
 })
 
 // ── Parent Reviews API ───────────────────────────────────────
+app.get('/api/reviews', async (c) => {
+  try {
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
+    const reviews = row ? JSON.parse(row.value) : []
+    return c.json({ ok: true, reviews })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 app.post('/api/reviews', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
@@ -1922,10 +1932,37 @@ app.post('/api/reviews', async (c) => {
       text: String(text).slice(0, 500),
       stars: Math.min(5, Math.max(1, Number(stars))),
       date: new Date().toISOString().split('T')[0],
+      status: 'pending',
     }
     reviews.unshift(newReview)
     await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('reviews', JSON.stringify(reviews), new Date().toISOString()).run()
     return c.json({ ok: true, review: newReview })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.put('/api/reviews/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const { status } = await c.req.json()
+    if (!['approved', 'pending'].includes(status)) return c.json({ error: 'Invalid status' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
+    const reviews = row ? JSON.parse(row.value) : []
+    const idx = reviews.findIndex((r: any) => r.id === id)
+    if (idx === -1) return c.json({ error: 'Review not found' }, 404)
+    reviews[idx].status = status
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('reviews', JSON.stringify(reviews), new Date().toISOString()).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/reviews/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
+    const reviews = row ? JSON.parse(row.value) : []
+    const updated = reviews.filter((r: any) => r.id !== id)
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('reviews', JSON.stringify(updated), new Date().toISOString()).run()
+    return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

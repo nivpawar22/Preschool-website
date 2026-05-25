@@ -17,6 +17,7 @@ function renderManagement() {
     { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
     { id: 'parents', label: 'Parents', icon: 'fa-users' },
     { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
+    { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
     { id: 'log', label: 'Activity Log', icon: 'fa-history' },
     { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
   ];
@@ -25,6 +26,7 @@ function renderManagement() {
     subadmins: renderSubAdminsTab(),
     parents: renderParentsTab(),
     team: renderTeamTab(),
+    reviews: renderReviewsTab(),
     log: renderActivityLogTab(),
     settings: renderSettingsTab()
   };
@@ -39,6 +41,7 @@ function renderManagement() {
 
   renderLayout('management', content, 'Management', 'Super Admin Only');
   if (mgmtTab === 'team') setTimeout(loadTeamMembers, 50);
+  if (mgmtTab === 'reviews') setTimeout(loadReviews, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -1192,6 +1195,95 @@ function deleteTeamMember(id) {
     .then(function() { showToast('Team member removed', 'success'); renderTeamCards(); })
     .catch(function() { showToast('Failed to remove member', 'error'); });
   });
+}
+
+// ---- Reviews Tab ----
+function renderReviewsTab() {
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-star" style="color:#E8B020"></i> Parent Reviews</div>
+        <div style="font-size:12px;color:#6B7A9D">Approve reviews to make them visible on the public homepage</div>
+      </div>
+      <div id="reviews-list" style="padding:8px 0">
+        <div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading reviews…</div>
+      </div>
+    </div>`;
+}
+
+function loadReviews() {
+  fetch('/api/reviews')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('reviews-list');
+      if (!list) return;
+      var reviews = data.reviews || [];
+      if (reviews.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:40px;color:#6B7A9D"><i class="fas fa-star" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:12px"></i>No reviews yet. Parents can submit reviews from the Parent Portal.</div>';
+        return;
+      }
+      var pending = reviews.filter(function(r) { return r.status !== 'approved'; });
+      var approved = reviews.filter(function(r) { return r.status === 'approved'; });
+      function reviewCard(r) {
+        var isPending = r.status !== 'approved';
+        var stars = '';
+        for (var i = 0; i < 5; i++) stars += '<i class="fas fa-star" style="color:' + (i < r.stars ? '#E8B020' : '#DCE1EF') + ';font-size:12px"></i>';
+        return `<div style="border:1.5px solid ${isPending ? '#E8B02033' : '#10b98133'};border-radius:12px;padding:16px;margin-bottom:12px;background:${isPending ? '#FFFDF0' : '#F0FFF8'}">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+                <span style="font-weight:800;color:#0F1E3D;font-size:14px">${r.parentName}</span>
+                <span style="font-size:11px;color:#6B7A9D">${r.childInfo || ''}</span>
+                <span style="font-size:10px;color:#94a3b8;margin-left:auto">${r.date || ''}</span>
+              </div>
+              <div style="margin-bottom:6px">${stars}</div>
+              <p style="color:#2A3B60;font-size:13px;line-height:1.6;margin:0">${r.text}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+              <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${isPending ? '#FEF8E0' : '#D1FAE5'};color:${isPending ? '#C4893A' : '#059669'}">${isPending ? 'Pending' : 'Approved'}</span>
+              ${isPending ? `<button onclick="approveReview('${r.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:#10b981;color:#fff;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-check" style="margin-right:4px"></i>Approve</button>` : `<button onclick="unapproveReview('${r.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:#f1f5f9;color:#6B7A9D;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-undo" style="margin-right:4px"></i>Unapprove</button>`}
+              <button onclick="deleteReview('${r.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:#FEE2E2;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-trash" style="margin-right:4px"></i>Delete</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      var html = '';
+      if (pending.length > 0) {
+        html += '<div style="font-size:11px;font-weight:700;color:#C4893A;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px"><i class="fas fa-clock" style="margin-right:4px"></i>Pending Approval (' + pending.length + ')</div>';
+        html += pending.map(reviewCard).join('');
+      }
+      if (approved.length > 0) {
+        html += '<div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px"><i class="fas fa-check-circle" style="margin-right:4px"></i>Approved & Live (' + approved.length + ')</div>';
+        html += approved.map(reviewCard).join('');
+      }
+      list.innerHTML = html;
+    })
+    .catch(function() {
+      var list = document.getElementById('reviews-list');
+      if (list) list.innerHTML = '<div style="text-align:center;padding:32px;color:#dc2626">Failed to load reviews.</div>';
+    });
+}
+
+function approveReview(id) {
+  fetch('/api/reviews/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'approved' }) })
+    .then(function(r) { return r.json(); })
+    .then(function() { showToast('Review approved — now live on homepage', 'success'); loadReviews(); })
+    .catch(function() { showToast('Failed to approve review', 'error'); });
+}
+
+function unapproveReview(id) {
+  fetch('/api/reviews/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'pending' }) })
+    .then(function(r) { return r.json(); })
+    .then(function() { showToast('Review moved back to pending', 'success'); loadReviews(); })
+    .catch(function() { showToast('Failed to update review', 'error'); });
+}
+
+function deleteReview(id) {
+  if (!confirm('Delete this review permanently?')) return;
+  fetch('/api/reviews/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function() { showToast('Review deleted', 'success'); loadReviews(); })
+    .catch(function() { showToast('Failed to delete review', 'error'); });
 }
 
 // Register route

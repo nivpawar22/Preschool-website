@@ -845,19 +845,6 @@ app.get('/', async (c) => {
             <i class="fas fa-play-circle mr-2"></i>Our Programs
           </a>
         </div>
-
-        <div class="flex flex-wrap gap-8">
-          ${[
-            {stat:'Highest', label:'Safety Standards', color:'#0F2050'},
-            {stat:'24/7', label:'CCTV Surveillance', color:'#C4893A'},
-            {stat:'Expert', label:'Super Educators', color:'#1AA6CA'},
-          ].map(s => `
-            <div class="text-center">
-              <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:${s.color}">${s.stat}</div>
-              <div style="color:#6B7A9D;font-size:0.8rem;margin-top:2px">${s.label}</div>
-            </div>
-          `).join('')}
-        </div>
       </div>
 
       <div class="flex justify-center items-center" style="z-index:10">

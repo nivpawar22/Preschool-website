@@ -728,7 +728,7 @@ const Footer = () => `
       <div>
         <h4 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#C4893A;letter-spacing:1px;margin-bottom:1.2rem;font-weight:700">Our Programs</h4>
         <div class="flex flex-col gap-2">
-          ${['Toddler Titans (1-2)','Mini Heroes (2-3)','Super Stars (3-4)','Power Rangers (4-5)','After School Club'].map(p =>
+          ${['Mini Heroes (2-3)','Super Stars (3-4)','Power Rangers (4-5)','Super Stars 5+ Full Program','After School Club'].map(p =>
             `<span style="color:#7B90B5;font-size:0.9rem"><i class="fas fa-star mr-2" style="color:#E8B020;font-size:0.7rem"></i>${p}</span>`
           ).join('')}
         </div>
@@ -848,12 +848,12 @@ app.get('/', async (c) => {
 
         <div class="flex flex-wrap gap-8">
           ${[
-            {n:'500+', label:'Happy Kids', color:'#0F2050'},
-            {n:'15+', label:'Years of Excellence', color:'#C4893A'},
-            {n:'30+', label:'Super Teachers', color:'#1AA6CA'},
+            {stat:'Highest', label:'Safety Standards', color:'#0F2050'},
+            {stat:'24/7', label:'CCTV Surveillance', color:'#C4893A'},
+            {stat:'Expert', label:'Super Educators', color:'#1AA6CA'},
           ].map(s => `
             <div class="text-center">
-              <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:${s.color}">${s.n}</div>
+              <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:${s.color}">${s.stat}</div>
               <div style="color:#6B7A9D;font-size:0.8rem;margin-top:2px">${s.label}</div>
             </div>
           `).join('')}
@@ -915,14 +915,14 @@ app.get('/', async (c) => {
     <div class="max-w-7xl mx-auto px-4">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
         ${[
-          {n:500, suffix:'+', label:'Happy Children', icon:'👦'},
-          {n:15, suffix:'+', label:'Years of Excellence', icon:'🏅'},
-          {n:30, suffix:'+', label:'Super Educators', icon:'🦸'},
-          {n:98, suffix:'%', label:'Parent Satisfaction', icon:'❤️'},
+          {icon:'🛡️', stat:'Highest', label:'Safety Standards'},
+          {icon:'📹', stat:'24/7', label:'CCTV Surveillance'},
+          {icon:'🦸', stat:'Expert', label:'Super Educators'},
+          {icon:'❤️', stat:'100%', label:'Parent Satisfaction'},
         ].map(s => `
           <div class="fade-in">
             <div style="font-size:2.5rem;margin-bottom:0.5rem">${s.icon}</div>
-            <div class="stat-number counter" data-target="${s.n}" data-suffix="${s.suffix}" style="color:#E8B020">0${s.suffix}</div>
+            <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:#E8B020;margin-bottom:4px">${s.stat}</div>
             <div style="color:rgba(255,255,255,0.85);font-size:0.9rem;font-weight:600;margin-top:4px">${s.label}</div>
           </div>
         `).join('')}
@@ -942,10 +942,10 @@ app.get('/', async (c) => {
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         ${[
-          {emoji:'🍼', age:'1–2 Years', title:'Toddler Titans', color:'#0F2050', desc:'Sensory play, motor skills & first friendships in a loving environment.'},
           {emoji:'🦁', age:'2–3 Years', title:'Mini Heroes', color:'#C4893A', desc:'Language explosion, creativity, and social skills through guided play.'},
           {emoji:'⭐', age:'3–4 Years', title:'Super Stars', color:'#E8B020', desc:'Pre-literacy, numeracy, science exploration and team activities.'},
           {emoji:'🚀', age:'4–5 Years', title:'Power Rangers', color:'#1AA6CA', desc:'School-readiness program with advanced learning and leadership skills.'},
+          {emoji:'🌟', age:'5+ Years', title:'Super Stars 5+', color:'#0F2050', desc:'Full day program for school-ready children with enriched curriculum and leadership development.'},
         ].map(p => `
           <div class="card fade-in text-center">
             <div style="font-size:2.8rem;margin-bottom:1rem">${p.emoji}</div>
@@ -1215,10 +1215,10 @@ app.get('/programs', (c) => {
       <div class="flex flex-wrap justify-center gap-3">
         ${[
           {id:'all', label:'All Programs', emoji:'🌟'},
-          {id:'toddler', label:'Toddler (1-2)', emoji:'🍼'},
           {id:'mini', label:'Mini Heroes (2-3)', emoji:'🦁'},
           {id:'stars', label:'Super Stars (3-4)', emoji:'⭐'},
           {id:'power', label:'Power Rangers (4-5)', emoji:'🚀'},
+          {id:'superstars5', label:'Super Stars 5+', emoji:'🌟'},
           {id:'after', label:'After School', emoji:'🎮'},
         ].map((t, i) => `
           <button class="age-tab ${i === 0 ? 'active' : ''}" data-target="${t.id}"
@@ -1234,18 +1234,18 @@ app.get('/programs', (c) => {
     <div class="max-w-7xl mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         ${[
-          {id:'toddler', emoji:'🍼', age:'1–2 Years', title:'Toddler Titans', color:'#0F2050',
-           features:['Sensory play stations','Music & movement','Language development','Social bonding','Motor skills development','Naptime & care routines'],
-           desc:'A warm, nurturing environment where our youngest heroes take their first steps toward discovery. Our Toddler Titans program focuses on sensory exploration, attachment security, and joyful play-based learning.', time:'Half Day | Full Day'},
           {id:'mini', emoji:'🦁', age:'2–3 Years', title:'Mini Heroes', color:'#C4893A',
            features:['Potty training support','Early reading readiness','Imaginative play','Art exploration','Outdoor adventures','Circle time & stories'],
-           desc:'Mini Heroes is where personalities explode! This program harnesses the natural curiosity of 2-3 year olds through structured play, creative expression, and early literacy foundations.', time:'Half Day | Full Day'},
+           desc:'Mini Heroes is where personalities explode! This program harnesses the natural curiosity of 2-3 year olds through structured play, creative expression, and early literacy foundations.', time:'Full Day'},
           {id:'stars', emoji:'⭐', age:'3–4 Years', title:'Super Stars', color:'#E8B020',
            features:['Pre-reading & writing','Basic math concepts','Science experiments','Team projects','Drama & performance','Problem-solving games'],
-           desc:'Our Super Stars program is where academic foundations are laid with excitement and enthusiasm. Children engage in STEAM projects, collaborative learning, and begin their journey toward school readiness.', time:'Half Day | Full Day'},
+           desc:'Our Super Stars program is where academic foundations are laid with excitement and enthusiasm. Children engage in STEAM projects, collaborative learning, and begin their journey toward school readiness.', time:'Full Day'},
           {id:'power', emoji:'🚀', age:'4–5 Years', title:'Power Rangers', color:'#1AA6CA',
            features:['Advanced literacy','Math & logic','Science projects','Leadership skills','Digital literacy','Kindergarten prep'],
-           desc:'The most advanced program, Power Rangers prepares children for their next great adventure: kindergarten! With a rich academic curriculum and leadership development, these children graduate ready to conquer the world.', time:'Full Day Program'},
+           desc:'The most advanced program, Power Rangers prepares children for their next great adventure: kindergarten! With a rich academic curriculum and leadership development, these children graduate ready to conquer the world.', time:'Full Day'},
+          {id:'superstars5', emoji:'🌟', age:'5+ Years', title:'Super Stars 5+', color:'#0F2050',
+           features:['Advanced reading & writing','Critical thinking','STEM projects','Leadership workshops','Creative expression','School transition support'],
+           desc:'Super Stars 5+ is our full day program for children aged 5 and above. Building on strong foundations, this program develops advanced skills, independent thinking, and confidence to excel in primary school.', time:'Full Day Program'},
           {id:'after', emoji:'🎮', age:'5+ Years', title:'After School Heroes', color:'#C4893A',
            features:['Homework help','STEM workshops','Sports & fitness','Arts & crafts','Cooking classes','Club activities'],
            desc:'Our After School program provides a safe, fun, and stimulating environment for school-age children to unwind, learn new skills, and build friendships after their school day.', time:'2:30 PM – 6:00 PM'},
@@ -1290,16 +1290,13 @@ app.get('/programs', (c) => {
         ${[
           {time:'7:00 AM', activity:'Super Arrival & Free Play', emoji:'🌅', color:'#0F2050'},
           {time:'8:00 AM', activity:'Morning Circle & Calendar', emoji:'📅', color:'#C4893A'},
-          {time:'8:30 AM', activity:'Superhero Breakfast', emoji:'🥞', color:'#E8B020'},
           {time:'9:00 AM', activity:'Learning Centers & STEAM', emoji:'🔬', color:'#1AA6CA'},
           {time:'10:30 AM', activity:'Outdoor Hero Training', emoji:'🌳', color:'#0F2050'},
           {time:'11:30 AM', activity:'Creative Arts & Music', emoji:'🎨', color:'#C4893A'},
-          {time:'12:00 PM', activity:'Super Lunch Time', emoji:'🥗', color:'#E8B020'},
-          {time:'12:30 PM', activity:'Rest & Quiet Time', emoji:'😴', color:'#1AA6CA'},
-          {time:'2:00 PM', activity:'Story Time & Reading', emoji:'📚', color:'#0F2050'},
-          {time:'3:00 PM', activity:'Afternoon Snack', emoji:'🍎', color:'#C4893A'},
-          {time:'3:30 PM', activity:'Science & Discovery', emoji:'🧪', color:'#E8B020'},
-          {time:'5:00 PM', activity:'Wind Down & Pickup', emoji:'🌟', color:'#1AA6CA'},
+          {time:'12:30 PM', activity:'Rest & Quiet Time', emoji:'😴', color:'#E8B020'},
+          {time:'2:00 PM', activity:'Story Time & Reading', emoji:'📚', color:'#1AA6CA'},
+          {time:'3:30 PM', activity:'Science & Discovery', emoji:'🧪', color:'#0F2050'},
+          {time:'5:00 PM', activity:'Wind Down & Pickup', emoji:'🌟', color:'#C4893A'},
         ].map(s => `
           <div class="flex items-center gap-4 card fade-in" style="padding:1rem;border-color:${s.color}22">
             <div style="font-size:1.5rem">${s.emoji}</div>
@@ -1712,10 +1709,10 @@ app.get('/contact', (c) => {
                     <label style="display:block;color:#2A3B60;font-size:0.85rem;font-weight:700;margin-bottom:6px">Program of Interest *</label>
                     <select name="program" required class="form-input" style="cursor:pointer">
                       <option value="" disabled selected>Select a program</option>
-                      <option>Toddler Titans (1-2 years)</option>
                       <option>Mini Heroes (2-3 years)</option>
                       <option>Super Stars (3-4 years)</option>
                       <option>Power Rangers (4-5 years)</option>
+                      <option>Super Stars 5+ Full Program</option>
                       <option>After School Heroes</option>
                       <option>Summer Super Camp</option>
                     </select>
@@ -1730,7 +1727,7 @@ app.get('/contact', (c) => {
               <div>
                 <label style="display:block;color:#2A3B60;font-size:0.85rem;font-weight:700;margin-bottom:10px">Schedule Preference</label>
                 <div class="flex flex-wrap gap-3">
-                  ${['Full-Time (5 days)', 'Part-Time (3 days)', 'Half Day', 'Full Day', 'Flexible'].map(opt => `
+                  ${['Full-Time (5 days)', 'Part-Time (3 days)', 'Full Day', 'Flexible'].map(opt => `
                     <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;border:1.5px solid #DCE1EF;color:#2A3B60;font-size:0.85rem;font-weight:600;transition:all 0.3s;position:relative;z-index:2"
                       onmouseover="this.style.borderColor='#1AA6CA';this.style.color='#1AA6CA'"
                       onmouseout="this.style.borderColor='#DCE1EF';this.style.color='#2A3B60'">
@@ -1796,7 +1793,7 @@ app.get('/contact', (c) => {
         ${[
           {q:'What ages do you accept?', a:'We welcome children from 1 to 5 years old. Our After School Heroes program extends to age 10.'},
           {q:'What is the student-to-teacher ratio?', a:'We maintain a 6:1 ratio for toddlers (1-2), 8:1 for ages 2-3, and 10:1 for our older classes, ensuring personalized attention for every child.'},
-          {q:'Are meals and snacks provided?', a:'Yes! We provide nutritious, allergen-aware breakfast, lunch, and two snacks daily in our full-day programs. Our menu is reviewed by a nutritionist.'},
+          {q:'Do you provide food or meals?', a:'We do not provide meals or snacks at SuperKids. We encourage parents to send a healthy packed lunch and snacks from home. Please inform us of any food allergies so we can ensure a safe environment for all children.'},
           {q:'What safety measures are in place?', a:'We have keycard-only secure entry, 24/7 CCTV monitoring, trained staff, regular safety drills, and a real-time parent notification system.'},
           {q:'Do you offer financial assistance?', a:'Yes! We offer sibling discounts (15% off), income-based financial assistance, and we accept most childcare subsidy programs. Contact us to learn more.'},
           {q:'Can I schedule a tour before enrolling?', a:'Absolutely! We highly encourage tours. Fill out our enrollment form or call us directly to book a time.'},

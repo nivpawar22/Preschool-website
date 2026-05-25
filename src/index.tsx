@@ -728,7 +728,7 @@ const Footer = () => `
       <div>
         <h4 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#C4893A;letter-spacing:1px;margin-bottom:1.2rem;font-weight:700">Our Programs</h4>
         <div class="flex flex-col gap-2">
-          ${['Mini Heroes (2-3)','Super Stars (3-4)','Power Rangers (4-5)','Super Stars 5+ Full Program','After School Club'].map(p =>
+          ${['Mini Heroes (2-3)','Super Stars (3-4)','Power Rangers (4-5)','Super Heroes (5+)','After School Club'].map(p =>
             `<span style="color:#7B90B5;font-size:0.9rem"><i class="fas fa-star mr-2" style="color:#E8B020;font-size:0.7rem"></i>${p}</span>`
           ).join('')}
         </div>
@@ -739,7 +739,7 @@ const Footer = () => `
         <div class="flex flex-col gap-3">
           <div class="flex items-start gap-3">
             <i class="fas fa-map-marker-alt mt-1" style="color:#C4893A;width:16px"></i>
-            <span style="color:#7B90B5;font-size:0.9rem">Super Kids Preschool, Matoshri Apartment,<br>Plot no 51, Sector no 10, Bhosari Pradhikaran,<br>Pin: 411026</span>
+            <span style="color:#7B90B5;font-size:0.9rem">SuperKids India Preschool, Matoshri Apartment,<br>Plot number 51, Sector number 10, Bhosari Pradhikaran<br>Pin: 411026</span>
           </div>
           <div class="flex items-center gap-3">
             <i class="fas fa-phone" style="color:#1AA6CA;width:16px"></i>
@@ -945,7 +945,7 @@ app.get('/', async (c) => {
           {emoji:'🦁', age:'2–3 Years', title:'Mini Heroes', color:'#C4893A', desc:'Language explosion, creativity, and social skills through guided play.'},
           {emoji:'⭐', age:'3–4 Years', title:'Super Stars', color:'#E8B020', desc:'Pre-literacy, numeracy, science exploration and team activities.'},
           {emoji:'🚀', age:'4–5 Years', title:'Power Rangers', color:'#1AA6CA', desc:'School-readiness program with advanced learning and leadership skills.'},
-          {emoji:'🌟', age:'5+ Years', title:'Super Stars 5+', color:'#0F2050', desc:'Full day program for school-ready children with enriched curriculum and leadership development.'},
+          {emoji:'🌟', age:'5+ Years', title:'Super Heroes', color:'#0F2050', desc:'Full day program for school-ready children with enriched curriculum and leadership development.'},
         ].map(p => `
           <div class="card fade-in text-center">
             <div style="font-size:2.8rem;margin-bottom:1rem">${p.emoji}</div>
@@ -1125,34 +1125,50 @@ app.get('/about', async (c) => {
 
   <div class="divider" style="max-width:1200px;margin:0 auto"></div>
 
-  <!-- TIMELINE -->
-  <section style="padding:4rem 0;background:#F8F9FB">
+  <!-- OUR STORY -->
+  <section style="padding:5rem 0;background:#F8F9FB">
     <div class="max-w-4xl mx-auto px-4">
       <div class="text-center mb-10 fade-in">
+        <div class="badge mb-4" style="background:#FEF8F0;color:#C4893A;border:1px solid #C4893A33">Est. 2025</div>
         <div class="section-accent" style="margin:0 auto 1rem"></div>
-        <h2 class="section-title" style="color:#E8B020">Our Hero's Journey</h2>
+        <h2 class="section-title" style="color:#E8B020">Where Every Hero Begins</h2>
+        <p style="color:#6B7A9D;margin-top:1rem;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.8">
+          Every great adventure starts with a single step — and ours has just begun.
+        </p>
       </div>
-      <div class="flex flex-col gap-0">
-        ${[
-          {year:'2009', event:'SuperKids Preschool founded by Dr. Amanda Powers with a vision to revolutionize early childhood education.', color:'#0F2050'},
-          {year:'2011', event:'Expanded to two classrooms after overwhelming demand. Introduced our signature STEAM superhero curriculum.', color:'#C4893A'},
-          {year:'2014', event:'Received "Best Preschool in Bhosari" award for 3 consecutive years. Opened our outdoor "Hero Training Grounds."', color:'#E8B020'},
-          {year:'2017', event:'Launched SuperKids Parent App — giving parents real-time insights into their child\'s learning journey.', color:'#0F2050'},
-          {year:'2020', event:'Adapted seamlessly during challenging times, offering hybrid learning while maintaining safety and quality.', color:'#1AA6CA'},
-          {year:'2023', event:'Opened our new 5,000 sq ft SuperHQ facility with state-of-the-art classrooms, sensory rooms, and a rooftop garden.', color:'#C4893A'},
-          {year:'2025', event:'Celebrating 500+ alumni who are now thriving in schools across the region — our legacy of little superheroes!', color:'#0F2050'},
-        ].map((t, i) => `
-          <div class="flex gap-6 fade-in" style="position:relative;padding-bottom:2rem">
-            <div class="flex flex-col items-center">
-              <div class="timeline-dot" style="background:${t.color};box-shadow:0 0 0 4px ${t.color}22;margin-top:6px"></div>
-              ${i < 6 ? `<div style="width:2px;flex:1;background:linear-gradient(180deg,${t.color}44,transparent);margin-top:4px"></div>` : ''}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="card fade-in" style="border-color:#0F205033;padding:2rem">
+          <div style="font-size:2.5rem;margin-bottom:1rem">🌱</div>
+          <h3 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#0F2050;font-weight:700;margin-bottom:0.75rem">Our Beginning</h3>
+          <p style="color:#6B7A9D;line-height:1.8;font-size:0.95rem">SuperKids India Preschool was born from a simple but powerful belief — that every child is a superhero waiting to discover their powers. We opened our doors in Bhosari Pradhikaran with a heartfelt mission: to give every little one the very best start in life, wrapped in warmth, wonder, and world-class learning.</p>
+        </div>
+        <div class="card fade-in" style="border-color:#C4893A33;padding:2rem">
+          <div style="font-size:2.5rem;margin-bottom:1rem">💛</div>
+          <h3 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#C4893A;font-weight:700;margin-bottom:0.75rem">Built with Love</h3>
+          <p style="color:#6B7A9D;line-height:1.8;font-size:0.95rem">From our carefully designed classrooms to our superhero-themed curriculum, every detail at SuperKids India has been crafted with love and intention. We wanted a preschool we'd be proud to send our own children to — and that's exactly what we've built for yours.</p>
+        </div>
+      </div>
+
+      <div class="card fade-in text-center" style="border-color:#E8B02033;padding:2.5rem;background:linear-gradient(135deg,#FEF8F0,#ffffff)">
+        <div style="font-size:2.8rem;margin-bottom:1rem">🚀</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:#E8B020;font-weight:800;margin-bottom:1rem">Year One — Just the Beginning</h3>
+        <p style="color:#2A3B60;line-height:1.9;font-size:1rem;max-width:560px;margin:0 auto">
+          We may be brand new, but our passion, preparation, and purpose are anything but. This is Year One of what we know will be a remarkable story — and the children walking through our doors today are the very first chapter. We are honoured to earn your trust, and we promise to make every single day count.
+        </p>
+        <div class="flex flex-wrap justify-center gap-6 mt-6">
+          ${[
+            {icon:'🛡️', label:'Safety First'},
+            {icon:'📚', label:'Play-Based Learning'},
+            {icon:'🤝', label:'Parent Partnership'},
+            {icon:'🌟', label:'Every Child Matters'},
+          ].map(b => `
+            <div class="text-center">
+              <div style="font-size:1.8rem">${b.icon}</div>
+              <div style="color:#6B7A9D;font-size:0.8rem;margin-top:4px;font-weight:700">${b.label}</div>
             </div>
-            <div class="card" style="flex:1;padding:1.25rem;margin-bottom:0;border-color:${t.color}33">
-              <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:${t.color};margin-bottom:0.5rem;font-weight:700">${t.year}</div>
-              <p style="color:#2A3B60;font-size:0.95rem;line-height:1.7">${t.event}</p>
-            </div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
       </div>
     </div>
   </section>
@@ -1218,7 +1234,7 @@ app.get('/programs', (c) => {
           {id:'mini', label:'Mini Heroes (2-3)', emoji:'🦁'},
           {id:'stars', label:'Super Stars (3-4)', emoji:'⭐'},
           {id:'power', label:'Power Rangers (4-5)', emoji:'🚀'},
-          {id:'superstars5', label:'Super Stars 5+', emoji:'🌟'},
+          {id:'superstars5', label:'Super Heroes (5+)', emoji:'🌟'},
           {id:'after', label:'After School', emoji:'🎮'},
         ].map((t, i) => `
           <button class="age-tab ${i === 0 ? 'active' : ''}" data-target="${t.id}"
@@ -1243,9 +1259,9 @@ app.get('/programs', (c) => {
           {id:'power', emoji:'🚀', age:'4–5 Years', title:'Power Rangers', color:'#1AA6CA',
            features:['Advanced literacy','Math & logic','Science projects','Leadership skills','Digital literacy','Kindergarten prep'],
            desc:'The most advanced program, Power Rangers prepares children for their next great adventure: kindergarten! With a rich academic curriculum and leadership development, these children graduate ready to conquer the world.', time:'Full Day'},
-          {id:'superstars5', emoji:'🌟', age:'5+ Years', title:'Super Stars 5+', color:'#0F2050',
+          {id:'superstars5', emoji:'🌟', age:'5+ Years', title:'Super Heroes', color:'#0F2050',
            features:['Advanced reading & writing','Critical thinking','STEM projects','Leadership workshops','Creative expression','School transition support'],
-           desc:'Super Stars 5+ is our full day program for children aged 5 and above. Building on strong foundations, this program develops advanced skills, independent thinking, and confidence to excel in primary school.', time:'Full Day Program'},
+           desc:'Super Heroes is our full day program for children aged 5 and above. Building on strong foundations, this program develops advanced skills, independent thinking, and confidence to excel in primary school.', time:'Full Day Program'},
           {id:'after', emoji:'🎮', age:'5+ Years', title:'After School Heroes', color:'#C4893A',
            features:['Homework help','STEM workshops','Sports & fitness','Arts & crafts','Cooking classes','Club activities'],
            desc:'Our After School program provides a safe, fun, and stimulating environment for school-age children to unwind, learn new skills, and build friendships after their school day.', time:'2:30 PM – 6:00 PM'},
@@ -1612,7 +1628,7 @@ app.get('/contact', (c) => {
           <h2 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#0F2050;font-weight:800;margin-bottom:2rem">SuperHQ Location</h2>
 
           ${[
-            {icon:'fa-map-marker-alt', color:'#C4893A', title:'Our Super HQ', content:'Super Kids Preschool, Matoshri Apartment,<br>Plot no 51, Sector no 10, Bhosari Pradhikaran<br>Pin: 411026'},
+            {icon:'fa-map-marker-alt', color:'#C4893A', title:'Our Super HQ', content:'SuperKids India Preschool, Matoshri Apartment,<br>Plot number 51, Sector number 10, Bhosari Pradhikaran<br>Pin: 411026'},
             {icon:'fa-phone-alt', color:'#0F2050', title:'Call the Hotline', content:'<a href="tel:+919822977644" style="color:#0F2050;text-decoration:none">(+91) 9822-977-644</a><br><a href="tel:+919822977944" style="color:#0F2050;text-decoration:none">(+91) 9822-977-944</a>'},
             {icon:'fa-envelope', color:'#E8B020', title:'Super Mail', content:'superkidsenrollment@gmail.com<br>superkidsprincipal@gmail.com'},
             {icon:'fa-clock', color:'#1AA6CA', title:'Super Hours', content:'Monday – Friday<br>7:00 AM – 6:00 PM'},
@@ -1712,7 +1728,7 @@ app.get('/contact', (c) => {
                       <option>Mini Heroes (2-3 years)</option>
                       <option>Super Stars (3-4 years)</option>
                       <option>Power Rangers (4-5 years)</option>
-                      <option>Super Stars 5+ Full Program</option>
+                      <option>Super Heroes (5+ Full Program)</option>
                       <option>After School Heroes</option>
                       <option>Summer Super Camp</option>
                     </select>
@@ -1727,7 +1743,7 @@ app.get('/contact', (c) => {
               <div>
                 <label style="display:block;color:#2A3B60;font-size:0.85rem;font-weight:700;margin-bottom:10px">Schedule Preference</label>
                 <div class="flex flex-wrap gap-3">
-                  ${['Full-Time (5 days)', 'Part-Time (3 days)', 'Full Day', 'Flexible'].map(opt => `
+                  ${['Full-Time (5 days)', 'Full Day', 'Flexible'].map(opt => `
                     <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;border:1.5px solid #DCE1EF;color:#2A3B60;font-size:0.85rem;font-weight:600;transition:all 0.3s;position:relative;z-index:2"
                       onmouseover="this.style.borderColor='#1AA6CA';this.style.color='#1AA6CA'"
                       onmouseout="this.style.borderColor='#DCE1EF';this.style.color='#2A3B60'">

@@ -150,7 +150,16 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
   // Build nav items based on role
   let navItems = [];
 
-  if (user.role === 'superadmin' || user.role === 'subadmin') {
+  if (user.role === 'admission') {
+    navItems = [
+      { id: 'admission-dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
+      { id: 'admission-inquiries', icon: 'fa-search', label: 'Inquiries' },
+      { id: 'admissions-list', icon: 'fa-file-alt', label: 'All Admissions' },
+      { id: 'new-admission', icon: 'fa-plus-circle', label: 'New Admission' },
+      { id: 'fee-collection', icon: 'fa-rupee-sign', label: 'Fee Collection' },
+      { id: 'receipts', icon: 'fa-receipt', label: 'Receipts' },
+    ];
+  } else if (user.role === 'superadmin' || user.role === 'subadmin') {
     navItems = [
       { id: 'dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
       { id: 'students', icon: 'fa-user-graduate', label: 'Students' },
@@ -216,8 +225,8 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       ${n.badge ? `<span class="badge">${n.badge}</span>` : ''}
     </div>`).join('');
 
-  const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
-  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
+  const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'admission' ? 'Admission Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
+  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'admission' ? '#C4893A' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
 
   document.getElementById('app').innerHTML = `
     <!-- Sidebar -->
@@ -449,6 +458,7 @@ function doLogin() {
   err.style.display = 'none';
 
   if (user.role === 'parent') navigate('parent-home');
+  else if (user.role === 'admission') navigate('admission-dashboard');
   else navigate('dashboard');
 }
 

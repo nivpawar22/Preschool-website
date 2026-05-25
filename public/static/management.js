@@ -18,6 +18,9 @@ function renderManagement() {
     { id: 'parents', label: 'Parents', icon: 'fa-users' },
     { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
     { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
+    { id: 'academic', label: 'Academic Setup', icon: 'fa-graduation-cap' },
+    { id: 'feeconfig', label: 'Fee Structure', icon: 'fa-rupee-sign' },
+    { id: 'adm-reports', label: 'Adm. Reports', icon: 'fa-chart-bar' },
     { id: 'log', label: 'Activity Log', icon: 'fa-history' },
     { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
   ];
@@ -27,6 +30,9 @@ function renderManagement() {
     parents: renderParentsTab(),
     team: renderTeamTab(),
     reviews: renderReviewsTab(),
+    academic: renderAcademicTab(),
+    feeconfig: renderFeeConfigTab(),
+    'adm-reports': renderAdmReportsTab(),
     log: renderActivityLogTab(),
     settings: renderSettingsTab()
   };
@@ -42,6 +48,9 @@ function renderManagement() {
   renderLayout('management', content, 'Management', 'Super Admin Only');
   if (mgmtTab === 'team') setTimeout(loadTeamMembers, 50);
   if (mgmtTab === 'reviews') setTimeout(loadReviews, 50);
+  if (mgmtTab === 'academic') setTimeout(loadAcademicConfig, 50);
+  if (mgmtTab === 'feeconfig') setTimeout(loadFeeConfig, 50);
+  if (mgmtTab === 'adm-reports') setTimeout(loadAdmReports, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -126,7 +135,17 @@ function openAddSubAdminModal() {
           <div class="form-group"><label class="form-label">Password *</label><input class="form-control" id="sa-password" type="password" placeholder="Strong password"/></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="sa-phone" placeholder="+1-555-0000"/></div>
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="sa-phone" placeholder="+91-98000-00000"/></div>
+          <div class="form-group">
+            <label class="form-label">Staff Role</label>
+            <select class="form-control" id="sa-role" onchange="document.getElementById('sa-class-row').style.display=this.value==='admission'?'none':'block'">
+              <option value="subadmin">Class Teacher / Sub Admin</option>
+              <option value="admission">Admission Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" id="sa-class-row">
+          <div class="form-group"></div>
           <div class="form-group">
             <label class="form-label">Assign Class</label>
             <select class="form-control" id="sa-class">
@@ -134,7 +153,7 @@ function openAddSubAdminModal() {
               ${data.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
             </select>
           </div>
-        </div>
+        </div></div>
         <div class="form-group">
           <label class="form-label">Avatar Color</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -181,8 +200,9 @@ function saveNewSubAdmin() {
 
   const classId = document.getElementById('sa-class').value || null;
 
+  const selectedRole = (document.getElementById('sa-role') || {}).value || 'subadmin';
   const sa = {
-    id: DB.genId('u'), role: 'subadmin', name, email, username, password,
+    id: DB.genId('u'), role: selectedRole, name, email, username, password,
     phone: document.getElementById('sa-phone').value,
     avatar: document.getElementById('sa-avatar').value || '#1AA6CA',
     active: true, deleted: false,
@@ -1287,5 +1307,205 @@ function deleteReview(id) {
 }
 
 // Register route
+// ---- Academic Setup Tab ----
+function renderAcademicTab() {
+  return '<div id="academic-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
+}
+
+function loadAcademicConfig() {
+  var wrap = document.getElementById('academic-wrap'); if (!wrap) return;
+  fetch('/api/academic-config').then(function(r){return r.json();}).then(function(res) {
+    var cfg = res.config || { currentYear: getAcademicYear(), admissionOpen: true, classes: [
+      {id:'playgroup',name:'Play Group',ageGroup:'1.5–2.5 yrs',capacity:20},
+      {id:'nursery',name:'Nursery',ageGroup:'2.5–3.5 yrs',capacity:25},
+      {id:'jrkg',name:'Jr. KG',ageGroup:'3.5–4.5 yrs',capacity:30},
+      {id:'srkg',name:'Sr. KG',ageGroup:'4.5–5.5 yrs',capacity:30},
+      {id:'superhero',name:'Super Heroes 5+',ageGroup:'5+ yrs',capacity:25},
+    ]};
+    wrap.innerHTML = '<div class="card">' +
+      '<div class="card-header" style="margin-bottom:20px"><div class="card-title"><i class="fas fa-graduation-cap" style="color:#C4893A"></i> Academic Year & Admission Settings</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px">' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+          '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Current Academic Year</label><input id="ac-year" value="'+(cfg.currentYear||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
+          '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Admission Start Date</label><input id="ac-start" type="date" value="'+(cfg.admissionStartDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
+          '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Admission End Date</label><input id="ac-end" type="date" value="'+(cfg.admissionEndDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
+        '</div>' +
+        '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#2A3B60"><input type="checkbox" id="ac-open" '+(cfg.admissionOpen?'checked':'')+' style="width:18px;height:18px;accent-color:#C4893A;cursor:pointer"> Admissions Currently Open</label>' +
+        '<div><div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:10px">Classes & Seat Capacity</div>' +
+          '<div id="ac-classes">' +
+            cfg.classes.map(function(c,i) {
+              return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:8px">' +
+                '<input value="'+c.name+'" id="acc-name-'+i+'" placeholder="Class name" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+                '<input value="'+c.ageGroup+'" id="acc-age-'+i+'" placeholder="Age group" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+                '<input type="number" value="'+(c.capacity||25)+'" id="acc-cap-'+i+'" placeholder="Seats" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+                '<button onclick="this.closest(\'div\').remove()" style="width:32px;height:32px;border-radius:8px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;cursor:pointer;font-size:14px">×</button>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          '<button onclick="addAcClass()" class="btn btn-secondary" style="margin-top:6px;font-size:12px"><i class="fas fa-plus" style="margin-right:4px"></i>Add Class</button>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end"><button onclick="saveAcademicConfig()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Academic Config</button></div>' +
+      '</div></div>';
+  });
+}
+
+window.addAcClass = function() {
+  var container = document.getElementById('ac-classes'); if (!container) return;
+  var i = container.children.length;
+  var row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:8px';
+  row.innerHTML = '<input id="acc-name-'+i+'" placeholder="Class name" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+    '<input id="acc-age-'+i+'" placeholder="Age group" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+    '<input type="number" id="acc-cap-'+i+'" placeholder="Seats" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">' +
+    '<button onclick="this.closest(\'div\').remove()" style="width:32px;height:32px;border-radius:8px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;cursor:pointer;font-size:14px">×</button>';
+  container.appendChild(row);
+};
+
+function saveAcademicConfig() {
+  var rows = document.getElementById('ac-classes').children;
+  var classes = [];
+  for (var i = 0; i < rows.length; i++) {
+    var n = (document.getElementById('acc-name-'+i)||{}).value || '';
+    var a = (document.getElementById('acc-age-'+i)||{}).value || '';
+    var cap = parseInt((document.getElementById('acc-cap-'+i)||{}).value) || 25;
+    if (n) classes.push({id: n.toLowerCase().replace(/\s+/g,'_'), name: n, ageGroup: a, capacity: cap});
+  }
+  var cfg = {
+    currentYear: (document.getElementById('ac-year')||{}).value || getAcademicYear(),
+    admissionOpen: (document.getElementById('ac-open')||{}).checked || false,
+    admissionStartDate: (document.getElementById('ac-start')||{}).value || '',
+    admissionEndDate: (document.getElementById('ac-end')||{}).value || '',
+    classes: classes,
+  };
+  fetch('/api/academic-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Academic config saved','success');})
+    .catch(function(){showToast('Failed to save','error');});
+}
+
+// ---- Fee Structure Config Tab ----
+function renderFeeConfigTab() {
+  return '<div id="feeconfig-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
+}
+
+function loadFeeConfig() {
+  var wrap = document.getElementById('feeconfig-wrap'); if (!wrap) return;
+  Promise.all([
+    fetch('/api/fee-config').then(function(r){return r.json();}),
+    fetch('/api/academic-config').then(function(r){return r.json();}),
+  ]).then(function(results) {
+    var fc = results[0].config || {feeHeads:[], classWiseFees:{}, kitItems:[]};
+    var ac = results[1].config || {classes:[{name:'Play Group'},{name:'Nursery'},{name:'Jr. KG'},{name:'Sr. KG'},{name:'Super Heroes 5+'}]};
+    var classes = ac.classes || [];
+    var defaultFH = ['Admission Fees','Tuition Fees (Monthly)','Annual Fees','Activity Fees','Transport Fees'];
+    var feeHeads = (fc.feeHeads||[]).length > 0 ? fc.feeHeads.map(function(f){return f.name;}) : defaultFH;
+    var classWise = fc.classWiseFees || {};
+    var kitItems = (fc.kitItems||[]).length > 0 ? fc.kitItems : [{id:'bag',name:'School Bag',price:800},{id:'uniform',name:'Uniform (Set of 2)',price:1200},{id:'books',name:'Book Set',price:1500},{id:'stationery',name:'Stationery Kit',price:600},{id:'shoes',name:'Shoes',price:700},{id:'idCard',name:'ID Card',price:100}];
+
+    wrap.innerHTML = '<div class="card" style="margin-bottom:12px">' +
+      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#E8B020"></i> Class-wise Fee Structure</div></div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr style="background:#F8F9FB"><th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase">Class</th>' +
+          feeHeads.map(function(f){return '<th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;white-space:nowrap">'+f+'</th>';}).join('') +
+        '</tr></thead><tbody>' +
+          classes.map(function(cls) {
+            var fees = classWise[cls.name] || {};
+            return '<tr style="border-bottom:1px solid #F1F5F9"><td style="padding:10px 12px;font-weight:700">'+cls.name+'</td>' +
+              feeHeads.map(function(f,fi) {
+                return '<td style="padding:6px 8px"><input type="number" class="fee-struct-inp" data-class="'+cls.name+'" data-fee="'+f+'" value="'+(fees[f]||'')+'" placeholder="0" style="width:110px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right"></td>';
+              }).join('') +
+            '</tr>';
+          }).join('') +
+        '</tbody></table></div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:12px"><button onclick="saveFeeConfig('+JSON.stringify(feeHeads)+','+JSON.stringify(kitItems)+')" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Fee Structure</button></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-shopping-bag" style="color:#C4893A"></i> Education Kit Prices</div></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' +
+        kitItems.map(function(k) {
+          return '<div style="padding:12px;border:1.5px solid #DCE1EF;border-radius:10px"><div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">'+k.name+'</div>' +
+            '<input type="number" id="kit-price-'+k.id+'" value="'+(k.price||0)+'" style="width:100%;padding:8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;box-sizing:border-box"></div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+  });
+}
+
+function saveFeeConfig(feeHeads, kitItems) {
+  var inputs = document.querySelectorAll('.fee-struct-inp');
+  var classWiseFees = {};
+  inputs.forEach(function(inp) {
+    var cls = inp.getAttribute('data-class');
+    var fee = inp.getAttribute('data-fee');
+    if (!classWiseFees[cls]) classWiseFees[cls] = {};
+    classWiseFees[cls][fee] = parseFloat(inp.value) || 0;
+  });
+  var updatedKit = kitItems.map(function(k) {
+    return {id:k.id, name:k.name, price: parseFloat((document.getElementById('kit-price-'+k.id)||{}).value) || k.price};
+  });
+  var cfg = {
+    feeHeads: feeHeads.map(function(f){return {id:f.toLowerCase().replace(/\s+/g,'_'), name:f};}),
+    classWiseFees: classWiseFees,
+    kitItems: updatedKit,
+  };
+  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Fee structure saved','success');})
+    .catch(function(){showToast('Failed to save','error');});
+}
+
+// ---- Admission Reports Tab ----
+function renderAdmReportsTab() {
+  return '<div id="adm-rep-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
+}
+
+function loadAdmReports() {
+  var wrap = document.getElementById('adm-rep-wrap'); if (!wrap) return;
+  Promise.all([
+    fetch('/api/inquiries').then(function(r){return r.json();}),
+    fetch('/api/admissions').then(function(r){return r.json();}),
+    fetch('/api/payments').then(function(r){return r.json();}),
+  ]).then(function(results) {
+    var inq = results[0].items || [];
+    var adm = results[1].items || [];
+    var pay = results[2].items || [];
+
+    var totalCol = pay.reduce(function(s,p){var d=p.data?JSON.parse(p.data):{};return s+(d.total||0);},0);
+    var convRate = inq.length > 0 ? Math.round(inq.filter(function(i){return i.status==='converted';}).length / inq.length * 100) : 0;
+
+    var byStatus = {};
+    adm.forEach(function(a){ byStatus[a.status]=(byStatus[a.status]||0)+1; });
+
+    var byClass = {};
+    adm.forEach(function(a){ var d=a.data?JSON.parse(a.data):{}; var cls=d.classId||'Unknown'; byClass[cls]=(byClass[cls]||0)+1; });
+
+    var inqBySource = {};
+    inq.forEach(function(i){ var d=i.data?JSON.parse(i.data):{};var src=d.source||'Unknown';inqBySource[src]=(inqBySource[src]||0)+1; });
+
+    var admStatus = {'application_submitted':'Submitted','docs_pending':'Docs Pending','docs_verified':'Docs Verified','fees_pending':'Fees Pending','approved':'Approved','rejected':'Rejected','enrolled':'Enrolled'};
+
+    wrap.innerHTML =
+      '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">' +
+        [{icon:'fa-search',label:'Total Inquiries',val:inq.length,color:'#0F2050'},
+         {icon:'fa-file-alt',label:'Total Admissions',val:adm.length,color:'#C4893A'},
+         {icon:'fa-graduation-cap',label:'Enrolled',val:adm.filter(function(a){return a.status==='enrolled';}).length,color:'#059669'},
+         {icon:'fa-rupee-sign',label:'Total Collection',val:'₹'+totalCol.toLocaleString('en-IN'),color:'#E8B020'},
+        ].map(function(s){return '<div class="card" style="border-left:4px solid '+s.color+';padding:16px"><div style="display:flex;align-items:center;gap:12px"><div style="width:40px;height:40px;border-radius:10px;background:'+s.color+'18;display:flex;align-items:center;justify-content:center"><i class="fas '+s.icon+'" style="color:'+s.color+'"></i></div><div><div style="font-size:22px;font-weight:900;color:#0F1E3D">'+s.val+'</div><div style="font-size:12px;color:#6B7A9D">'+s.label+'</div></div></div></div>';}).join('') +
+      '</div>' +
+      '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">' +
+        '<div class="card"><div class="card-title" style="margin-bottom:14px"><i class="fas fa-chart-pie" style="color:#C4893A"></i> Admissions by Status</div>' +
+          Object.keys(byStatus).map(function(s){ var pct=adm.length?Math.round(byStatus[s]/adm.length*100):0; return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:3px"><span>'+(admStatus[s]||s)+'</span><span>'+byStatus[s]+'</span></div><div style="background:#F1F5F9;border-radius:4px;height:7px"><div style="background:#C4893A;height:7px;border-radius:4px;width:'+pct+'%"></div></div></div>'; }).join('') +
+        '</div>' +
+        '<div class="card"><div class="card-title" style="margin-bottom:14px"><i class="fas fa-school" style="color:#0F2050"></i> Admissions by Class</div>' +
+          Object.keys(byClass).map(function(cls){ var pct=adm.length?Math.round(byClass[cls]/adm.length*100):0; return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:3px"><span>'+cls+'</span><span>'+byClass[cls]+'</span></div><div style="background:#F1F5F9;border-radius:4px;height:7px"><div style="background:#0F2050;height:7px;border-radius:4px;width:'+pct+'%"></div></div></div>'; }).join('') +
+        '</div>' +
+        '<div class="card"><div class="card-title" style="margin-bottom:14px"><i class="fas fa-funnel-dollar" style="color:#059669"></i> Inquiry Sources & Conversion</div>' +
+          '<div style="background:#D1FAE5;border:1.5px solid #10b98133;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center"><div style="font-size:28px;font-weight:900;color:#059669">'+convRate+'%</div><div style="font-size:12px;color:#6B7A9D">Conversion Rate</div></div>' +
+          Object.keys(inqBySource).map(function(src){ return '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;padding:4px 0;border-bottom:1px solid #F1F5F9"><span>'+src+'</span><span style="color:#0F2050">'+inqBySource[src]+'</span></div>'; }).join('') +
+        '</div>' +
+      '</div>';
+  }).catch(function(){
+    var wrap=document.getElementById('adm-rep-wrap'); if(wrap) wrap.innerHTML='<div style="color:#dc2626;padding:20px">Failed to load reports</div>';
+  });
+}
+
 registerRoute('management', renderManagement);
 registerRoute('my-profile', renderMyProfile);

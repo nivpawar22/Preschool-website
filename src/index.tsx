@@ -1877,15 +1877,16 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=7"/>
+  <link rel="stylesheet" href="/static/style.css?v=8"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=7"></script>
-  <script src="/static/app.js?v=7"></script>
-  <script src="/static/admin.js?v=7"></script>
-  <script src="/static/management.js?v=7"></script>
-  <script src="/static/parent.js?v=7"></script>
+  <script src="/static/data.js?v=8"></script>
+  <script src="/static/app.js?v=8"></script>
+  <script src="/static/admin.js?v=8"></script>
+  <script src="/static/management.js?v=8"></script>
+  <script src="/static/parent.js?v=8"></script>
+  <script src="/static/admissions.js?v=8"></script>
 </body>
 </html>`)
 })
@@ -1973,6 +1974,196 @@ app.post('/api/contact', async (c) => {
     message: 'Application received! We will contact you within 24 hours.',
     reference: `SK-${Math.floor(Math.random() * 9000 + 1000)}`
   })
+})
+
+// ── Admission: shared table setup + counter helpers ───────────
+async function ensureAdmTables(db: any) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  await db.exec(`CREATE TABLE IF NOT EXISTS inquiries (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT DEFAULT 'new', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  await db.exec(`CREATE TABLE IF NOT EXISTS admissions (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT DEFAULT 'application_submitted', academic_year TEXT, class_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  await db.exec(`CREATE TABLE IF NOT EXISTS payments (id TEXT PRIMARY KEY, admission_id TEXT, data TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+}
+
+async function nextCounter(db: any, key: string, prefix: string, year: string) {
+  const row = await db.prepare('SELECT value FROM app_data WHERE key = ?').bind(key).first<{value:string}>()
+  const n = row ? (parseInt(row.value) + 1) : 1
+  await db.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind(key, String(n), new Date().toISOString()).run()
+  return `${prefix}-${year.split('-')[0]}-${String(n).padStart(4,'0')}`
+}
+
+// ── Inquiries ────────────────────────────────────────────────
+app.get('/api/inquiries', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM inquiries ORDER BY created_at DESC').all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/inquiries', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { data } = await c.req.json()
+    const id = `inq_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
+    const now = new Date().toISOString()
+    await c.env.DB.prepare('INSERT INTO inquiries (id,data,status,created_at,updated_at) VALUES (?,?,?,?,?)').bind(id, JSON.stringify(data), 'new', now, now).run()
+    return c.json({ ok: true, id })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.put('/api/inquiries/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const now = new Date().toISOString()
+    if (body.data !== undefined && body.status !== undefined) {
+      await c.env.DB.prepare('UPDATE inquiries SET data=?,status=?,updated_at=? WHERE id=?').bind(JSON.stringify(body.data), body.status, now, id).run()
+    } else if (body.data !== undefined) {
+      await c.env.DB.prepare('UPDATE inquiries SET data=?,updated_at=? WHERE id=?').bind(JSON.stringify(body.data), now, id).run()
+    } else if (body.status !== undefined) {
+      await c.env.DB.prepare('UPDATE inquiries SET status=?,updated_at=? WHERE id=?').bind(body.status, now, id).run()
+    }
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/inquiries/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    await c.env.DB.prepare('DELETE FROM inquiries WHERE id=?').bind(c.req.param('id')).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Admissions ───────────────────────────────────────────────
+app.get('/api/admissions', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM admissions ORDER BY created_at DESC').all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/admissions/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM admissions WHERE id=?').bind(c.req.param('id')).first()
+    if (!row) return c.json({ error: 'Not found' }, 404)
+    return c.json({ item: row })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/admissions', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { data, status } = await c.req.json()
+    const year = new Date().getFullYear().toString()
+    const admissionNo = await nextCounter(c.env.DB, `adm_counter_${year}`, 'SKI', `${year}-${parseInt(year)+1}`)
+    const id = `adm_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
+    const now = new Date().toISOString()
+    const enriched = { ...data, admissionNo }
+    await c.env.DB.prepare('INSERT INTO admissions (id,data,status,academic_year,class_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?)').bind(id, JSON.stringify(enriched), status || 'application_submitted', enriched.academicYear || '', enriched.classId || '', now, now).run()
+    return c.json({ ok: true, id, admissionNo })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.put('/api/admissions/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const now = new Date().toISOString()
+    if (body.data !== undefined) {
+      const s = body.status || 'application_submitted'
+      await c.env.DB.prepare('UPDATE admissions SET data=?,status=?,updated_at=? WHERE id=?').bind(JSON.stringify(body.data), s, now, id).run()
+    } else if (body.status !== undefined) {
+      await c.env.DB.prepare('UPDATE admissions SET status=?,updated_at=? WHERE id=?').bind(body.status, now, id).run()
+    }
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/admissions/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    await c.env.DB.prepare('DELETE FROM admissions WHERE id=?').bind(c.req.param('id')).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Payments ─────────────────────────────────────────────────
+app.get('/api/payments', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM payments ORDER BY created_at DESC').all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/payments/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM payments WHERE id=?').bind(c.req.param('id')).first()
+    if (!row) return c.json({ error: 'Not found' }, 404)
+    return c.json({ item: row })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/payments', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { data, admissionId } = await c.req.json()
+    const year = new Date().getFullYear().toString()
+    const receiptNo = await nextCounter(c.env.DB, `rcp_counter_${year}`, 'RCP', `${year}-${parseInt(year)+1}`)
+    const id = `pay_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
+    const enriched = { ...data, receiptNo }
+    await c.env.DB.prepare('INSERT INTO payments (id,admission_id,data,created_at) VALUES (?,?,?,?)').bind(id, admissionId || '', JSON.stringify(enriched), new Date().toISOString()).run()
+    return c.json({ ok: true, id, receiptNo })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/payments/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    await c.env.DB.prepare('DELETE FROM payments WHERE id=?').bind(c.req.param('id')).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Admission Config (superadmin) ─────────────────────────────
+app.get('/api/academic-config', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('academic_config').first<{value:string}>()
+    return c.json({ config: row ? JSON.parse(row.value) : null })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/academic-config', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { config } = await c.req.json()
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('academic_config', JSON.stringify(config), new Date().toISOString()).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/fee-config', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('fee_config').first<{value:string}>()
+    return c.json({ config: row ? JSON.parse(row.value) : null })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/fee-config', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { config } = await c.req.json()
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('fee_config', JSON.stringify(config), new Date().toISOString()).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
 export default app

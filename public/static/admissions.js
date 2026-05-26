@@ -563,7 +563,7 @@ function printAdmForm() {
     '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
   '</style></head><body><div class="pborder">'+
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
@@ -831,7 +831,7 @@ function printReceipt(payId) {
       '.tr{background-color:#F0FFF8!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ft th{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ftr{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.pborder{border:1pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+      '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
     '</style></head><body><div class="pborder">'+
       '<div class="hdr">' +
         '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +

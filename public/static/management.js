@@ -23,7 +23,9 @@ function renderManagement() {
     { label: 'Academic & Finance', color: '#C4893A', tabs: [
       { id: 'academic', label: 'Academic Setup', icon: 'fa-graduation-cap' },
       { id: 'feeconfig', label: 'Fee Structure', icon: 'fa-rupee-sign' },
-      { id: 'adm-reports', label: 'Adm. Reports', icon: 'fa-chart-bar' },
+      { id: 'adm-mgmt', label: 'Admissions', icon: 'fa-user-check' },
+      { id: 'receipts', label: 'Receipts', icon: 'fa-receipt' },
+      { id: 'adm-reports', label: 'Reports', icon: 'fa-chart-bar' },
       { id: 'letterhead', label: 'Letter Head', icon: 'fa-file-alt' },
     ]},
     { label: 'System', color: '#1AA6CA', tabs: [
@@ -39,6 +41,8 @@ function renderManagement() {
     reviews: renderReviewsTab(),
     academic: renderAcademicTab(),
     feeconfig: renderFeeConfigTab(),
+    'adm-mgmt': renderAdmissionsManagementTab(),
+    receipts: renderReceiptsTab(),
     'adm-reports': renderAdmReportsTab(),
     letterhead: renderLetterheadTab(),
     log: renderActivityLogTab(),
@@ -70,6 +74,8 @@ function renderManagement() {
   if (mgmtTab === 'feeconfig') setTimeout(loadFeeConfig, 50);
   if (mgmtTab === 'adm-reports') setTimeout(loadAdmReports, 50);
   if (mgmtTab === 'letterhead') setTimeout(loadLetterheadConfig, 50);
+  if (mgmtTab === 'adm-mgmt') setTimeout(loadAdmissionsManagement, 50);
+  if (mgmtTab === 'receipts') setTimeout(loadReceiptsManagement, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -1440,6 +1446,7 @@ function loadFeeConfig() {
         {id:'books',name:'Book Set'},{id:'stationery',name:'Stationery Kit'},
         {id:'shoes',name:'Shoes'},{id:'idCard',name:'ID Card'},
       ],
+      classWiseKit: fc.classWiseKit || {},
       activities: fc.activities || [],
       classes: (ac.classes||[]).length > 0 ? ac.classes : [
         {name:'Play Group'},{name:'Nursery'},{name:'Jr. KG'},{name:'Sr. KG'},{name:'Super Heroes 5+'},
@@ -1497,18 +1504,27 @@ function renderFeeConfigUI() {
     '</div>' +
 
     '<div class="card">' +
-      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-shopping-bag" style="color:#C4893A"></i> Education Kit Items &amp; Prices</div>' +
-        '<div style="font-size:11px;color:#6B7A9D">Leave blank if price not yet determined.</div>' +
+      '<div class="card-title" style="margin-bottom:4px"><i class="fas fa-shopping-bag" style="color:#C4893A"></i> Education Kit</div>' +
+      '<div style="font-size:11px;color:#6B7A9D;margin-bottom:16px">Define item names globally, then set prices per class.</div>' +
+      '<div style="padding:16px;background:#F8F9FB;border-radius:12px;margin-bottom:20px">' +
+        '<div style="font-weight:700;font-size:13px;color:#0F1E3D;margin-bottom:10px">Kit Item Names</div>' +
+        '<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">' +
+          '<input id="new-kit-name" type="text" placeholder="e.g. School Bag, Uniform…" style="flex:1;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;outline:none">' +
+          '<button onclick="addKitItem()" class="btn btn-primary" style="flex-shrink:0"><i class="fas fa-plus"></i> Add</button>' +
+        '</div>' +
+        '<div id="kit-items-list">' + renderKitItemsList(cfg.kit) + '</div>' +
+        '<div style="margin-top:12px;display:flex;justify-content:flex-end"><button onclick="saveKitItems()" class="btn btn-secondary"><i class="fas fa-save" style="margin-right:6px"></i>Save Item Names</button></div>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">' +
-        cfg.kit.map(function(k){
-          return '<div style="padding:12px;border:1.5px solid #DCE1EF;border-radius:10px">' +
-            '<div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">'+k.name+'</div>' +
-            '<input type="number" id="kit-price-'+k.id+'" value="'+(k.price||'')+'" placeholder="Enter price (₹)" style="width:100%;padding:8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;box-sizing:border-box;outline:none">' +
-          '</div>';
-        }).join('') +
+      '<div>' +
+        '<div style="font-weight:700;font-size:13px;color:#0F1E3D;margin-bottom:10px">Kit Prices by Class</div>' +
+        '<div style="margin-bottom:14px">' +
+          '<label style="font-size:12px;color:#6B7A9D;font-weight:600;margin-right:10px">Select Class:</label>' +
+          '<select id="kit-class-sel" onchange="renderKitPricesForClass()" style="padding:8px 14px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;outline:none;background:#fff">' +
+            cfg.classes.map(function(c){ return '<option value="'+c.name+'">'+c.name+'</option>'; }).join('') +
+          '</select>' +
+        '</div>' +
+        '<div id="kit-prices-wrap">' + renderKitPricesForClassHtml(cfg.classes.length>0?cfg.classes[0].name:'', cfg.kit, cfg.classWiseKit) + '</div>' +
       '</div>' +
-      '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button onclick="saveKitPrices()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Kit Prices</button></div>' +
     '</div>';
 }
 
@@ -1570,15 +1586,78 @@ function saveActivities() {
     .catch(function(){showToast('Failed to save','error');});
 }
 
+function renderKitItemsList(kit) {
+  if (!kit || kit.length === 0) return '<div style="font-size:13px;color:#6B7A9D">No items yet. Add items above.</div>';
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+    kit.map(function(k,i){
+      return '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border:1.5px solid #DCE1EF;border-radius:20px">' +
+        '<span style="font-size:12px;font-weight:600;color:#0F1E3D">'+k.name+'</span>' +
+        '<button onclick="removeKitItem('+i+')" style="width:18px;height:18px;border-radius:50%;border:none;background:#FEE2E2;color:#dc2626;cursor:pointer;font-size:11px;line-height:1;padding:0;flex-shrink:0">×</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+function renderKitPricesForClassHtml(className, kit, classWiseKit) {
+  if (!kit || kit.length === 0) return '<div style="font-size:13px;color:#6B7A9D;padding:16px;text-align:center">No kit items defined. Add items above first.</div>';
+  var cp = (classWiseKit && classWiseKit[className]) ? classWiseKit[className] : {};
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:12px">' +
+    kit.map(function(k){
+      return '<div style="padding:12px;border:1.5px solid #DCE1EF;border-radius:10px;background:#fff">' +
+        '<div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">'+k.name+'</div>' +
+        '<input type="number" id="kit-price-'+k.id+'" value="'+(cp[k.id]||'')+'" placeholder="Enter price (₹)" style="width:100%;padding:8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;box-sizing:border-box;outline:none">' +
+      '</div>';
+    }).join('') +
+  '</div>' +
+  '<div style="display:flex;justify-content:flex-end"><button onclick="saveKitPrices()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Prices for '+(className||'Class')+'</button></div>';
+}
+
+window.renderKitPricesForClass = function() {
+  var sel = document.getElementById('kit-class-sel');
+  var cn = sel ? sel.value : '';
+  var wrap = document.getElementById('kit-prices-wrap');
+  if (wrap && _feeCfg) wrap.innerHTML = renderKitPricesForClassHtml(cn, _feeCfg.kit, _feeCfg.classWiseKit||{});
+};
+
+window.addKitItem = function() {
+  var name = ((document.getElementById('new-kit-name')||{}).value||'').trim();
+  if (!name) { showToast('Enter item name','warning'); return; }
+  if (!_feeCfg) return;
+  _feeCfg.kit.push({id:name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now(), name:name});
+  var el = document.getElementById('kit-items-list'); if(el) el.innerHTML = renderKitItemsList(_feeCfg.kit);
+  var ni = document.getElementById('new-kit-name'); if(ni) ni.value='';
+};
+
+window.removeKitItem = function(i) {
+  if (!_feeCfg) return;
+  _feeCfg.kit.splice(i,1);
+  var el = document.getElementById('kit-items-list'); if(el) el.innerHTML = renderKitItemsList(_feeCfg.kit);
+};
+
+window.saveKitItems = function() {
+  if (!_feeCfg) return;
+  var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
+  fetch('/api/fee-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Kit items saved','success');})
+    .catch(function(){showToast('Failed to save','error');});
+};
+
 function saveKitPrices() {
   if (!_feeCfg) return;
-  var kit = _feeCfg.kit.map(function(k){
-    return {id:k.id, name:k.name, price: parseFloat((document.getElementById('kit-price-'+k.id)||{}).value) || 0};
+  var sel = document.getElementById('kit-class-sel');
+  var className = sel ? sel.value : '';
+  if (!className) { showToast('Select a class','warning'); return; }
+  if (!_feeCfg.classWiseKit) _feeCfg.classWiseKit = {};
+  var classPrices = {};
+  (_feeCfg.kit||[]).forEach(function(k){
+    var inp = document.getElementById('kit-price-'+k.id);
+    var v = parseFloat(inp ? inp.value : '') || 0;
+    if (v > 0) classPrices[k.id] = v;
   });
-  _feeCfg.kit = kit;
-  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: kit, activities: _feeCfg.activities};
-  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Kit prices saved','success');})
+  _feeCfg.classWiseKit[className] = classPrices;
+  var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
+  fetch('/api/fee-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Kit prices saved for '+className,'success');})
     .catch(function(){showToast('Failed to save','error');});
 }
 
@@ -1827,7 +1906,7 @@ window.printLetterhead = function() {
     '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
   '</style></head><body><div class="pborder">' +
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
@@ -1863,6 +1942,185 @@ window.printLetterhead = function() {
   '</body></html>');
   win.document.close();
   setTimeout(function(){ win.print(); }, 500);
+};
+
+// ── Receipts Management Tab ──────────────────────────────────────────────────
+function renderReceiptsTab() {
+  return '<div id="receipts-mgmt-wrap"><div style="text-align:center;padding:40px;color:#888"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>';
+}
+
+function loadReceiptsManagement() {
+  var wrap = document.getElementById('receipts-mgmt-wrap');
+  if (!wrap) return;
+  var role = (DB.get().user || {}).role;
+  if (role !== 'superadmin') {
+    wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b"><i class="fas fa-lock fa-2x"></i><br><br>Superadmin access required.</div>';
+    return;
+  }
+  var token = DB.get().token;
+  fetch('/api/payments?limit=200', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var payments = data.payments || data || [];
+      if (!payments.length) {
+        wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#888">No fee receipts found.</div>';
+        return;
+      }
+      var html = '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+        '<thead><tr style="background:#0F2050;color:#fff">' +
+        '<th style="padding:10px 8px;text-align:left">Receipt#</th>' +
+        '<th style="padding:10px 8px;text-align:left">Student</th>' +
+        '<th style="padding:10px 8px;text-align:left">Class</th>' +
+        '<th style="padding:10px 8px;text-align:left">Amount</th>' +
+        '<th style="padding:10px 8px;text-align:left">Date</th>' +
+        '<th style="padding:10px 8px;text-align:left">Month</th>' +
+        '<th style="padding:10px 8px;text-align:center">Action</th>' +
+        '</tr></thead><tbody>';
+      payments.forEach(function(p, i) {
+        var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
+        var amt = '&#8377;' + Number(p.amount || 0).toLocaleString('en-IN');
+        var dt = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : '-';
+        html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
+          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + (p.receipt_number || p.id) + '</td>' +
+          '<td style="padding:9px 8px">' + (p.student_name || '-') + '</td>' +
+          '<td style="padding:9px 8px">' + (p.class_name || '-') + '</td>' +
+          '<td style="padding:9px 8px;font-weight:600;color:#27ae60">' + amt + '</td>' +
+          '<td style="padding:9px 8px">' + dt + '</td>' +
+          '<td style="padding:9px 8px">' + (p.fee_month || '-') + '</td>' +
+          '<td style="padding:9px 8px;text-align:center">' +
+            '<button onclick="deleteReceipt(' + p.id + ')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
+          '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      wrap.innerHTML = '<div style="margin-bottom:12px;color:#c0392b;font-size:13px"><i class="fas fa-exclamation-triangle"></i> Deleting a receipt is permanent and cannot be undone.</div>' + html;
+    })
+    .catch(function(e) {
+      wrap.innerHTML = '<div style="padding:32px;color:#c0392b">Failed to load receipts: ' + e.message + '</div>';
+    });
+}
+
+window.deleteReceipt = function(id) {
+  confirmDialog('Are you sure you want to permanently delete this receipt? This cannot be undone.', function() {
+    var token = DB.get().token;
+    fetch('/api/payments/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error ' + r.status);
+        return r.json();
+      })
+      .then(function() {
+        showToast('Receipt deleted successfully.');
+        loadReceiptsManagement();
+      })
+      .catch(function(e) {
+        showToast('Failed to delete receipt: ' + e.message, 'error');
+      });
+  }, 'Delete Receipt', true);
+};
+
+// ── Admissions Management Tab ────────────────────────────────────────────────
+var ADM_STATUS_LABEL = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', waitlisted: 'Waitlisted' };
+var ADM_STATUS_COLOR = { pending: '#e67e22', approved: '#27ae60', rejected: '#c0392b', waitlisted: '#8e44ad' };
+
+function renderAdmissionsManagementTab() {
+  return '<div id="adm-mgmt-wrap"><div style="text-align:center;padding:40px;color:#888"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>';
+}
+
+function loadAdmissionsManagement() {
+  var wrap = document.getElementById('adm-mgmt-wrap');
+  if (!wrap) return;
+  var role = (DB.get().user || {}).role;
+  if (role !== 'superadmin') {
+    wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b"><i class="fas fa-lock fa-2x"></i><br><br>Superadmin access required.</div>';
+    return;
+  }
+  var token = DB.get().token;
+  fetch('/api/admissions?limit=200', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var admissions = data.admissions || data || [];
+      if (!admissions.length) {
+        wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#888">No admission records found.</div>';
+        return;
+      }
+      var html = '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+        '<thead><tr style="background:#0F2050;color:#fff">' +
+        '<th style="padding:10px 8px;text-align:left">ID</th>' +
+        '<th style="padding:10px 8px;text-align:left">Student Name</th>' +
+        '<th style="padding:10px 8px;text-align:left">Class</th>' +
+        '<th style="padding:10px 8px;text-align:left">Parent</th>' +
+        '<th style="padding:10px 8px;text-align:left">Date</th>' +
+        '<th style="padding:10px 8px;text-align:center">Status</th>' +
+        '<th style="padding:10px 8px;text-align:center">Actions</th>' +
+        '</tr></thead><tbody>';
+      admissions.forEach(function(a, i) {
+        var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
+        var status = a.status || 'pending';
+        var statusColor = ADM_STATUS_COLOR[status] || '#888';
+        var statusLabel = ADM_STATUS_LABEL[status] || status;
+        var dt = a.created_at ? new Date(a.created_at).toLocaleDateString('en-IN') : '-';
+        var approveBtn = (status !== 'approved')
+          ? '<button onclick="approveAdmission(' + a.id + ')" style="background:#27ae60;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px;margin-right:4px"><i class="fas fa-check"></i> Approve</button>'
+          : '';
+        html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
+          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + a.id + '</td>' +
+          '<td style="padding:9px 8px">' + (a.student_name || a.child_name || '-') + '</td>' +
+          '<td style="padding:9px 8px">' + (a.class_name || a.class_applied || '-') + '</td>' +
+          '<td style="padding:9px 8px">' + (a.parent_name || a.guardian_name || '-') + '</td>' +
+          '<td style="padding:9px 8px">' + dt + '</td>' +
+          '<td style="padding:9px 8px;text-align:center"><span style="background:' + statusColor + ';color:#fff;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600">' + statusLabel + '</span></td>' +
+          '<td style="padding:9px 8px;text-align:center">' +
+            approveBtn +
+            '<button onclick="deleteAdmission(' + a.id + ')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
+          '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      wrap.innerHTML = '<div style="margin-bottom:12px;color:#c0392b;font-size:13px"><i class="fas fa-exclamation-triangle"></i> Use Approve to confirm an admission. Deleting is permanent and cannot be undone.</div>' + html;
+    })
+    .catch(function(e) {
+      wrap.innerHTML = '<div style="padding:32px;color:#c0392b">Failed to load admissions: ' + e.message + '</div>';
+    });
+}
+
+window.approveAdmission = function(id) {
+  confirmDialog('Approve this admission? The student status will be set to Approved.', function() {
+    var token = DB.get().token;
+    fetch('/api/admissions/' + id, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' })
+    })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error ' + r.status);
+        return r.json();
+      })
+      .then(function() {
+        showToast('Admission approved successfully.');
+        loadAdmissionsManagement();
+      })
+      .catch(function(e) {
+        showToast('Failed to approve admission: ' + e.message, 'error');
+      });
+  }, 'Approve Admission', false);
+};
+
+window.deleteAdmission = function(id) {
+  confirmDialog('Are you sure you want to permanently delete this admission record? This cannot be undone.', function() {
+    var token = DB.get().token;
+    fetch('/api/admissions/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error ' + r.status);
+        return r.json();
+      })
+      .then(function() {
+        showToast('Admission deleted successfully.');
+        loadAdmissionsManagement();
+      })
+      .catch(function(e) {
+        showToast('Failed to delete admission: ' + e.message, 'error');
+      });
+  }, 'Delete Admission', true);
 };
 
 registerRoute('management', renderManagement);

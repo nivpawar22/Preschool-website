@@ -564,7 +564,7 @@ function printAdmForm() {
         '<span style="margin-left:auto">&#128205; '+schoolAddr+'</span>' +
       '</div>' +
     '</div>'+
-    '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+getAcademicYear()+'</div>'+
+    '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
     '<div class="sec"><div class="sh">Student Information</div><div class="sb">'+
       [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||''],['Religion',fd.religion||''],['Mother Tongue',fd.motherTongue||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
@@ -595,8 +595,9 @@ function renderFeeCollection() {
   renderLayout('fee-collection',
     '<div id="fee-wrap"><div style="text-align:center;padding:48px;color:#6B7A9D"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>',
     'Fee Collection','Record Student Payments');
-  Promise.all([admGet('/api/admissions'),admGet('/api/payments'),admGet('/api/fee-config')]).then(function(r){
+  Promise.all([admGet('/api/admissions'),admGet('/api/payments'),admGet('/api/fee-config'),admGet('/api/academic-config')]).then(function(r){
     _adm.admissions=r[0].items||[]; _adm.payments=r[1].items||[]; _adm.feeConfig=r[2].config||{};
+    _adm.academicConfig=r[3].config||{currentYear:getAcademicYear()};
     buildFeeCollectionUI();
   });
 }
@@ -725,7 +726,7 @@ function recordFeePayment() {
   if(!feeItems.length){showToast('Select at least one fee item','warning');return;}
   var disc=parseFloat((document.getElementById('fee-disc')||{}).value)||0;
   var total=Math.max(0,subtotal-disc);
-  var payData={admissionId:_feeAdmId,admissionNo:_feeAdmData.admissionNo||'',studentName:_feeAdmData.studentName||'',classId:_feeAdmData.classId||'',feeItems:feeItems,subtotal:subtotal,discount:disc,total:total,paymentMode:fi('fee-mode'),transactionId:fi('fee-txn'),paymentDate:new Date().toISOString().split('T')[0],collectedBy:(Session.current()||{}).name||'',academicYear:getAcademicYear()};
+  var payData={admissionId:_feeAdmId,admissionNo:_feeAdmData.admissionNo||'',studentName:_feeAdmData.studentName||'',classId:_feeAdmData.classId||'',feeItems:feeItems,subtotal:subtotal,discount:disc,total:total,paymentMode:fi('fee-mode'),transactionId:fi('fee-txn'),paymentDate:new Date().toISOString().split('T')[0],collectedBy:(Session.current()||{}).name||'',academicYear:((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())};
   admPost('/api/payments',{data:payData,admissionId:_feeAdmId}).then(function(r){
     if(r.error){showToast(r.error,'error');return;}
     showToast('Payment recorded! Receipt: '+(r.receiptNo||''),'success',5000);

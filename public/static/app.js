@@ -6,7 +6,7 @@ function getAcademicYear() {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  return month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+  return month >= 6 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 }
 
 // ---- PWA Install prompt ----

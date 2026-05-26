@@ -3,6 +3,8 @@
 // ============================================================
 
 function getAcademicYear() {
+  const stored = (DB.get().meta || {}).academicYear;
+  if (stored && stored.trim()) return stored.trim();
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();

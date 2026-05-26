@@ -48,7 +48,7 @@ const DB = (() => {
   }
 
   const defaults = {
-    meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: '', schoolAddress: 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
+    meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: 'https://superkidsindia.com', schoolAddress: 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
     users: [
       {
         id: 'u1', role: 'superadmin', name: 'Dr. Sarah Mitchell', email: 'admin@school.edu',

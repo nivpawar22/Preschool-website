@@ -534,34 +534,39 @@ function printAdmForm() {
   var logoUrl=meta.schoolLogo||'/static/school-logo.png';
   var phones=[meta.schoolPhone,meta.schoolPhone2].filter(Boolean).join(' | ');
   var email=meta.schoolEmail||'';
-  var website=meta.schoolWebsite||'';
+  var website=meta.schoolWebsite||'https://superkidsindia.com';
   var principal=meta.principalName||'Principal';
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admission Form</title><style>' +
-    'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto}' +
-    '.hdr{background:linear-gradient(135deg,#0F2050,#1A3A7A)}' +
+    'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+    '.hdr{background-color:#0F2050}' +
     '.hdr-top{display:flex;align-items:center;padding:14px 20px;gap:14px}' +
-    '.hdr-top img{width:64px;height:64px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0}' +
-    '.hdr-name{font-size:20px;font-weight:900;color:#fff}' +
-    '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:2px}' +
-    '.hdr-bar{background:rgba(232,176,32,0.9);padding:6px 20px;font-size:11px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:12px}' +
-    '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background:#E8EDF5}' +
+    '.hdr-top img{width:64px;height:64px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
+    '.hdr-name{font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
+    '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
+    '.hdr-bar{background-color:#E8B020;padding:6px 20px;font-size:11px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:12px;align-items:center}' +
+    '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background-color:#E8EDF5}' +
     '.sec{margin:0 16px 12px;border:1px solid #ddd;border-radius:4px}' +
-    '.sh{background:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
+    '.sh{background-color:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
     '.sb{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
     '.fl{font-size:10px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:3px 0;border-bottom:1px solid #ddd;min-height:20px}' +
     '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:24px 16px 0}.sl{border-top:2px solid #0F2050;padding-top:6px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:44px}' +
-    '.footer{background:#F8F9FB;border-top:2px solid #E8B020;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
-    '@media print{body{padding:0}}' +
+    '.footer{background-color:#F8F9FB;border-top:2px solid #E8B020;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
+    '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+    '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.hdr-bar{background-color:#E8B020!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
   '</style></head><body>'+
     '<div class="hdr">' +
-      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
+      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
       '<div class="hdr-bar">' +
-        (phones?'<span>&#128222; '+phones+'</span>':'')+
-        (email?'<span>&#9993; '+email+'</span>':'')+
-        (website?'<span>&#127760; '+website+'</span>':'')+
-        '<span style="margin-left:auto">&#128205; '+schoolAddr+'</span>' +
+        (phones?'<span>Tel: '+phones+'</span>':'')+
+        (email?'<span>Email: '+email+'</span>':'')+
+        '<span>Web: '+website+'</span>'+
+        '<span style="margin-left:auto">Addr: '+schoolAddr+'</span>' +
       '</div>' +
     '</div>'+
     '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
@@ -777,39 +782,47 @@ function printReceipt(payId) {
     var logoUrl=meta.schoolLogo||'/static/school-logo.png';
     var phones=[meta.schoolPhone,meta.schoolPhone2].filter(Boolean).join(' | ');
     var email=meta.schoolEmail||'';
-    var website=meta.schoolWebsite||'';
+    var website=meta.schoolWebsite||'https://superkidsindia.com';
     var principal=meta.principalName||'Principal';
     var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
     var win=window.open('','_blank','width=700,height=620');
     win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
-      'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto}' +
-      '.hdr{background:linear-gradient(135deg,#0F2050,#1A3A7A)}' +
+      'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+      '.hdr{background-color:#0F2050}' +
       '.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}' +
-      '.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0}' +
-      '.hdr-name{font-size:18px;font-weight:900;color:#fff}' +
-      '.hdr-bar{background:rgba(232,176,32,0.92);padding:6px 18px;font-size:10px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:10px}' +
-      '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
+      '.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
+      '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
+      '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
+      '.hdr-bar{background-color:#E8B020;padding:6px 18px;font-size:10px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:10px;align-items:center}' +
+      '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
       '.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}' +
       '.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}' +
       '.il{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em}' +
       '.iv{font-weight:700;font-size:13px}' +
       '.ft{width:100%;border-collapse:collapse;border:1px solid #ddd}' +
-      '.ft th{background:#F8F9FB;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}' +
-      '.tr{background:#F0FFF8;font-weight:900;font-size:15px;color:#059669}' +
-      '.ftr{background:#F8F9FB;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:center}' +
+      '.ft th{background-color:#F8F9FB;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}' +
+      '.tr{background-color:#F0FFF8;font-weight:900;font-size:15px;color:#059669}' +
+      '.ftr{background-color:#F8F9FB;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:center}' +
       '.sl{height:40px;border-bottom:2px solid #0F2050;margin-bottom:5px}' +
       '.slbl{font-size:11px;font-weight:700;color:#0F2050}' +
       '.stmp{border:2px dashed #0F2050;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}' +
-      '.footer{background:#F8F9FB;border-top:2px solid #E8B020;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
-      '@media print{body{padding:0}}' +
+      '.footer{background-color:#F8F9FB;border-top:2px solid #E8B020;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
+      '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+      '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.hdr-bar{background-color:#E8B020!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.rt{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.tr{background-color:#F0FFF8!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.ft th{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.ftr{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
     '</style></head><body>'+
       '<div class="hdr">' +
-        '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div><div class="hdr-name">'+schoolName+'</div><div style="font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:2px">Fee Payment Receipt</div></div></div>' +
+        '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +
         '<div class="hdr-bar">' +
-          (phones?'<span>&#128222; '+phones+'</span>':'')+
-          (email?'<span>&#9993; '+email+'</span>':'')+
-          (website?'<span>&#127760; '+website+'</span>':'')+
-          '<span style="margin-left:auto">&#128205; '+schoolAddr+'</span>' +
+          (phones?'<span>Tel: '+phones+'</span>':'')+
+          (email?'<span>Email: '+email+'</span>':'')+
+          '<span>Web: '+website+'</span>'+
+          '<span style="margin-left:auto">Addr: '+schoolAddr+'</span>' +
         '</div>' +
       '</div>'+
       '<div class="rt">PAYMENT RECEIPT</div>'+

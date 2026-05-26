@@ -1952,16 +1952,10 @@ function renderReceiptsTab() {
 function loadReceiptsManagement() {
   var wrap = document.getElementById('receipts-mgmt-wrap');
   if (!wrap) return;
-  var role = (DB.get().user || {}).role;
-  if (role !== 'superadmin') {
-    wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b"><i class="fas fa-lock fa-2x"></i><br><br>Superadmin access required.</div>';
-    return;
-  }
-  var token = DB.get().token;
-  fetch('/api/payments?limit=200', { headers: { 'Authorization': 'Bearer ' + token } })
+  fetch('/api/payments')
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      var payments = data.payments || data || [];
+      var payments = data.items || [];
       if (!payments.length) {
         wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#888">No fee receipts found.</div>';
         return;
@@ -1978,18 +1972,24 @@ function loadReceiptsManagement() {
         '<th style="padding:10px 8px;text-align:center">Action</th>' +
         '</tr></thead><tbody>';
       payments.forEach(function(p, i) {
+        var d = {};
+        try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch(e) {}
         var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
-        var amt = '&#8377;' + Number(p.amount || 0).toLocaleString('en-IN');
+        var amt = '&#8377;' + Number(p.amount || d.amount || 0).toLocaleString('en-IN');
         var dt = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : '-';
+        var studentName = p.student_name || d.studentName || d.student_name || '-';
+        var className = p.class_name || d.className || d.class_name || '-';
+        var feeMonth = p.fee_month || d.feeMonth || d.fee_month || d.month || '-';
+        var receiptNo = p.receipt_number || d.receiptNumber || p.id;
         html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
-          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + (p.receipt_number || p.id) + '</td>' +
-          '<td style="padding:9px 8px">' + (p.student_name || '-') + '</td>' +
-          '<td style="padding:9px 8px">' + (p.class_name || '-') + '</td>' +
+          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + receiptNo + '</td>' +
+          '<td style="padding:9px 8px">' + studentName + '</td>' +
+          '<td style="padding:9px 8px">' + className + '</td>' +
           '<td style="padding:9px 8px;font-weight:600;color:#27ae60">' + amt + '</td>' +
           '<td style="padding:9px 8px">' + dt + '</td>' +
-          '<td style="padding:9px 8px">' + (p.fee_month || '-') + '</td>' +
+          '<td style="padding:9px 8px">' + feeMonth + '</td>' +
           '<td style="padding:9px 8px;text-align:center">' +
-            '<button onclick="deleteReceipt(' + p.id + ')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
+            '<button onclick="deleteReceipt(\'' + p.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
           '</td></tr>';
       });
       html += '</tbody></table></div>';
@@ -2002,8 +2002,7 @@ function loadReceiptsManagement() {
 
 window.deleteReceipt = function(id) {
   confirmDialog('Are you sure you want to permanently delete this receipt? This cannot be undone.', function() {
-    var token = DB.get().token;
-    fetch('/api/payments/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+    fetch('/api/payments/' + id, { method: 'DELETE' })
       .then(function(r) {
         if (!r.ok) throw new Error('Server error ' + r.status);
         return r.json();
@@ -2019,8 +2018,14 @@ window.deleteReceipt = function(id) {
 };
 
 // ── Admissions Management Tab ────────────────────────────────────────────────
-var ADM_STATUS_LABEL = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected', waitlisted: 'Waitlisted' };
-var ADM_STATUS_COLOR = { pending: '#e67e22', approved: '#27ae60', rejected: '#c0392b', waitlisted: '#8e44ad' };
+var ADM_STATUS_LABEL = {
+  pending: 'Pending', approved: 'Approved', rejected: 'Rejected', waitlisted: 'Waitlisted',
+  application_submitted: 'Submitted', under_review: 'Under Review'
+};
+var ADM_STATUS_COLOR = {
+  pending: '#e67e22', approved: '#27ae60', rejected: '#c0392b', waitlisted: '#8e44ad',
+  application_submitted: '#2980b9', under_review: '#f39c12'
+};
 
 function renderAdmissionsManagementTab() {
   return '<div id="adm-mgmt-wrap"><div style="text-align:center;padding:40px;color:#888"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>';
@@ -2029,16 +2034,10 @@ function renderAdmissionsManagementTab() {
 function loadAdmissionsManagement() {
   var wrap = document.getElementById('adm-mgmt-wrap');
   if (!wrap) return;
-  var role = (DB.get().user || {}).role;
-  if (role !== 'superadmin') {
-    wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b"><i class="fas fa-lock fa-2x"></i><br><br>Superadmin access required.</div>';
-    return;
-  }
-  var token = DB.get().token;
-  fetch('/api/admissions?limit=200', { headers: { 'Authorization': 'Bearer ' + token } })
+  fetch('/api/admissions')
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      var admissions = data.admissions || data || [];
+      var admissions = data.items || [];
       if (!admissions.length) {
         wrap.innerHTML = '<div style="padding:32px;text-align:center;color:#888">No admission records found.</div>';
         return;
@@ -2046,7 +2045,7 @@ function loadAdmissionsManagement() {
       var html = '<div style="overflow-x:auto">' +
         '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
         '<thead><tr style="background:#0F2050;color:#fff">' +
-        '<th style="padding:10px 8px;text-align:left">ID</th>' +
+        '<th style="padding:10px 8px;text-align:left">Adm#</th>' +
         '<th style="padding:10px 8px;text-align:left">Student Name</th>' +
         '<th style="padding:10px 8px;text-align:left">Class</th>' +
         '<th style="padding:10px 8px;text-align:left">Parent</th>' +
@@ -2055,24 +2054,30 @@ function loadAdmissionsManagement() {
         '<th style="padding:10px 8px;text-align:center">Actions</th>' +
         '</tr></thead><tbody>';
       admissions.forEach(function(a, i) {
+        var d = {};
+        try { d = typeof a.data === 'string' ? JSON.parse(a.data) : (a.data || {}); } catch(e) {}
         var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
         var status = a.status || 'pending';
         var statusColor = ADM_STATUS_COLOR[status] || '#888';
         var statusLabel = ADM_STATUS_LABEL[status] || status;
         var dt = a.created_at ? new Date(a.created_at).toLocaleDateString('en-IN') : '-';
+        var studentName = d.studentName || d.student_name || d.childName || d.child_name || '-';
+        var className = d.className || d.class_name || d.classApplied || a.class_id || '-';
+        var parentName = d.parentName || d.parent_name || d.guardianName || d.fatherName || d.motherName || '-';
+        var admNo = d.admissionNo || a.id;
         var approveBtn = (status !== 'approved')
-          ? '<button onclick="approveAdmission(' + a.id + ')" style="background:#27ae60;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px;margin-right:4px"><i class="fas fa-check"></i> Approve</button>'
+          ? '<button onclick="approveAdmission(\'' + a.id + '\')" style="background:#27ae60;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px;margin-right:4px"><i class="fas fa-check"></i> Approve</button>'
           : '';
         html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
-          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + a.id + '</td>' +
-          '<td style="padding:9px 8px">' + (a.student_name || a.child_name || '-') + '</td>' +
-          '<td style="padding:9px 8px">' + (a.class_name || a.class_applied || '-') + '</td>' +
-          '<td style="padding:9px 8px">' + (a.parent_name || a.guardian_name || '-') + '</td>' +
+          '<td style="padding:9px 8px;font-weight:600;color:#0F2050">' + admNo + '</td>' +
+          '<td style="padding:9px 8px">' + studentName + '</td>' +
+          '<td style="padding:9px 8px">' + className + '</td>' +
+          '<td style="padding:9px 8px">' + parentName + '</td>' +
           '<td style="padding:9px 8px">' + dt + '</td>' +
           '<td style="padding:9px 8px;text-align:center"><span style="background:' + statusColor + ';color:#fff;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600">' + statusLabel + '</span></td>' +
           '<td style="padding:9px 8px;text-align:center">' +
             approveBtn +
-            '<button onclick="deleteAdmission(' + a.id + ')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
+            '<button onclick="deleteAdmission(\'' + a.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
           '</td></tr>';
       });
       html += '</tbody></table></div>';
@@ -2085,10 +2090,9 @@ function loadAdmissionsManagement() {
 
 window.approveAdmission = function(id) {
   confirmDialog('Approve this admission? The student status will be set to Approved.', function() {
-    var token = DB.get().token;
     fetch('/api/admissions/' + id, {
       method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'approved' })
     })
       .then(function(r) {
@@ -2107,8 +2111,7 @@ window.approveAdmission = function(id) {
 
 window.deleteAdmission = function(id) {
   confirmDialog('Are you sure you want to permanently delete this admission record? This cannot be undone.', function() {
-    var token = DB.get().token;
-    fetch('/api/admissions/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } })
+    fetch('/api/admissions/' + id, { method: 'DELETE' })
       .then(function(r) {
         if (!r.ok) throw new Error('Server error ' + r.status);
         return r.json();

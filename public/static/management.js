@@ -1822,11 +1822,13 @@ window.printLetterhead = function() {
     '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
     '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
     '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:7px 28px;text-align:center;font-size:10px;color:#666}' +
+    '.pborder{box-sizing:border-box}' +
     '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-  '</style></head><body>' +
+    '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.pborder{border:1.5pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+  '</style></head><body><div class="pborder">' +
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
       '<div class="hdr-bar">' +
@@ -1857,7 +1859,7 @@ window.printLetterhead = function() {
       '</div>' +
     '</div>' +
     '<div class="footer">'+schoolName+' | '+address+(website ? ' | '+website : '')+'</div>' +
-  '</body></html>');
+  '</div></body></html>');
   win.document.close();
   setTimeout(function(){ win.print(); }, 500);
 };

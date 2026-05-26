@@ -556,13 +556,15 @@ function printAdmForm() {
     '.fl{font-size:10px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:3px 0;border-bottom:1px solid #ddd;min-height:20px}' +
     '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:24px 16px 0}.sl{border-top:2px solid #0F2050;padding-top:6px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:44px}' +
     '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
+    '.pborder{box-sizing:border-box}' +
     '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-  '</style></head><body>'+
+    '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.pborder{border:1.5pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+  '</style></head><body><div class="pborder">'+
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
       '<div class="hdr-bar">' +
@@ -598,7 +600,7 @@ function printAdmForm() {
     '<div class="sigs"><div class="sl">Parent / Guardian Signature</div><div class="sl">Admission Admin</div><div class="sl">'+principal+'</div></div>'+
     '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
     '<div style="text-align:right;font-size:10px;color:#aaa;padding:4px 16px">Date: '+now+'</div>'+
-  '</body></html>');
+  '</div></body></html>');
   win.document.close(); setTimeout(function(){win.print();},500);
 }
 
@@ -819,6 +821,7 @@ function printReceipt(payId) {
       '.slbl{font-size:11px;font-weight:700;color:#0F2050}' +
       '.stmp{border:2px dashed #0F2050;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}' +
       '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
+      '.pborder{box-sizing:border-box}' +
       '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
       '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
@@ -826,8 +829,9 @@ function printReceipt(payId) {
       '.tr{background-color:#F0FFF8!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ft th{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ftr{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-    '</style></head><body>'+
+      '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.pborder{border:1.5pt solid #0F2050!important;min-height:99vh;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+    '</style></head><body><div class="pborder">'+
       '<div class="hdr">' +
         '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +
         '<div class="hdr-bar">' +
@@ -855,7 +859,7 @@ function printReceipt(payId) {
       '<div class="ftr"><div><div class="sl"></div><div class="slbl">Accountant Signature</div></div><div><div class="stmp">SCHOOL<br>STAMP</div></div><div><div class="sl"></div><div class="slbl">'+principal+'</div></div></div>'+
       '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
       '<div style="text-align:center;font-size:10px;color:#aaa;padding:6px">Computer-generated receipt. Printed: '+now+'</div>'+
-    '</body></html>');
+    '</div></body></html>');
     win.document.close(); setTimeout(function(){win.print();},500);
   }).catch(function(){showToast('Failed to load receipt','error');});
 }

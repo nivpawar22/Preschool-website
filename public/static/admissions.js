@@ -351,6 +351,32 @@ function admEditForm(id) { _admFormId=id; _admFormData={}; navigate('new-admissi
 // ============================================================
 // ADMISSION FORM
 // ============================================================
+window.uploadStudentPhoto = function(input) {
+  if (!input.files || !input.files[0]) return;
+  showToast('Uploading photo…', 'default');
+  var form = new FormData();
+  form.append('file', input.files[0]);
+  fetch('/api/upload?folder=admissions', {method: 'POST', body: form})
+    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (r.error) { showToast('Upload failed', 'error'); return; }
+      if (!_admFormData) _admFormData = {};
+      _admFormData.studentPhotoUrl = r.key;
+      _admFormData.studentPhotoZoom = 1;
+      showToast('Photo uploaded', 'success');
+      buildAdmForm((_admFormData || {}).status || 'application_submitted');
+    })
+    .catch(function() { showToast('Upload failed', 'error'); });
+};
+window.adjustPhotoZoom = function(val) {
+  var img = document.getElementById('af-photo-img');
+  if (img) img.style.transform = 'scale(' + val + ')';
+  var lbl = document.getElementById('af-photo-zoom-label');
+  if (lbl) lbl.textContent = Math.round(parseFloat(val) * 100) + '%';
+  if (!_admFormData) _admFormData = {};
+  _admFormData.studentPhotoZoom = parseFloat(val);
+};
+
 function renderNewAdmission() {
   var isEdit=!!_admFormId;
   if(isEdit) {
@@ -383,6 +409,8 @@ function buildAdmForm(curStatus) {
         '</div></div>':'') +
 
       secWrap(secHead('fa-child','Student Information','#0F2050')+
+        '<div style="display:flex;gap:20px;align-items:flex-start">'+
+        '<div style="flex:1;min-width:0">'+
         grid4([fInput('af-sn','Student Full Name','text',fd.studentName,'As per birth certificate',true),
                fSelect('af-cls','Program / Class',[{value:'',label:'Select Program…'}].concat(classes.map(function(c){return {value:c.name,label:c.name+' ('+c.ageGroup+')'}})),fd.classId,true)])+
         '<div style="height:12px"></div>'+
@@ -390,7 +418,23 @@ function buildAdmForm(curStatus) {
         '<div style="height:12px"></div>'+
         grid4([fSelect('af-bg','Blood Group',['','A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown'],fd.bloodGroup),fInput('af-aadhaar','Student Aadhaar','text',fd.aadhaar,'12-digit')])+
         '<div style="height:12px"></div>'+
-        grid4([fInput('af-religion','Religion','text',fd.religion,'e.g. Hindu'),fInput('af-mtongue','Mother Tongue','text',fd.motherTongue,'e.g. Marathi')])) +
+        grid4([fInput('af-religion','Religion','text',fd.religion,'e.g. Hindu'),fInput('af-mtongue','Mother Tongue','text',fd.motherTongue,'e.g. Marathi')])+
+        '</div>'+
+        '<div style="width:140px;flex-shrink:0;text-align:center">'+
+          fLabel('Student Photo',false)+
+          '<div id="af-photo-wrap" style="width:120px;height:120px;border-radius:50%;overflow:hidden;border:2.5px dashed #DCE1EF;background:#F8F9FB;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative">'+
+            (fd.studentPhotoUrl?
+              '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+');transition:transform 0.1s">':
+              '<i class="fas fa-user" style="font-size:40px;color:#DCE1EF"></i>')+
+          '</div>'+
+          '<input type="file" id="af-photo-input" accept="image/*" style="display:none" onchange="uploadStudentPhoto(this)">'+
+          '<button type="button" onclick="document.getElementById(\'af-photo-input\').click()" style="width:120px;padding:5px 8px;border:1.5px solid #1AA6CA;border-radius:6px;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer;font-weight:600;margin-bottom:6px"><i class="fas fa-camera"></i> Upload Photo</button>'+
+          (fd.studentPhotoUrl?
+            '<div><div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700">Zoom</div>'+
+            '<input type="range" id="af-photo-zoom" min="0.8" max="2.5" step="0.05" value="'+(fd.studentPhotoZoom||1)+'" oninput="adjustPhotoZoom(this.value)" style="width:120px;accent-color:#1AA6CA">'+
+            '<div style="font-size:10px;color:#6B7A9D;margin-top:2px" id="af-photo-zoom-label">'+(Math.round((fd.studentPhotoZoom||1)*100))+'%</div></div>':'') +
+        '</div>'+
+        '</div>') +
 
       secWrap(secHead('fa-user-tie','Father\'s Details','#C4893A')+
         grid4([fInput('af-fn','Father\'s Full Name','text',fd.fatherName,'',true),fInput('af-fmob','Mobile','tel',fd.fatherMobile,'')])+
@@ -488,6 +532,8 @@ function collectAdmFormData() {
     emergencyName:fi('af-ename'),emergencyRelation:fi('af-erel'),emergencyMobile:fi('af-emob'),emergencyAlt:fi('af-ealt'),
     allergies:fi('af-allergy'),doctorName:fi('af-doctor'),medicalConditions:fi('af-medcond'),
     kit:kit,declarationAccepted:fc('af-decl'),
+    studentPhotoUrl: (_admFormData||{}).studentPhotoUrl||'',
+    studentPhotoZoom: (_admFormData||{}).studentPhotoZoom||1,
     docs:(_admFormData||{}).docs||{},admissionNo:(_admFormData||{}).admissionNo||'',fromInquiryId:(_admFormData||{}).fromInquiryId||'',
   };
 }

@@ -658,16 +658,20 @@ function renderParentAnnouncements() {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
         return `
-        <div style="padding:16px;border:1px solid #DCE1EF;border-radius:12px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-            <div style="font-size:16px;font-weight:700">${a.title}</div>
-            ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>'}
-          </div>
-          <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.6">${a.body}</p>
-          ${a.imageUrl ? `<div style="margin-bottom:10px"><img src="/r2/${a.imageUrl}" style="max-width:100%;max-height:260px;border-radius:10px;object-fit:cover;border:1px solid #DCE1EF"></div>` : ''}
-          <div style="font-size:12px;color:#6B7A9D">
-            <i class="fas fa-user"></i> ${poster ? poster.name : 'School'}
-            &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}
+        <div style="border:1.5px solid #DCE1EF;border-radius:14px;margin-bottom:14px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.07)">
+          ${a.imageUrl ? `<div style="width:100%;overflow:hidden;border-bottom:2px solid #DCE1EF;background:#f8f9fb;text-align:center">
+            <img src="/r2/${a.imageUrl}" style="width:100%;max-height:260px;object-fit:cover;display:block">
+          </div>` : ''}
+          <div style="padding:16px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+              <div style="font-size:16px;font-weight:700;color:#0F1E3D">${a.title}</div>
+              ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>'}
+            </div>
+            <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.7">${a.body}</p>
+            <div style="font-size:12px;color:#6B7A9D;border-top:1px solid #f1f5f9;padding-top:8px;margin-top:4px">
+              <i class="fas fa-user"></i> ${poster ? poster.name : 'School'}
+              &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}
+            </div>
           </div>
         </div>`;
       }).join('')}

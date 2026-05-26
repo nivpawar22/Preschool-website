@@ -1839,17 +1839,23 @@ function renderAnnouncements() {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
         return `
-        <div style="padding:16px;border-bottom:1px solid #f1f5f9">
-          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
-            <div style="font-size:16px;font-weight:700">${a.title}</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-gray">All</span>'}
-              ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>` : ''}
+        <div style="border:1px solid #e0e7ff;border-radius:14px;margin-bottom:12px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.06)">
+          ${a.imageUrl ? `<div style="width:100%;overflow:hidden;border-bottom:2px solid #e0e7ff;background:#f8f9fb;text-align:center">
+            <img src="/r2/${a.imageUrl}" style="width:100%;max-height:260px;object-fit:cover;display:block">
+          </div>` : ''}
+          <div style="padding:16px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+              <div style="font-size:16px;font-weight:700;color:#0F1E3D">${a.title}</div>
+              <div style="display:flex;gap:6px;align-items:center">
+                ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-gray">All</span>'}
+                ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>` : ''}
+              </div>
+            </div>
+            <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.7">${a.body}</p>
+            <div style="font-size:12px;color:#6B7A9D;border-top:1px solid #f1f5f9;padding-top:8px;margin-top:4px">
+              <i class="fas fa-user"></i> Posted by ${poster ? poster.name : '-'} &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}
             </div>
           </div>
-          <p style="color:#2A3B60;font-size:14px;margin:0 0 8px">${a.body}</p>
-          ${a.imageUrl ? `<div style="margin-bottom:10px"><img src="/r2/${a.imageUrl}" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;border:1px solid #DCE1EF"></div>` : ''}
-          <div style="font-size:12px;color:#6B7A9D">Posted by ${poster ? poster.name : '-'} · ${formatDate(a.date)}</div>
         </div>`;
       }).join('')}
       ${!anns.length ? '<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>' : ''}

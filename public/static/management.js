@@ -1694,7 +1694,8 @@ function buildLetterheadHtml(meta, lh) {
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
   var address = meta.schoolAddress || 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
-  var phones = [meta.schoolPhone, meta.schoolPhone2].filter(Boolean).join(' | ');
+  var phone1 = meta.schoolPhone || '';
+  var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
   var principal = meta.principalName || 'Principal';
@@ -1713,14 +1714,15 @@ function buildLetterheadHtml(meta, lh) {
           '<div style="font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px">Official School Correspondence</div>' +
         '</div>' +
       '</div>' +
-      '<div style="background-color:#dcad92;padding:8px 24px;display:flex;justify-content:space-between;align-items:center">' +
-        '<div style="font-size:11px;color:#0F2050;font-weight:700;line-height:1.85">' +
-          (phones ? '<div>&#9742; '+phones+'</div>' : '') +
-          (email ? '<div>&#9993; '+email+'</div>' : '') +
-          '<div>&#8853; '+website+'</div>' +
+      '<div style="background-color:#dcad92;padding:7px 24px;display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75">' +
+          (phone1 ? '<div>&#9742;&nbsp;'+phone1+'</div>' : '') +
+          (phone2 ? '<div style="padding-left:14px">'+phone2+'</div>' : '') +
+          (email ? '<div>&#9993;&nbsp;'+email+'</div>' : '') +
+          '<div>&#8853;&nbsp;'+website+'</div>' +
         '</div>' +
-        '<div style="font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%">' +
-          '<div style="font-weight:800">&#8962; '+schoolName+'</div>' +
+        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75;text-align:right;max-width:46%">' +
+          '<div style="font-weight:800">&#8962;&nbsp;'+schoolName+'</div>' +
           '<div>'+address+'</div>' +
         '</div>' +
       '</div>' +
@@ -1798,7 +1800,8 @@ window.printLetterhead = function() {
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
   var address = meta.schoolAddress || 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
-  var phones = [meta.schoolPhone, meta.schoolPhone2].filter(Boolean).join(' | ');
+  var phone1 = meta.schoolPhone || '';
+  var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
   var principal = meta.principalName || 'Principal';
@@ -1812,9 +1815,9 @@ window.printLetterhead = function() {
     '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
     '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
-    '.hdr-bar{background-color:#dcad92;padding:8px 28px;display:flex;justify-content:space-between;align-items:center}' +
-    '.hdr-bar-left{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85}' +
-    '.hdr-bar-right{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%}' +
+    '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
+    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75}' +
+    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75;text-align:right;max-width:46%}' +
     '.body{padding:28px}' +
     '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
     '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
@@ -1827,13 +1830,14 @@ window.printLetterhead = function() {
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
       '<div class="hdr-bar">' +
-        '<div class="hdr-bar-left">' +
-          (phones ? '<div>&#9742; '+phones+'</div>' : '') +
-          (email ? '<div>&#9993; '+email+'</div>' : '') +
-          '<div>&#8853; '+website+'</div>' +
+        '<div class="hdr-bl">' +
+          (phone1 ? '<div>&#9742;&nbsp;'+phone1+'</div>' : '') +
+          (phone2 ? '<div style="padding-left:14px">'+phone2+'</div>' : '') +
+          (email ? '<div>&#9993;&nbsp;'+email+'</div>' : '') +
+          '<div>&#8853;&nbsp;'+website+'</div>' +
         '</div>' +
-        '<div class="hdr-bar-right">' +
-          '<div style="font-weight:800">&#8962; '+schoolName+'</div>' +
+        '<div class="hdr-br">' +
+          '<div style="font-weight:800">&#8962;&nbsp;'+schoolName+'</div>' +
           '<div>'+address+'</div>' +
         '</div>' +
       '</div>' +

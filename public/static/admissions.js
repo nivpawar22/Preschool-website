@@ -318,7 +318,9 @@ function renderAdmList() {
               '<td style="padding:10px 12px;color:#6B7A9D">'+(d.fatherMobile||d.motherMobile||'–')+'</td>'+
               '<td style="padding:10px 12px">'+admBadge(a.status,ADM_S)+'</td>'+
               '<td style="padding:10px 12px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
-                '<button onclick="admEditForm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #1AA6CA;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer"><i class="fas fa-edit"></i></button>'+
+                ((!isApproved || isSuperAdmin)
+                  ? '<button onclick="admEditForm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #1AA6CA;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer"><i class="fas fa-edit"></i></button>'
+                  : '<span style="padding:5px 8px;border-radius:6px;background:#F1F5F9;color:#9CA3AF;font-size:11px"><i class="fas fa-lock"></i></span>')+
                 '<button onclick="openCollectFeeModal(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #059669;background:#D1FAE5;color:#059669;font-size:11px;cursor:pointer" title="Collect Fee"><i class="fas fa-rupee-sign"></i></button>'+
                 statusControl +
                 deleteControl +

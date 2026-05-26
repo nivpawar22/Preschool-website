@@ -1170,8 +1170,24 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .sig-date{height:52px;border-bottom:1.5px solid #0F1E3D;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
 .sig-label{font-size:12px;font-weight:700;text-align:center}
 .sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
-@media print{body{padding:0}@page{margin:6mm}.no-print{display:none}}
-.result-footer{text-align:center;font-size:10px;color:#555;padding:8px 0;margin-top:10px;border-top:1px solid #DCE1EF}
+@media print{
+  body{padding:2px;font-size:12px}
+  .header{padding:10px 14px!important;margin-bottom:8px!important;border-radius:6px!important}
+  .school-name{font-size:17px!important}
+  .report-title{font-size:13px!important;margin-top:3px!important}
+  .info-grid{padding:8px!important;margin-bottom:8px!important;gap:6px!important}
+  .summary{margin-bottom:8px!important;gap:8px!important}
+  .s-card{padding:8px!important}
+  table{margin-bottom:8px!important}
+  th{padding:6px 8px!important}
+  td{padding:6px 8px!important}
+  .sigs{padding:10px!important;gap:20px!important}
+  .sig-line{height:36px!important}
+  .sig-date{height:36px!important}
+  .result-footer{margin-top:6px!important;padding:4px 0!important}
+  .no-print{display:none}
+}
+.result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
 </style></head><body>
 <div class="header">
   <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" class="logo" alt="Logo"/>

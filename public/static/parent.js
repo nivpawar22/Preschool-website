@@ -660,7 +660,7 @@ function renderParentAnnouncements() {
         return `
         <div style="border:1.5px solid #DCE1EF;border-radius:14px;margin-bottom:14px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.07)">
           ${a.imageUrl ? `<div style="width:100%;overflow:hidden;border-bottom:2px solid #DCE1EF;background:#f8f9fb;text-align:center">
-            <img src="/r2/${a.imageUrl}" style="width:100%;max-height:260px;object-fit:cover;display:block">
+            <img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">
           </div>` : ''}
           <div style="padding:16px">
             <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">

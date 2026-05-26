@@ -1841,7 +1841,7 @@ function renderAnnouncements() {
         return `
         <div style="border:1px solid #e0e7ff;border-radius:14px;margin-bottom:12px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.06)">
           ${a.imageUrl ? `<div style="width:100%;overflow:hidden;border-bottom:2px solid #e0e7ff;background:#f8f9fb;text-align:center">
-            <img src="/r2/${a.imageUrl}" style="width:100%;max-height:260px;object-fit:cover;display:block">
+            <img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">
           </div>` : ''}
           <div style="padding:16px">
             <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">

@@ -318,6 +318,7 @@ function renderAdmList() {
               '<td style="padding:10px 12px;color:#6B7A9D">'+(d.fatherMobile||d.motherMobile||'–')+'</td>'+
               '<td style="padding:10px 12px">'+admBadge(a.status,ADM_S)+'</td>'+
               '<td style="padding:10px 12px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+                '<button onclick="viewAdmission(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #C4893A;background:#FEF0E0;color:#C4893A;font-size:11px;cursor:pointer" title="View Admission"><i class="fas fa-eye"></i></button>'+
                 ((!isApproved || isSuperAdmin)
                   ? '<button onclick="admEditForm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #1AA6CA;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer"><i class="fas fa-edit"></i></button>'
                   : '<span style="padding:5px 8px;border-radius:6px;background:#F1F5F9;color:#9CA3AF;font-size:11px"><i class="fas fa-lock"></i></span>')+
@@ -345,6 +346,107 @@ function deleteAdm(id) {
     });
   });
 }
+
+function viewAdmission(id) {
+  var a = _adm.admissions.find(function(x){ return x.id===id; });
+  if (!a) return;
+  var d = {};
+  try { d = typeof a.data==='string' ? JSON.parse(a.data) : (a.data||{}); } catch(e) {}
+  var status = (ADM_S[a.status]||{label:a.status,color:'#6B7A9D',bg:'#F1F5F9'});
+
+  function row(label, val) {
+    if (!val) return '';
+    return '<div style="padding:8px 0;border-bottom:1px solid #F1F5F9;display:flex;gap:8px">'+
+      '<div style="font-size:11px;color:#6B7A9D;text-transform:uppercase;font-weight:700;width:140px;flex-shrink:0">'+label+'</div>'+
+      '<div style="font-size:13px;font-weight:600;color:#0F1E3D;flex:1">'+val+'</div>'+
+    '</div>';
+  }
+  function section(icon, title, color, rows) {
+    return '<div style="margin-bottom:16px;border:1px solid #e0e7ff;border-radius:10px;overflow:hidden">'+
+      '<div style="background:'+color+';color:#fff;padding:8px 14px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas '+icon+'"></i> '+title+'</div>'+
+      '<div style="padding:0 14px">'+rows+'</div>'+
+    '</div>';
+  }
+
+  var photoHtml = d.studentPhotoUrl
+    ? '<div style="float:right;margin:0 0 12px 16px;text-align:center"><div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;background:#F8F9FB"><img src="'+(d.studentPhotoUrl.startsWith('http')?d.studentPhotoUrl:'/r2/'+d.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform:scale('+(d.studentPhotoZoom||1)+');transform-origin:center"></div><div style="font-size:9px;color:#6B7A9D;margin-top:4px;font-weight:700">PHOTO</div></div>'
+    : '';
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML =
+    '<div class="modal modal-lg" style="max-height:90vh;display:flex;flex-direction:column">'+
+      '<div class="modal-header" style="flex-shrink:0">'+
+        '<div>'+
+          '<h2 class="modal-title">Admission Details</h2>'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-top:4px">'+
+            '<span style="font-size:12px;font-weight:700;color:#0F2050">'+(d.admissionNo||a.id)+'</span>'+
+            '<span style="background:'+status.bg+';color:'+status.color+';border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">'+status.label+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+
+          '<button onclick="printAdmForm()" title="Print" style="padding:6px 12px;border:1.5px solid #0F2050;border-radius:6px;background:#E8EDF5;color:#0F2050;font-size:12px;cursor:pointer;font-weight:600"><i class="fas fa-print"></i></button>'+
+          '<button class="close-btn" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="modal-body" style="overflow-y:auto;flex:1">'+
+        photoHtml+
+        section('fa-child','Student Information','#0F2050',
+          row('Admission No.',d.admissionNo)+
+          row('Student Name',d.studentName)+
+          row('Date of Birth',d.dob)+
+          row('Gender',d.gender)+
+          row('Blood Group',d.bloodGroup)+
+          row('Class / Program',d.classId)+
+          row('Aadhaar',d.aadhaar)+
+          row('Religion',d.religion)+
+          row('Mother Tongue',d.motherTongue)
+        )+
+        section('fa-user-tie','Father\'s Details','#C4893A',
+          row('Full Name',d.fatherName)+
+          row('Mobile',d.fatherMobile)+
+          row('Email',d.fatherEmail)+
+          row('Profession',d.fatherProfession)+
+          row('Qualification',d.fatherQualification)+
+          row('Aadhaar',d.fatherAadhaar)
+        )+
+        section('fa-user','Mother\'s Details','#E8B020',
+          row('Full Name',d.motherName)+
+          row('Mobile',d.motherMobile)+
+          row('Email',d.motherEmail)+
+          row('Profession',d.motherProfession)+
+          row('Aadhaar',d.motherAadhaar)
+        )+
+        (d.marriageDate ? section('fa-heart','Marriage Anniversary','#e11d48',
+          row('Anniversary Date',d.marriageDate)+
+          row('Note',d.anniversaryNote)
+        ) : '')+
+        section('fa-map-marker-alt','Residential Address','#1AA6CA',
+          row('Address',[d.address1,d.address2,d.city,d.pincode].filter(Boolean).join(', '))
+        )+
+        section('fa-phone-alt','Emergency Contact','#7c3aed',
+          row('Name',d.emergencyName)+
+          row('Relationship',d.emergencyRelation)+
+          row('Mobile',d.emergencyMobile)+
+          row('Alternate',d.emergencyAlt)
+        )+
+        (d.allergies||d.doctorName||d.medicalConditions ? section('fa-heartbeat','Medical Information','#dc2626',
+          row('Allergies',d.allergies)+
+          row('Doctor',d.doctorName)+
+          row('Conditions',d.medicalConditions)
+        ) : '')+
+      '</div>'+
+      '<div class="modal-footer" style="flex-shrink:0">'+
+        '<button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Close</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  // Load this admission into _admFormData so print works
+  _admFormId = id;
+  _admFormData = d;
+}
+
 function admNewForm() { _admFormId=null; if(!_admFormData) _admFormData={}; navigate('new-admission'); }
 function admEditForm(id) { _admFormId=id; _admFormData={}; navigate('new-admission'); }
 

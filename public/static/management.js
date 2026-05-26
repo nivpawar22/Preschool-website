@@ -2085,6 +2085,7 @@ function renderAdmissionsManagementTab() {
 function loadAdmissionsManagement() {
   var wrap = document.getElementById('adm-mgmt-wrap');
   if (!wrap) return;
+  var isSuperAdmin = (Session.current() || {}).role === 'superadmin';
   fetch('/api/admissions')
     .then(function(r){ return r.json(); })
     .then(function(data) {
@@ -2120,7 +2121,8 @@ function loadAdmissionsManagement() {
         var approveBtn = !isApproved
           ? '<button onclick="approveAdmission(\'' + a.id + '\')" style="background:#27ae60;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px;margin-right:4px"><i class="fas fa-check"></i> Approve</button>'
           : '';
-        var deleteBtn = !isApproved
+        var canDelete = isSuperAdmin || !isApproved;
+        var deleteBtn = canDelete
           ? '<button onclick="deleteAdmission(\'' + a.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>'
           : '<span style="font-size:12px;color:#27ae60;font-weight:600"><i class="fas fa-check-circle"></i> Approved</span>';
         html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +

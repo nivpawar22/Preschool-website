@@ -336,6 +336,7 @@ function exitImpersonate() {
 }
 
 function handleLogout() {
+  _removeBackGuard();
   const fullyOut = Session.logout();
   if (fullyOut) renderLogin();
   else navigate('dashboard');
@@ -450,6 +451,23 @@ function toggleLoginPassword() {
 }
 
 
+// ---- Back-button guard ----
+// Prevents the browser/mobile back button from leaving the portal while logged in.
+// Strategy: push a sentinel history entry on login; on every popstate while logged in,
+// push it back so the history stack never unwinds past the portal.
+function _backGuardHandler() {
+  if (Session.current()) {
+    history.pushState({ portalGuard: true }, '', window.location.href);
+  }
+}
+function _setupBackGuard() {
+  history.pushState({ portalGuard: true }, '', window.location.href);
+  window.addEventListener('popstate', _backGuardHandler);
+}
+function _removeBackGuard() {
+  window.removeEventListener('popstate', _backGuardHandler);
+}
+
 function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value.trim();
@@ -458,6 +476,7 @@ function doLogin() {
   const user = Session.login(u, p);
   if (!user) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Invalid username or password.'; return; }
   err.style.display = 'none';
+  _setupBackGuard();
 
   if (user.role === 'parent') navigate('parent-home');
   else if (user.role === 'admission') navigate('admission-dashboard');

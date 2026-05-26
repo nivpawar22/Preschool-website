@@ -545,17 +545,19 @@ function printAdmForm() {
     '.hdr-top img{width:64px;height:64px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
     '.hdr-name{font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
-    '.hdr-bar{background-color:#E8B020;padding:6px 20px;font-size:11px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:12px;align-items:center}' +
+    '.hdr-bar{background-color:#dcad92;padding:8px 20px;display:flex;justify-content:space-between;align-items:center}' +
+    '.hdr-bl{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85}' +
+    '.hdr-br{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%}' +
     '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background-color:#E8EDF5}' +
     '.sec{margin:0 16px 12px;border:1px solid #ddd;border-radius:4px}' +
     '.sh{background-color:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
     '.sb{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
     '.fl{font-size:10px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:3px 0;border-bottom:1px solid #ddd;min-height:20px}' +
     '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:24px 16px 0}.sl{border-top:2px solid #0F2050;padding-top:6px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:44px}' +
-    '.footer{background-color:#F8F9FB;border-top:2px solid #E8B020;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
+    '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
     '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.hdr-bar{background-color:#E8B020!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
@@ -563,10 +565,15 @@ function printAdmForm() {
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
       '<div class="hdr-bar">' +
-        (phones?'<span>Tel: '+phones+'</span>':'')+
-        (email?'<span>Email: '+email+'</span>':'')+
-        '<span>Web: '+website+'</span>'+
-        '<span style="margin-left:auto">Addr: '+schoolAddr+'</span>' +
+        '<div class="hdr-bl">'+
+          (phones?'<div>&#9742; '+phones+'</div>':'')+
+          (email?'<div>&#9993; '+email+'</div>':'')+
+          '<div>&#8853; '+website+'</div>'+
+        '</div>'+
+        '<div class="hdr-br">'+
+          '<div style="font-weight:800">&#8962; '+schoolName+'</div>'+
+          '<div>'+schoolAddr+'</div>'+
+        '</div>'+
       '</div>' +
     '</div>'+
     '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
@@ -793,7 +800,9 @@ function printReceipt(payId) {
       '.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
       '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
       '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
-      '.hdr-bar{background-color:#E8B020;padding:6px 18px;font-size:10px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:10px;align-items:center}' +
+      '.hdr-bar{background-color:#dcad92;padding:8px 18px;display:flex;justify-content:space-between;align-items:center}' +
+      '.hdr-bl{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85}' +
+      '.hdr-br{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%}' +
       '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
       '.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}' +
       '.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}' +
@@ -806,10 +815,10 @@ function printReceipt(payId) {
       '.sl{height:40px;border-bottom:2px solid #0F2050;margin-bottom:5px}' +
       '.slbl{font-size:11px;font-weight:700;color:#0F2050}' +
       '.stmp{border:2px dashed #0F2050;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}' +
-      '.footer{background-color:#F8F9FB;border-top:2px solid #E8B020;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
+      '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
       '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
       '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.hdr-bar{background-color:#E8B020!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+      '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.rt{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.tr{background-color:#F0FFF8!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ft th{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
@@ -819,10 +828,15 @@ function printReceipt(payId) {
       '<div class="hdr">' +
         '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +
         '<div class="hdr-bar">' +
-          (phones?'<span>Tel: '+phones+'</span>':'')+
-          (email?'<span>Email: '+email+'</span>':'')+
-          '<span>Web: '+website+'</span>'+
-          '<span style="margin-left:auto">Addr: '+schoolAddr+'</span>' +
+          '<div class="hdr-bl">'+
+            (phones?'<div>&#9742; '+phones+'</div>':'')+
+            (email?'<div>&#9993; '+email+'</div>':'')+
+            '<div>&#8853; '+website+'</div>'+
+          '</div>'+
+          '<div class="hdr-br">'+
+            '<div style="font-weight:800">&#8962; '+schoolName+'</div>'+
+            '<div>'+schoolAddr+'</div>'+
+          '</div>'+
         '</div>' +
       '</div>'+
       '<div class="rt">PAYMENT RECEIPT</div>'+

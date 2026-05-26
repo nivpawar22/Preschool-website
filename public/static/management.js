@@ -1712,15 +1712,17 @@ function buildLetterheadHtml(meta, lh) {
           '<div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.3px;font-family:Arial,sans-serif">'+schoolName+'</div>' +
           '<div style="font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px">Official School Correspondence</div>' +
         '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.1em">EXCELLENCE IN EDUCATION</div>' +
-        '</div>' +
       '</div>' +
-      '<div style="background-color:#E8B020;padding:7px 24px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">' +
-        (phones ? '<span style="font-size:11px;color:#0F2050;font-weight:700">Tel: '+phones+'</span>' : '') +
-        (email ? '<span style="font-size:11px;color:#0F2050;font-weight:700">Email: '+email+'</span>' : '') +
-        '<span style="font-size:11px;color:#0F2050;font-weight:700">Web: '+website+'</span>' +
-        '<span style="font-size:11px;color:#0F2050;font-weight:700;margin-left:auto">Addr: '+address+'</span>' +
+      '<div style="background-color:#dcad92;padding:8px 24px;display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:11px;color:#0F2050;font-weight:700;line-height:1.85">' +
+          (phones ? '<div>&#9742; '+phones+'</div>' : '') +
+          (email ? '<div>&#9993; '+email+'</div>' : '') +
+          '<div>&#8853; '+website+'</div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%">' +
+          '<div style="font-weight:800">&#8962; '+schoolName+'</div>' +
+          '<div>'+address+'</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
     '<div style="padding:22px 24px">' +
@@ -1740,7 +1742,7 @@ function buildLetterheadHtml(meta, lh) {
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div style="background:#F8F9FB;border-top:2px solid #E8B020;padding:7px 22px;text-align:center;font-size:10px;color:#666">' +
+    '<div style="background:#F8F9FB;border-top:2px solid #dcad92;padding:7px 22px;text-align:center;font-size:10px;color:#666">' +
       schoolName + ' | ' + address + (website ? ' | ' + website : '') +
     '</div>' +
   '</div>';
@@ -1810,24 +1812,30 @@ window.printLetterhead = function() {
     '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
     '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
-    '.hdr-badge{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.1em;text-align:right}' +
-    '.hdr-bar{background-color:#E8B020;padding:7px 28px;display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:#0F2050;font-weight:700;align-items:center}' +
+    '.hdr-bar{background-color:#dcad92;padding:8px 28px;display:flex;justify-content:space-between;align-items:center}' +
+    '.hdr-bar-left{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85}' +
+    '.hdr-bar-right{font-size:11px;color:#0F2050;font-weight:700;line-height:1.85;text-align:right;max-width:55%}' +
     '.body{padding:28px}' +
     '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
     '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
-    '.footer{background-color:#F8F9FB;border-top:2px solid #E8B020;padding:7px 28px;text-align:center;font-size:10px;color:#666}' +
+    '.footer{background-color:#F8F9FB;border-top:2px solid #dcad92;padding:7px 28px;text-align:center;font-size:10px;color:#666}' +
     '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.hdr-bar{background-color:#E8B020!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.footer{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
   '</style></head><body>' +
     '<div class="hdr">' +
-      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div><div class="hdr-badge">EXCELLENCE IN EDUCATION</div></div>' +
+      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
       '<div class="hdr-bar">' +
-        (phones ? '<span>Tel: '+phones+'</span>' : '') +
-        (email ? '<span>Email: '+email+'</span>' : '') +
-        '<span>Web: '+website+'</span>' +
-        '<span style="margin-left:auto">Addr: '+address+'</span>' +
+        '<div class="hdr-bar-left">' +
+          (phones ? '<div>&#9742; '+phones+'</div>' : '') +
+          (email ? '<div>&#9993; '+email+'</div>' : '') +
+          '<div>&#8853; '+website+'</div>' +
+        '</div>' +
+        '<div class="hdr-bar-right">' +
+          '<div style="font-weight:800">&#8962; '+schoolName+'</div>' +
+          '<div>'+address+'</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
     '<div class="body">' +

@@ -540,6 +540,7 @@ function printAdmForm() {
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admission Form</title><style>' +
+    '@page{margin:6mm}' +
     'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050}' +
     '.hdr-top{display:flex;align-items:center;padding:14px 20px;gap:14px}' +
@@ -799,6 +800,7 @@ function printReceipt(payId) {
     var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
     var win=window.open('','_blank','width=700,height=620');
     win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
+      '@page{margin:6mm}' +
       'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
       '.hdr{background-color:#0F2050}' +
       '.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}' +

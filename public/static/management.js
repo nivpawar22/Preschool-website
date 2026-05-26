@@ -1809,6 +1809,7 @@ window.printLetterhead = function() {
 
   var win = window.open('', '_blank', 'width=820,height=700');
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Letter Head – '+schoolName+'</title><style>' +
+    '@page{margin:6mm}' +
     'body{font-family:Georgia,serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050}' +
     '.hdr-top{display:flex;align-items:center;padding:18px 28px;gap:18px}' +

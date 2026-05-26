@@ -528,31 +528,63 @@ function removeAdmDoc(docId) {
 
 function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}
+  var meta=DB.get().meta;
+  var schoolName=meta.schoolName||'SuperKids India Preschool';
+  var schoolAddr=meta.schoolAddress||'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+  var logoUrl=meta.schoolLogo||'/static/school-logo.png';
+  var phones=[meta.schoolPhone,meta.schoolPhone2].filter(Boolean).join(' | ');
+  var email=meta.schoolEmail||'';
+  var website=meta.schoolWebsite||'';
+  var principal=meta.principalName||'Principal';
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admission Form</title><style>body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:20px;max-width:800px;margin:0 auto}.h1{font-size:20px;text-align:center;margin-bottom:2px}.addr{text-align:center;color:#555;font-size:12px;margin-bottom:16px}.ft{text-align:center;font-size:15px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin-bottom:18px;background:#E8EDF5}.sec{margin-bottom:14px;border:1px solid #ddd;border-radius:4px}.sh{background:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}.sb{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.fl{font-size:10px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:3px 0;border-bottom:1px solid #ddd;min-height:22px}.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:30px}.sl{border-top:2px solid #0F2050;padding-top:6px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:50px}@media print{body{padding:8px}}</style></head><body>'+
-    '<div class="h1">SuperKids India Preschool</div>'+
-    '<div class="addr">Matoshri Apartment, Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026</div>'+
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admission Form</title><style>' +
+    'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto}' +
+    '.hdr{background:linear-gradient(135deg,#0F2050,#1A3A7A)}' +
+    '.hdr-top{display:flex;align-items:center;padding:14px 20px;gap:14px}' +
+    '.hdr-top img{width:64px;height:64px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0}' +
+    '.hdr-name{font-size:20px;font-weight:900;color:#fff}' +
+    '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:2px}' +
+    '.hdr-bar{background:rgba(232,176,32,0.9);padding:6px 20px;font-size:11px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:12px}' +
+    '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background:#E8EDF5}' +
+    '.sec{margin:0 16px 12px;border:1px solid #ddd;border-radius:4px}' +
+    '.sh{background:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
+    '.sb{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}' +
+    '.fl{font-size:10px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:3px 0;border-bottom:1px solid #ddd;min-height:20px}' +
+    '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:24px 16px 0}.sl{border-top:2px solid #0F2050;padding-top:6px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:44px}' +
+    '.footer{background:#F8F9FB;border-top:2px solid #E8B020;padding:6px 16px;text-align:center;font-size:10px;color:#666;margin-top:16px}' +
+    '@media print{body{padding:0}}' +
+  '</style></head><body>'+
+    '<div class="hdr">' +
+      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
+      '<div class="hdr-bar">' +
+        (phones?'<span>&#128222; '+phones+'</span>':'')+
+        (email?'<span>&#9993; '+email+'</span>':'')+
+        (website?'<span>&#127760; '+website+'</span>':'')+
+        '<span style="margin-left:auto">&#128205; '+schoolAddr+'</span>' +
+      '</div>' +
+    '</div>'+
     '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+getAcademicYear()+'</div>'+
     '<div class="sec"><div class="sh">Student Information</div><div class="sb">'+
-      [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+      [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||''],['Religion',fd.religion||''],['Mother Tongue',fd.motherTongue||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
     '<div class="sec"><div class="sh">Father\'s Details</div><div class="sb">'+
-      [['Full Name',fd.fatherName||''],['Mobile',fd.fatherMobile||''],['Email',fd.fatherEmail||''],['Profession',fd.fatherProfession||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+      [['Full Name',fd.fatherName||''],['Mobile',fd.fatherMobile||''],['Email',fd.fatherEmail||''],['Profession',fd.fatherProfession||''],['Qualification',fd.fatherQualification||''],['Aadhaar',fd.fatherAadhaar||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
     '<div class="sec"><div class="sh">Mother\'s Details</div><div class="sb">'+
-      [['Full Name',fd.motherName||''],['Mobile',fd.motherMobile||''],['Email',fd.motherEmail||''],['Profession',fd.motherProfession||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+      [['Full Name',fd.motherName||''],['Mobile',fd.motherMobile||''],['Email',fd.motherEmail||''],['Profession',fd.motherProfession||''],['Aadhaar',fd.motherAadhaar||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
     '<div class="sec"><div class="sh">Address</div><div class="sb" style="grid-template-columns:1fr">'+
       '<div><div class="fl">Residential Address</div><div class="fv">'+[fd.address1,fd.address2,fd.city,fd.pincode].filter(Boolean).join(', ')+'</div></div>'+
     '</div></div>'+
     '<div class="sec"><div class="sh">Emergency Contact</div><div class="sb">'+
-      [['Name',fd.emergencyName||''],['Relationship',fd.emergencyRelation||''],['Mobile',fd.emergencyMobile||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+      [['Name',fd.emergencyName||''],['Relationship',fd.emergencyRelation||''],['Primary Mobile',fd.emergencyMobile||''],['Alternate Mobile',fd.emergencyAlt||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
-    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:12px;border-radius:4px;font-size:12px;margin-top:12px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules of SuperKids India Preschool.</div>'+
-    '<div class="sigs"><div class="sl">Parent Signature</div><div class="sl">Admission Admin</div><div class="sl">Principal</div></div>'+
-    '<div style="text-align:right;font-size:11px;color:#999;margin-top:16px">Date: '+now+' | SuperKids India Portal</div>'+
-    '</body></html>');
+    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:11px 16px;border-radius:4px;font-size:12px;margin:0 16px 14px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
+    '<div class="sigs"><div class="sl">Parent / Guardian Signature</div><div class="sl">Admission Admin</div><div class="sl">'+principal+'</div></div>'+
+    '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
+    '<div style="text-align:right;font-size:10px;color:#aaa;padding:4px 16px">Date: '+now+'</div>'+
+  '</body></html>');
   win.document.close(); setTimeout(function(){win.print();},500);
 }
 
@@ -569,11 +601,42 @@ function renderFeeCollection() {
   });
 }
 
+function buildFeeItemsHtml(classId, feeConfig) {
+  var classWise=(feeConfig&&feeConfig.classWiseFees)||{};
+  var classFees=classId?(classWise[classId]||{}):{};
+  var activities=(feeConfig&&feeConfig.activities)||[];
+  var INST=[
+    {id:'installment1',name:'1st Installment (Registration + First)'},
+    {id:'installment2',name:'2nd Installment'},
+    {id:'installment3',name:'3rd Installment'},
+    {id:'educationKit',name:'Education Kit'},
+  ];
+  var html=INST.map(function(inst){
+    var amt=classFees[inst.id]||'';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;cursor:pointer;background:#fff">'+
+      '<input type="checkbox" class="fee-cb" data-name="'+inst.name+'" onchange="calcFeeTotal()" style="width:16px;height:16px;accent-color:#059669;cursor:pointer;flex-shrink:0">'+
+      '<span style="flex:1;font-size:13px;font-weight:600;color:#2A3B60">'+inst.name+'</span>'+
+      (classFees[inst.id]?'<span style="font-size:11px;color:#059669;font-weight:700;flex-shrink:0">₹'+Number(classFees[inst.id]).toLocaleString('en-IN')+'</span>':'')+
+      '<input type="number" class="fee-amt" value="'+amt+'" placeholder="₹0" oninput="calcFeeTotal()" style="width:100px;padding:5px 8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right;flex-shrink:0">'+
+    '</label>';
+  }).join('');
+  if(activities.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:#1AA6CA;text-transform:uppercase;padding:10px 2px 4px;letter-spacing:0.05em">After-School Activities</div>';
+    html+=activities.map(function(act){
+      return '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;cursor:pointer;background:#F8F9FB">'+
+        '<input type="checkbox" class="fee-cb" data-name="'+act.name+'" onchange="calcFeeTotal()" style="width:16px;height:16px;accent-color:#1AA6CA;cursor:pointer;flex-shrink:0">'+
+        '<span style="flex:1;font-size:13px;font-weight:600;color:#2A3B60"><i class="fas fa-star" style="color:#E8B020;font-size:10px;margin-right:5px"></i>'+act.name+'</span>'+
+        '<input type="number" class="fee-amt" value="'+(act.fee||'')+'" placeholder="₹0" oninput="calcFeeTotal()" style="width:100px;padding:5px 8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right;flex-shrink:0">'+
+      '</label>';
+    }).join('');
+  }
+  return html;
+}
+
 function buildFeeCollectionUI() {
   var wrap=document.getElementById('fee-wrap'); if(!wrap) return;
   var pay=_adm.payments;
   var fc=_adm.feeConfig||{};
-  var feeHeads=(fc.feeHeads||[]).length>0?fc.feeHeads.map(function(f){return f.name;}):DEFAULT_FEE_HEADS;
   var totalCol=pay.reduce(function(s,p){var d=p.data?JSON.parse(p.data):{};return s+(d.total||0);},0);
   var today=new Date().toISOString().split('T')[0];
   var todayPay=pay.filter(function(p){return p.created_at&&p.created_at.startsWith(today);});
@@ -598,13 +661,7 @@ function buildFeeCollectionUI() {
           '</div>'+
           '<div>'+fLabel('Fee Items',true)+
             '<div id="fee-items" style="display:flex;flex-direction:column;gap:6px">'+
-              feeHeads.map(function(f){
-                return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;cursor:pointer">'+
-                  '<input type="checkbox" class="fee-cb" data-name="'+f+'" onchange="calcFeeTotal()" style="width:16px;height:16px;accent-color:#059669;cursor:pointer">'+
-                  '<span style="flex:1;font-size:13px;font-weight:600;color:#2A3B60">'+f+'</span>'+
-                  '<input type="number" class="fee-amt" placeholder="₹0" oninput="calcFeeTotal()" style="width:100px;padding:5px 8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right">'+
-                '</label>';
-              }).join('')+
+              buildFeeItemsHtml(null, fc)+
             '</div>'+
           '</div>'+
           grid4([fSelect('fee-mode','Payment Mode',PAYMENT_MODES,'Cash'),fInput('fee-txn','Transaction ID / UTR','text','','For UPI/NEFT/Cheque')])+
@@ -613,7 +670,7 @@ function buildFeeCollectionUI() {
             '<span style="font-size:14px;font-weight:700;color:#0F1E3D">Total Amount</span>'+
             '<span id="fee-total" style="font-size:24px;font-weight:900;color:#059669">₹0</span>'+
           '</div>'+
-          '<button onclick="recordFeePayment()" class="btn btn-primary" style="width:100%"><i class="fas fa-check" style="margin-right:8px"></i>Record Payment & Print Receipt</button>'+
+          '<button onclick="recordFeePayment()" class="btn btn-primary" style="width:100%"><i class="fas fa-check" style="margin-right:8px"></i>Record Payment &amp; Print Receipt</button>'+
         '</div>'+
       '</div>'+
       '<div class="card"><div class="card-header" style="margin-bottom:12px"><div class="card-title"><i class="fas fa-receipt" style="color:#C4893A"></i> Recent Payments</div><button class="btn btn-sm btn-secondary" onclick="navigate(\'receipts\')">All</button></div>'+
@@ -638,6 +695,9 @@ function buildFeeCollectionUI() {
     document.getElementById('fee-sel-card').style.display='block';
     document.getElementById('fee-sel-name').textContent=_feeAdmData.studentName||'–';
     document.getElementById('fee-sel-info').textContent=(_feeAdmData.admissionNo||'')+' · '+(_feeAdmData.classId||'')+' · '+(_feeAdmData.fatherName||'');
+    var feeWrap=document.getElementById('fee-items');
+    if(feeWrap) feeWrap.innerHTML=buildFeeItemsHtml(_feeAdmData.classId, _adm.feeConfig||{});
+    calcFeeTotal();
   };
   window.calcFeeTotal=function(){
     var cbs=document.querySelectorAll('.fee-cb'), amts=document.querySelectorAll('.fee-amt');
@@ -710,22 +770,60 @@ function printReceipt(payId) {
   admGet('/api/payments/'+payId).then(function(r){
     if(!r.item){showToast('Receipt not found','error');return;}
     var d=r.item.data?JSON.parse(r.item.data):{};
+    var meta=DB.get().meta;
+    var schoolName=meta.schoolName||'SuperKids India Preschool';
+    var schoolAddr=meta.schoolAddress||'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+    var logoUrl=meta.schoolLogo||'/static/school-logo.png';
+    var phones=[meta.schoolPhone,meta.schoolPhone2].filter(Boolean).join(' | ');
+    var email=meta.schoolEmail||'';
+    var website=meta.schoolWebsite||'';
+    var principal=meta.principalName||'Principal';
     var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-    var win=window.open('','_blank','width=700,height=600');
-    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt '+(d.receiptNo||'')+'</title><style>body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:580px;margin:0 auto}.hdr{background:#0F2050;color:#fff;padding:20px;text-align:center}.sn{font-size:20px;font-weight:900;margin-bottom:4px}.sa{font-size:11px;opacity:0.8}.rt{background:#E8B020;color:#0F1E3D;text-align:center;padding:8px;font-size:15px;font-weight:800;letter-spacing:0.5px}.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}.il{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em}.iv{font-weight:700;font-size:13px}.ft{width:100%;border-collapse:collapse;margin-top:16px}.ft th{background:#F8F9FB;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666}.tr{background:#F0FFF8;font-weight:900;font-size:16px;color:#059669}.ftr{background:#F8F9FB;padding:16px;margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center}.sl{height:40px;border-bottom:2px solid #0F2050;margin-bottom:6px}.slbl{font-size:11px;font-weight:700;color:#0F2050}.stmp{border:2px dashed #0F2050;border-radius:50%;width:70px;height:70px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:9px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}@media print{body{padding:0}}</style></head><body>'+
-      '<div class="hdr"><div class="sn">SuperKids India Preschool</div><div class="sa">Matoshri Apartment, Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026</div></div>'+
+    var win=window.open('','_blank','width=700,height=620');
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
+      'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto}' +
+      '.hdr{background:linear-gradient(135deg,#0F2050,#1A3A7A)}' +
+      '.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}' +
+      '.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0}' +
+      '.hdr-name{font-size:18px;font-weight:900;color:#fff}' +
+      '.hdr-bar{background:rgba(232,176,32,0.92);padding:6px 18px;font-size:10px;color:#0F2050;font-weight:700;display:flex;flex-wrap:wrap;gap:10px}' +
+      '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
+      '.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}' +
+      '.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}' +
+      '.il{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em}' +
+      '.iv{font-weight:700;font-size:13px}' +
+      '.ft{width:100%;border-collapse:collapse;border:1px solid #ddd}' +
+      '.ft th{background:#F8F9FB;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}' +
+      '.tr{background:#F0FFF8;font-weight:900;font-size:15px;color:#059669}' +
+      '.ftr{background:#F8F9FB;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:center}' +
+      '.sl{height:40px;border-bottom:2px solid #0F2050;margin-bottom:5px}' +
+      '.slbl{font-size:11px;font-weight:700;color:#0F2050}' +
+      '.stmp{border:2px dashed #0F2050;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}' +
+      '.footer{background:#F8F9FB;border-top:2px solid #E8B020;padding:6px 18px;text-align:center;font-size:10px;color:#666}' +
+      '@media print{body{padding:0}}' +
+    '</style></head><body>'+
+      '<div class="hdr">' +
+        '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div><div class="hdr-name">'+schoolName+'</div><div style="font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:2px">Fee Payment Receipt</div></div></div>' +
+        '<div class="hdr-bar">' +
+          (phones?'<span>&#128222; '+phones+'</span>':'')+
+          (email?'<span>&#9993; '+email+'</span>':'')+
+          (website?'<span>&#127760; '+website+'</span>':'')+
+          '<span style="margin-left:auto">&#128205; '+schoolAddr+'</span>' +
+        '</div>' +
+      '</div>'+
       '<div class="rt">PAYMENT RECEIPT</div>'+
       '<div class="ig">'+
         [['Receipt No.',d.receiptNo||'–'],['Payment Date',d.paymentDate||'–'],['Student Name',d.studentName||'–'],['Admission No.',d.admissionNo||'–'],['Class / Program',d.classId||'–'],['Payment Mode',d.paymentMode||'–'],['Transaction ID',d.transactionId||'–'],['Academic Year',d.academicYear||'']].map(function(f){return '<div class="ic"><div class="il">'+f[0]+'</div><div class="iv">'+f[1]+'</div></div>';}).join('')+
       '</div>'+
-      '<table class="ft"><thead><tr><th>Fee Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>'+
-        (d.feeItems||[]).map(function(f){return '<tr><td style="padding:6px 12px;border-bottom:1px solid #eee">'+f.type+'</td><td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700">'+fmtRs(f.amount)+'</td></tr>';}).join('')+
-        (d.discount?'<tr><td style="padding:6px 12px;color:#dc2626">Discount</td><td style="padding:6px 12px;text-align:right;color:#dc2626;font-weight:700">- '+fmtRs(d.discount)+'</td></tr>':'')+
+      '<table class="ft"><thead><tr><th>Fee Description</th><th style="text-align:right">Amount (₹)</th></tr></thead><tbody>'+
+        (d.feeItems||[]).map(function(f){return '<tr><td style="padding:7px 12px;border-bottom:1px solid #eee">'+f.type+'</td><td style="padding:7px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700">'+fmtRs(f.amount)+'</td></tr>';}).join('')+
+        (d.discount?'<tr><td style="padding:7px 12px;color:#dc2626">Discount</td><td style="padding:7px 12px;text-align:right;color:#dc2626;font-weight:700">- '+fmtRs(d.discount)+'</td></tr>':'')+
         '<tr class="tr"><td style="padding:10px 12px">Total Paid</td><td style="padding:10px 12px;text-align:right">'+fmtRs(d.total)+'</td></tr>'+
       '</tbody></table>'+
-      '<div class="ftr"><div><div class="sl"></div><div class="slbl">Accountant Signature</div></div><div><div class="stmp">SCHOOL<br>STAMP</div></div><div><div class="sl"></div><div class="slbl">Principal Signature</div></div></div>'+
-      '<div style="text-align:center;font-size:11px;color:#999;padding:12px">Computer-generated receipt. Printed: '+now+'</div>'+
-      '</body></html>');
+      '<div class="ftr"><div><div class="sl"></div><div class="slbl">Accountant Signature</div></div><div><div class="stmp">SCHOOL<br>STAMP</div></div><div><div class="sl"></div><div class="slbl">'+principal+'</div></div></div>'+
+      '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
+      '<div style="text-align:center;font-size:10px;color:#aaa;padding:6px">Computer-generated receipt. Printed: '+now+'</div>'+
+    '</body></html>');
     win.document.close(); setTimeout(function(){win.print();},500);
   }).catch(function(){showToast('Failed to load receipt','error');});
 }

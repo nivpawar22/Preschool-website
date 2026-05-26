@@ -13,16 +13,23 @@ function renderManagement() {
     return;
   }
 
-  const tabs = [
-    { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
-    { id: 'parents', label: 'Parents', icon: 'fa-users' },
-    { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
-    { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
-    { id: 'academic', label: 'Academic Setup', icon: 'fa-graduation-cap' },
-    { id: 'feeconfig', label: 'Fee Structure', icon: 'fa-rupee-sign' },
-    { id: 'adm-reports', label: 'Adm. Reports', icon: 'fa-chart-bar' },
-    { id: 'log', label: 'Activity Log', icon: 'fa-history' },
-    { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
+  const groups = [
+    { label: 'People Management', color: '#0F2050', tabs: [
+      { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
+      { id: 'parents', label: 'Parents', icon: 'fa-users' },
+      { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
+      { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
+    ]},
+    { label: 'Academic & Finance', color: '#C4893A', tabs: [
+      { id: 'academic', label: 'Academic Setup', icon: 'fa-graduation-cap' },
+      { id: 'feeconfig', label: 'Fee Structure', icon: 'fa-rupee-sign' },
+      { id: 'adm-reports', label: 'Adm. Reports', icon: 'fa-chart-bar' },
+      { id: 'letterhead', label: 'Letter Head', icon: 'fa-file-alt' },
+    ]},
+    { label: 'System', color: '#1AA6CA', tabs: [
+      { id: 'log', label: 'Activity Log', icon: 'fa-history' },
+      { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
+    ]},
   ];
 
   const tabContent = {
@@ -33,15 +40,26 @@ function renderManagement() {
     academic: renderAcademicTab(),
     feeconfig: renderFeeConfigTab(),
     'adm-reports': renderAdmReportsTab(),
+    letterhead: renderLetterheadTab(),
     log: renderActivityLogTab(),
     settings: renderSettingsTab()
   };
 
+  const groupHtml = groups.map(function(g) {
+    const tabs = g.tabs.map(function(t) {
+      return '<button class="tab-btn ' + (mgmtTab===t.id?'active':'') + '" onclick="mgmtTab=\'' + t.id + '\';renderManagement()"><i class="fas ' + t.icon + '"></i> ' + t.label + '</button>';
+    }).join('');
+    return '<div style="margin-bottom:14px">' +
+      '<div style="font-size:10px;font-weight:800;color:' + g.color + ';text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;display:flex;align-items:center;gap:8px">' +
+        '<span style="display:inline-block;width:18px;height:2px;background:' + g.color + ';border-radius:2px"></span>' + g.label +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">' + tabs + '</div>' +
+    '</div>';
+  }).join('<div style="height:1px;background:#EDF0F7;margin:4px 0"></div>');
+
   const content = `
-    <div class="tab-bar">
-      ${tabs.map(t => `<button class="tab-btn ${mgmtTab===t.id?'active':''}" onclick="mgmtTab='${t.id}';renderManagement()">
-        <i class="fas ${t.icon}"></i> ${t.label}
-      </button>`).join('')}
+    <div style="margin-bottom:20px;padding:14px 16px;background:#F8F9FB;border-radius:14px;border:1px solid #EDF0F7">
+      ${groupHtml}
     </div>
     ${tabContent[mgmtTab] || ''}`;
 
@@ -51,6 +69,7 @@ function renderManagement() {
   if (mgmtTab === 'academic') setTimeout(loadAcademicConfig, 50);
   if (mgmtTab === 'feeconfig') setTimeout(loadFeeConfig, 50);
   if (mgmtTab === 'adm-reports') setTimeout(loadAdmReports, 50);
+  if (mgmtTab === 'letterhead') setTimeout(loadLetterheadConfig, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -705,27 +724,37 @@ function renderSettingsTab() {
   const meta = data.meta;
 
   return `
-    <div class="card" style="max-width:600px">
-      <div class="card-title" style="margin-bottom:20px"><i class="fas fa-cog" style="color:#1AA6CA"></i> School Settings</div>
-      
-      <!-- School Logo Preview -->
-      <div style="display:flex;align-items:center;gap:16px;padding:16px;background:#F8F9FB;border-radius:12px;border:1px solid #DCE1EF;margin-bottom:20px">
-        <img src="${meta.schoolLogo || '/static/school-logo.png'}" alt="School Logo" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid #e0e7ff;background:#fff"/>
-        <div>
-          <div style="font-weight:700;color:#1e293b">${meta.schoolName}</div>
-          <div style="font-size:12px;color:#6B7A9D;margin-top:2px">School Logo & Name</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:20px"><i class="fas fa-school" style="color:#1AA6CA"></i> School Identity</div>
+          <div style="display:flex;align-items:center;gap:16px;padding:16px;background:#F8F9FB;border-radius:12px;border:1px solid #DCE1EF;margin-bottom:20px">
+            <img src="${meta.schoolLogo || '/static/school-logo.png'}" alt="School Logo" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid #e0e7ff;background:#fff"/>
+            <div>
+              <div style="font-weight:700;color:#1e293b">${meta.schoolName}</div>
+              <div style="font-size:12px;color:#6B7A9D;margin-top:2px">School Logo & Name</div>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">School Name</label><input class="form-control" id="set-name" value="${meta.schoolName}"/></div>
+          <div class="form-group"><label class="form-label">Principal Name</label><input class="form-control" id="set-principal" value="${meta.principalName || ''}"/></div>
+          <div class="form-group"><label class="form-label">School Address</label><textarea class="form-control" id="set-address" rows="2">${meta.schoolAddress || ''}</textarea></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px"><i class="fas fa-phone" style="color:#059669"></i> Contact Details</div>
+          <div class="form-group"><label class="form-label">Primary Phone</label><input class="form-control" id="set-phone" value="${meta.schoolPhone || ''}"/></div>
+          <div class="form-group"><label class="form-label">Secondary Phone</label><input class="form-control" id="set-phone2" value="${meta.schoolPhone2 || ''}" placeholder="Optional alternate number"/></div>
+          <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" id="set-email" type="email" value="${meta.schoolEmail || ''}"/></div>
+          <div class="form-group"><label class="form-label">Website</label><input class="form-control" id="set-website" value="${meta.schoolWebsite || ''}" placeholder="e.g. www.superkidsindia.in"/></div>
+          <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Settings</button>
         </div>
       </div>
-
-      <div class="form-group"><label class="form-label">School Name</label><input class="form-control" id="set-name" value="${meta.schoolName}"/></div>
-      <div class="form-group"><label class="form-label">School Phone</label><input class="form-control" id="set-phone" value="${meta.schoolPhone || ''}"/></div>
-      <hr class="divider"/>
-      <div style="padding:14px;background:#fee2e2;border-radius:10px;margin-bottom:16px">
-        <div style="font-weight:700;color:#991b1b;margin-bottom:8px"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
-        <div style="font-size:13px;color:#7f1d1d;margin-bottom:12px">Resetting data will permanently clear all students, grades, attendance and other records. This cannot be undone.</div>
-        <button class="btn btn-danger btn-sm" onclick="resetAllData()"><i class="fas fa-skull-crossbones"></i> Reset All Data</button>
+      <div>
+        <div style="padding:14px;background:#fee2e2;border-radius:10px;margin-bottom:16px">
+          <div style="font-weight:700;color:#991b1b;margin-bottom:8px"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
+          <div style="font-size:13px;color:#7f1d1d;margin-bottom:12px">Resetting data will permanently clear all students, grades, attendance and other records. This cannot be undone.</div>
+          <button class="btn btn-danger btn-sm" onclick="resetAllData()"><i class="fas fa-skull-crossbones"></i> Reset All Data</button>
+        </div>
       </div>
-      <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Settings</button>
     </div>`;
 }
 
@@ -733,6 +762,11 @@ function saveSettings() {
   const data = DB.get();
   data.meta.schoolName = document.getElementById('set-name').value.trim() || data.meta.schoolName;
   data.meta.schoolPhone = document.getElementById('set-phone').value.trim();
+  data.meta.schoolPhone2 = (document.getElementById('set-phone2') || {}).value || '';
+  data.meta.schoolEmail = (document.getElementById('set-email') || {}).value.trim() || '';
+  data.meta.schoolWebsite = (document.getElementById('set-website') || {}).value.trim() || '';
+  data.meta.schoolAddress = (document.getElementById('set-address') || {}).value.trim() || '';
+  data.meta.principalName = (document.getElementById('set-principal') || {}).value.trim() || '';
   DB.commit();
   showToast('Settings saved!', 'success');
 }
@@ -1383,6 +1417,8 @@ function saveAcademicConfig() {
 }
 
 // ---- Fee Structure Config Tab ----
+var _feeCfg = null;
+
 function renderFeeConfigTab() {
   return '<div id="feeconfig-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
 }
@@ -1393,62 +1429,154 @@ function loadFeeConfig() {
     fetch('/api/fee-config').then(function(r){return r.json();}),
     fetch('/api/academic-config').then(function(r){return r.json();}),
   ]).then(function(results) {
-    var fc = results[0].config || {feeHeads:[], classWiseFees:{}, kitItems:[]};
-    var ac = results[1].config || {classes:[{name:'Play Group'},{name:'Nursery'},{name:'Jr. KG'},{name:'Sr. KG'},{name:'Super Heroes 5+'}]};
-    var classes = ac.classes || [];
-    var defaultFH = ['Admission Fees','Tuition Fees (Monthly)','Annual Fees','Activity Fees','Transport Fees'];
-    var feeHeads = (fc.feeHeads||[]).length > 0 ? fc.feeHeads.map(function(f){return f.name;}) : defaultFH;
-    var classWise = fc.classWiseFees || {};
-    var kitItems = (fc.kitItems||[]).length > 0 ? fc.kitItems : [{id:'bag',name:'School Bag',price:800},{id:'uniform',name:'Uniform (Set of 2)',price:1200},{id:'books',name:'Book Set',price:1500},{id:'stationery',name:'Stationery Kit',price:600},{id:'shoes',name:'Shoes',price:700},{id:'idCard',name:'ID Card',price:100}];
+    var fc = results[0].config || {};
+    var ac = results[1].config || {};
+    _feeCfg = {
+      classWise: fc.classWiseFees || {},
+      kit: (fc.kitItems||[]).length > 0 ? fc.kitItems : [
+        {id:'bag',name:'School Bag'},{id:'uniform',name:'Uniform (Set of 2)'},
+        {id:'books',name:'Book Set'},{id:'stationery',name:'Stationery Kit'},
+        {id:'shoes',name:'Shoes'},{id:'idCard',name:'ID Card'},
+      ],
+      activities: fc.activities || [],
+      classes: (ac.classes||[]).length > 0 ? ac.classes : [
+        {name:'Play Group'},{name:'Nursery'},{name:'Jr. KG'},{name:'Sr. KG'},{name:'Super Heroes 5+'},
+      ],
+    };
+    renderFeeConfigUI();
+  }).catch(function(){ var w=document.getElementById('feeconfig-wrap'); if(w) w.innerHTML='<div style="color:#dc2626;padding:20px">Failed to load fee config</div>'; });
+}
 
-    wrap.innerHTML = '<div class="card" style="margin-bottom:12px">' +
+var FEE_COLS = [
+  {id:'installment1', label:'1st Installment', sub:'Registration + First'},
+  {id:'installment2', label:'2nd Installment', sub:''},
+  {id:'installment3', label:'3rd Installment', sub:''},
+  {id:'totalFees', label:'Total Fees', sub:''},
+  {id:'educationKit', label:'Edu. Kit Total', sub:'Sum of kit items'},
+];
+
+function renderFeeConfigUI() {
+  var wrap = document.getElementById('feeconfig-wrap'); if (!wrap || !_feeCfg) return;
+  var cfg = _feeCfg;
+
+  wrap.innerHTML =
+    '<div class="card" style="margin-bottom:16px">' +
       '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#E8B020"></i> Class-wise Fee Structure</div></div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
-        '<thead><tr style="background:#F8F9FB"><th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase">Class</th>' +
-          feeHeads.map(function(f){return '<th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;white-space:nowrap">'+f+'</th>';}).join('') +
+        '<thead><tr style="background:#F8F9FB">' +
+          '<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;min-width:110px">Class</th>' +
+          FEE_COLS.map(function(c){
+            return '<th style="padding:8px 10px;text-align:right;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;white-space:nowrap;min-width:140px">' +
+              c.label + (c.sub ? '<div style="font-weight:400;color:#94a3b8;font-size:9px;text-transform:none;margin-top:1px">'+c.sub+'</div>' : '') +
+            '</th>';
+          }).join('') +
         '</tr></thead><tbody>' +
-          classes.map(function(cls) {
-            var fees = classWise[cls.name] || {};
-            return '<tr style="border-bottom:1px solid #F1F5F9"><td style="padding:10px 12px;font-weight:700">'+cls.name+'</td>' +
-              feeHeads.map(function(f,fi) {
-                return '<td style="padding:6px 8px"><input type="number" class="fee-struct-inp" data-class="'+cls.name+'" data-fee="'+f+'" value="'+(fees[f]||'')+'" placeholder="0" style="width:110px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right"></td>';
+          cfg.classes.map(function(cls) {
+            var fees = cfg.classWise[cls.name] || {};
+            return '<tr style="border-bottom:1px solid #F1F5F9"><td style="padding:10px 12px;font-weight:700;color:#0F1E3D">'+cls.name+'</td>' +
+              FEE_COLS.map(function(c){
+                return '<td style="padding:5px 6px"><input type="number" class="fee-struct-inp" data-class="'+cls.name+'" data-col="'+c.id+'" value="'+(fees[c.id]||'')+'" placeholder="₹0" style="width:120px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;text-align:right;box-sizing:border-box"></td>';
               }).join('') +
             '</tr>';
           }).join('') +
         '</tbody></table></div>' +
-      '<div style="display:flex;justify-content:flex-end;margin-top:12px"><button onclick="saveFeeConfig('+JSON.stringify(feeHeads)+','+JSON.stringify(kitItems)+')" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Fee Structure</button></div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button onclick="saveFeeStructure()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Fee Structure</button></div>' +
     '</div>' +
+
+    '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-running" style="color:#1AA6CA"></i> After-School Activities</div></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 140px auto;gap:10px;align-items:center;padding:14px;background:#F8F9FB;border-radius:10px;margin-bottom:14px">' +
+        '<input id="new-act-name" type="text" placeholder="Activity name (e.g. Dance, Music, Art)" style="padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;outline:none">' +
+        '<input id="new-act-fee" type="number" placeholder="Fee (₹)" style="padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;outline:none;text-align:right">' +
+        '<button onclick="addActivity()" class="btn btn-primary"><i class="fas fa-plus"></i> Add</button>' +
+      '</div>' +
+      '<div id="activities-list">' + renderActivitiesList(cfg.activities) + '</div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button onclick="saveActivities()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Activities</button></div>' +
+    '</div>' +
+
     '<div class="card">' +
-      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-shopping-bag" style="color:#C4893A"></i> Education Kit Prices</div></div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' +
-        kitItems.map(function(k) {
-          return '<div style="padding:12px;border:1.5px solid #DCE1EF;border-radius:10px"><div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">'+k.name+'</div>' +
-            '<input type="number" id="kit-price-'+k.id+'" value="'+(k.price||0)+'" style="width:100%;padding:8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;box-sizing:border-box"></div>';
+      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-shopping-bag" style="color:#C4893A"></i> Education Kit Items &amp; Prices</div>' +
+        '<div style="font-size:11px;color:#6B7A9D">Leave blank if price not yet determined.</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">' +
+        cfg.kit.map(function(k){
+          return '<div style="padding:12px;border:1.5px solid #DCE1EF;border-radius:10px">' +
+            '<div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:6px">'+k.name+'</div>' +
+            '<input type="number" id="kit-price-'+k.id+'" value="'+(k.price||'')+'" placeholder="Enter price (₹)" style="width:100%;padding:8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:13px;box-sizing:border-box;outline:none">' +
+          '</div>';
         }).join('') +
       '</div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:16px"><button onclick="saveKitPrices()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Kit Prices</button></div>' +
     '</div>';
-  });
 }
 
-function saveFeeConfig(feeHeads, kitItems) {
+function renderActivitiesList(activities) {
+  if (!activities || activities.length === 0) {
+    return '<div style="text-align:center;padding:20px;color:#6B7A9D;font-size:13px">No activities yet. Add one above.</div>';
+  }
+  return '<div style="display:flex;flex-direction:column;gap:8px">' +
+    activities.map(function(a, i) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1.5px solid #DCE1EF;border-radius:8px">' +
+        '<div style="flex:1;font-weight:600;font-size:13px;color:#0F1E3D"><i class="fas fa-star" style="color:#E8B020;font-size:10px;margin-right:8px"></i>'+a.name+'</div>' +
+        '<div style="font-weight:800;color:#059669;font-size:14px">₹'+(a.fee||0).toLocaleString('en-IN')+'</div>' +
+        '<button onclick="removeActivity('+i+')" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;cursor:pointer;font-size:14px;line-height:1">×</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+window.addActivity = function() {
+  var name = ((document.getElementById('new-act-name')||{}).value||'').trim();
+  var fee = parseFloat((document.getElementById('new-act-fee')||{}).value) || 0;
+  if (!name) { showToast('Enter activity name','warning'); return; }
+  if (!_feeCfg) return;
+  _feeCfg.activities.push({id: name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now(), name: name, fee: fee});
+  var el = document.getElementById('activities-list'); if (el) el.innerHTML = renderActivitiesList(_feeCfg.activities);
+  var ni = document.getElementById('new-act-name'); if (ni) ni.value = '';
+  var fi2 = document.getElementById('new-act-fee'); if (fi2) fi2.value = '';
+};
+
+window.removeActivity = function(i) {
+  if (!_feeCfg) return;
+  _feeCfg.activities.splice(i, 1);
+  var el = document.getElementById('activities-list'); if (el) el.innerHTML = renderActivitiesList(_feeCfg.activities);
+};
+
+function saveFeeStructure() {
+  if (!_feeCfg) return;
   var inputs = document.querySelectorAll('.fee-struct-inp');
   var classWiseFees = {};
   inputs.forEach(function(inp) {
     var cls = inp.getAttribute('data-class');
-    var fee = inp.getAttribute('data-fee');
+    var col = inp.getAttribute('data-col');
     if (!classWiseFees[cls]) classWiseFees[cls] = {};
-    classWiseFees[cls][fee] = parseFloat(inp.value) || 0;
+    var v = parseFloat(inp.value);
+    if (v > 0) classWiseFees[cls][col] = v;
   });
-  var updatedKit = kitItems.map(function(k) {
-    return {id:k.id, name:k.name, price: parseFloat((document.getElementById('kit-price-'+k.id)||{}).value) || k.price};
-  });
-  var cfg = {
-    feeHeads: feeHeads.map(function(f){return {id:f.toLowerCase().replace(/\s+/g,'_'), name:f};}),
-    classWiseFees: classWiseFees,
-    kitItems: updatedKit,
-  };
+  _feeCfg.classWise = classWiseFees;
+  var cfg = {classWiseFees: classWiseFees, kitItems: _feeCfg.kit, activities: _feeCfg.activities};
   fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
     .then(function(r){return r.json();}).then(function(){showToast('Fee structure saved','success');})
+    .catch(function(){showToast('Failed to save','error');});
+}
+
+function saveActivities() {
+  if (!_feeCfg) return;
+  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: _feeCfg.kit, activities: _feeCfg.activities};
+  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Activities saved','success');})
+    .catch(function(){showToast('Failed to save','error');});
+}
+
+function saveKitPrices() {
+  if (!_feeCfg) return;
+  var kit = _feeCfg.kit.map(function(k){
+    return {id:k.id, name:k.name, price: parseFloat((document.getElementById('kit-price-'+k.id)||{}).value) || 0};
+  });
+  _feeCfg.kit = kit;
+  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: kit, activities: _feeCfg.activities};
+  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
+    .then(function(r){return r.json();}).then(function(){showToast('Kit prices saved','success');})
     .catch(function(){showToast('Failed to save','error');});
 }
 
@@ -1506,6 +1634,213 @@ function loadAdmReports() {
     var wrap=document.getElementById('adm-rep-wrap'); if(wrap) wrap.innerHTML='<div style="color:#dc2626;padding:20px">Failed to load reports</div>';
   });
 }
+
+// ============================================================
+// LETTER HEAD
+// ============================================================
+function renderLetterheadTab() {
+  return '<div id="letterhead-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
+}
+
+function loadLetterheadConfig() {
+  var wrap = document.getElementById('letterhead-wrap'); if (!wrap) return;
+  var meta = DB.get().meta;
+  var lh = meta.letterhead || {};
+
+  wrap.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px">' +
+      '<div>' +
+        '<div class="card" style="margin-bottom:16px">' +
+          '<div class="card-title" style="margin-bottom:16px"><i class="fas fa-pen-nib" style="color:#0F2050"></i> Letter Content</div>' +
+          '<div class="form-group"><label class="form-label">Salutation / Opening</label>' +
+            '<input class="form-control" id="lh-salutation" value="' + ((lh.salutation||'To Whomsoever It May Concern,').replace(/"/g,'&quot;')) + '"/>' +
+          '</div>' +
+          '<div class="form-group"><label class="form-label">Default Body Text</label>' +
+            '<textarea class="form-control" id="lh-body" rows="5" placeholder="Enter default letter body text…">' + (lh.body||'') + '</textarea>' +
+          '</div>' +
+          '<div class="form-group"><label class="form-label">Closing / Regards</label>' +
+            '<input class="form-control" id="lh-closing" value="' + ((lh.closing||'Yours Sincerely,').replace(/"/g,'&quot;')) + '"/>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card" style="margin-bottom:16px">' +
+          '<div class="card-title" style="margin-bottom:14px"><i class="fas fa-signature" style="color:#C4893A"></i> Principal\'s Signature</div>' +
+          (lh.signatureUrl ? '<img id="lh-sig-preview" src="' + lh.signatureUrl + '" style="max-height:80px;max-width:220px;object-fit:contain;display:block;margin-bottom:12px;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>' : '<div id="lh-sig-preview"></div>') +
+          '<div style="display:flex;gap:10px;align-items:center">' +
+            '<div onclick="document.getElementById(\'lh-sig-input\').click()" style="flex:1;padding:10px 16px;border:2px dashed #DCE1EF;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;color:#6B7A9D" onmouseover="this.style.borderColor=\'#C4893A\'" onmouseout="this.style.borderColor=\'#DCE1EF\'">' +
+              '<i class="fas fa-upload" style="margin-right:6px;color:#C4893A"></i>Upload Signature (PNG/JPG)' +
+            '</div>' +
+            (lh.signatureUrl ? '<button onclick="removeSignature()" style="padding:8px 12px;border-radius:8px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;cursor:pointer;font-size:12px;font-weight:700"><i class="fas fa-times"></i> Remove</button>' : '') +
+          '</div>' +
+          '<input type="file" id="lh-sig-input" accept="image/*" onchange="uploadSignature(this)" style="display:none">' +
+        '</div>' +
+        '<div style="display:flex;gap:10px">' +
+          '<button onclick="saveLetterhead()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Letter Head</button>' +
+          '<button onclick="printLetterhead()" class="btn btn-secondary"><i class="fas fa-print" style="margin-right:6px"></i>Preview &amp; Print</button>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px"><i class="fas fa-eye" style="margin-right:5px"></i>Live Preview</div>' +
+        '<div id="lh-preview-box" style="border:1.5px solid #DCE1EF;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08)">' +
+          buildLetterheadHtml(meta, lh) +
+        '</div>' +
+        '<div style="margin-top:12px;padding:10px 14px;background:#F8F9FB;border-radius:8px;font-size:11px;color:#6B7A9D"><i class="fas fa-info-circle" style="margin-right:4px;color:#1AA6CA"></i>Logo &amp; contact details come from School Settings.</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function buildLetterheadHtml(meta, lh) {
+  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
+  var schoolName = meta.schoolName || 'SuperKids India Preschool';
+  var address = meta.schoolAddress || 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+  var phones = [meta.schoolPhone, meta.schoolPhone2].filter(Boolean).join(' | ');
+  var email = meta.schoolEmail || '';
+  var website = meta.schoolWebsite || '';
+  var principal = meta.principalName || 'Principal';
+  var sigUrl = lh.signatureUrl || '';
+  var salutation = lh.salutation || 'To Whomsoever It May Concern,';
+  var body = lh.body || '[Letter content will appear here…]';
+  var closing = lh.closing || 'Yours Sincerely,';
+  var today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
+
+  return '<div style="font-family:Georgia,serif;font-size:13px;color:#1a1a2e;background:#fff">' +
+    '<div style="background:linear-gradient(135deg,#0F2050 0%,#1A3A7A 55%,#0F2050 100%)">' +
+      '<div style="display:flex;align-items:center;padding:18px 22px;gap:16px">' +
+        '<img src="'+logoUrl+'" style="width:72px;height:72px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0"/>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:21px;font-weight:900;color:#fff;letter-spacing:-0.3px;font-family:Arial,sans-serif">'+schoolName+'</div>' +
+          '<div style="font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px">Official School Correspondence</div>' +
+        '</div>' +
+        '<div style="font-size:30px;opacity:0.7">🦸</div>' +
+      '</div>' +
+      '<div style="background:rgba(232,176,32,0.92);padding:7px 22px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">' +
+        (phones ? '<span style="font-size:11px;color:#0F2050;font-weight:700">📞 '+phones+'</span>' : '') +
+        (email ? '<span style="font-size:11px;color:#0F2050;font-weight:700">✉ '+email+'</span>' : '') +
+        (website ? '<span style="font-size:11px;color:#0F2050;font-weight:700">🌐 '+website+'</span>' : '') +
+        '<span style="font-size:11px;color:#0F2050;font-weight:700;margin-left:auto">📍 '+address+'</span>' +
+      '</div>' +
+    '</div>' +
+    '<div style="padding:22px 24px">' +
+      '<div style="text-align:right;font-size:12px;color:#555;margin-bottom:18px">Date: '+today+'</div>' +
+      '<div style="font-size:13px;color:#1a1a2e;margin-bottom:16px;font-weight:600">'+salutation+'</div>' +
+      '<div style="font-size:13px;color:#444;line-height:1.9;min-height:72px;white-space:pre-wrap">'+body+'</div>' +
+      '<div style="margin-top:28px;font-size:13px;color:#1a1a2e">'+closing+'</div>' +
+      '<div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end">' +
+        '<div>' +
+          (sigUrl ? '<img src="'+sigUrl+'" style="height:50px;object-fit:contain;display:block;margin-bottom:4px"/>' :
+            '<div style="height:50px;border-bottom:1.5px solid #0F2050;width:170px;margin-bottom:4px"></div>') +
+          '<div style="font-size:12px;font-weight:800;color:#0F2050">'+principal+'</div>' +
+          '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
+        '</div>' +
+        '<div style="text-align:center">' +
+          '<div style="width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3">SCHOOL<br>STAMP</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="background:#F8F9FB;border-top:2px solid #E8B020;padding:7px 22px;text-align:center;font-size:10px;color:#666">' +
+      schoolName + ' | ' + address + (website ? ' | ' + website : '') +
+    '</div>' +
+  '</div>';
+}
+
+window.saveLetterhead = function() {
+  var lh = {
+    salutation: (document.getElementById('lh-salutation')||{}).value || 'To Whomsoever It May Concern,',
+    body: (document.getElementById('lh-body')||{}).value || '',
+    closing: (document.getElementById('lh-closing')||{}).value || 'Yours Sincerely,',
+    signatureUrl: (DB.get().meta.letterhead || {}).signatureUrl || '',
+  };
+  DB.updateMeta({letterhead: lh});
+  var pb = document.getElementById('lh-preview-box');
+  if (pb) pb.innerHTML = buildLetterheadHtml(DB.get().meta, lh);
+  showToast('Letter head saved','success');
+};
+
+window.uploadSignature = function(input) {
+  if (!input.files || !input.files[0]) return;
+  showToast('Uploading signature…','default');
+  var form = new FormData(); form.append('file', input.files[0]);
+  fetch('/api/upload?folder=signatures', {method:'POST', body:form})
+    .then(function(r){return r.json();})
+    .then(function(r){
+      if (r.error) { showToast('Upload failed','error'); return; }
+      var sigUrl = '/r2/' + r.key;
+      var lh = Object.assign({}, DB.get().meta.letterhead || {}, {signatureUrl: sigUrl});
+      DB.updateMeta({letterhead: lh});
+      var prev = document.getElementById('lh-sig-preview');
+      if (prev) { prev.innerHTML = '<img src="'+sigUrl+'" style="max-height:80px;max-width:220px;object-fit:contain;display:block;margin-bottom:12px;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>'; }
+      var pb = document.getElementById('lh-preview-box');
+      if (pb) pb.innerHTML = buildLetterheadHtml(DB.get().meta, lh);
+      showToast('Signature uploaded','success');
+    }).catch(function(){showToast('Upload failed','error');});
+};
+
+window.removeSignature = function() {
+  var lh = Object.assign({}, DB.get().meta.letterhead || {}, {signatureUrl: ''});
+  DB.updateMeta({letterhead: lh});
+  loadLetterheadConfig();
+  showToast('Signature removed','success');
+};
+
+window.printLetterhead = function() {
+  var meta = DB.get().meta;
+  var lh = {
+    salutation: (document.getElementById('lh-salutation')||{}).value || (meta.letterhead||{}).salutation || 'To Whomsoever It May Concern,',
+    body: (document.getElementById('lh-body')||{}).value || (meta.letterhead||{}).body || '',
+    closing: (document.getElementById('lh-closing')||{}).value || (meta.letterhead||{}).closing || 'Yours Sincerely,',
+    signatureUrl: (meta.letterhead||{}).signatureUrl || '',
+  };
+  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
+  var schoolName = meta.schoolName || 'SuperKids India Preschool';
+  var address = meta.schoolAddress || 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+  var phones = [meta.schoolPhone, meta.schoolPhone2].filter(Boolean).join(' | ');
+  var email = meta.schoolEmail || '';
+  var website = meta.schoolWebsite || '';
+  var principal = meta.principalName || 'Principal';
+  var today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
+
+  var win = window.open('', '_blank', 'width=820,height=700');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Letter Head – '+schoolName+'</title><style>' +
+    'body{font-family:Georgia,serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:800px;margin:0 auto}' +
+    '.hdr{background:linear-gradient(135deg,#0F2050,#1A3A7A,#0F2050)}' +
+    '.hdr-top{display:flex;align-items:center;padding:18px 28px;gap:18px}' +
+    '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid rgba(232,176,32,0.9);background:#fff;object-fit:contain;flex-shrink:0}' +
+    '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif}' +
+    '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
+    '.hdr-bar{background:rgba(232,176,32,0.95);padding:7px 28px;display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:#0F2050;font-weight:700}' +
+    '.body{padding:28px}' +
+    '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
+    '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
+    '.footer{background:#F8F9FB;border-top:2px solid #E8B020;padding:7px 28px;text-align:center;font-size:10px;color:#666}' +
+    '@media print{body{max-width:100%}}' +
+  '</style></head><body>' +
+    '<div class="hdr">' +
+      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
+      '<div class="hdr-bar">' +
+        (phones ? '<span>&#128222; '+phones+'</span>' : '') +
+        (email ? '<span>&#9993; '+email+'</span>' : '') +
+        (website ? '<span>&#127760; '+website+'</span>' : '') +
+        '<span style="margin-left:auto">&#128205; '+address+'</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="body">' +
+      '<div style="text-align:right;font-size:12px;color:#555;margin-bottom:20px">Date: '+today+'</div>' +
+      '<div style="margin-bottom:18px;font-weight:600">'+lh.salutation+'</div>' +
+      '<div style="line-height:1.9;min-height:100px;white-space:pre-wrap">'+lh.body+'</div>' +
+      '<div style="margin-top:30px;margin-bottom:44px">'+lh.closing+'</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
+        '<div>' +
+          (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="height:50px;object-fit:contain;display:block;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
+          '<div style="font-weight:800;color:#0F2050">'+principal+'</div>' +
+          '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
+        '</div>' +
+        '<div class="stamp">SCHOOL<br>STAMP</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="footer">'+schoolName+' | '+address+(website ? ' | '+website : '')+'</div>' +
+  '</body></html>');
+  win.document.close();
+  setTimeout(function(){ win.print(); }, 500);
+};
 
 registerRoute('management', renderManagement);
 registerRoute('my-profile', renderMyProfile);

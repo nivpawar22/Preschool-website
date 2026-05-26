@@ -1170,7 +1170,8 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .sig-date{height:52px;border-bottom:1.5px solid #0F1E3D;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
 .sig-label{font-size:12px;font-weight:700;text-align:center}
 .sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
-@media print{body{padding:0}@page{margin:1cm}}
+@media print{body{padding:0}@page{margin:6mm}.no-print{display:none}}
+.result-footer{text-align:center;font-size:10px;color:#555;padding:8px 0;margin-top:10px;border-top:1px solid #DCE1EF}
 </style></head><body>
 <div class="header">
   <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" class="logo" alt="Logo"/>
@@ -1215,6 +1216,7 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   <div><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-name">${schoolMeta.principalName || ''}</div></div>
   <div><div class="sig-date">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div class="sig-label">Date of Issue</div></div>
 </div>
+<div class="result-footer">${schoolMeta.schoolName}${schoolMeta.schoolAddress ? ' | ' + schoolMeta.schoolAddress : ''}${schoolMeta.schoolWebsite ? ' | ' + schoolMeta.schoolWebsite : ''}</div>
 <script>window.onload=()=>{window.print();};<\/script>
 </body></html>`;
 

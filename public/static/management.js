@@ -16,6 +16,7 @@ function renderManagement() {
   const groups = [
     { label: 'People Management', color: '#0F2050', tabs: [
       { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
+      { id: 'adm-admins', label: 'Admission Admins', icon: 'fa-user-check' },
       { id: 'parents', label: 'Parents', icon: 'fa-users' },
       { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
       { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
@@ -36,6 +37,7 @@ function renderManagement() {
 
   const tabContent = {
     subadmins: renderSubAdminsTab(),
+    'adm-admins': renderAdmAdminsTab(),
     parents: renderParentsTab(),
     team: renderTeamTab(),
     reviews: renderReviewsTab(),
@@ -142,14 +144,63 @@ function renderSubAdminsTab() {
     </div>`;
 }
 
-function openAddSubAdminModal() {
+function renderAdmAdminsTab() {
+  const admAdmins = DB.get().users.filter(function(u){ return u.role === 'admission' && !u.deleted; });
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-user-check" style="color:#C4893A"></i> Admission Admins (${admAdmins.length})</div>
+        <button class="btn btn-primary" onclick="openAddSubAdminModal('admission')"><i class="fas fa-plus"></i> Add Admission Admin</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            ${admAdmins.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">No Admission Admins found. Add one above.</td></tr>' :
+              admAdmins.map(function(sa) {
+                return `<tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      ${avatarHtml(sa.name, sa.avatar)}
+                      <div style="font-weight:600">${sa.name}</div>
+                    </div>
+                  </td>
+                  <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:6px">${sa.username}</code></td>
+                  <td>${sa.email || '-'}</td>
+                  <td>${sa.phone || '-'}</td>
+                  <td><span class="badge ${sa.active?'badge-green':'badge-red'}">${sa.active?'Active':'Inactive'}</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">
+                      <button class="btn btn-xs btn-primary" title="Edit" onclick="openEditSubAdminModal('${sa.id}')"><i class="fas fa-edit"></i></button>
+                      <button class="btn btn-xs" style="${sa.active?'background:#FEF7E0;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleSubAdminStatus('${sa.id}')">
+                        <i class="fas ${sa.active?'fa-user-slash':'fa-user-check'}"></i>
+                      </button>
+                      ${sa.phone ? `<button class="btn btn-xs btn-whatsapp" title="WhatsApp" onclick="wa('${sa.phone}','Hello ${sa.name}')"><i class="fab fa-whatsapp"></i></button>` : ''}
+                      ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" title="Delete" onclick="deleteSubAdmin('${sa.id}')"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;font-size:12px;color:#6B7A9D;border-top:1px solid #EDF0F7">
+        <i class="fas fa-info-circle"></i> Admission Admins can manage the Admissions portal. They do NOT have access to the Management tab.
+      </div>
+    </div>`;
+}
+
+function openAddSubAdminModal(defaultRole) {
   const data = DB.get();
   const PERM_KEYS = ['students', 'attendance', 'grades', 'growth', 'activities', 'syllabus', 'announcements', 'leaves'];
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="modal modal-lg">
-      <div class="modal-header"><h2 class="modal-title">Add Sub Admin / Teacher</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Staff Account</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="sa-name" placeholder="Teacher full name"/></div>
@@ -164,12 +215,12 @@ function openAddSubAdminModal() {
           <div class="form-group">
             <label class="form-label">Staff Role</label>
             <select class="form-control" id="sa-role" onchange="document.getElementById('sa-class-row').style.display=this.value==='admission'?'none':'block'">
-              <option value="subadmin">Class Teacher / Sub Admin</option>
-              <option value="admission">Admission Admin</option>
+              <option value="subadmin" ${defaultRole==='admission'?'':'selected'}>Class Teacher / Sub Admin</option>
+              <option value="admission" ${defaultRole==='admission'?'selected':''}>Admission Admin</option>
             </select>
           </div>
         </div>
-        <div class="form-row" id="sa-class-row">
+        <div class="form-row" id="sa-class-row" style="display:${defaultRole==='admission'?'none':'flex'}"
           <div class="form-group"></div>
           <div class="form-group">
             <label class="form-label">Assign Class</label>
@@ -1975,12 +2026,12 @@ function loadReceiptsManagement() {
         var d = {};
         try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch(e) {}
         var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
-        var amt = '&#8377;' + Number(p.amount || d.amount || 0).toLocaleString('en-IN');
+        var amt = '&#8377;' + Number(p.amount || d.total || d.amount || d.subtotal || 0).toLocaleString('en-IN');
         var dt = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : '-';
         var studentName = p.student_name || d.studentName || d.student_name || '-';
         var className = p.class_name || d.className || d.class_name || '-';
         var feeMonth = p.fee_month || d.feeMonth || d.fee_month || d.month || '-';
-        var receiptNo = p.receipt_number || d.receiptNumber || p.id;
+        var receiptNo = p.receipt_number || d.receiptNo || d.receiptNumber || p.id;
         html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
           '<td style="padding:9px 8px;font-weight:600;color:#0F2050">#' + receiptNo + '</td>' +
           '<td style="padding:9px 8px">' + studentName + '</td>' +
@@ -2065,9 +2116,13 @@ function loadAdmissionsManagement() {
         var className = d.className || d.class_name || d.classApplied || a.class_id || '-';
         var parentName = d.parentName || d.parent_name || d.guardianName || d.fatherName || d.motherName || '-';
         var admNo = d.admissionNo || a.id;
-        var approveBtn = (status !== 'approved')
+        var isApproved = (status === 'approved');
+        var approveBtn = !isApproved
           ? '<button onclick="approveAdmission(\'' + a.id + '\')" style="background:#27ae60;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px;margin-right:4px"><i class="fas fa-check"></i> Approve</button>'
           : '';
+        var deleteBtn = !isApproved
+          ? '<button onclick="deleteAdmission(\'' + a.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>'
+          : '<span style="font-size:12px;color:#27ae60;font-weight:600"><i class="fas fa-check-circle"></i> Approved</span>';
         html += '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
           '<td style="padding:9px 8px;font-weight:600;color:#0F2050">' + admNo + '</td>' +
           '<td style="padding:9px 8px">' + studentName + '</td>' +
@@ -2076,8 +2131,7 @@ function loadAdmissionsManagement() {
           '<td style="padding:9px 8px">' + dt + '</td>' +
           '<td style="padding:9px 8px;text-align:center"><span style="background:' + statusColor + ';color:#fff;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600">' + statusLabel + '</span></td>' +
           '<td style="padding:9px 8px;text-align:center">' +
-            approveBtn +
-            '<button onclick="deleteAdmission(\'' + a.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i> Delete</button>' +
+            approveBtn + deleteBtn +
           '</td></tr>';
       });
       html += '</tbody></table></div>';

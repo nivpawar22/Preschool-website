@@ -664,6 +664,7 @@ function renderParentAnnouncements() {
             ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>'}
           </div>
           <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.6">${a.body}</p>
+          ${a.imageUrl ? `<div style="margin-bottom:10px"><img src="/r2/${a.imageUrl}" style="max-width:100%;max-height:260px;border-radius:10px;object-fit:cover;border:1px solid #DCE1EF"></div>` : ''}
           <div style="font-size:12px;color:#6B7A9D">
             <i class="fas fa-user"></i> ${poster ? poster.name : 'School'}
             &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}

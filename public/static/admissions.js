@@ -450,6 +450,11 @@ function buildAdmForm(curStatus) {
         '<div style="height:12px"></div>'+
         fInput('af-maadh','Mother Aadhaar','text',fd.motherAadhaar,'')) +
 
+      secWrap(secHead('fa-heart','Marriage Anniversary','#e11d48')+
+        '<div style="padding:4px 0 4px">'+
+        grid4([fInput('af-marr','Parents\' Marriage Date','date',fd.marriageDate,''),fInput('af-anniv-note','Anniversary Note (optional)','text',fd.anniversaryNote,'e.g. Church wedding')])+
+        '</div>') +
+
       secWrap(secHead('fa-map-marker-alt','Residential Address','#1AA6CA')+
         grid4([fInput('af-addr1','Address Line 1','text',fd.address1,'House/Flat, Building',true),fInput('af-addr2','Address Line 2','text',fd.address2,'Area, Landmark')])+
         '<div style="height:12px"></div>'+
@@ -528,6 +533,7 @@ function collectAdmFormData() {
     studentName:fi('af-sn'),classId:fi('af-cls'),dob:fi('af-dob'),gender:fi('af-gender'),bloodGroup:fi('af-bg'),aadhaar:fi('af-aadhaar'),religion:fi('af-religion'),motherTongue:fi('af-mtongue'),
     fatherName:fi('af-fn'),fatherMobile:fi('af-fmob'),fatherEmail:fi('af-femail'),fatherProfession:fi('af-fprof'),fatherQualification:fi('af-fqual'),fatherAadhaar:fi('af-faadh'),
     motherName:fi('af-mn'),motherMobile:fi('af-mmob'),motherEmail:fi('af-memail'),motherProfession:fi('af-mprof'),motherAadhaar:fi('af-maadh'),
+    marriageDate:fi('af-marr'),anniversaryNote:fi('af-anniv-note'),
     address1:fi('af-addr1'),address2:fi('af-addr2'),city:fi('af-city'),pincode:fi('af-pin'),
     emergencyName:fi('af-ename'),emergencyRelation:fi('af-erel'),emergencyMobile:fi('af-emob'),emergencyAlt:fi('af-ealt'),
     allergies:fi('af-allergy'),doctorName:fi('af-doctor'),medicalConditions:fi('af-medcond'),
@@ -637,15 +643,29 @@ function printAdmForm() {
       '</div>' +
     '</div>'+
     '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
-    '<div class="sec"><div class="sh">Student Information</div><div class="sb">'+
-      [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||''],['Religion',fd.religion||''],['Mother Tongue',fd.motherTongue||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
-    '</div></div>'+
+    '<div class="sec"><div class="sh">Student Information</div>'+
+      '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px">'+
+        '<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+          [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||''],['Religion',fd.religion||''],['Mother Tongue',fd.motherTongue||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+        '</div>'+
+        (fd.studentPhotoUrl?
+          '<div style="width:100px;flex-shrink:0;text-align:center">'+
+            '<div style="width:90px;height:90px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;margin:0 auto;background:#F8F9FB">'+
+              '<img src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+')">'+
+            '</div>'+
+            '<div style="font-size:9px;color:#666;margin-top:4px;font-weight:700">STUDENT PHOTO</div>'+
+          '</div>':'') +
+      '</div>'+
+    '</div>'+
     '<div class="sec"><div class="sh">Father\'s Details</div><div class="sb">'+
       [['Full Name',fd.fatherName||''],['Mobile',fd.fatherMobile||''],['Email',fd.fatherEmail||''],['Profession',fd.fatherProfession||''],['Qualification',fd.fatherQualification||''],['Aadhaar',fd.fatherAadhaar||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
     '<div class="sec"><div class="sh">Mother\'s Details</div><div class="sb">'+
       [['Full Name',fd.motherName||''],['Mobile',fd.motherMobile||''],['Email',fd.motherEmail||''],['Profession',fd.motherProfession||''],['Aadhaar',fd.motherAadhaar||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
+    (fd.marriageDate?'<div class="sec"><div class="sh">Marriage Anniversary</div><div class="sb">'+
+      [['Marriage Date',fd.marriageDate||''],['Note',fd.anniversaryNote||'–']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
+    '</div></div>':'')+
     '<div class="sec"><div class="sh">Address</div><div class="sb" style="grid-template-columns:1fr">'+
       '<div><div class="fl">Residential Address</div><div class="fv">'+[fd.address1,fd.address2,fd.city,fd.pincode].filter(Boolean).join(', ')+'</div></div>'+
     '</div></div>'+

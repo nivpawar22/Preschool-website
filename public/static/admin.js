@@ -1848,6 +1848,7 @@ function renderAnnouncements() {
             </div>
           </div>
           <p style="color:#2A3B60;font-size:14px;margin:0 0 8px">${a.body}</p>
+          ${a.imageUrl ? `<div style="margin-bottom:10px"><img src="/r2/${a.imageUrl}" style="max-width:100%;max-height:280px;border-radius:10px;object-fit:cover;border:1px solid #DCE1EF"></div>` : ''}
           <div style="font-size:12px;color:#6B7A9D">Posted by ${poster ? poster.name : '-'} · ${formatDate(a.date)}</div>
         </div>`;
       }).join('')}
@@ -1868,6 +1869,20 @@ function openAddAnnouncementModal() {
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Title *</label><input class="form-control" id="ann-title" placeholder="Announcement title"/></div>
         <div class="form-group"><label class="form-label">Message *</label><textarea class="form-control" id="ann-body" rows="4" placeholder="Enter announcement content..."></textarea></div>
+        <div class="form-group">
+          <label class="form-label">Greeting Image (optional)</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div id="ann-img-preview" style="width:60px;height:60px;border:1.5px dashed #DCE1EF;border-radius:8px;background:#F8F9FB;display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <i class="fas fa-image" style="color:#DCE1EF;font-size:22px"></i>
+            </div>
+            <div>
+              <input type="file" id="ann-img-input" accept="image/*" style="display:none" onchange="uploadAnnouncementImage(this)">
+              <button type="button" onclick="document.getElementById('ann-img-input').click()" style="padding:6px 12px;border:1.5px solid #1AA6CA;border-radius:6px;background:#E5F5FF;color:#1AA6CA;font-size:12px;cursor:pointer;font-weight:600"><i class="fas fa-upload"></i> Upload Image</button>
+              <div style="font-size:11px;color:#6B7A9D;margin-top:4px">Optional greeting image for occasions</div>
+            </div>
+          </div>
+          <input type="hidden" id="ann-img-url" value="">
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Target Audience</label>
@@ -1891,6 +1906,24 @@ function openAddAnnouncementModal() {
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 }
 
+function uploadAnnouncementImage(input) {
+  if (!input.files || !input.files[0]) return;
+  showToast('Uploading image…', 'default');
+  var form = new FormData();
+  form.append('file', input.files[0]);
+  fetch('/api/upload?folder=announcements', {method: 'POST', body: form})
+    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (r.error) { showToast('Upload failed', 'error'); return; }
+      var urlEl = document.getElementById('ann-img-url');
+      if (urlEl) urlEl.value = r.key;
+      var preview = document.getElementById('ann-img-preview');
+      if (preview) preview.innerHTML = '<img src="/r2/'+r.key+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px">';
+      showToast('Image uploaded', 'success');
+    })
+    .catch(function() { showToast('Upload failed', 'error'); });
+}
+
 function saveAnnouncement() {
   const data = DB.get();
   const user = Session.current();
@@ -1898,8 +1931,10 @@ function saveAnnouncement() {
   const body = document.getElementById('ann-body').value.trim();
   if (!title || !body) { showToast('Title and message required', 'error'); return; }
   const classEl = document.getElementById('ann-class');
+  const imgEl = document.getElementById('ann-img-url');
   data.announcements.unshift({
     id: DB.genId('ann'), title, body,
+    imageUrl: imgEl ? imgEl.value || null : null,
     postedBy: user.id,
     targetRole: document.getElementById('ann-target').value,
     date: new Date().toISOString().split('T')[0],
@@ -2837,13 +2872,13 @@ const _evTypeStyles = {
   meeting:  { bg: '#FEF7E0', color: '#9A6A00', icon: 'fa-users' },
 };
 
-function renderEvents() {
+function _buildEventsUI(events, anniversaryEvents) {
   const user = Session.current();
-  const data = DB.get();
-  const events = DB.getEvents();
   const today = new Date().toISOString().split('T')[0];
   const upcoming = events.filter(e => e.date >= today);
   const past = events.filter(e => e.date < today);
+  const upcomingAnniv = anniversaryEvents.filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const pastAnniv = anniversaryEvents.filter(e => e.date < today).sort((a, b) => b.date.localeCompare(a.date));
 
   const eventCard = (ev) => {
     const tc = _evTypeStyles[ev.type] || _evTypeStyles.academic;
@@ -2874,26 +2909,86 @@ function renderEvents() {
     </div>`;
   };
 
+  const anniversaryCard = (ev) => {
+    return `
+    <div style="border:2px solid #fda4af;border-radius:14px;padding:18px;background:#fff0f3;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:#fce7f3;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px">&#x1F491;</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#9d174d">${ev.title}</div>
+            <div style="font-size:12px;color:#be185d">${ev._studentName ? 'Student: ' + ev._studentName : 'Parents\' Anniversary'}</div>
+          </div>
+        </div>
+        <span style="background:#fce7f3;color:#9d174d;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap">Anniversary</span>
+      </div>
+      ${ev.description ? `<div style="font-size:13px;color:#be185d">${ev.description}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#2A3B60"><i class="fas fa-calendar" style="color:#e11d48;margin-right:4px"></i>${formatDate(ev.date)}</span>
+      </div>
+    </div>`;
+  };
+
   const content = `
     <div class="card" style="margin-bottom:20px">
       <div class="card-header">
         <div class="card-title"><i class="fas fa-calendar-alt" style="color:#1AA6CA"></i> Upcoming Events</div>
         <button class="btn btn-primary" onclick="openAddEventModal()"><i class="fas fa-plus"></i> Add Event</button>
       </div>
-      ${upcoming.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">${upcoming.map(eventCard).join('')}</div>`
+      ${(upcoming.length || upcomingAnniv.length) ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">${upcoming.map(eventCard).join('')}${upcomingAnniv.map(anniversaryCard).join('')}</div>`
         : `<div class="empty-state"><i class="fas fa-calendar-alt"></i><h3>No upcoming events</h3><p>Schedule events for students and parents</p></div>`}
     </div>
-    ${past.length ? `
+    ${(past.length || pastAnniv.length) ? `
     <div class="card">
       <div class="card-header">
         <div class="card-title" style="color:#6B7A9D"><i class="fas fa-history"></i> Past Events</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;opacity:0.6">
-        ${past.map(eventCard).join('')}
+        ${past.map(eventCard).join('')}${pastAnniv.map(anniversaryCard).join('')}
       </div>
     </div>` : ''}`;
 
   renderLayout('events', content, 'School Events');
+}
+
+function renderEvents() {
+  const user = Session.current();
+  const events = DB.getEvents();
+  const today = new Date().toISOString().split('T')[0];
+  const currentYear = new Date().getFullYear();
+
+  if (user.role === 'superadmin' || user.role === 'subadmin') {
+    fetch('/api/admissions')
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        const admissions = result.items || [];
+        const anniversaryEvents = [];
+        admissions.forEach(function(adm) {
+          var fd = {};
+          try { fd = adm.data ? (typeof adm.data === 'string' ? JSON.parse(adm.data) : adm.data) : {}; } catch(e) {}
+          if (fd.marriageDate) {
+            var parts = fd.marriageDate.split('-');
+            if (parts.length === 3) {
+              var thisYearDate = currentYear + '-' + parts[1] + '-' + parts[2];
+              var parentName = fd.fatherName || fd.motherName || 'Parent';
+              anniversaryEvents.push({
+                id: 'anniv-' + adm.id,
+                title: '\u{1F491} ' + parentName + ' Anniversary',
+                date: thisYearDate,
+                type: '_anniversary',
+                description: fd.anniversaryNote || '',
+                _synthetic: true,
+                _studentName: fd.studentName || ''
+              });
+            }
+          }
+        });
+        _buildEventsUI(events, anniversaryEvents);
+      })
+      .catch(function() { _buildEventsUI(events, []); });
+  } else {
+    _buildEventsUI(events, []);
+  }
 }
 
 function openAddEventModal() {

@@ -303,17 +303,25 @@ function renderAdmList() {
         (list.length===0?'<tr><td colspan="6" style="text-align:center;padding:48px;color:#6B7A9D">No admissions found</td></tr>':
           list.map(function(a){
             var d=a.data?JSON.parse(a.data):{};
+            var isApproved = a.status === 'approved';
+            var isSuperAdmin = (Session.current()||{}).role === 'superadmin';
+            var statusControl = (isApproved && !isSuperAdmin)
+              ? admBadge(a.status, ADM_S) + '<span style="font-size:10px;color:#059669;display:block;margin-top:2px"><i class="fas fa-lock"></i> Locked</span>'
+              : '<select onchange="updateAdmStatus(\''+a.id+'\',this.value)" style="padding:4px 8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:11px;cursor:pointer">'+ADM_KEYS.map(function(s){return '<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+(ADM_S[s]||{label:s}).label+'</option>';}).join('')+'</select>';
+            var deleteControl = (!isApproved || isSuperAdmin)
+              ? '<button onclick="deleteAdm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;font-size:11px;cursor:pointer"><i class="fas fa-trash"></i></button>'
+              : '';
             return '<tr style="border-bottom:1px solid #F1F5F9">'+
               '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+(d.admissionNo||'–')+'</td>'+
               '<td style="padding:10px 12px;font-weight:700">'+(d.studentName||'–')+'</td>'+
               '<td style="padding:10px 12px;color:#6B7A9D">'+(d.classId||'–')+'</td>'+
               '<td style="padding:10px 12px;color:#6B7A9D">'+(d.fatherMobile||d.motherMobile||'–')+'</td>'+
               '<td style="padding:10px 12px">'+admBadge(a.status,ADM_S)+'</td>'+
-              '<td style="padding:10px 12px"><div style="display:flex;gap:6px;flex-wrap:wrap">'+
+              '<td style="padding:10px 12px"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
                 '<button onclick="admEditForm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #1AA6CA;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer"><i class="fas fa-edit"></i></button>'+
                 '<button onclick="openCollectFeeModal(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #059669;background:#D1FAE5;color:#059669;font-size:11px;cursor:pointer" title="Collect Fee"><i class="fas fa-rupee-sign"></i></button>'+
-                '<select onchange="updateAdmStatus(\''+a.id+'\',this.value)" style="padding:4px 8px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:11px;cursor:pointer">'+ADM_KEYS.map(function(s){return '<option value="'+s+'"'+(s===a.status?' selected':'')+'>'+(ADM_S[s]||{label:s}).label+'</option>';}).join('')+'</select>'+
-                '<button onclick="deleteAdm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #FEE2E2;background:#FEE2E2;color:#dc2626;font-size:11px;cursor:pointer"><i class="fas fa-trash"></i></button>'+
+                statusControl +
+                deleteControl +
               '</div></td>'+
             '</tr>';
           }).join('')

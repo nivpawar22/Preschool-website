@@ -220,7 +220,7 @@ function openAddSubAdminModal(defaultRole) {
             </select>
           </div>
         </div>
-        <div class="form-row" id="sa-class-row" style="display:${defaultRole==='admission'?'none':'flex'}"
+        <div class="form-row" id="sa-class-row" style="display:${defaultRole==='admission'?'none':'flex'}">
           <div class="form-group"></div>
           <div class="form-group">
             <label class="form-label">Assign Class</label>
@@ -229,7 +229,7 @@ function openAddSubAdminModal(defaultRole) {
               ${data.classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
             </select>
           </div>
-        </div></div>
+        </div>
         <div class="form-group">
           <label class="form-label">Avatar Color</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">

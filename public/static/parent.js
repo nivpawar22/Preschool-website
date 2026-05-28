@@ -654,25 +654,26 @@ function renderParentAnnouncements() {
     ${child ? renderChildSelector(child) : ''}
     <div class="card">
       <div class="card-title" style="margin-bottom:14px"><i class="fas fa-bullhorn" style="color:#E8B020"></i> School Announcements</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:4px">
       ${anns.map(a => {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
-        const shortBody = a.body.length > 100 ? a.body.slice(0, 100) + '…' : a.body;
         return `
-        <div onclick="expandParentAnnouncement(${JSON.stringify(a.id)})" style="border:1.5px solid #DCE1EF;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.07);display:flex;align-items:stretch;overflow:hidden;min-height:76px;cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 3px 10px rgba(196,137,58,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(15,32,80,0.07)'">
-          ${a.imageUrl ? `<div style="width:72px;flex-shrink:0;overflow:hidden;background:#f0f4ff;border-right:1.5px solid #DCE1EF">
-            <img src="/r2/${a.imageUrl}" style="width:72px;height:100%;object-fit:cover;display:block;min-height:76px">
-          </div>` : ''}
-          <div style="flex:1;padding:10px 12px;min-width:0">
-            <div style="font-size:14px;font-weight:700;color:#0F1E3D;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
-            <div style="font-size:12px;color:#4A5B80;line-height:1.5;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${shortBody}</div>
-            <div style="font-size:11px;color:#6B7A9D;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div onclick="expandParentAnnouncement('${a.id}')" style="border:1.5px solid #DCE1EF;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.07);cursor:pointer;position:relative;transition:box-shadow 0.15s,transform 0.15s" onmouseover="this.style.boxShadow='0 6px 20px rgba(196,137,58,0.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(15,32,80,0.07)';this.style.transform='translateY(0)'">
+          ${a.imageUrl
+            ? `<img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">`
+            : `<div style="height:5px;background:linear-gradient(90deg,#0F2050,#E8B020,#C4893A)"></div>`}
+          <div style="padding:12px 14px 14px">
+            <div style="font-size:14px;font-weight:700;color:#0F1E3D;margin-bottom:5px;line-height:1.3">${a.title}</div>
+            <div style="font-size:12px;color:#4A5B80;line-height:1.55;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${a.body}</div>
+            <div style="font-size:11px;color:#6B7A9D;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;border-top:1px solid #f1f5f9;padding-top:8px">
               ${cls ? `<span class="badge badge-blue" style="font-size:10px">${cls.name}</span>` : '<span class="badge badge-purple" style="font-size:10px">All School</span>'}
               <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
             </div>
           </div>
         </div>`;
       }).join('')}
+      </div>
       ${!anns.length ? '<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>' : ''}
     </div>`;
 

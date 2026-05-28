@@ -1804,7 +1804,7 @@ function loadLetterheadConfig() {
           (lh.signatureUrl ? (
             '<div style="margin-bottom:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:10px;padding:14px">' +
               '<div style="font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;margin-bottom:10px"><i class="fas fa-sliders-h"></i> Adjust Signature</div>' +
-              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">' +
                 '<div>' +
                   '<label style="font-size:12px;font-weight:600;color:#2A3B60;display:flex;justify-content:space-between"><span>Size (Width)</span><span id="sig-w-label">'+(lh.signatureWidth||120)+'px</span></label>' +
                   '<input type="range" id="sig-width" min="50" max="280" step="5" value="'+(lh.signatureWidth||120)+'" oninput="adjustSig()" style="width:100%;margin-top:6px;accent-color:#C4893A">' +
@@ -1812,6 +1812,10 @@ function loadLetterheadConfig() {
                 '<div>' +
                   '<label style="font-size:12px;font-weight:600;color:#2A3B60;display:flex;justify-content:space-between"><span>Vertical Position</span><span id="sig-y-label">'+(lh.signatureOffsetY||0)+'px</span></label>' +
                   '<input type="range" id="sig-offsety" min="-30" max="40" step="2" value="'+(lh.signatureOffsetY||0)+'" oninput="adjustSig()" style="width:100%;margin-top:6px;accent-color:#C4893A">' +
+                '</div>' +
+                '<div>' +
+                  '<label style="font-size:12px;font-weight:600;color:#2A3B60;display:flex;justify-content:space-between"><span>Horizontal Position</span><span id="sig-x-label">'+(lh.signatureOffsetX||0)+'px</span></label>' +
+                  '<input type="range" id="sig-offsetx" min="-100" max="200" step="5" value="'+(lh.signatureOffsetX||0)+'" oninput="adjustSig()" style="width:100%;margin-top:6px;accent-color:#C4893A">' +
                 '</div>' +
               '</div>' +
             '</div>'
@@ -1851,6 +1855,7 @@ function buildLetterheadHtml(meta, lh) {
   var sigUrl = lh.signatureUrl || '';
   var sigWidth = lh.signatureWidth || 120;
   var sigOffsetY = lh.signatureOffsetY || 0;
+  var sigOffsetX = lh.signatureOffsetX || 0;
   var salutation = lh.salutation || 'To Whomsoever It May Concern,';
   var body = lh.body || '[Letter content will appear here…]';
   var closing = lh.closing || 'Yours Sincerely,';
@@ -1885,7 +1890,7 @@ function buildLetterheadHtml(meta, lh) {
       '<div style="margin-top:28px;font-size:13px;color:#1a1a2e">'+closing+'</div>' +
       '<div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div>' +
-          (sigUrl ? '<img src="'+sigUrl+'" style="width:'+sigWidth+'px;height:auto;object-fit:contain;display:block;margin-top:'+sigOffsetY+'px;margin-bottom:4px"/>' :
+          (sigUrl ? '<img src="'+sigUrl+'" style="width:'+sigWidth+'px;height:auto;object-fit:contain;display:block;margin-top:'+sigOffsetY+'px;margin-left:'+sigOffsetX+'px;margin-bottom:4px"/>' :
             '<div style="height:50px;border-bottom:1.5px solid #0F2050;width:170px;margin-bottom:4px"></div>') +
           '<div style="font-size:12px;font-weight:800;color:#0F2050">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
@@ -1904,14 +1909,16 @@ function buildLetterheadHtml(meta, lh) {
 window.adjustSig = function() {
   var w = parseInt((document.getElementById('sig-width')||{}).value||120);
   var y = parseInt((document.getElementById('sig-offsety')||{}).value||0);
+  var x = parseInt((document.getElementById('sig-offsetx')||{}).value||0);
   var wl = document.getElementById('sig-w-label'); if(wl) wl.textContent = w+'px';
   var yl = document.getElementById('sig-y-label'); if(yl) yl.textContent = y+'px';
+  var xl = document.getElementById('sig-x-label'); if(xl) xl.textContent = x+'px';
   var prev = document.getElementById('lh-sig-preview');
   if (prev) {
     var img = prev.querySelector('img');
-    if (img) { img.style.width = w+'px'; img.style.marginTop = y+'px'; }
+    if (img) { img.style.width = w+'px'; img.style.marginTop = y+'px'; img.style.marginLeft = x+'px'; }
   }
-  var lh = Object.assign({}, DB.get().meta.letterhead||{}, {signatureWidth:w, signatureOffsetY:y});
+  var lh = Object.assign({}, DB.get().meta.letterhead||{}, {signatureWidth:w, signatureOffsetY:y, signatureOffsetX:x});
   DB.updateMeta({letterhead:lh});
   var pb = document.getElementById('lh-preview-box');
   if (pb) pb.innerHTML = buildLetterheadHtml(DB.get().meta, lh);
@@ -1926,6 +1933,7 @@ window.saveLetterhead = function() {
     signatureUrl: existing.signatureUrl || '',
     signatureWidth: existing.signatureWidth || 120,
     signatureOffsetY: existing.signatureOffsetY || 0,
+    signatureOffsetX: existing.signatureOffsetX || 0,
   };
   DB.updateMeta({letterhead: lh});
   var pb = document.getElementById('lh-preview-box');
@@ -1968,6 +1976,7 @@ window.printLetterhead = function() {
     signatureUrl: (meta.letterhead||{}).signatureUrl || '',
     signatureWidth: (meta.letterhead||{}).signatureWidth || 120,
     signatureOffsetY: (meta.letterhead||{}).signatureOffsetY || 0,
+    signatureOffsetX: (meta.letterhead||{}).signatureOffsetX || 0,
   };
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
@@ -2023,7 +2032,7 @@ window.printLetterhead = function() {
       '<div style="margin-top:30px;margin-bottom:44px">'+lh.closing+'</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div>' +
-          (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;margin-top:'+(lh.signatureOffsetY||0)+'px;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
+          (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;margin-top:'+(lh.signatureOffsetY||0)+'px;margin-left:'+(lh.signatureOffsetX||0)+'px;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
           '<div style="font-weight:800;color:#0F2050">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
         '</div>' +

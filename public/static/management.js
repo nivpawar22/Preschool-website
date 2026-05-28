@@ -1796,7 +1796,26 @@ function loadLetterheadConfig() {
         '</div>' +
         '<div class="card" style="margin-bottom:16px">' +
           '<div class="card-title" style="margin-bottom:14px"><i class="fas fa-signature" style="color:#C4893A"></i> Principal\'s Signature</div>' +
-          (lh.signatureUrl ? '<img id="lh-sig-preview" src="' + lh.signatureUrl + '" style="max-height:80px;max-width:220px;object-fit:contain;display:block;margin-bottom:12px;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>' : '<div id="lh-sig-preview"></div>') +
+          '<div id="lh-sig-preview" style="margin-bottom:12px">' +
+            (lh.signatureUrl
+              ? '<img src="' + lh.signatureUrl + '" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>'
+              : '<div style="color:#6B7A9D;font-size:13px;padding:12px 0">No signature uploaded yet.</div>') +
+          '</div>' +
+          (lh.signatureUrl ? (
+            '<div style="margin-bottom:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:10px;padding:14px">' +
+              '<div style="font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;margin-bottom:10px"><i class="fas fa-sliders-h"></i> Adjust Signature</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+                '<div>' +
+                  '<label style="font-size:12px;font-weight:600;color:#2A3B60;display:flex;justify-content:space-between"><span>Size (Width)</span><span id="sig-w-label">'+(lh.signatureWidth||120)+'px</span></label>' +
+                  '<input type="range" id="sig-width" min="50" max="280" step="5" value="'+(lh.signatureWidth||120)+'" oninput="adjustSig()" style="width:100%;margin-top:6px;accent-color:#C4893A">' +
+                '</div>' +
+                '<div>' +
+                  '<label style="font-size:12px;font-weight:600;color:#2A3B60;display:flex;justify-content:space-between"><span>Vertical Position</span><span id="sig-y-label">'+(lh.signatureOffsetY||0)+'px</span></label>' +
+                  '<input type="range" id="sig-offsety" min="-30" max="40" step="2" value="'+(lh.signatureOffsetY||0)+'" oninput="adjustSig()" style="width:100%;margin-top:6px;accent-color:#C4893A">' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          ) : '') +
           '<div style="display:flex;gap:10px;align-items:center">' +
             '<div onclick="document.getElementById(\'lh-sig-input\').click()" style="flex:1;padding:10px 16px;border:2px dashed #DCE1EF;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;color:#6B7A9D" onmouseover="this.style.borderColor=\'#C4893A\'" onmouseout="this.style.borderColor=\'#DCE1EF\'">' +
               '<i class="fas fa-upload" style="margin-right:6px;color:#C4893A"></i>Upload Signature (PNG/JPG)' +
@@ -1830,6 +1849,8 @@ function buildLetterheadHtml(meta, lh) {
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
   var principal = meta.principalName || 'Principal';
   var sigUrl = lh.signatureUrl || '';
+  var sigWidth = lh.signatureWidth || 120;
+  var sigOffsetY = lh.signatureOffsetY || 0;
   var salutation = lh.salutation || 'To Whomsoever It May Concern,';
   var body = lh.body || '[Letter content will appear here…]';
   var closing = lh.closing || 'Yours Sincerely,';
@@ -1864,7 +1885,7 @@ function buildLetterheadHtml(meta, lh) {
       '<div style="margin-top:28px;font-size:13px;color:#1a1a2e">'+closing+'</div>' +
       '<div style="margin-top:36px;display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div>' +
-          (sigUrl ? '<img src="'+sigUrl+'" style="height:50px;object-fit:contain;display:block;margin-bottom:4px"/>' :
+          (sigUrl ? '<img src="'+sigUrl+'" style="width:'+sigWidth+'px;height:auto;object-fit:contain;display:block;margin-top:'+sigOffsetY+'px;margin-bottom:4px"/>' :
             '<div style="height:50px;border-bottom:1.5px solid #0F2050;width:170px;margin-bottom:4px"></div>') +
           '<div style="font-size:12px;font-weight:800;color:#0F2050">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
@@ -1880,12 +1901,31 @@ function buildLetterheadHtml(meta, lh) {
   '</div>';
 }
 
+window.adjustSig = function() {
+  var w = parseInt((document.getElementById('sig-width')||{}).value||120);
+  var y = parseInt((document.getElementById('sig-offsety')||{}).value||0);
+  var wl = document.getElementById('sig-w-label'); if(wl) wl.textContent = w+'px';
+  var yl = document.getElementById('sig-y-label'); if(yl) yl.textContent = y+'px';
+  var prev = document.getElementById('lh-sig-preview');
+  if (prev) {
+    var img = prev.querySelector('img');
+    if (img) { img.style.width = w+'px'; img.style.marginTop = y+'px'; }
+  }
+  var lh = Object.assign({}, DB.get().meta.letterhead||{}, {signatureWidth:w, signatureOffsetY:y});
+  DB.updateMeta({letterhead:lh});
+  var pb = document.getElementById('lh-preview-box');
+  if (pb) pb.innerHTML = buildLetterheadHtml(DB.get().meta, lh);
+};
+
 window.saveLetterhead = function() {
+  var existing = DB.get().meta.letterhead || {};
   var lh = {
     salutation: (document.getElementById('lh-salutation')||{}).value || 'To Whomsoever It May Concern,',
     body: (document.getElementById('lh-body')||{}).value || '',
     closing: (document.getElementById('lh-closing')||{}).value || 'Yours Sincerely,',
-    signatureUrl: (DB.get().meta.letterhead || {}).signatureUrl || '',
+    signatureUrl: existing.signatureUrl || '',
+    signatureWidth: existing.signatureWidth || 120,
+    signatureOffsetY: existing.signatureOffsetY || 0,
   };
   DB.updateMeta({letterhead: lh});
   var pb = document.getElementById('lh-preview-box');
@@ -1905,7 +1945,7 @@ window.uploadSignature = function(input) {
       var lh = Object.assign({}, DB.get().meta.letterhead || {}, {signatureUrl: sigUrl});
       DB.updateMeta({letterhead: lh});
       var prev = document.getElementById('lh-sig-preview');
-      if (prev) { prev.innerHTML = '<img src="'+sigUrl+'" style="max-height:80px;max-width:220px;object-fit:contain;display:block;margin-bottom:12px;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>'; }
+      if (prev) { prev.innerHTML = '<img src="'+sigUrl+'" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;border:1.5px solid #DCE1EF;border-radius:8px;padding:6px;background:#fff"/>'; }
       var pb = document.getElementById('lh-preview-box');
       if (pb) pb.innerHTML = buildLetterheadHtml(DB.get().meta, lh);
       showToast('Signature uploaded','success');
@@ -1926,6 +1966,8 @@ window.printLetterhead = function() {
     body: (document.getElementById('lh-body')||{}).value || (meta.letterhead||{}).body || '',
     closing: (document.getElementById('lh-closing')||{}).value || (meta.letterhead||{}).closing || 'Yours Sincerely,',
     signatureUrl: (meta.letterhead||{}).signatureUrl || '',
+    signatureWidth: (meta.letterhead||{}).signatureWidth || 120,
+    signatureOffsetY: (meta.letterhead||{}).signatureOffsetY || 0,
   };
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
@@ -1981,7 +2023,7 @@ window.printLetterhead = function() {
       '<div style="margin-top:30px;margin-bottom:44px">'+lh.closing+'</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div>' +
-          (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="height:50px;object-fit:contain;display:block;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
+          (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;margin-top:'+(lh.signatureOffsetY||0)+'px;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
           '<div style="font-weight:800;color:#0F2050">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
         '</div>' +

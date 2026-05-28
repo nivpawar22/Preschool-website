@@ -659,7 +659,7 @@ function renderParentAnnouncements() {
         const cls = a.classId ? DB.getClass(a.classId) : null;
         const shortBody = a.body.length > 100 ? a.body.slice(0, 100) + '…' : a.body;
         return `
-        <div style="border:1.5px solid #DCE1EF;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.07);display:flex;align-items:stretch;overflow:hidden;min-height:76px">
+        <div onclick="expandParentAnnouncement(${JSON.stringify(a.id)})" style="border:1.5px solid #DCE1EF;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.07);display:flex;align-items:stretch;overflow:hidden;min-height:76px;cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 3px 10px rgba(196,137,58,0.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(15,32,80,0.07)'">
           ${a.imageUrl ? `<div style="width:72px;flex-shrink:0;overflow:hidden;background:#f0f4ff;border-right:1.5px solid #DCE1EF">
             <img src="/r2/${a.imageUrl}" style="width:72px;height:100%;object-fit:cover;display:block;min-height:76px">
           </div>` : ''}
@@ -670,9 +670,6 @@ function renderParentAnnouncements() {
               ${cls ? `<span class="badge badge-blue" style="font-size:10px">${cls.name}</span>` : '<span class="badge badge-purple" style="font-size:10px">All School</span>'}
               <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
             </div>
-          </div>
-          <div style="display:flex;flex-direction:column;justify-content:center;padding:8px 10px;border-left:1px solid #f1f5f9;flex-shrink:0">
-            <button onclick="expandParentAnnouncement(${JSON.stringify(a.id)})" style="padding:5px 8px;border-radius:7px;border:1.5px solid #C4893A;background:#FEF0E0;color:#C4893A;font-size:12px;cursor:pointer" title="Read More"><i class="fas fa-expand-alt"></i></button>
           </div>
         </div>`;
       }).join('')}

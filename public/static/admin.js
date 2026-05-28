@@ -1840,7 +1840,7 @@ function renderAnnouncements() {
         const cls = a.classId ? DB.getClass(a.classId) : null;
         const shortBody = a.body.length > 100 ? a.body.slice(0, 100) + '…' : a.body;
         return `
-        <div style="border:1px solid #e0e7ff;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 3px rgba(15,32,80,0.06);display:flex;align-items:stretch;overflow:hidden;min-height:76px">
+        <div onclick="expandAnnouncement(${JSON.stringify(a.id)})" style="border:1px solid #e0e7ff;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 3px rgba(15,32,80,0.06);display:flex;align-items:stretch;overflow:hidden;min-height:76px;cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 3px 10px rgba(59,130,246,0.15)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(15,32,80,0.06)'">
           ${a.imageUrl ? `<div style="width:72px;flex-shrink:0;overflow:hidden;background:#f0f4ff;border-right:1px solid #e0e7ff">
             <img src="/r2/${a.imageUrl}" style="width:72px;height:100%;object-fit:cover;display:block;min-height:76px">
           </div>` : ''}
@@ -1853,10 +1853,9 @@ function renderAnnouncements() {
               <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:8px 10px;border-left:1px solid #f1f5f9;flex-shrink:0">
-            <button onclick="expandAnnouncement(${JSON.stringify(a.id)})" style="padding:5px 8px;border-radius:7px;border:1.5px solid #3B82F6;background:#EFF6FF;color:#3B82F6;font-size:12px;cursor:pointer" title="Expand"><i class="fas fa-expand-alt"></i></button>
-            ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
-          </div>
+          ${Session.canDelete() ? `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 8px;border-left:1px solid #f1f5f9;flex-shrink:0" onclick="event.stopPropagation()">
+            <button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+          </div>` : ''}
         </div>`;
       }).join('')}
       ${!anns.length ? '<div class="empty-state"><i class="fas fa-bullhorn"></i><h3>No announcements</h3></div>' : ''}

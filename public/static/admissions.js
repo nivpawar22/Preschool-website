@@ -694,7 +694,7 @@ function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}
   var meta=DB.get().meta;
   var schoolName=meta.schoolName||'SuperKids India Preschool';
-  var schoolAddr=meta.schoolAddress||'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+  var schoolAddr=meta.schoolAddress||'SuperKids India Preschool,\nMatoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
   var logoUrl=meta.schoolLogo||'/static/school-logo.png';
   var phone1=meta.schoolPhone||'';
   var phone2=meta.schoolPhone2||'';
@@ -741,8 +741,7 @@ function printAdmForm() {
           '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
         '</div>'+
         '<div class="hdr-br">'+
-          '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
-          '<div style="margin-top:2px">'+addrHtml+'</div>'+
+          '<div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:4px"><span class="ico-badge" style="margin-top:2px"><i class="fas fa-home"></i></span><div>'+addrHtml+'</div></div>'+
         '</div>'+
       '</div>' +
     '</div>'+
@@ -970,7 +969,7 @@ function printReceipt(payId) {
     var d=r.item.data?JSON.parse(r.item.data):{};
     var meta=DB.get().meta;
     var schoolName=meta.schoolName||'SuperKids India Preschool';
-    var schoolAddr=meta.schoolAddress||'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+    var schoolAddr=meta.schoolAddress||'SuperKids India Preschool,\nMatoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
     var logoUrl=meta.schoolLogo||'/static/school-logo.png';
     var phone1=meta.schoolPhone||'';
     var phone2=meta.schoolPhone2||'';

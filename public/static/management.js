@@ -1846,7 +1846,7 @@ function loadLetterheadConfig() {
 function buildLetterheadHtml(meta, lh) {
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
-  var address = meta.schoolAddress || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+  var address = meta.schoolAddress || 'SuperKids India Preschool,\nMatoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
   var phone1 = meta.schoolPhone || '';
   var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
@@ -1880,8 +1880,7 @@ function buildLetterheadHtml(meta, lh) {
           '<div style="display:flex;align-items:center">'+ico('fas fa-globe')+website+'</div>' +
         '</div>' +
         '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%">' +
-          '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px">'+ico('fas fa-home')+schoolName+'</div>' +
-          '<div style="margin-top:2px">'+addrHtml+'</div>' +
+          '<div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:4px">'+ico('fas fa-home')+'<div>'+addrHtml+'</div></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -1982,7 +1981,7 @@ window.printLetterhead = function() {
   };
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
-  var address = meta.schoolAddress || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+  var address = meta.schoolAddress || 'SuperKids India Preschool,\nMatoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
   var phone1 = meta.schoolPhone || '';
   var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
@@ -2024,8 +2023,7 @@ window.printLetterhead = function() {
           '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>' +
         '</div>' +
         '<div class="hdr-br">' +
-          '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>' +
-          '<div style="margin-top:2px">'+addrHtml+'</div>' +
+          '<div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:4px"><span class="ico-badge" style="margin-top:2px"><i class="fas fa-home"></i></span><div>'+addrHtml+'</div></div>' +
         '</div>' +
       '</div>' +
     '</div>' +

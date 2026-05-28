@@ -447,7 +447,7 @@ function viewAdmission(id) {
   _admFormData = d;
 }
 
-function admNewForm() { _admFormId=null; if(!_admFormData) _admFormData={}; navigate('new-admission'); }
+function admNewForm() { _admFormId=null; _admFormData={}; navigate('new-admission'); }
 function admEditForm(id) { _admFormId=id; _admFormData={}; navigate('new-admission'); }
 
 // ============================================================
@@ -694,16 +694,17 @@ function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}
   var meta=DB.get().meta;
   var schoolName=meta.schoolName||'SuperKids India Preschool';
-  var schoolAddr=meta.schoolAddress||'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+  var schoolAddr=meta.schoolAddress||'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
   var logoUrl=meta.schoolLogo||'/static/school-logo.png';
   var phone1=meta.schoolPhone||'';
   var phone2=meta.schoolPhone2||'';
   var email=meta.schoolEmail||'';
   var website=meta.schoolWebsite||'https://superkidsindia.com';
   var principal=meta.principalName||'Principal';
+  var addrHtml=schoolAddr.replace(/\n/g,'<br>');
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admission Form</title><style>' +
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Admission Form</title><style>' +
     '@page{margin:6mm}' +
     'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050}' +
@@ -712,8 +713,9 @@ function printAdmForm() {
     '.hdr-name{font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
     '.hdr-bar{background-color:#dcad92;padding:7px 20px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75;text-align:right;max-width:46%}' +
+    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
+    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.9}' +
+    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%}' +
     '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background-color:#E8EDF5}' +
     '.sec{margin:0 16px 12px;border:1px solid #ddd;border-radius:4px}' +
     '.sh{background-color:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
@@ -733,14 +735,14 @@ function printAdmForm() {
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
       '<div class="hdr-bar">' +
         '<div class="hdr-bl">'+
-          (phone1?'<div>&#9742;&nbsp;'+phone1+'</div>':'')+
-          (phone2?'<div style="padding-left:14px">'+phone2+'</div>':'')+
-          (email?'<div>&#9993;&nbsp;'+email+'</div>':'')+
-          '<div>&#8853;&nbsp;'+website+'</div>'+
+          (phone1?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>'+phone1+'</div>':'')+
+          (phone2?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>'+phone2+'</div>':'')+
+          (email?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>'+email+'</div>':'')+
+          '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
         '</div>'+
         '<div class="hdr-br">'+
-          '<div style="font-weight:800">&#8962;&nbsp;'+schoolName+'</div>'+
-          '<div>'+schoolAddr+'</div>'+
+          '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
+          '<div style="margin-top:2px">'+addrHtml+'</div>'+
         '</div>'+
       '</div>' +
     '</div>'+
@@ -968,16 +970,17 @@ function printReceipt(payId) {
     var d=r.item.data?JSON.parse(r.item.data):{};
     var meta=DB.get().meta;
     var schoolName=meta.schoolName||'SuperKids India Preschool';
-    var schoolAddr=meta.schoolAddress||'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026';
+    var schoolAddr=meta.schoolAddress||'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
     var logoUrl=meta.schoolLogo||'/static/school-logo.png';
     var phone1=meta.schoolPhone||'';
     var phone2=meta.schoolPhone2||'';
     var email=meta.schoolEmail||'';
     var website=meta.schoolWebsite||'https://superkidsindia.com';
     var principal=meta.principalName||'Principal';
+    var addrHtml=schoolAddr.replace(/\n/g,'<br>');
     var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
     var win=window.open('','_blank','width=700,height=620');
-    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
       '@page{margin:6mm}' +
       'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
       '.hdr{background-color:#0F2050}' +
@@ -986,8 +989,9 @@ function printReceipt(payId) {
       '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
       '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
       '.hdr-bar{background-color:#dcad92;padding:7px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
-      '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75}' +
-      '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.75;text-align:right;max-width:46%}' +
+      '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
+      '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.9}' +
+      '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%}' +
       '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
       '.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}' +
       '.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}' +
@@ -1015,14 +1019,14 @@ function printReceipt(payId) {
         '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +
         '<div class="hdr-bar">' +
           '<div class="hdr-bl">'+
-            (phone1?'<div>&#9742;&nbsp;'+phone1+'</div>':'')+
-            (phone2?'<div style="padding-left:14px">'+phone2+'</div>':'')+
-            (email?'<div>&#9993;&nbsp;'+email+'</div>':'')+
-            '<div>&#8853;&nbsp;'+website+'</div>'+
+            (phone1?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>'+phone1+'</div>':'')+
+            (phone2?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>'+phone2+'</div>':'')+
+            (email?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>'+email+'</div>':'')+
+            '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
           '</div>'+
           '<div class="hdr-br">'+
-            '<div style="font-weight:800">&#8962;&nbsp;'+schoolName+'</div>'+
-            '<div>'+schoolAddr+'</div>'+
+            '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
+            '<div style="margin-top:2px">'+addrHtml+'</div>'+
           '</div>'+
         '</div>' +
       '</div>'+
@@ -1050,6 +1054,6 @@ function printReceipt(payId) {
 registerRoute('admission-dashboard', renderAdmissionDashboard);
 registerRoute('admission-inquiries', renderAdmissionInquiries);
 registerRoute('admissions-list', renderAdmissionsList);
-registerRoute('new-admission', function(){ if(!_admFormId&&!_admFormData) _admFormData={}; renderNewAdmission(); });
+registerRoute('new-admission', function(){ if(!_admFormData) _admFormData={}; renderNewAdmission(); });
 registerRoute('fee-collection', renderFeeCollection);
 registerRoute('receipts', renderReceipts);

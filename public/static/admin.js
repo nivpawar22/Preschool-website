@@ -1838,23 +1838,24 @@ function renderAnnouncements() {
       ${anns.map(a => {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
+        const shortBody = a.body.length > 100 ? a.body.slice(0, 100) + '…' : a.body;
         return `
-        <div style="border:1px solid #e0e7ff;border-radius:14px;margin-bottom:12px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(15,32,80,0.06)">
-          ${a.imageUrl ? `<div style="width:100%;overflow:hidden;border-bottom:2px solid #e0e7ff;background:#f8f9fb;text-align:center">
-            <img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">
+        <div style="border:1px solid #e0e7ff;border-radius:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 3px rgba(15,32,80,0.06);display:flex;align-items:stretch;overflow:hidden;min-height:76px">
+          ${a.imageUrl ? `<div style="width:72px;flex-shrink:0;overflow:hidden;background:#f0f4ff;border-right:1px solid #e0e7ff">
+            <img src="/r2/${a.imageUrl}" style="width:72px;height:100%;object-fit:cover;display:block;min-height:76px">
           </div>` : ''}
-          <div style="padding:16px">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
-              <div style="font-size:16px;font-weight:700;color:#0F1E3D">${a.title}</div>
-              <div style="display:flex;gap:6px;align-items:center">
-                ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-gray">All</span>'}
-                ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>` : ''}
-              </div>
+          <div style="flex:1;padding:10px 12px;min-width:0">
+            <div style="font-size:14px;font-weight:700;color:#0F1E3D;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
+            <div style="font-size:12px;color:#4A5B80;line-height:1.5;margin-bottom:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${shortBody}</div>
+            <div style="font-size:11px;color:#6B7A9D;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              ${cls ? `<span class="badge badge-blue" style="font-size:10px">${cls.name}</span>` : '<span class="badge badge-gray" style="font-size:10px">All</span>'}
+              <span><i class="fas fa-user" style="margin-right:3px"></i>${poster ? poster.name : '-'}</span>
+              <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
             </div>
-            <p style="color:#2A3B60;font-size:14px;margin:0 0 10px;line-height:1.7">${a.body}</p>
-            <div style="font-size:12px;color:#6B7A9D;border-top:1px solid #f1f5f9;padding-top:8px;margin-top:4px">
-              <i class="fas fa-user"></i> Posted by ${poster ? poster.name : '-'} &nbsp;·&nbsp; <i class="fas fa-calendar"></i> ${formatDate(a.date)}
-            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:8px 10px;border-left:1px solid #f1f5f9;flex-shrink:0">
+            <button onclick="expandAnnouncement(${JSON.stringify(a.id)})" style="padding:5px 8px;border-radius:7px;border:1.5px solid #3B82F6;background:#EFF6FF;color:#3B82F6;font-size:12px;cursor:pointer" title="Expand"><i class="fas fa-expand-alt"></i></button>
+            ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
           </div>
         </div>`;
       }).join('')}
@@ -1862,6 +1863,36 @@ function renderAnnouncements() {
     </div>`;
 
   renderLayout('announcements', content, 'Announcements');
+}
+
+function expandAnnouncement(id) {
+  const data = DB.get();
+  const a = data.announcements.find(x => x.id === id);
+  if (!a) return;
+  const poster = DB.getUser(a.postedBy);
+  const cls = a.classId ? DB.getClass(a.classId) : null;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:560px">
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fas fa-bullhorn" style="color:#E8B020;margin-right:8px"></i>${a.title}</h2>
+        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0">
+        ${a.imageUrl ? `<div style="width:100%;background:#f0f4ff;border-bottom:2px solid #e0e7ff"><img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block"></div>` : ''}
+        <div style="padding:18px">
+          <p style="color:#2A3B60;font-size:14px;line-height:1.8;white-space:pre-wrap;margin:0 0 16px">${a.body}</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#6B7A9D;border-top:1px solid #f1f5f9;padding-top:10px">
+            ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-gray">All</span>'}
+            <span><i class="fas fa-user" style="margin-right:3px"></i>${poster ? poster.name : 'School'}</span>
+            <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
 function openAddAnnouncementModal() {

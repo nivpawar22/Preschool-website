@@ -1899,7 +1899,7 @@ function buildLetterheadHtml(meta, lh) {
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
         '</div>' +
         '<div style="text-align:center">' +
-          '<div style="width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3">SCHOOL<br>STAMP</div>' +
+          '<div style="width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3"></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -2042,7 +2042,7 @@ window.printLetterhead = function() {
           '<div style="font-weight:800;color:#0F2050">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
         '</div>' +
-        '<div class="stamp">SCHOOL<br>STAMP</div>' +
+        '<div class="stamp"></div>' +
       '</div>' +
     '</div>' +
   '</div>' +

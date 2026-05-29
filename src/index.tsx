@@ -604,13 +604,12 @@ const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; ti
   <!-- WhatsApp Floating Button -->
   <a href="https://wa.me/919822977644?text=Hello%20SuperKids%20Preschool!%20I%20would%20like%20to%20know%20more%20about%20your%20programs."
      target="_blank" rel="noopener noreferrer" id="whatsapp-btn"
-     style="position:fixed;bottom:28px;right:28px;z-index:9999;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.55),0 2px 8px rgba(0,0,0,0.4);text-decoration:none;transition:transform 0.3s,box-shadow 0.3s;animation:waPulse 2.5s ease-in-out infinite"
+     style="position:fixed;bottom:28px;right:28px;z-index:9999;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.55),0 2px 8px rgba(0,0,0,0.4);text-decoration:none;transition:transform 0.3s,box-shadow 0.3s"
      onmouseover="this.style.transform='scale(1.12)'"
      onmouseout="this.style.transform='scale(1)'">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="34" height="34">
       <path fill="#fff" d="M24 4C13 4 4 13 4 24c0 3.6 1 7 2.7 9.9L4 44l10.4-2.7C17 43 20.4 44 24 44c11 0 20-9 20-20S35 4 24 4zm0 36c-3.1 0-6.1-.8-8.7-2.4l-.6-.4-6.2 1.6 1.7-6-.4-.6C8.8 30.1 8 27.1 8 24c0-8.8 7.2-16 16-16s16 7.2 16 16-7.2 16-16 16zm8.7-11.8c-.5-.2-2.8-1.4-3.2-1.5-.4-.2-.7-.2-1 .2-.3.4-1.2 1.5-1.5 1.9-.3.3-.5.4-1 .1-.5-.2-2-.7-3.8-2.3-1.4-1.2-2.3-2.8-2.6-3.2-.3-.5 0-.7.2-1 .2-.2.5-.5.7-.8.2-.3.3-.5.4-.8.1-.3 0-.6-.1-.8-.1-.2-1-2.5-1.4-3.4-.4-.9-.7-.8-1-.8h-.9c-.3 0-.8.1-1.2.6-.4.5-1.6 1.5-1.6 3.7 0 2.2 1.6 4.3 1.8 4.6.2.3 3.1 4.8 7.6 6.7 1.1.5 1.9.7 2.6.9 1.1.3 2.1.3 2.9.2.9-.1 2.8-1.1 3.2-2.2.4-1.1.4-2 .3-2.2-.1-.2-.4-.3-.9-.5z"/>
     </svg>
-    <span style="position:absolute;width:62px;height:62px;border-radius:50%;background:rgba(37,211,102,0.35);animation:waPulse 2.5s ease-out infinite;pointer-events:none"></span>
   </a>
 
   <div id="wa-tooltip" style="position:fixed;bottom:38px;right:100px;z-index:9998;background:#0A1428;color:#fff;padding:10px 16px;border-radius:12px;font-size:0.85rem;font-weight:700;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2);border:1px solid rgba(37,211,102,0.4);opacity:0;pointer-events:none;transition:opacity 0.3s">
@@ -1436,7 +1435,7 @@ app.get('/gallery', async (c) => {
 
   const tagEntries = Array.from(groups.entries())
 
-  // ── Folder cards (one per tag) ──
+  // ── Folder cards — each is a plain <a href="#gfN"> link; CSS :target shows the panel ──
   const folderCardsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
     const count = items.length
@@ -1447,10 +1446,9 @@ app.get('/gallery', async (c) => {
       `<div style="background:${accent}22;display:flex;align-items:center;justify-content:center;font-size:1.4rem">📷</div>`
     ).join('')
     return `
-    <div data-fidx="${fIdx}"
-         style="cursor:pointer;background:#fff;border-radius:16px;border:2px solid ${accent}33;box-shadow:0 4px 16px rgba(15,32,80,0.08);overflow:hidden;transition:all 0.25s"
-         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(15,32,80,0.16)'"
-         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.08)'">
+    <a href="#gf${fIdx}" style="display:block;text-decoration:none;background:#fff;border-radius:16px;border:2px solid ${accent}33;box-shadow:0 4px 16px rgba(15,32,80,0.08);overflow:hidden;transition:all 0.25s"
+       onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(15,32,80,0.16)'"
+       onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.08)'">
       <div style="height:8px;background:${accent}"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;aspect-ratio:4/3;gap:1px;background:#e8edf5">
         ${previewCells}
@@ -1464,10 +1462,10 @@ app.get('/gallery', async (c) => {
           <i class="fas fa-folder-open" style="font-size:12px"></i>
         </div>
       </div>
-    </div>`
+    </a>`
   }).join('')
 
-  // ── Photo panels (one per tag, hidden initially) with playing-card photo tiles ──
+  // ── Photo panels — hidden by CSS (.gfp), revealed by :target when hash matches ──
   const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
     const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
@@ -1493,13 +1491,12 @@ app.get('/gallery', async (c) => {
         </div>
       </div>`).join('')
     return `
-    <div id="folder-panel-${fIdx}" style="display:none">
+    <div id="gf${fIdx}" class="gfp">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
-        <button data-close-folder
-                style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:50px;border:2px solid #DCE1EF;background:#fff;color:#0F2050;font-weight:700;font-size:13px;cursor:pointer"
-                onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background='#fff'">
+        <a href="#gallery-top" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:50px;border:2px solid #DCE1EF;background:#fff;color:#0F2050;font-weight:700;font-size:13px;text-decoration:none"
+           onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background='#fff'">
           ← All Folders
-        </button>
+        </a>
         <h2 style="font-size:1.2rem;font-weight:800;color:#0F1E3D;margin:0">${tag}</h2>
         <span style="background:${accent}22;color:${accent};font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px">${items.length} photos</span>
       </div>
@@ -1509,7 +1506,7 @@ app.get('/gallery', async (c) => {
     </div>`
   }).join('')
 
-  // ── Groups JSON for client-side navigation ──
+  // ── Groups JSON for lightbox folder-navigation ──
   const groupsArrayJson = JSON.stringify(tagEntries.map(([tag, items]) => ({
     tag,
     indices: items.map(({ idx }) => idx),
@@ -1559,12 +1556,11 @@ app.get('/gallery', async (c) => {
 
       ${r2Error ? `<div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:13px;border:1px solid #fca5a5">R2 error: ${r2Error}</div>` : ''}
 
+      <style>.gfp{display:none}.gfp:target{display:block}.gfp:target~#gallery-top{display:none!important}</style>
       ${photoCount === 0 ? emptyHtml : `
-        <div id="gallery-folders" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
+        ${photoPanelsHtml}
+        <div id="gallery-top" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
           ${folderCardsHtml}
-        </div>
-        <div id="gallery-panels" style="display:none">
-          ${photoPanelsHtml}
         </div>
       `}
 
@@ -1601,39 +1597,20 @@ app.get('/gallery', async (c) => {
     var _lbFolderIndices = null;
     var _lbFolderPos = 0;
 
-    function openFolder(fIdx) {
-      _currentFolder = fIdx;
-      _lbFolderIndices = _GROUPS[fIdx] ? _GROUPS[fIdx].indices : null;
-      _lbFolderPos = 0;
-      // Hide folder grid
-      var foldersEl = document.getElementById('gallery-folders');
-      if (foldersEl) foldersEl.setAttribute('style', 'display:none');
-      // Show panels wrapper (must come before showing individual panel)
-      var panelsEl = document.getElementById('gallery-panels');
-      if (panelsEl) panelsEl.setAttribute('style', 'display:block');
-      // Hide all panels, then show the target one
-      for (var i = 0; i < _GROUPS.length; i++) {
-        var el = document.getElementById('folder-panel-' + i);
-        if (el) el.setAttribute('style', i === fIdx ? 'display:block' : 'display:none');
+    function updateFolderFromHash() {
+      var m = window.location.hash.match(/^#gf(\d+)$/);
+      if (m) {
+        var fi = parseInt(m[1]);
+        _currentFolder = fi;
+        _lbFolderIndices = _GROUPS[fi] ? _GROUPS[fi].indices : null;
+        _lbFolderPos = 0;
+      } else {
+        _currentFolder = null;
+        _lbFolderIndices = null;
       }
     }
-
-    function closeFolder() {
-      _currentFolder = null;
-      _lbFolderIndices = null;
-      var panelsEl = document.getElementById('gallery-panels');
-      if (panelsEl) panelsEl.setAttribute('style', 'display:none');
-      var foldersEl = document.getElementById('gallery-folders');
-      if (foldersEl) foldersEl.setAttribute('style', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px');
-    }
-
-    // Attach folder-open listeners via event delegation (more reliable than inline onclick)
-    document.addEventListener('click', function(e) {
-      var card = e.target.closest ? e.target.closest('[data-fidx]') : null;
-      if (card) { openFolder(parseInt(card.getAttribute('data-fidx'))); return; }
-      var closeBtn = e.target.closest ? e.target.closest('[data-close-folder]') : null;
-      if (closeBtn) { closeFolder(); return; }
-    });
+    window.addEventListener('hashchange', updateFolderFromHash);
+    updateFolderFromHash();
 
     function openLightbox(globalIdx) {
       if (_currentFolder !== null && _GROUPS[_currentFolder]) {

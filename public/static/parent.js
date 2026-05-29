@@ -1181,17 +1181,31 @@ function printFinalResult(childId) {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"/><title>Final Result – ${child.name}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;color:#0F1E3D;padding:24px;background:#fff}
-.header{display:flex;align-items:center;gap:20px;padding:20px 24px;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;border-radius:10px;margin-bottom:18px}
-.logo{width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);object-fit:cover;background:#fff;flex-shrink:0}
-.school-name{font-size:22px;font-weight:900}
-.report-title{font-size:15px;color:#fbbf24;font-weight:700;margin-top:6px;letter-spacing:.5px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+body{font-family:Arial,sans-serif;color:#0F1E3D;padding:20px;background:#fff}
+/* ── Letterhead Header ── */
+.lh-wrap{border:2.5px solid #0F2050;border-radius:10px;overflow:hidden;margin-bottom:18px}
+.lh-top{display:flex;align-items:center;gap:20px;padding:18px 26px;background:#0F2050}
+.lh-logo{width:76px;height:76px;border-radius:50%;border:3px solid #E8B020;object-fit:cover;background:#fff;flex-shrink:0}
+.lh-center{flex:1;text-align:center}
+.lh-school-name{font-size:23px;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1.15}
+.lh-school-tag{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-top:5px}
+.lh-seal{width:70px;height:70px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,.35);font-size:8px;font-weight:700;text-align:center;line-height:1.5;letter-spacing:.06em;text-transform:uppercase}
+.lh-contact-strip{background:#122a59;padding:7px 26px;display:flex;align-items:center;flex-wrap:wrap;gap:0;font-size:11px;color:#c7d2fe;border-top:1px solid rgba(255,255,255,.12)}
+.lh-contact-strip .ci{padding:2px 14px;border-right:1px solid rgba(255,255,255,.2)}
+.lh-contact-strip .ci:first-child{padding-left:0}
+.lh-contact-strip .ci:last-child{border-right:none}
+.lh-addr-strip{background:#0f2050;padding:6px 26px;font-size:11px;color:#a5b4fc;border-top:1px solid rgba(255,255,255,.1)}
+.lh-gold-rule{height:4px;background:#E8B020}
+.lh-doc-title{background:#E8B020;color:#0F1E3D;text-align:center;padding:10px 26px;font-size:13px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
+/* ── Info Grid ── */
 .info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}
 .info-label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.05em}
 .info-value{font-size:13px;font-weight:700;margin-top:3px}
+/* ── Summary cards ── */
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
 .s-card{border:1px solid #DCE1EF;border-radius:8px;padding:14px;text-align:center}
+/* ── Table ── */
 table{width:100%;border-collapse:collapse;border:1px solid #DCE1EF;border-radius:8px;overflow:hidden;margin-bottom:16px}
 th{background:#f1f5f9;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6B7A9D;text-align:left;border-bottom:2px solid #DCE1EF}
 td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
@@ -1204,11 +1218,15 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .sig-date{height:52px;border-bottom:1.5px solid #0F1E3D;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
 .sig-label{font-size:12px;font-weight:700;text-align:center}
 .sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
+.result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
 @media print{
   body{padding:2px;font-size:12px}
-  .header{padding:10px 14px!important;margin-bottom:8px!important;border-radius:6px!important}
-  .school-name{font-size:17px!important}
-  .report-title{font-size:13px!important;margin-top:3px!important}
+  .lh-wrap{margin-bottom:10px!important;border-radius:6px!important}
+  .lh-top{padding:10px 16px!important}
+  .lh-school-name{font-size:17px!important}
+  .lh-seal{width:52px!important;height:52px!important}
+  .lh-contact-strip,.lh-addr-strip{padding:5px 16px!important;font-size:10px!important}
+  .lh-doc-title{padding:7px 16px!important;font-size:12px!important}
   .info-grid{padding:8px!important;margin-bottom:8px!important;gap:6px!important}
   .summary{margin-bottom:8px!important;gap:8px!important}
   .s-card{padding:8px!important}
@@ -1221,19 +1239,21 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   .result-footer{margin-top:6px!important;padding:4px 0!important}
   .no-print{display:none}
 }
-.result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
 </style></head><body>
-<div class="header">
-  <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" class="logo" alt="Logo"/>
-  <div style="flex:1">
-    <div class="school-name">${schoolMeta.schoolName}</div>
-    <div style="color:#c7d2fe;font-size:12px;margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">
-      ${schoolMeta.schoolPhone ? `<span>&#128222; ${schoolMeta.schoolPhone}</span>` : ''}
-      ${schoolMeta.schoolEmail ? `<span>&#9993; ${schoolMeta.schoolEmail}</span>` : ''}
+
+<div class="lh-wrap">
+  <div class="lh-top">
+    <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" class="lh-logo" alt="Logo" onerror="this.style.background='#1e3a6b'"/>
+    <div class="lh-center">
+      <div class="lh-school-name">${schoolMeta.schoolName}</div>
+      <div class="lh-school-tag">Pre&#8209;Primary School</div>
     </div>
-    ${schoolMeta.schoolAddress ? `<div style="color:#a5b4fc;font-size:11px;margin-top:3px">&#128205; ${schoolMeta.schoolAddress}</div>` : ''}
-    <div class="report-title">FINAL RESULT CARD – Academic Year ${academicYear}</div>
+    <div class="lh-seal">OFFICIAL<br>SEAL</div>
   </div>
+  ${(schoolMeta.schoolPhone || schoolMeta.schoolPhone2 || schoolMeta.schoolEmail || schoolMeta.schoolWebsite) ? `<div class="lh-contact-strip">${[schoolMeta.schoolPhone?`<span class="ci">&#128222; ${schoolMeta.schoolPhone}</span>`:'',schoolMeta.schoolPhone2?`<span class="ci">&#128241; ${schoolMeta.schoolPhone2}</span>`:'',schoolMeta.schoolEmail?`<span class="ci">&#9993; ${schoolMeta.schoolEmail}</span>`:'',schoolMeta.schoolWebsite?`<span class="ci">&#127760; ${schoolMeta.schoolWebsite}</span>`:''].filter(Boolean).join('')}</div>` : ''}
+  ${schoolMeta.schoolAddress ? `<div class="lh-addr-strip">&#128205; ${schoolMeta.schoolAddress}</div>` : ''}
+  <div class="lh-gold-rule"></div>
+  <div class="lh-doc-title">Final Result Card &mdash; Academic Year ${academicYear}</div>
 </div>
 <div class="info-grid">
   <div><div class="info-label">Student Name</div><div class="info-value">${child.name}</div></div>

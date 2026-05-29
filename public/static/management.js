@@ -1847,7 +1847,7 @@ function buildLetterheadHtml(meta, lh) {
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
   var _raw = meta.schoolAddress || '';
-  var address = (_raw.indexOf('\n') !== -1) ? _raw : 'Matoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
+  var address = (_raw.indexOf('\n') !== -1) ? _raw : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
   var phone1 = meta.schoolPhone || '';
   var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
@@ -1874,14 +1874,14 @@ function buildLetterheadHtml(meta, lh) {
         '</div>' +
       '</div>' +
       '<div style="background-color:#dcad92;padding:7px 24px;display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.9">' +
+        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45">' +
           (phone1 ? '<div style="display:flex;align-items:center">'+ico('fas fa-phone')+phone1+'</div>' : '') +
           (phone2 ? '<div style="display:flex;align-items:center">'+ico('fas fa-mobile-alt')+phone2+'</div>' : '') +
           (email ? '<div style="display:flex;align-items:center">'+ico('fas fa-envelope')+email+'</div>' : '') +
           '<div style="display:flex;align-items:center">'+ico('fas fa-globe')+website+'</div>' +
         '</div>' +
-        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%">' +
-          '<div style="font-weight:800;margin-bottom:2px">'+ico('fas fa-home')+schoolName+','+'</div>' +
+        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%">' +
+          '<div style="font-weight:800;margin-bottom:2px">'+ico('fas fa-home')+schoolName+'</div>' +
           '<div>'+addrHtml+'</div>' +
         '</div>' +
       '</div>' +
@@ -1984,7 +1984,7 @@ window.printLetterhead = function() {
   var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
   var _rawAddr = meta.schoolAddress || '';
-  var address = (_rawAddr.indexOf('\n') !== -1) ? _rawAddr : 'Matoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
+  var address = (_rawAddr.indexOf('\n') !== -1) ? _rawAddr : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
   var phone1 = meta.schoolPhone || '';
   var phone2 = meta.schoolPhone2 || '';
   var email = meta.schoolEmail || '';
@@ -2004,8 +2004,8 @@ window.printLetterhead = function() {
     '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
     '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
     '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.9}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%}' +
+    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
+    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
     '.body{padding:28px}' +
     '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
     '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
@@ -2026,7 +2026,7 @@ window.printLetterhead = function() {
           '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>' +
         '</div>' +
         '<div class="hdr-br">' +
-          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+','+'</div>' +
+          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>' +
           '<div>'+addrHtml+'</div>' +
         '</div>' +
       '</div>' +

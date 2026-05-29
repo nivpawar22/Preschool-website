@@ -694,7 +694,7 @@ function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}
   var meta=DB.get().meta;
   var schoolName=meta.schoolName||'SuperKids India Preschool';
-  var _rA=meta.schoolAddress||''; var schoolAddr=(_rA.indexOf('\n')!==-1)?_rA:'Matoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
+  var _rA=meta.schoolAddress||''; var schoolAddr=(_rA.indexOf('\n')!==-1)?_rA:'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
   var logoUrl=meta.schoolLogo||'/static/school-logo.png';
   var phone1=meta.schoolPhone||'';
   var phone2=meta.schoolPhone2||'';
@@ -714,8 +714,8 @@ function printAdmForm() {
     '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
     '.hdr-bar{background-color:#dcad92;padding:7px 20px;display:flex;justify-content:space-between;align-items:flex-start}' +
     '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.9}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.65;text-align:right;max-width:48%}' +
+    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
+    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
     '.ft{text-align:center;font-size:14px;font-weight:bold;border:2px solid #0F2050;padding:8px;margin:14px 16px;background-color:#E8EDF5}' +
     '.sec{margin:0 16px 12px;border:1px solid #ddd;border-radius:4px}' +
     '.sh{background-color:#0F2050;color:#fff;padding:6px 12px;font-weight:bold;font-size:13px}' +
@@ -741,7 +741,7 @@ function printAdmForm() {
           '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
         '</div>'+
         '<div class="hdr-br">'+
-          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+','+'</div>'+
+          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
             '<div>'+addrHtml+'</div>'+
         '</div>'+
       '</div>' +
@@ -970,7 +970,7 @@ function printReceipt(payId) {
     var d=r.item.data?JSON.parse(r.item.data):{};
     var meta=DB.get().meta;
     var schoolName=meta.schoolName||'SuperKids India Preschool';
-    var _rB=meta.schoolAddress||''; var schoolAddr=(_rB.indexOf('\n')!==-1)?_rB:'Matoshri Apartment Plot Number 51,\nSector Number 10 Bhosari Pradhikaran,\nPin:411026';
+    var _rB=meta.schoolAddress||''; var schoolAddr=(_rB.indexOf('\n')!==-1)?_rB:'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
     var logoUrl=meta.schoolLogo||'/static/school-logo.png';
     var phone1=meta.schoolPhone||'';
     var phone2=meta.schoolPhone2||'';
@@ -1025,8 +1025,8 @@ function printReceipt(payId) {
             '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
           '</div>'+
           '<div class="hdr-br">'+
-            '<div style="font-weight:800;display:flex;align-items:center;justify-content:flex-end;gap:4px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
-            '<div style="margin-top:2px">'+addrHtml+'</div>'+
+            '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
+            '<div>'+addrHtml+'</div>'+
           '</div>'+
         '</div>' +
       '</div>'+

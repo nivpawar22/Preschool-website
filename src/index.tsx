@@ -1469,7 +1469,7 @@ app.get('/gallery', async (c) => {
   const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
     const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
-      <div data-pidx="${i}"
+      <div data-pidx="${i}" onclick="openLightbox(${i})"
            style="cursor:pointer;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:all 0.25s;border:2px solid ${accent}22"
            onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
@@ -1577,18 +1577,6 @@ app.get('/gallery', async (c) => {
     </div>
   </section>
 
-  <!-- Lightbox -->
-  <div id="lb" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeLightbox()">
-    <button onclick="navLightbox(-1)" style="position:fixed;left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#8249;</button>
-    <button onclick="navLightbox(1)"  style="position:fixed;right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#8250;</button>
-    <button onclick="closeLightbox()" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#x2715;</button>
-    <div style="max-width:920px;width:100%;text-align:center">
-      <img id="lb-img" src="" alt="" style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
-      <div id="lb-info" style="margin-top:14px;color:#fff;font-size:0.95rem;font-weight:700"></div>
-      <div id="lb-counter" style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px"></div>
-    </div>
-  </div>
-
   <script>
     var _PHOTOS = ${photosJson};
     var _GROUPS = ${groupsArrayJson};
@@ -1596,6 +1584,7 @@ app.get('/gallery', async (c) => {
     var _currentFolder = null;
     var _lbFolderIndices = null;
     var _lbFolderPos = 0;
+    var _lbEl = null;
 
     function updateFolderFromHash() {
       var m = window.location.hash.match(/^#gf(\d+)$/);
@@ -1612,6 +1601,23 @@ app.get('/gallery', async (c) => {
     window.addEventListener('hashchange', updateFolderFromHash);
     updateFolderFromHash();
 
+    function buildLbEl() {
+      var el = document.createElement('div');
+      el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+      el.innerHTML =
+        '<button onclick="navLightbox(-1)" style="position:fixed;left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer">&#8249;</button>'
+      + '<button onclick="navLightbox(1)" style="position:fixed;right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer">&#8250;</button>'
+      + '<button onclick="closeLightbox()" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer">&#215;</button>'
+      + '<div style="max-width:920px;width:100%;text-align:center">'
+      +   '<img id="lbo-img" src="" alt="" style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">'
+      +   '<div id="lbo-title" style="margin-top:14px;color:#fff;font-size:0.95rem;font-weight:700"></div>'
+      +   '<div id="lbo-count" style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px"></div>'
+      + '</div>';
+      el.addEventListener('click', function(e) { if (e.target === el) closeLightbox(); });
+      document.body.appendChild(el);
+      return el;
+    }
+
     function openLightbox(globalIdx) {
       if (_currentFolder !== null && _GROUPS[_currentFolder]) {
         var fi = _GROUPS[_currentFolder].indices;
@@ -1623,23 +1629,13 @@ app.get('/gallery', async (c) => {
         _lbFolderIndices = null;
         _lbIdx = globalIdx;
       }
-      showLb();
-      var lbEl = document.getElementById('lb');
-      lbEl.style.display = 'flex';
-      lbEl.style.position = 'fixed';
-      lbEl.style.top = '0';
-      lbEl.style.left = '0';
-      lbEl.style.right = '0';
-      lbEl.style.bottom = '0';
-      lbEl.style.background = 'rgba(0,0,0,0.93)';
-      lbEl.style.zIndex = '10000';
-      lbEl.style.alignItems = 'center';
-      lbEl.style.justifyContent = 'center';
-      lbEl.style.padding = '20px';
+      if (!_lbEl) _lbEl = buildLbEl();
+      _lbEl.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+      showLb();
     }
     function closeLightbox() {
-      document.getElementById('lb').style.display = 'none';
+      if (_lbEl) _lbEl.style.display = 'none';
       document.body.style.overflow = '';
       _lbFolderIndices = null;
     }
@@ -1654,26 +1650,27 @@ app.get('/gallery', async (c) => {
     }
     function showLb() {
       var p = _PHOTOS[_lbIdx];
-      if (!p) return;
-      var img = document.getElementById('lb-img');
-      img.src = p.publicUrl;
-      img.onerror = function() { img.onerror = null; img.src = p.proxyUrl; };
-      img.alt = p.title;
-      document.getElementById('lb-info').textContent = p.title;
-      var total = (_lbFolderIndices && _lbFolderIndices.length) ? _lbFolderIndices.length : _PHOTOS.length;
-      var pos = (_lbFolderIndices && _lbFolderIndices.length) ? (_lbFolderPos + 1) : (_lbIdx + 1);
-      document.getElementById('lb-counter').textContent = pos + ' / ' + total;
+      if (!p || !_lbEl) return;
+      var img = document.getElementById('lbo-img');
+      if (img) { img.src = p.publicUrl; img.onerror = function() { img.onerror = null; img.src = p.proxyUrl; }; img.alt = p.title; }
+      var title = document.getElementById('lbo-title');
+      if (title) title.textContent = p.title;
+      var count = document.getElementById('lbo-count');
+      if (count) {
+        var total = (_lbFolderIndices && _lbFolderIndices.length) ? _lbFolderIndices.length : _PHOTOS.length;
+        var pos = (_lbFolderIndices && _lbFolderIndices.length) ? (_lbFolderPos + 1) : (_lbIdx + 1);
+        count.textContent = pos + ' / ' + total;
+      }
     }
     document.addEventListener('keydown', function(e) {
-      var lb = document.getElementById('lb');
-      if (!lb || lb.style.display === 'none') return;
+      if (!_lbEl || _lbEl.style.display === 'none') return;
       if (e.key === 'ArrowLeft')  navLightbox(-1);
       if (e.key === 'ArrowRight') navLightbox(1);
       if (e.key === 'Escape')     closeLightbox();
     });
     function openVideoLightbox(ytId) {
       var ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+      ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
       ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
       ov.innerHTML = '<div style="background:#000;border-radius:16px;max-width:900px;width:100%;position:relative">'
         + '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px">'
@@ -1684,7 +1681,7 @@ app.get('/gallery', async (c) => {
       document.body.appendChild(ov);
     }
 
-    // Attach click listeners directly to every photo card (works even inside CSS :target panels)
+    // Attach click listeners directly to every photo card
     document.querySelectorAll('[data-pidx]').forEach(function(card) {
       card.addEventListener('click', function() {
         openLightbox(parseInt(card.getAttribute('data-pidx')));

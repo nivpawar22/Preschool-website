@@ -723,13 +723,13 @@ function printAdmForm() {
     '.fl{font-size:9px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:2px 0;border-bottom:1px solid #ddd;min-height:17px;font-size:12px}' +
     '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 14px 0}.sl{border-top:2px solid #0F2050;padding-top:5px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:52px}' +
     '.footer{text-align:center;font-size:9px;color:#555;padding:4px 14px;margin-top:3px}' +
-    '.pborder{box-sizing:border-box}' +
+    '.pborder{box-sizing:border-box;display:flex;flex-direction:column;min-height:calc(297mm - 12mm)}' +
     '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
     '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;display:flex!important;flex-direction:column!important;min-height:calc(297mm - 12mm)!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
   '</style></head><body><div class="pborder">'+
     '<div class="hdr">' +
       '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
@@ -776,9 +776,10 @@ function printAdmForm() {
     '<div class="sec"><div class="sh">Emergency Contact</div><div class="sb">'+
       [['Name',fd.emergencyName||''],['Relationship',fd.emergencyRelation||''],['Primary Mobile',fd.emergencyMobile||''],['Alternate Mobile',fd.emergencyAlt||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
-    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:7px 14px;border-radius:4px;font-size:11px;margin:0 14px 8px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
+    '<div style="flex:1"></div>'+
+    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:7px 14px;border-radius:4px;font-size:11px;margin:0 14px 6px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
     '<div class="sigs"><div class="sl">Parent / Guardian Signature</div><div class="sl">Admission Admin</div><div class="sl">'+principal+'</div></div>'+
-    '<div style="text-align:right;font-size:9px;color:#aaa;padding:4px 14px">Date: '+now+'</div>'+
+    '<div style="text-align:right;font-size:9px;color:#aaa;padding:3px 14px 6px">Date: '+now+'</div>'+
   '</div>'+
   '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
   '</body></html>');

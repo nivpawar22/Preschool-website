@@ -1447,7 +1447,7 @@ app.get('/gallery', async (c) => {
       `<div style="background:${accent}22;display:flex;align-items:center;justify-content:center;font-size:1.4rem">📷</div>`
     ).join('')
     return `
-    <div onclick="openFolder(${fIdx})"
+    <div data-fidx="${fIdx}"
          style="cursor:pointer;background:#fff;border-radius:16px;border:2px solid ${accent}33;box-shadow:0 4px 16px rgba(15,32,80,0.08);overflow:hidden;transition:all 0.25s"
          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(15,32,80,0.16)'"
          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.08)'">
@@ -1495,7 +1495,7 @@ app.get('/gallery', async (c) => {
     return `
     <div id="folder-panel-${fIdx}" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
-        <button onclick="closeFolder()"
+        <button data-close-folder
                 style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:50px;border:2px solid #DCE1EF;background:#fff;color:#0F2050;font-weight:700;font-size:13px;cursor:pointer"
                 onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background='#fff'">
           ← All Folders
@@ -1605,33 +1605,35 @@ app.get('/gallery', async (c) => {
       _currentFolder = fIdx;
       _lbFolderIndices = _GROUPS[fIdx] ? _GROUPS[fIdx].indices : null;
       _lbFolderPos = 0;
-      var folders = document.getElementById('gallery-folders');
-      var panels = document.getElementById('gallery-panels');
-      if (folders) folders.style.display = 'none';
-      // Hide all individual panels
+      // Hide folder grid
+      var foldersEl = document.getElementById('gallery-folders');
+      if (foldersEl) foldersEl.setAttribute('style', 'display:none');
+      // Show panels wrapper (must come before showing individual panel)
+      var panelsEl = document.getElementById('gallery-panels');
+      if (panelsEl) panelsEl.setAttribute('style', 'display:block');
+      // Hide all panels, then show the target one
       for (var i = 0; i < _GROUPS.length; i++) {
         var el = document.getElementById('folder-panel-' + i);
-        if (el) el.style.display = 'none';
-      }
-      // Show container first so getBoundingClientRect works correctly
-      if (panels) panels.style.display = 'block';
-      var panel = document.getElementById('folder-panel-' + fIdx);
-      if (panel) {
-        panel.style.display = 'block';
-        setTimeout(function() {
-          window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
-        }, 20);
+        if (el) el.setAttribute('style', i === fIdx ? 'display:block' : 'display:none');
       }
     }
 
     function closeFolder() {
       _currentFolder = null;
       _lbFolderIndices = null;
-      var panels = document.getElementById('gallery-panels');
-      var folders = document.getElementById('gallery-folders');
-      if (panels) panels.style.display = 'none';
-      if (folders) folders.style.display = 'grid';
+      var panelsEl = document.getElementById('gallery-panels');
+      if (panelsEl) panelsEl.setAttribute('style', 'display:none');
+      var foldersEl = document.getElementById('gallery-folders');
+      if (foldersEl) foldersEl.setAttribute('style', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px');
     }
+
+    // Attach folder-open listeners via event delegation (more reliable than inline onclick)
+    document.addEventListener('click', function(e) {
+      var card = e.target.closest ? e.target.closest('[data-fidx]') : null;
+      if (card) { openFolder(parseInt(card.getAttribute('data-fidx'))); return; }
+      var closeBtn = e.target.closest ? e.target.closest('[data-close-folder]') : null;
+      if (closeBtn) { closeFolder(); return; }
+    });
 
     function openLightbox(globalIdx) {
       if (_currentFolder !== null && _GROUPS[_currentFolder]) {
@@ -1645,11 +1647,11 @@ app.get('/gallery', async (c) => {
         _lbIdx = globalIdx;
       }
       showLb();
-      document.getElementById('lb').style.display = 'flex';
+      document.getElementById('lb').setAttribute('style', 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;align-items:center;justify-content:center;padding:20px');
       document.body.style.overflow = 'hidden';
     }
     function closeLightbox() {
-      document.getElementById('lb').style.display = 'none';
+      document.getElementById('lb').setAttribute('style', 'display:none');
       document.body.style.overflow = '';
       _lbFolderIndices = null;
     }

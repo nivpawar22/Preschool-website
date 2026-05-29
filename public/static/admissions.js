@@ -342,7 +342,42 @@ function updateAdmStatus(id,status) {
   admPut('/api/admissions/'+id,{status:status}).then(function(){
     var a=_adm.admissions.find(function(x){return x.id===id;}); if(a) a.status=status;
     showToast('Status updated','success'); renderAdmList();
+    if(status==='approved'||status==='enrolled') _syncAdmToPortal(a);
   });
+}
+
+function _syncAdmToPortal(adm) {
+  if(!adm) return;
+  var d={};
+  try{ d=typeof adm.data==='string'?JSON.parse(adm.data):(adm.data||{}); }catch(e){return;}
+  if(!d.studentName) return;
+  var data=DB.get();
+  var stuId='stu_'+adm.id.replace(/[^a-z0-9]/gi,'_');
+  var parId='par_'+adm.id.replace(/[^a-z0-9]/gi,'_');
+  var cls=(data.classes||[]).find(function(c){
+    return c.name.toLowerCase()===(d.classId||'').toLowerCase()||c.id.toLowerCase()===(d.classId||'').toLowerCase();
+  });
+  var hasStu=(data.students||[]).some(function(s){return s.id===stuId||s.admissionId===adm.id;});
+  if(!hasStu){
+    data.students.push({id:stuId,name:d.studentName,rollNo:d.admissionNo||stuId.slice(-6).toUpperCase(),
+      classId:cls?cls.id:(d.classId||''),dob:d.dob||'',gender:d.gender||'',parentId:parId,
+      photo:null,address:d.address||'',bloodGroup:d.bloodGroup||'',deleted:false,
+      joinDate:new Date().toISOString().split('T')[0],admissionId:adm.id});
+    showToast(d.studentName+' added to Students tab','success');
+  }
+  var hasPar=(data.users||[]).some(function(u){return u.id===parId||u.admissionId===adm.id;});
+  if(!hasPar){
+    var pName=d.fatherName||d.motherName||d.guardianName||(d.studentName+"'s Parent");
+    var phone=(d.fatherMobile||d.motherMobile||'').replace(/\D/g,'').slice(-10);
+    var uname=(pName.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'parent')+(phone.slice(-4)||Math.floor(1000+Math.random()*9000).toString());
+    data.users.push({id:parId,role:'parent',name:pName,email:d.fatherEmail||d.motherEmail||'',
+      username:uname,password:'parent123',phone:phone,avatar:'#1AA6CA',active:false,deleted:false,
+      createdAt:new Date().toISOString(),childIds:[stuId],admissionId:adm.id});
+    var stu=(data.students||[]).find(function(s){return s.id===stuId;});
+    if(stu) stu.parentId=parId;
+    showToast('Parent profile created for '+pName,'success');
+  }
+  DB.commit();
 }
 function deleteAdm(id) {
   confirmDialog('Delete this admission permanently?',function(){

@@ -2201,13 +2201,13 @@ app.get('/receipt/:id', async (c) => {
     const schoolName = meta.schoolName || 'SuperKids India Preschool'
     const rawAddr = meta.schoolAddress || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin: 411026'
     const logoUrl = meta.schoolLogo || '/static/school-logo.png'
-    const phone1 = meta.schoolPhone || ''
-    const phone2 = meta.schoolPhone2 || ''
-    const email = meta.schoolEmail || ''
+    const phone1 = meta.schoolPhone || '9822-977-644'
+    const phone2 = meta.schoolPhone2 || '9822-977-944'
+    const email = meta.schoolEmail || 'superkidsprincipal@gmail.com'
     const website = meta.schoolWebsite || 'https://superkidsindia.com'
-    const addrLine = rawAddr.replace(/\n/g, ' | ')
-    const fmtRs = (n: number) => '₹' + (n || 0).toLocaleString('en-IN')
-    const fields: [string,string][] = [
+    const addrHtml = rawAddr.replace(/\n/g, '<br>')
+    const fmtRs = (n: number) => '&#8377;' + (n || 0).toLocaleString('en-IN')
+    const infoRows: [string,string][] = [
       ['Receipt No.', d.receiptNo||'–'], ['Payment Date', d.paymentDate||'–'],
       ['Student Name', d.studentName||'–'], ['Admission No.', d.admissionNo||'–'],
       ['Class / Program', d.classId||'–'], ['Payment Mode', d.paymentMode||'–'],
@@ -2216,46 +2216,58 @@ app.get('/receipt/:id', async (c) => {
     ]
     const html = `<!DOCTYPE html><html><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <title>Receipt ${d.receiptNo||''} — ${schoolName}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F8;padding:16px;min-height:100vh}
-.card{max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)}
-.hdr{background:#0F2050;padding:16px 18px;display:flex;align-items:center;gap:14px}
-.hdr img{width:56px;height:56px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}
-.hdr-name{font-size:16px;font-weight:900;color:#fff;line-height:1.2}
-.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
-.hdr-bar{background:#dcad92;padding:8px 18px;font-size:11px;color:#0F2050;font-weight:600;line-height:1.6}
-.rt{text-align:center;padding:10px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
-.badge{display:block;text-align:center;padding:12px;background:#F0FFF8}
-.badge span{display:inline-block;background:#059669;color:#fff;border-radius:20px;padding:5px 18px;font-size:12px;font-weight:700}
-.grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ddd}
-.cell{padding:10px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee}
-.cell:nth-child(even){border-right:none}
-.lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.val{font-weight:700;font-size:13px;word-break:break-word}
-table{width:100%;border-collapse:collapse}
-th{background:#F8F9FB;padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}
-td{padding:9px 14px;border-bottom:1px solid #eee}
+.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.15)}
+.hdr{background:#0F2050}
+.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}
+.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}
+.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.3px}
+.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+.hdr-bar{background:#dcad92;padding:7px 18px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px}
+.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
+.hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.6}
+.hdr-br{font-size:11px;color:#0F2050;font-weight:600;line-height:1.5;text-align:right;max-width:48%}
+.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
+.ig{display:grid;grid-template-columns:1fr 1fr;border:1px solid #ddd}
+.ic{padding:9px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee}
+.ic:nth-child(even){border-right:none}
+.il{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.iv{font-weight:700;font-size:13px;word-break:break-word}
+.ft{width:100%;border-collapse:collapse;border:1px solid #ddd}
+.ft th{background:#F8F9FB;padding:8px 14px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}
+.ft td{padding:8px 14px;border-bottom:1px solid #eee}
 .tr-total{background:#F0FFF8;font-weight:900;font-size:15px;color:#059669}
-.ftr{background:#F8F9FB;padding:14px 18px;text-align:center;font-size:11px;color:#555;border-top:1px solid #eee;line-height:1.6}
-@media(max-width:460px){.grid{grid-template-columns:1fr}.cell{border-right:none}}
+.footer{background:#F8F9FB;padding:14px 18px;text-align:center;font-size:10px;color:#555;border-top:1px solid #eee;line-height:1.6}
+@media(max-width:460px){.ig{grid-template-columns:1fr}.ic{border-right:none}.hdr-br{display:none}}
 </style></head><body>
-<div class="card">
+<div class="wrap">
   <div class="hdr">
-    <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
-    <div><div class="hdr-name">${schoolName}</div><div class="hdr-sub">Fee Payment Receipt</div></div>
-  </div>
-  <div class="hdr-bar">
-    ${[phone1 ? `📞 ${phone1}` : '', phone2 ? `📱 ${phone2}` : '', email ? `✉️ ${email}` : ''].filter(Boolean).join(' &nbsp;|&nbsp; ')}
-    ${phone1||phone2||email ? '<br>' : ''}📍 ${addrLine}
+    <div class="hdr-top">
+      <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
+      <div style="flex:1"><div class="hdr-name">${schoolName}</div><div class="hdr-sub">Fee Payment Receipt</div></div>
+    </div>
+    <div class="hdr-bar">
+      <div class="hdr-bl">
+        <div><span class="ico-badge"><i class="fas fa-phone"></i></span>${phone1}</div>
+        <div><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>${phone2}</div>
+        <div><span class="ico-badge"><i class="fas fa-envelope"></i></span>${email}</div>
+        <div><span class="ico-badge"><i class="fas fa-globe"></i></span>${website}</div>
+      </div>
+      <div class="hdr-br">
+        <div style="font-weight:800;margin-bottom:3px"><span class="ico-badge"><i class="fas fa-home"></i></span>${schoolName}</div>
+        <div>${addrHtml}</div>
+      </div>
+    </div>
   </div>
   <div class="rt">PAYMENT RECEIPT</div>
-  <div class="badge"><span>✔ Payment Confirmed</span></div>
-  <div class="grid">
-    ${fields.map(([l,v]) => `<div class="cell"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('')}
+  <div class="ig">
+    ${infoRows.map(([l,v]) => `<div class="ic"><div class="il">${l}</div><div class="iv">${v}</div></div>`).join('')}
   </div>
-  <table>
+  <table class="ft">
     <thead><tr><th>Fee Description</th><th style="text-align:right">Amount</th></tr></thead>
     <tbody>
       ${(d.feeItems||[]).map((f: any) => `<tr><td>${f.type}</td><td style="text-align:right;font-weight:700">${fmtRs(f.amount)}</td></tr>`).join('')}
@@ -2263,9 +2275,9 @@ td{padding:9px 14px;border-bottom:1px solid #eee}
       <tr class="tr-total"><td style="padding:10px 14px">Total Paid</td><td style="padding:10px 14px;text-align:right">${fmtRs(d.total)}</td></tr>
     </tbody>
   </table>
-  <div class="ftr">
+  <div class="footer">
     <strong>${schoolName}</strong><br>
-    <span style="color:#aaa;font-size:10px">Computer-generated receipt. No signature required.</span>
+    <span style="color:#aaa;font-size:10px">Computer-generated receipt. No physical signature required.</span>
   </div>
 </div>
 </body></html>`

@@ -1609,7 +1609,8 @@ function renderSyllabus() {
 
 function openAddSyllabusModal(classId) {
   const cls = DB.getClass(classId);
-  const subjects = cls ? cls.subjects : [];
+  const subjects = cls ? (cls.subjects || []) : [];
+  const noPreset = subjects.length === 0;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -1618,14 +1619,14 @@ function openAddSyllabusModal(classId) {
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Subject *</label>
-          <select class="form-control" id="syl-sub">
-            ${subjects.map(s => `<option>${s}</option>`).join('')}
-            <option value="custom">Custom...</option>
-          </select>
-        </div>
-        <div class="form-group" id="syl-custom-wrap" style="display:none">
-          <label class="form-label">Custom Subject</label>
-          <input class="form-control" id="syl-custom" placeholder="Subject name"/>
+          ${noPreset ? `<input type="hidden" id="syl-sub" value="custom"/>` :
+            `<select class="form-control" id="syl-sub" style="margin-bottom:8px">
+              ${subjects.map(s => `<option>${s}</option>`).join('')}
+              <option value="custom">Custom…</option>
+            </select>`}
+          <div id="syl-custom-wrap"${noPreset ? '' : ' style="display:none"'}>
+            <input class="form-control" id="syl-custom" placeholder="Type subject name…"/>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1634,7 +1635,7 @@ function openAddSyllabusModal(classId) {
           </div>
           <div class="form-group">
             <label class="form-label">Year</label>
-            <input class="form-control" id="syl-year" value="2024"/>
+            <input class="form-control" id="syl-year" value="${new Date().getFullYear()}"/>
           </div>
         </div>
       </div>
@@ -1645,9 +1646,13 @@ function openAddSyllabusModal(classId) {
     </div>`;
   document.body.appendChild(overlay);
   overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-  document.getElementById('syl-sub').onchange = function() {
-    document.getElementById('syl-custom-wrap').style.display = this.value === 'custom' ? 'block' : 'none';
-  };
+  const subEl = document.getElementById('syl-sub');
+  if (subEl && subEl.tagName === 'SELECT') {
+    subEl.onchange = function() {
+      document.getElementById('syl-custom-wrap').style.display = this.value === 'custom' ? 'block' : 'none';
+    };
+  }
+  if (noPreset) setTimeout(() => { const el = document.getElementById('syl-custom'); if (el) el.focus(); }, 80);
 }
 
 function saveNewSyllabus(classId) {

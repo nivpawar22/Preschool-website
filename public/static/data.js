@@ -241,6 +241,76 @@ const DB = (() => {
       _data = serverData;
       save(_data);
     }
+    // Sync classes from Management → Classes & Seat Capacity
+    try {
+      const acRes = await fetch('/api/academic-config');
+      if (acRes.ok) {
+        const acData = await acRes.json();
+        const acClasses = (acData.config && acData.config.classes) ? acData.config.classes : [];
+        if (acClasses.length > 0) {
+          const existingById = {};
+          (_data.classes || []).forEach(function(c) { existingById[c.id] = c; });
+          _data.classes = acClasses.map(function(c) {
+            const ex = existingById[c.id] || {};
+            return { id: c.id, name: c.name, grade: c.ageGroup || '', section: '', teacherId: ex.teacherId || null, capacity: c.capacity || 25, subjects: ex.subjects || [] };
+          });
+          save(_data);
+        }
+      }
+    } catch(e) {}
+    // Sync approved/enrolled admissions → students + parent profiles
+    try {
+      const admRes = await fetch('/api/admissions');
+      if (admRes.ok) {
+        const admData = await admRes.json();
+        const approved = (admData.items || []).filter(function(a) { return a.status === 'approved' || a.status === 'enrolled'; });
+        let changed = false;
+        approved.forEach(function(adm) {
+          let d = {};
+          try { d = typeof adm.data === 'string' ? JSON.parse(adm.data) : (adm.data || {}); } catch(e) { return; }
+          if (!d.studentName) return;
+          const stuId = 'stu_' + adm.id.replace(/[^a-z0-9]/gi, '_');
+          const parId = 'par_' + adm.id.replace(/[^a-z0-9]/gi, '_');
+          // Find matching class by name or id
+          const cls = (_data.classes || []).find(function(c) {
+            return c.name.toLowerCase() === (d.classId || '').toLowerCase() || c.id.toLowerCase() === (d.classId || '').toLowerCase();
+          });
+          // Create student if not already present
+          const hasStu = (_data.students || []).some(function(s) { return s.id === stuId || s.admissionId === adm.id; });
+          if (!hasStu) {
+            (_data.students = _data.students || []).push({
+              id: stuId, name: d.studentName,
+              rollNo: d.admissionNo || stuId.slice(-6).toUpperCase(),
+              classId: cls ? cls.id : (d.classId || ''),
+              dob: d.dob || '', gender: d.gender || '', parentId: parId,
+              photo: null, address: d.address || '', bloodGroup: d.bloodGroup || '',
+              deleted: false, joinDate: d.admissionDate || new Date().toISOString().split('T')[0],
+              admissionId: adm.id
+            });
+            changed = true;
+          }
+          // Create parent profile if not already present
+          const hasPar = (_data.users || []).some(function(u) { return u.id === parId || u.admissionId === adm.id; });
+          if (!hasPar) {
+            const parentName = d.fatherName || d.motherName || d.guardianName || (d.studentName + "'s Parent");
+            const phone = (d.fatherMobile || d.motherMobile || '').replace(/\D/g, '').slice(-10);
+            const uname = (parentName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'parent') + (phone.slice(-4) || Math.floor(1000 + Math.random() * 9000).toString());
+            (_data.users = _data.users || []).push({
+              id: parId, role: 'parent', name: parentName,
+              email: d.fatherEmail || d.motherEmail || '',
+              username: uname, password: 'parent123', phone: phone,
+              avatar: '#1AA6CA', active: false, deleted: false,
+              createdAt: new Date().toISOString(), childIds: [stuId], admissionId: adm.id
+            });
+            // Ensure student points to this parent
+            const stu = (_data.students || []).find(function(s) { return s.id === stuId; });
+            if (stu) stu.parentId = parId;
+            changed = true;
+          }
+        });
+        if (changed) save(_data);
+      }
+    } catch(e) {}
   }
 
   function genId(prefix) {

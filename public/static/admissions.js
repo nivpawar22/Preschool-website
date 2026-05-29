@@ -929,25 +929,19 @@ function recordFeePayment() {
   if(!feeItems.length){showToast('Select at least one fee item','warning');return;}
   var disc=parseFloat((document.getElementById('fee-disc')||{}).value)||0;
   var total=Math.max(0,subtotal-disc);
-  var payData={admissionId:_feeAdmId,admissionNo:_feeAdmData.admissionNo||'',studentName:_feeAdmData.studentName||'',classId:_feeAdmData.classId||'',feeItems:feeItems,subtotal:subtotal,discount:disc,total:total,paymentMode:fi('fee-mode'),transactionId:fi('fee-txn'),paymentDate:new Date().toISOString().split('T')[0],collectedBy:(Session.current()||{}).name||'',academicYear:((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())};
+  var parentMobile=(_feeAdmData.fatherMobile||_feeAdmData.motherMobile||'').replace(/\D/g,'').slice(-10);
+  var payData={admissionId:_feeAdmId,admissionNo:_feeAdmData.admissionNo||'',studentName:_feeAdmData.studentName||'',classId:_feeAdmData.classId||'',feeItems:feeItems,subtotal:subtotal,discount:disc,total:total,paymentMode:fi('fee-mode'),transactionId:fi('fee-txn'),paymentDate:new Date().toISOString().split('T')[0],collectedBy:(Session.current()||{}).name||'',academicYear:((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear()),parentMobile:parentMobile};
   admPost('/api/payments',{data:payData,admissionId:_feeAdmId}).then(function(r){
     if(r.error){showToast(r.error,'error');return;}
     var receiptNo=r.receiptNo||'';
-    var waMobile=(_feeAdmData.fatherMobile||_feeAdmData.motherMobile||'').replace(/\D/g,'');
     showToast('Payment recorded! Receipt: '+receiptNo,'success',5000);
     _feeAdmId=null; _feeAdmData=null;
     if(r.id) setTimeout(function(){printReceipt(r.id);},200);
     navigate('fee-collection');
-    if(waMobile&&waMobile.length>=10){
-      var m10=waMobile.slice(-10);
-      var msg='Dear Parent,\n\nFee payment received at SuperKids India Preschool.\n\nReceipt No: '+receiptNo+'\nStudent: '+payData.studentName+'\nClass: '+payData.classId+'\nAmount Paid: Rs.'+payData.total+'\nPayment Date: '+payData.paymentDate+'\nMode: '+payData.paymentMode+'\n\nThank you!\nSuperKids India Preschool';
-      var waUrl='https://wa.me/91'+m10+'?text='+encodeURIComponent(msg);
-      var banner=document.createElement('div');
-      banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#25D366;color:#fff;padding:12px 22px;border-radius:14px;z-index:99999;display:flex;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,0.25);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;text-decoration:none';
-      banner.innerHTML='<i class="fab fa-whatsapp" style="font-size:22px"></i><span>Send Receipt on WhatsApp</span>';
-      banner.onclick=function(){window.open(waUrl,'_blank');banner.remove();};
-      document.body.appendChild(banner);
-      setTimeout(function(){if(banner.parentNode)banner.remove();},15000);
+    if(parentMobile&&parentMobile.length>=10&&r.id){
+      var receiptLink=window.location.origin+'/receipt/'+r.id;
+      var msg='Dear Parent,\n\n✅ Fee payment received at SuperKids India Preschool.\n\n📋 Receipt No: '+receiptNo+'\n👦 Student: '+payData.studentName+'\n📚 Class: '+payData.classId+'\n💰 Amount Paid: ₹'+payData.total+'\n📅 Date: '+payData.paymentDate+'\n💳 Mode: '+payData.paymentMode+'\n\n🔗 View Receipt:\n'+receiptLink+'\n\nThank you!\nSuperKids India Preschool';
+      window.open('https://wa.me/91'+parentMobile+'?text='+encodeURIComponent(msg),'_blank');
     }
   }).catch(function(){showToast('Failed to record payment','error');});
 }
@@ -970,17 +964,34 @@ function buildReceiptsList() {
       '<thead><tr style="background:#F8F9FB">'+['Receipt No','Student','Class','Amount','Mode','Date',''].map(function(h){return '<th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;white-space:nowrap">'+h+'</th>';}).join('')+'</tr></thead>'+
       '<tbody>'+
         (pay.length===0?'<tr><td colspan="7" style="text-align:center;padding:48px;color:#6B7A9D">No payments yet</td></tr>':
-          pay.map(function(p){var d=p.data?JSON.parse(p.data):{};return '<tr style="border-bottom:1px solid #F1F5F9">'+
+          pay.map(function(p){var d=p.data?JSON.parse(p.data):{};var mob=(d.parentMobile||'').replace(/\D/g,'').slice(-10);return '<tr style="border-bottom:1px solid #F1F5F9">'+
             '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+(d.receiptNo||'–')+'</td>'+
             '<td style="padding:10px 12px;font-weight:700">'+(d.studentName||'–')+'</td>'+
             '<td style="padding:10px 12px;color:#6B7A9D">'+(d.classId||'–')+'</td>'+
             '<td style="padding:10px 12px;font-weight:800;color:#059669">'+fmtRs(d.total)+'</td>'+
             '<td style="padding:10px 12px">'+(d.paymentMode||'–')+'</td>'+
             '<td style="padding:10px 12px;color:#6B7A9D;white-space:nowrap">'+(d.paymentDate||'')+'</td>'+
-            '<td style="padding:10px 12px"><button onclick="printReceipt(\''+p.id+'\')" class="btn btn-sm btn-secondary"><i class="fas fa-print" style="margin-right:4px"></i>Print</button></td>'+
+            '<td style="padding:10px 12px;white-space:nowrap;display:flex;gap:6px">'+
+              '<button onclick="printReceipt(\''+p.id+'\')" class="btn btn-sm btn-secondary"><i class="fas fa-print" style="margin-right:4px"></i>Print</button>'+
+              '<button onclick="shareReceiptWA(\''+p.id+'\',\''+mob+'\')" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;padding:4px 10px;border-radius:6px" title="Share on WhatsApp"><i class="fab fa-whatsapp"></i></button>'+
+            '</td>'+
           '</tr>';}).join('')
         )+
       '</tbody></table></div></div>';
+}
+
+function shareReceiptWA(payId, mobile) {
+  if(!mobile||mobile.length<10){
+    mobile=(prompt('Enter parent mobile number (10 digits):')||'').replace(/\D/g,'').slice(-10);
+    if(!mobile||mobile.length<10){showToast('Invalid mobile number','warning');return;}
+  }
+  admGet('/api/payments/'+payId).then(function(r){
+    if(!r.item){showToast('Receipt not found','error');return;}
+    var d=r.item.data?JSON.parse(r.item.data):{};
+    var receiptLink=window.location.origin+'/receipt/'+payId;
+    var msg='Dear Parent,\n\n✅ Fee payment received at SuperKids India Preschool.\n\n📋 Receipt No: '+(d.receiptNo||'')+'\n👦 Student: '+(d.studentName||'')+'\n📚 Class: '+(d.classId||'')+'\n💰 Amount Paid: ₹'+(d.total||0)+'\n📅 Date: '+(d.paymentDate||'')+'\n💳 Mode: '+(d.paymentMode||'')+'\n\n🔗 View Receipt:\n'+receiptLink+'\n\nThank you!\nSuperKids India Preschool';
+    window.open('https://wa.me/91'+mobile+'?text='+encodeURIComponent(msg),'_blank');
+  }).catch(function(){showToast('Failed to load receipt','error');});
 }
 
 function printReceipt(payId) {

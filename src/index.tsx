@@ -2189,6 +2189,90 @@ app.delete('/api/payments/:id', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── Public Receipt View (no auth) ────────────────────────────
+app.get('/receipt/:id', async (c) => {
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM payments WHERE id=?').bind(c.req.param('id')).first<{id:string,data:string}>()
+    if (!row) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Receipt not found</h2></div>', 404)
+    const d: any = JSON.parse(row.data || '{}')
+    const metaRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    const meta: any = metaRow ? JSON.parse(metaRow.value) : {}
+    const schoolName = meta.schoolName || 'SuperKids India Preschool'
+    const rawAddr = meta.schoolAddress || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin: 411026'
+    const logoUrl = meta.schoolLogo || '/static/school-logo.png'
+    const phone1 = meta.schoolPhone || ''
+    const phone2 = meta.schoolPhone2 || ''
+    const email = meta.schoolEmail || ''
+    const website = meta.schoolWebsite || 'https://superkidsindia.com'
+    const addrLine = rawAddr.replace(/\n/g, ' | ')
+    const fmtRs = (n: number) => '₹' + (n || 0).toLocaleString('en-IN')
+    const fields: [string,string][] = [
+      ['Receipt No.', d.receiptNo||'–'], ['Payment Date', d.paymentDate||'–'],
+      ['Student Name', d.studentName||'–'], ['Admission No.', d.admissionNo||'–'],
+      ['Class / Program', d.classId||'–'], ['Payment Mode', d.paymentMode||'–'],
+      ...(d.transactionId ? [['Transaction ID', d.transactionId] as [string,string]] : []),
+      ['Academic Year', d.academicYear||'–']
+    ]
+    const html = `<!DOCTYPE html><html><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Receipt ${d.receiptNo||''} — ${schoolName}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F8;padding:16px;min-height:100vh}
+.card{max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+.hdr{background:#0F2050;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.hdr img{width:56px;height:56px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}
+.hdr-name{font-size:16px;font-weight:900;color:#fff;line-height:1.2}
+.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.hdr-bar{background:#dcad92;padding:8px 18px;font-size:11px;color:#0F2050;font-weight:600;line-height:1.6}
+.rt{text-align:center;padding:10px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
+.badge{display:block;text-align:center;padding:12px;background:#F0FFF8}
+.badge span{display:inline-block;background:#059669;color:#fff;border-radius:20px;padding:5px 18px;font-size:12px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ddd}
+.cell{padding:10px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee}
+.cell:nth-child(even){border-right:none}
+.lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.val{font-weight:700;font-size:13px;word-break:break-word}
+table{width:100%;border-collapse:collapse}
+th{background:#F8F9FB;padding:9px 14px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}
+td{padding:9px 14px;border-bottom:1px solid #eee}
+.tr-total{background:#F0FFF8;font-weight:900;font-size:15px;color:#059669}
+.ftr{background:#F8F9FB;padding:14px 18px;text-align:center;font-size:11px;color:#555;border-top:1px solid #eee;line-height:1.6}
+@media(max-width:460px){.grid{grid-template-columns:1fr}.cell{border-right:none}}
+</style></head><body>
+<div class="card">
+  <div class="hdr">
+    <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
+    <div><div class="hdr-name">${schoolName}</div><div class="hdr-sub">Fee Payment Receipt</div></div>
+  </div>
+  <div class="hdr-bar">
+    ${[phone1 ? `📞 ${phone1}` : '', phone2 ? `📱 ${phone2}` : '', email ? `✉️ ${email}` : ''].filter(Boolean).join(' &nbsp;|&nbsp; ')}
+    ${phone1||phone2||email ? '<br>' : ''}📍 ${addrLine}
+  </div>
+  <div class="rt">PAYMENT RECEIPT</div>
+  <div class="badge"><span>✔ Payment Confirmed</span></div>
+  <div class="grid">
+    ${fields.map(([l,v]) => `<div class="cell"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('')}
+  </div>
+  <table>
+    <thead><tr><th>Fee Description</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody>
+      ${(d.feeItems||[]).map((f: any) => `<tr><td>${f.type}</td><td style="text-align:right;font-weight:700">${fmtRs(f.amount)}</td></tr>`).join('')}
+      ${d.discount ? `<tr><td style="color:#dc2626">Discount</td><td style="text-align:right;color:#dc2626;font-weight:700">- ${fmtRs(d.discount)}</td></tr>` : ''}
+      <tr class="tr-total"><td style="padding:10px 14px">Total Paid</td><td style="padding:10px 14px;text-align:right">${fmtRs(d.total)}</td></tr>
+    </tbody>
+  </table>
+  <div class="ftr">
+    <strong>${schoolName}</strong><br>
+    <span style="color:#aaa;font-size:10px">Computer-generated receipt. No signature required.</span>
+  </div>
+</div>
+</body></html>`
+    return c.html(html)
+  } catch (e: any) { return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Error loading receipt</h2></div>', 500) }
+})
+
 // ── Admission Config (superadmin) ─────────────────────────────
 app.get('/api/academic-config', async (c) => {
   try {

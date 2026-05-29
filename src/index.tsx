@@ -1257,7 +1257,7 @@ app.get('/programs', (c) => {
            features:['Themed weekly adventures','Swimming lessons','Field trips','Science fairs','Art workshops','Superhero Olympics'],
            desc:'When school\'s out, the adventure begins! Our Summer Super Camp is packed with themed weeks, outdoor adventures, educational field trips, and unforgettable superhero experiences.', time:'June – August'},
         ].map(p => `
-          <div class="card fade-in" style="border-color:${p.color}33;position:relative;overflow:visible">
+          <div class="card fade-in prog-card" data-prog="${p.id}" style="border-color:${p.color}33;position:relative;overflow:visible">
             <div style="position:absolute;top:-15px;right:20px;background:${p.color};color:#ffffff;font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:1px;padding:4px 16px;border-radius:20px">${p.age}</div>
             <div style="font-size:2.8rem;margin-bottom:1rem">${p.emoji}</div>
             <h3 style="font-family:'Playfair Display',serif;font-size:1.6rem;color:${p.color};font-weight:700;margin-bottom:0.5rem">${p.title}</h3>
@@ -1337,6 +1337,19 @@ app.get('/programs', (c) => {
     </div>
   </section>
 
+  <script>
+    (function() {
+      document.querySelectorAll('.age-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          var target = tab.dataset.target;
+          document.querySelectorAll('.prog-card').forEach(function(card) {
+            card.style.display = (target === 'all' || card.dataset.prog === target) ? '' : 'none';
+          });
+        });
+      });
+    })();
+  </script>
+
   ${Footer()}
   `
   return c.html(Layout({ children: content, title: 'Programs - SuperKids India Preschool' }))
@@ -1404,7 +1417,7 @@ app.get('/gallery', async (c) => {
     groups.get(tag)!.push({ photo: p, idx })
   })
 
-  // ── Server-render compact tag-grouped photo sections ──
+  // ── Accent colours per tag ──
   const tagAccentColors: Record<string, string> = {
     'Art Time': '#E8B020', 'Science Lab': '#1AA6CA', 'Outdoor Play': '#10b981',
     'Story Time': '#C4893A', 'Music Class': '#8b5cf6', 'Sport Day': '#ef4444',
@@ -1413,32 +1426,86 @@ app.get('/gallery', async (c) => {
     'Birthday Fun': '#E8B020', 'Team Work': '#1AA6CA', 'School Life': '#6B7A9D',
   }
 
-  const groupsHtml = Array.from(groups.entries()).map(([tag, items]) => {
-    const accent = tagAccentColors[tag] || '#1AA6CA'
-    const cardsHtml = items.map(({ photo: p, idx: i }) => `
-      <div style="border-radius:8px;overflow:hidden;cursor:pointer;background:#e8edf5;position:relative;height:160px;box-shadow:0 1px 4px rgba(15,32,80,0.08)"
-           onclick="openLightbox(${i})"
-           onmouseover="this.querySelector('img') && (this.querySelector('img').style.transform='scale(1.06)')"
-           onmouseout="this.querySelector('img') && (this.querySelector('img').style.transform='scale(1)')">
-        <img src="${p.publicUrl}" alt="${p.title}" loading="lazy"
-             style="width:100%;height:100%;object-fit:cover;transition:transform 0.35s;display:block"
-             onerror="this.onerror=null;this.src='${p.proxyUrl}'">
-        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,0.55));pointer-events:none"></div>
-        <span style="position:absolute;bottom:7px;left:8px;right:8px;color:#fff;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,0.6)">${p.title}</span>
-      </div>`).join('')
+  const tagEntries = Array.from(groups.entries())
 
+  // ── Folder cards (one per tag) ──
+  const folderCardsHtml = tagEntries.map(([tag, items], fIdx) => {
+    const accent = tagAccentColors[tag] || '#1AA6CA'
+    const count = items.length
+    const previews = items.slice(0, 4)
+    const previewCells = previews.map(({ photo: p }) =>
+      `<img src="${p.publicUrl}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.onerror=null;this.src='${p.proxyUrl}'">`
+    ).join('') + Array(Math.max(0, 4 - previews.length)).fill(0).map(() =>
+      `<div style="background:${accent}22;display:flex;align-items:center;justify-content:center;font-size:1.4rem">📷</div>`
+    ).join('')
     return `
-      <div style="margin-bottom:2.8rem">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <span style="display:inline-block;width:4px;height:22px;background:${accent};border-radius:2px;flex-shrink:0"></span>
-          <h3 style="font-size:1.05rem;font-weight:800;color:#0F1E3D;margin:0">${tag}</h3>
-          <span style="background:#E8EDF5;color:#6B7A9D;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px">${items.length}</span>
+    <div onclick="openFolder(${fIdx})"
+         style="cursor:pointer;background:#fff;border-radius:16px;border:2px solid ${accent}33;box-shadow:0 4px 16px rgba(15,32,80,0.08);overflow:hidden;transition:all 0.25s"
+         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(15,32,80,0.16)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.08)'">
+      <div style="height:8px;background:${accent}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;aspect-ratio:4/3;gap:1px;background:#e8edf5">
+        ${previewCells}
+      </div>
+      <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid ${accent}22">
+        <div>
+          <div style="font-weight:800;color:#0F1E3D;font-size:0.9rem">${tag}</div>
+          <div style="color:#6B7A9D;font-size:11px;margin-top:2px">${count} photo${count !== 1 ? 's' : ''}</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
-          ${cardsHtml}
+        <div style="background:${accent}18;color:${accent};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center">
+          <i class="fas fa-folder-open" style="font-size:12px"></i>
         </div>
-      </div>`
+      </div>
+    </div>`
   }).join('')
+
+  // ── Photo panels (one per tag, hidden initially) with playing-card photo tiles ──
+  const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
+    const accent = tagAccentColors[tag] || '#1AA6CA'
+    const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
+      <div onclick="openLightbox(${i})"
+           style="cursor:pointer;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:all 0.25s;border:2px solid ${accent}22"
+           onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
+           onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
+        <div style="position:relative;overflow:hidden;height:160px">
+          <img src="${p.publicUrl}" alt="${p.title}" loading="lazy"
+               style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.35s"
+               onerror="this.onerror=null;this.src='${p.proxyUrl}'"
+               onmouseover="this.style.transform='scale(1.06)'"
+               onmouseout="this.style.transform='scale(1)'">
+          <span style="position:absolute;top:6px;left:8px;font-size:11px;font-weight:900;color:${accent};text-shadow:0 1px 3px rgba(255,255,255,0.9)">♣</span>
+          <span style="position:absolute;top:6px;right:8px;font-size:11px;font-weight:900;color:${accent};text-shadow:0 1px 3px rgba(255,255,255,0.9)">♣</span>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to bottom,transparent,rgba(0,0,0,0.5));padding:20px 8px 6px;pointer-events:none">
+            <div style="color:#fff;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,0.7)">${p.title}</div>
+          </div>
+        </div>
+        <div style="padding:7px 10px;display:flex;align-items:center;justify-content:space-between;background:${accent}08">
+          ${p.date ? `<span style="font-size:9px;color:#94a3b8">${p.date}</span>` : '<span></span>'}
+          <span style="font-size:9px;font-weight:700;color:${accent}"><i class="fas fa-expand-alt"></i></span>
+        </div>
+      </div>`).join('')
+    return `
+    <div id="folder-panel-${fIdx}" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
+        <button onclick="closeFolder()"
+                style="display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:50px;border:2px solid #DCE1EF;background:#fff;color:#0F2050;font-weight:700;font-size:13px;cursor:pointer"
+                onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background='#fff'">
+          ← All Folders
+        </button>
+        <h2 style="font-size:1.2rem;font-weight:800;color:#0F1E3D;margin:0">${tag}</h2>
+        <span style="background:${accent}22;color:${accent};font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px">${items.length} photos</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px">
+        ${playingCardsHtml}
+      </div>
+    </div>`
+  }).join('')
+
+  // ── Groups JSON for client-side navigation ──
+  const groupsArrayJson = JSON.stringify(tagEntries.map(([tag, items]) => ({
+    tag,
+    indices: items.map(({ idx }) => idx),
+  })))
 
   const emptyHtml = `
     <div style="text-align:center;padding:80px 20px;background:#fff;border-radius:14px;border:2px dashed #DCE1EF">
@@ -1484,7 +1551,14 @@ app.get('/gallery', async (c) => {
 
       ${r2Error ? `<div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:13px;border:1px solid #fca5a5">R2 error: ${r2Error}</div>` : ''}
 
-      ${photoCount === 0 ? emptyHtml : groupsHtml}
+      ${photoCount === 0 ? emptyHtml : `
+        <div id="gallery-folders" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
+          ${folderCardsHtml}
+        </div>
+        <div id="gallery-panels" style="display:none">
+          ${photoPanelsHtml}
+        </div>
+      `}
 
       ${videos.length > 0 ? `
       <div style="margin-top:4rem">
@@ -1513,10 +1587,47 @@ app.get('/gallery', async (c) => {
 
   <script>
     var _PHOTOS = ${photosJson};
+    var _GROUPS = ${groupsArrayJson};
     var _lbIdx = 0;
+    var _currentFolder = null;
+    var _lbFolderIndices = null;
+    var _lbFolderPos = 0;
 
-    function openLightbox(i) {
-      _lbIdx = i;
+    function openFolder(fIdx) {
+      _currentFolder = fIdx;
+      _lbFolderIndices = _GROUPS[fIdx] ? _GROUPS[fIdx].indices : null;
+      _lbFolderPos = 0;
+      document.getElementById('gallery-folders').style.display = 'none';
+      for (var i = 0; i < _GROUPS.length; i++) {
+        var el = document.getElementById('folder-panel-' + i);
+        if (el) el.style.display = 'none';
+      }
+      var panel = document.getElementById('folder-panel-' + fIdx);
+      if (panel) {
+        panel.style.display = 'block';
+        window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+      }
+      document.getElementById('gallery-panels').style.display = 'block';
+    }
+
+    function closeFolder() {
+      _currentFolder = null;
+      _lbFolderIndices = null;
+      document.getElementById('gallery-panels').style.display = 'none';
+      document.getElementById('gallery-folders').style.display = 'grid';
+    }
+
+    function openLightbox(globalIdx) {
+      if (_currentFolder !== null && _GROUPS[_currentFolder]) {
+        var fi = _GROUPS[_currentFolder].indices;
+        _lbFolderIndices = fi;
+        _lbFolderPos = fi.indexOf(globalIdx);
+        if (_lbFolderPos < 0) _lbFolderPos = 0;
+        _lbIdx = fi[_lbFolderPos];
+      } else {
+        _lbFolderIndices = null;
+        _lbIdx = globalIdx;
+      }
       showLb();
       document.getElementById('lb').style.display = 'flex';
       document.body.style.overflow = 'hidden';
@@ -1524,9 +1635,15 @@ app.get('/gallery', async (c) => {
     function closeLightbox() {
       document.getElementById('lb').style.display = 'none';
       document.body.style.overflow = '';
+      _lbFolderIndices = null;
     }
     function navLightbox(d) {
-      _lbIdx = (_lbIdx + d + _PHOTOS.length) % _PHOTOS.length;
+      if (_lbFolderIndices && _lbFolderIndices.length > 0) {
+        _lbFolderPos = (_lbFolderPos + d + _lbFolderIndices.length) % _lbFolderIndices.length;
+        _lbIdx = _lbFolderIndices[_lbFolderPos];
+      } else {
+        _lbIdx = (_lbIdx + d + _PHOTOS.length) % _PHOTOS.length;
+      }
       showLb();
     }
     function showLb() {
@@ -1537,7 +1654,9 @@ app.get('/gallery', async (c) => {
       img.onerror = function() { img.onerror = null; img.src = p.proxyUrl; };
       img.alt = p.title;
       document.getElementById('lb-info').textContent = p.title;
-      document.getElementById('lb-counter').textContent = (_lbIdx + 1) + ' / ' + _PHOTOS.length;
+      var total = (_lbFolderIndices && _lbFolderIndices.length) ? _lbFolderIndices.length : _PHOTOS.length;
+      var pos = (_lbFolderIndices && _lbFolderIndices.length) ? (_lbFolderPos + 1) : (_lbIdx + 1);
+      document.getElementById('lb-counter').textContent = pos + ' / ' + total;
     }
     document.addEventListener('keydown', function(e) {
       var lb = document.getElementById('lb');
@@ -1877,16 +1996,16 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=20"/>
+  <link rel="stylesheet" href="/static/style.css?v=21"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=20"></script>
-  <script src="/static/app.js?v=20"></script>
-  <script src="/static/admin.js?v=20"></script>
-  <script src="/static/management.js?v=20"></script>
-  <script src="/static/parent.js?v=20"></script>
-  <script src="/static/admissions.js?v=20"></script>
+  <script src="/static/data.js?v=21"></script>
+  <script src="/static/app.js?v=21"></script>
+  <script src="/static/admin.js?v=21"></script>
+  <script src="/static/management.js?v=21"></script>
+  <script src="/static/parent.js?v=21"></script>
+  <script src="/static/admissions.js?v=21"></script>
 </body>
 </html>`)
 })

@@ -11,6 +11,7 @@ var _inqFilter = 'all';
 var _inqSearch = '';
 var _admFilter = 'all';
 var _admSearch = '';
+var _admClassFilter = 'all';
 var _feeAdmId = null;
 var _feeAdmData = null;
 
@@ -280,12 +281,14 @@ function renderAdmissionsList() {
 
 function renderAdmList() {
   var wrap=document.getElementById('adm-list'); if(!wrap) return;
+  var classes=Array.from(new Set(_adm.admissions.map(function(a){var d=a.data?JSON.parse(a.data):{};return d.classId||'';}).filter(Boolean))).sort();
   var list=_adm.admissions.filter(function(a){
     var d=a.data?JSON.parse(a.data):{};
     var ms=_admFilter==='all'||a.status===_admFilter;
+    var mc=_admClassFilter==='all'||(d.classId||'')===_admClassFilter;
     var q=_admSearch.toLowerCase();
     var mq=!q||(d.studentName||'').toLowerCase().includes(q)||(d.admissionNo||'').toLowerCase().includes(q)||(d.fatherMobile||'').includes(q)||(d.motherMobile||'').includes(q);
-    return ms&&mq;
+    return ms&&mc&&mq;
   });
 
   wrap.innerHTML=
@@ -293,6 +296,9 @@ function renderAdmList() {
       '<input type="text" placeholder="Search name, adm. no, mobile…" value="'+_admSearch+'" oninput="_admSearch=this.value;renderAdmList()" style="flex:1;min-width:180px;padding:8px 14px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px">'+
       '<select onchange="_admFilter=this.value;renderAdmList()" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;cursor:pointer">'+
         '<option value="all">All Status</option>'+ADM_KEYS.map(function(s){return '<option value="'+s+'"'+(_admFilter===s?' selected':'')+'>'+(ADM_S[s]||{label:s}).label+'</option>';}).join('')+
+      '</select>'+
+      '<select onchange="_admClassFilter=this.value;renderAdmList()" style="padding:8px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;cursor:pointer">'+
+        '<option value="all">All Classes</option>'+classes.map(function(c){return '<option value="'+c+'"'+(_admClassFilter===c?' selected':'')+'> '+c+'</option>';}).join('')+
       '</select>'+
       '<button class="btn btn-primary" onclick="admNewForm()"><i class="fas fa-plus"></i> New Admission</button>'+
     '</div></div>'+
@@ -734,10 +740,17 @@ function recordFeePayment() {
   var payData={admissionId:_feeAdmId,admissionNo:_feeAdmData.admissionNo||'',studentName:_feeAdmData.studentName||'',classId:_feeAdmData.classId||'',feeItems:feeItems,subtotal:subtotal,discount:disc,total:total,paymentMode:fi('fee-mode'),transactionId:fi('fee-txn'),paymentDate:new Date().toISOString().split('T')[0],collectedBy:(Session.current()||{}).name||'',academicYear:((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())};
   admPost('/api/payments',{data:payData,admissionId:_feeAdmId}).then(function(r){
     if(r.error){showToast(r.error,'error');return;}
-    showToast('Payment recorded! Receipt: '+(r.receiptNo||''),'success',5000);
+    var receiptNo=r.receiptNo||'';
+    var waMobile=(_feeAdmData.fatherMobile||_feeAdmData.motherMobile||'').replace(/\D/g,'');
+    showToast('Payment recorded! Receipt: '+receiptNo,'success',5000);
     _feeAdmId=null; _feeAdmData=null;
     if(r.id) setTimeout(function(){printReceipt(r.id);},200);
     navigate('fee-collection');
+    if(waMobile&&waMobile.length>=10){
+      var m10=waMobile.slice(-10);
+      var msg='Dear Parent,\n\nFee payment received at SuperKids India Preschool.\n\nReceipt No: '+receiptNo+'\nStudent: '+payData.studentName+'\nClass: '+payData.classId+'\nAmount Paid: Rs.'+payData.total+'\nPayment Date: '+payData.paymentDate+'\nMode: '+payData.paymentMode+'\n\nThank you!\nSuperKids India Preschool';
+      setTimeout(function(){window.open('https://wa.me/91'+m10+'?text='+encodeURIComponent(msg),'_blank');},1200);
+    }
   }).catch(function(){showToast('Failed to record payment','error');});
 }
 

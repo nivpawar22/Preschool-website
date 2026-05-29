@@ -989,6 +989,9 @@ function changePassword() {
 // ---- Our Team Tab ----
 var _teamMembers = [];
 var _editingTeamId = null;
+var _teamPhotoImg = null;
+var _teamPhotoZoom = 1;
+var _teamPhotoRotation = 0;
 
 function renderTeamTab() {
   var colors = ['#0F2050','#1AA6CA','#C4893A','#E8B020','#10b981','#8b5cf6'];
@@ -1003,6 +1006,20 @@ function renderTeamTab() {
         <div style="display:flex;flex-direction:column;gap:14px">
           <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;background:#f8faff;border-radius:12px">
             <div id="team-photo-preview" style="width:90px;height:90px;border-radius:50%;border:3px solid #1AA6CA;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#e8edf5;font-size:2rem">🦸</div>
+            <div id="team-photo-editor" style="display:none;width:100%;padding:4px 0 2px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;font-weight:700;color:#6B7A9D;width:52px;flex-shrink:0"><i class="fas fa-search-plus"></i> Zoom</span>
+                  <input type="range" id="team-zoom" min="50" max="300" value="100" style="flex:1" oninput="_teamPhotoZoom=this.value/100;document.getElementById('team-zoom-val').textContent=this.value+'%';drawTeamPhotoCanvas()">
+                  <span id="team-zoom-val" style="font-size:11px;color:#0F2050;width:36px;text-align:right">100%</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;font-weight:700;color:#6B7A9D;width:52px;flex-shrink:0"><i class="fas fa-redo"></i> Rotate</span>
+                  <input type="range" id="team-rotate" min="-180" max="180" value="0" style="flex:1" oninput="_teamPhotoRotation=parseInt(this.value);document.getElementById('team-rotate-val').textContent=this.value+'°';drawTeamPhotoCanvas()">
+                  <span id="team-rotate-val" style="font-size:11px;color:#0F2050;width:36px;text-align:right">0°</span>
+                </div>
+              </div>
+            </div>
             <button onclick="document.getElementById('team-photo-input').click()" style="padding:7px 16px;border-radius:8px;border:1.5px solid #1AA6CA;background:#fff;color:#1AA6CA;font-weight:700;font-size:13px;cursor:pointer">
               <i class="fas fa-camera" style="margin-right:6px"></i>Upload Photo
             </button>
@@ -1120,7 +1137,9 @@ function openAddTeamMemberModal() {
   document.getElementById('team-cert').value = '';
   document.getElementById('team-bio').value = '';
   document.getElementById('team-color').value = '#0F2050';
+  _teamPhotoImg = null; _teamPhotoZoom = 1; _teamPhotoRotation = 0;
   document.getElementById('team-photo-preview').innerHTML = '🦸';
+  document.getElementById('team-photo-editor').style.display = 'none';
   document.getElementById('team-photo-status').textContent = '';
   document.getElementById('team-photo-input').value = '';
   selectTeamColor('#0F2050');
@@ -1145,6 +1164,8 @@ function editTeamMember(id) {
   } else {
     preview.innerHTML = '🦸';
   }
+  _teamPhotoImg = null; _teamPhotoZoom = 1; _teamPhotoRotation = 0;
+  document.getElementById('team-photo-editor').style.display = 'none';
   document.getElementById('team-photo-status').textContent = '';
   document.getElementById('team-photo-input').value = '';
   document.getElementById('team-modal').style.display = 'flex';
@@ -1165,13 +1186,46 @@ function selectTeamColor(color) {
 function previewTeamPhoto(input) {
   var file = input.files[0];
   if (!file) return;
+  _teamPhotoZoom = 1;
+  _teamPhotoRotation = 0;
   var reader = new FileReader();
   reader.onload = function(e) {
-    document.getElementById('team-photo-preview').innerHTML =
-      '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    _teamPhotoImg = new Image();
+    _teamPhotoImg.onload = function() {
+      document.getElementById('team-photo-preview').innerHTML = '<canvas id="team-photo-canvas" style="width:90px;height:90px"></canvas>';
+      drawTeamPhotoCanvas();
+      var editor = document.getElementById('team-photo-editor');
+      if (editor) {
+        editor.style.display = 'block';
+        document.getElementById('team-zoom').value = 100;
+        document.getElementById('team-rotate').value = 0;
+        document.getElementById('team-zoom-val').textContent = '100%';
+        document.getElementById('team-rotate-val').textContent = '0°';
+      }
+    };
+    _teamPhotoImg.src = e.target.result;
   };
   reader.readAsDataURL(file);
-  document.getElementById('team-photo-status').textContent = file.name + ' selected';
+  document.getElementById('team-photo-status').textContent = file.name;
+}
+
+function drawTeamPhotoCanvas() {
+  var canvas = document.getElementById('team-photo-canvas');
+  if (!canvas || !_teamPhotoImg) return;
+  var size = 90;
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(_teamPhotoRotation * Math.PI / 180);
+  ctx.scale(_teamPhotoZoom, _teamPhotoZoom);
+  var iw = _teamPhotoImg.naturalWidth;
+  var ih = _teamPhotoImg.naturalHeight;
+  var sc = Math.max(size / iw, size / ih);
+  ctx.drawImage(_teamPhotoImg, -iw * sc / 2, -ih * sc / 2, iw * sc, ih * sc);
+  ctx.restore();
 }
 
 function saveTeamMember() {
@@ -1224,7 +1278,21 @@ function saveTeamMember() {
     });
   }
 
-  if (photoFile) {
+  var canvas = document.getElementById('team-photo-canvas');
+  if (_teamPhotoImg && canvas) {
+    canvas.toBlob(function(blob) {
+      if (!blob) { doSave(''); return; }
+      var form = new FormData();
+      form.append('file', blob, 'team-photo.jpg');
+      fetch('/api/upload?folder=team', { method: 'POST', body: form })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (res.key) doSave(res.key);
+          else { showToast('Photo upload failed', 'error'); doSave(undefined); }
+        })
+        .catch(function() { showToast('Photo upload failed', 'error'); doSave(undefined); });
+    }, 'image/jpeg', 0.92);
+  } else if (photoFile) {
     var form = new FormData();
     form.append('file', photoFile);
     fetch('/api/upload?folder=team', { method: 'POST', body: form })

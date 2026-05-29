@@ -1578,7 +1578,7 @@ app.get('/gallery', async (c) => {
   </section>
 
   <!-- Lightbox -->
-  <div id="lb" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeLightbox()">
+  <div id="lb" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeLightbox()">
     <button onclick="navLightbox(-1)" style="position:fixed;left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#8249;</button>
     <button onclick="navLightbox(1)"  style="position:fixed;right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#8250;</button>
     <button onclick="closeLightbox()" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer;z-index:10001">&#x2715;</button>
@@ -1612,13 +1612,6 @@ app.get('/gallery', async (c) => {
     window.addEventListener('hashchange', updateFolderFromHash);
     updateFolderFromHash();
 
-    // Photo card click → open lightbox (event delegation so it works inside :target panels)
-    document.addEventListener('click', function(e) {
-      var card = e.target.closest ? e.target.closest('[data-pidx]') : null;
-      if (!card) return;
-      openLightbox(parseInt(card.getAttribute('data-pidx')));
-    });
-
     function openLightbox(globalIdx) {
       if (_currentFolder !== null && _GROUPS[_currentFolder]) {
         var fi = _GROUPS[_currentFolder].indices;
@@ -1630,13 +1623,23 @@ app.get('/gallery', async (c) => {
         _lbFolderIndices = null;
         _lbIdx = globalIdx;
       }
-      var lbEl = document.getElementById('lb');
-      lbEl.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;align-items:center;justify-content:center;padding:20px';
-      document.body.style.overflow = 'hidden';
       showLb();
+      var lbEl = document.getElementById('lb');
+      lbEl.style.display = 'flex';
+      lbEl.style.position = 'fixed';
+      lbEl.style.top = '0';
+      lbEl.style.left = '0';
+      lbEl.style.right = '0';
+      lbEl.style.bottom = '0';
+      lbEl.style.background = 'rgba(0,0,0,0.93)';
+      lbEl.style.zIndex = '10000';
+      lbEl.style.alignItems = 'center';
+      lbEl.style.justifyContent = 'center';
+      lbEl.style.padding = '20px';
+      document.body.style.overflow = 'hidden';
     }
     function closeLightbox() {
-      document.getElementById('lb').style.cssText = 'display:none';
+      document.getElementById('lb').style.display = 'none';
       document.body.style.overflow = '';
       _lbFolderIndices = null;
     }
@@ -1680,6 +1683,13 @@ app.get('/gallery', async (c) => {
         + '</div>';
       document.body.appendChild(ov);
     }
+
+    // Attach click listeners directly to every photo card (works even inside CSS :target panels)
+    document.querySelectorAll('[data-pidx]').forEach(function(card) {
+      card.addEventListener('click', function() {
+        openLightbox(parseInt(card.getAttribute('data-pidx')));
+      });
+    });
   </script>
 
   <!-- Social CTA -->

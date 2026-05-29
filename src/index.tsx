@@ -1469,7 +1469,7 @@ app.get('/gallery', async (c) => {
   const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
     const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
-      <div onclick="openLightbox(${i})"
+      <div data-pidx="${i}"
            style="cursor:pointer;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:all 0.25s;border:2px solid ${accent}22"
            onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
@@ -1612,6 +1612,13 @@ app.get('/gallery', async (c) => {
     window.addEventListener('hashchange', updateFolderFromHash);
     updateFolderFromHash();
 
+    // Photo card click → open lightbox (event delegation so it works inside :target panels)
+    document.addEventListener('click', function(e) {
+      var card = e.target.closest ? e.target.closest('[data-pidx]') : null;
+      if (!card) return;
+      openLightbox(parseInt(card.getAttribute('data-pidx')));
+    });
+
     function openLightbox(globalIdx) {
       if (_currentFolder !== null && _GROUPS[_currentFolder]) {
         var fi = _GROUPS[_currentFolder].indices;
@@ -1623,12 +1630,13 @@ app.get('/gallery', async (c) => {
         _lbFolderIndices = null;
         _lbIdx = globalIdx;
       }
-      showLb();
-      document.getElementById('lb').setAttribute('style', 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;align-items:center;justify-content:center;padding:20px');
+      var lbEl = document.getElementById('lb');
+      lbEl.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9999;align-items:center;justify-content:center;padding:20px';
       document.body.style.overflow = 'hidden';
+      showLb();
     }
     function closeLightbox() {
-      document.getElementById('lb').setAttribute('style', 'display:none');
+      document.getElementById('lb').style.cssText = 'display:none';
       document.body.style.overflow = '';
       _lbFolderIndices = null;
     }

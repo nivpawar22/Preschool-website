@@ -1466,21 +1466,17 @@ app.get('/gallery', async (c) => {
   }).join('')
 
   // ── Photo panels — hidden by CSS (.gfp), revealed by :target when hash matches ──
+  // Photo cards are <a href="#ph-fIdx-jIdx"> links; lightboxes are separate .ph-lb divs shown by :target
   const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
-    const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
-      <div data-pidx="${i}" data-src="${p.publicUrl}" data-fallback="${p.proxyUrl}" data-title="${p.title.replace(/"/g,'&quot;')}"
-           style="cursor:pointer;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:all 0.25s;border:2px solid ${accent}22"
-           onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
-           onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
+    const playingCardsHtml = items.map(({ photo: p }, jIdx) => `
+      <a href="#ph-${fIdx}-${jIdx}" style="display:block;text-decoration:none;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;border:2px solid ${accent}22"
+         onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
         <div style="position:relative;overflow:hidden;height:160px">
           <img src="${p.publicUrl}" alt="${p.title}" loading="lazy"
-               style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.35s"
-               onerror="this.onerror=null;this.src='${p.proxyUrl}'"
-               onmouseover="this.style.transform='scale(1.06)'"
-               onmouseout="this.style.transform='scale(1)'">
-          <span style="position:absolute;top:6px;left:8px;font-size:11px;font-weight:900;color:${accent};text-shadow:0 1px 3px rgba(255,255,255,0.9)">♣</span>
-          <span style="position:absolute;top:6px;right:8px;font-size:11px;font-weight:900;color:${accent};text-shadow:0 1px 3px rgba(255,255,255,0.9)">♣</span>
+               style="width:100%;height:100%;object-fit:cover;display:block"
+               onerror="this.onerror=null;this.src='${p.proxyUrl}'">
           <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to bottom,transparent,rgba(0,0,0,0.5));padding:20px 8px 6px;pointer-events:none">
             <div style="color:#fff;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,0.7)">${p.title}</div>
           </div>
@@ -1489,7 +1485,7 @@ app.get('/gallery', async (c) => {
           ${p.date ? `<span style="font-size:9px;color:#94a3b8">${p.date}</span>` : '<span></span>'}
           <span style="font-size:9px;font-weight:700;color:${accent}"><i class="fas fa-expand-alt"></i></span>
         </div>
-      </div>`).join('')
+      </a>`).join('')
     return `
     <div id="gf${fIdx}" class="gfp">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
@@ -1506,11 +1502,25 @@ app.get('/gallery', async (c) => {
     </div>`
   }).join('')
 
-  // ── Groups JSON for lightbox folder-navigation ──
-  const groupsArrayJson = JSON.stringify(tagEntries.map(([tag, items]) => ({
-    tag,
-    indices: items.map(({ idx }) => idx),
-  })))
+  // ── Photo lightboxes — one per photo, shown by CSS :target, positioned fixed ──
+  const photoLightboxesHtml = tagEntries.map(([tag, items], fIdx) => {
+    const total = items.length
+    return items.map(({ photo: p }, jIdx) => {
+      const prevJ = (jIdx - 1 + total) % total
+      const nextJ = (jIdx + 1) % total
+      const btnBase = 'display:flex;align-items:center;justify-content:center;position:fixed;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:28px;text-decoration:none;width:50px;height:50px;line-height:1'
+      return `
+      <div id="ph-${fIdx}-${jIdx}" class="ph-lb">
+        <a href="#gf${fIdx}" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;text-decoration:none;z-index:1" title="Close">&#215;</a>
+        <a href="#ph-${fIdx}-${prevJ}" data-lb-prev style="${btnBase};left:10px;top:50%;transform:translateY(-50%)">&#8249;</a>
+        <a href="#ph-${fIdx}-${nextJ}" data-lb-next style="${btnBase};right:10px;top:50%;transform:translateY(-50%)">&#8250;</a>
+        <img src="${p.publicUrl}" alt="${p.title}" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.6)"
+             onerror="this.onerror=null;this.src='${p.proxyUrl}'">
+        <div style="margin-top:12px;color:#fff;font-size:14px;font-weight:700;text-align:center;max-width:80vw">${p.title}</div>
+        <div style="margin-top:4px;color:rgba(255,255,255,0.5);font-size:12px">${jIdx + 1} / ${total}</div>
+      </div>`
+    }).join('')
+  }).join('')
 
   const emptyHtml = `
     <div style="text-align:center;padding:80px 20px;background:#fff;border-radius:14px;border:2px dashed #DCE1EF">
@@ -1556,7 +1566,12 @@ app.get('/gallery', async (c) => {
 
       ${r2Error ? `<div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:13px;border:1px solid #fca5a5">R2 error: ${r2Error}</div>` : ''}
 
-      <style>.gfp{display:none}.gfp:target{display:block}.gfp:target~#gallery-top{display:none!important}</style>
+      <style>
+        .gfp{display:none}.gfp:target{display:block}.gfp:target~#gallery-top{display:none!important}
+        .ph-lb{display:none}
+        .ph-lb:target{display:flex;flex-direction:column;align-items:center;justify-content:center;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.93);padding:70px 60px 80px;box-sizing:border-box}
+      </style>
+      ${photoLightboxesHtml}
       ${photoCount === 0 ? emptyHtml : `
         ${photoPanelsHtml}
         <div id="gallery-top" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px">
@@ -1591,74 +1606,15 @@ app.get('/gallery', async (c) => {
       document.body.appendChild(ov);
     }
 
-    // Photo lightbox — reads src/title directly from DOM data attributes, no global state
-    document.querySelectorAll('[data-pidx]').forEach(function(card) {
-      card.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var panel = card.closest('.gfp');
-        var siblings = panel ? Array.from(panel.querySelectorAll('[data-pidx]')) : [card];
-        var pos = siblings.indexOf(card);
-
-        function show(idx) {
-          var c = siblings[idx];
-          lbImg.src = c.getAttribute('data-src') || '';
-          lbImg.onerror = function() { lbImg.onerror = null; lbImg.src = c.getAttribute('data-fallback') || ''; };
-          lbTitle.textContent = c.getAttribute('data-title') || '';
-          lbCount.textContent = (idx + 1) + ' / ' + siblings.length;
-        }
-
-        var ov = document.createElement('div');
-        ov.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.93);z-index:99999;display:flex;align-items:center;justify-content:center;padding:60px 60px 80px;box-sizing:border-box';
-
-        var lbImg = document.createElement('img');
-        lbImg.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.6);display:block';
-
-        var lbTitle = document.createElement('div');
-        lbTitle.style.cssText = 'position:absolute;bottom:46px;left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:700;padding:0 70px';
-
-        var lbCount = document.createElement('div');
-        lbCount.style.cssText = 'position:absolute;bottom:28px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.5);font-size:12px';
-
-        var btnStyle = 'position:fixed;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center';
-
-        var prevBtn = document.createElement('button');
-        prevBtn.innerHTML = '&#8249;';
-        prevBtn.style.cssText = btnStyle + ';left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px';
-        prevBtn.onclick = function(ev) { ev.stopPropagation(); pos = (pos - 1 + siblings.length) % siblings.length; show(pos); };
-
-        var nextBtn = document.createElement('button');
-        nextBtn.innerHTML = '&#8250;';
-        nextBtn.style.cssText = btnStyle + ';right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px';
-        nextBtn.onclick = function(ev) { ev.stopPropagation(); pos = (pos + 1) % siblings.length; show(pos); };
-
-        var closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&#215;';
-        closeBtn.style.cssText = 'position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer';
-        closeBtn.onclick = function(ev) { ev.stopPropagation(); close(); };
-
-        function close() {
-          document.body.removeChild(ov);
-          document.body.style.overflow = '';
-          document.removeEventListener('keydown', onKey);
-        }
-        function onKey(ev) {
-          if (ev.key === 'ArrowLeft')  { pos = (pos - 1 + siblings.length) % siblings.length; show(pos); }
-          if (ev.key === 'ArrowRight') { pos = (pos + 1) % siblings.length; show(pos); }
-          if (ev.key === 'Escape')     close();
-        }
-
-        ov.onclick = function(ev) { if (ev.target === ov) close(); };
-        ov.appendChild(prevBtn);
-        ov.appendChild(nextBtn);
-        ov.appendChild(closeBtn);
-        ov.appendChild(lbImg);
-        ov.appendChild(lbTitle);
-        ov.appendChild(lbCount);
-        document.body.appendChild(ov);
-        document.body.style.overflow = 'hidden';
-        document.addEventListener('keydown', onKey);
-        show(pos);
-      });
+    // Keyboard nav for CSS :target photo lightboxes
+    document.addEventListener('keydown', function(e) {
+      var hash = window.location.hash;
+      if (!hash.match(/^#ph-/)) return;
+      var lb = document.querySelector(hash);
+      if (!lb) return;
+      if (e.key === 'ArrowLeft')  { var p = lb.querySelector('[data-lb-prev]'); if (p) window.location.hash = p.getAttribute('href'); }
+      if (e.key === 'ArrowRight') { var n = lb.querySelector('[data-lb-next]'); if (n) window.location.hash = n.getAttribute('href'); }
+      if (e.key === 'Escape')     { var c = lb.querySelector('a[title="Close"]'); if (c) window.location.hash = c.getAttribute('href'); }
     });
   </script>
 

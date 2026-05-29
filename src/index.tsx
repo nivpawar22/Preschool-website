@@ -1341,6 +1341,14 @@ app.get('/programs', (c) => {
     (function() {
       document.querySelectorAll('.age-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
+          document.querySelectorAll('.age-tab').forEach(function(t) {
+            t.style.background = 'transparent';
+            t.style.color = '#2A3B60';
+            t.style.borderColor = '#DCE1EF';
+          });
+          tab.style.background = '#0F2050';
+          tab.style.color = '#ffffff';
+          tab.style.borderColor = '#0F2050';
           var target = tab.dataset.target;
           document.querySelectorAll('.prog-card').forEach(function(card) {
             card.style.display = (target === 'all' || card.dataset.prog === target) ? '' : 'none';
@@ -1597,24 +1605,32 @@ app.get('/gallery', async (c) => {
       _currentFolder = fIdx;
       _lbFolderIndices = _GROUPS[fIdx] ? _GROUPS[fIdx].indices : null;
       _lbFolderPos = 0;
-      document.getElementById('gallery-folders').style.display = 'none';
+      var folders = document.getElementById('gallery-folders');
+      var panels = document.getElementById('gallery-panels');
+      if (folders) folders.style.display = 'none';
+      // Hide all individual panels
       for (var i = 0; i < _GROUPS.length; i++) {
         var el = document.getElementById('folder-panel-' + i);
         if (el) el.style.display = 'none';
       }
+      // Show container first so getBoundingClientRect works correctly
+      if (panels) panels.style.display = 'block';
       var panel = document.getElementById('folder-panel-' + fIdx);
       if (panel) {
         panel.style.display = 'block';
-        window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+        setTimeout(function() {
+          window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+        }, 20);
       }
-      document.getElementById('gallery-panels').style.display = 'block';
     }
 
     function closeFolder() {
       _currentFolder = null;
       _lbFolderIndices = null;
-      document.getElementById('gallery-panels').style.display = 'none';
-      document.getElementById('gallery-folders').style.display = 'grid';
+      var panels = document.getElementById('gallery-panels');
+      var folders = document.getElementById('gallery-folders');
+      if (panels) panels.style.display = 'none';
+      if (folders) folders.style.display = 'grid';
     }
 
     function openLightbox(globalIdx) {

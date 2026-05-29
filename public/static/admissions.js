@@ -941,7 +941,13 @@ function recordFeePayment() {
     if(waMobile&&waMobile.length>=10){
       var m10=waMobile.slice(-10);
       var msg='Dear Parent,\n\nFee payment received at SuperKids India Preschool.\n\nReceipt No: '+receiptNo+'\nStudent: '+payData.studentName+'\nClass: '+payData.classId+'\nAmount Paid: Rs.'+payData.total+'\nPayment Date: '+payData.paymentDate+'\nMode: '+payData.paymentMode+'\n\nThank you!\nSuperKids India Preschool';
-      setTimeout(function(){window.open('https://wa.me/91'+m10+'?text='+encodeURIComponent(msg),'_blank');},1200);
+      var waUrl='https://wa.me/91'+m10+'?text='+encodeURIComponent(msg);
+      var banner=document.createElement('div');
+      banner.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#25D366;color:#fff;padding:12px 22px;border-radius:14px;z-index:99999;display:flex;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,0.25);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;text-decoration:none';
+      banner.innerHTML='<i class="fab fa-whatsapp" style="font-size:22px"></i><span>Send Receipt on WhatsApp</span>';
+      banner.onclick=function(){window.open(waUrl,'_blank');banner.remove();};
+      document.body.appendChild(banner);
+      setTimeout(function(){if(banner.parentNode)banner.remove();},15000);
     }
   }).catch(function(){showToast('Failed to record payment','error');});
 }

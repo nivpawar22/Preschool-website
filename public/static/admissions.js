@@ -705,24 +705,24 @@ function printAdmForm() {
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Admission Form</title><style>' +
-    '@page{margin:4mm}' +
-    'body{font-family:Arial,sans-serif;font-size:11px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+    '@page{margin:6mm}' +
+    'body{font-family:Arial,sans-serif;font-size:12px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050}' +
-    '.hdr-top{display:flex;align-items:center;padding:8px 16px;gap:10px}' +
-    '.hdr-top img{width:52px;height:52px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
-    '.hdr-name{font-size:16px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
-    '.hdr-sub{font-size:8px;color:#E8B020;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}' +
-    '.hdr-bar{background-color:#dcad92;padding:5px 16px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:#29B6F6;color:#fff;font-size:6px;flex-shrink:0;margin-right:3px}' +
+    '.hdr-top{display:flex;align-items:center;padding:10px 18px;gap:12px}' +
+    '.hdr-top img{width:58px;height:58px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
+    '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
+    '.hdr-sub{font-size:8px;color:#E8B020;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;margin-top:2px}' +
+    '.hdr-bar{background-color:#dcad92;padding:6px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
+    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#29B6F6;color:#fff;font-size:6px;flex-shrink:0;margin-right:3px}' +
     '.hdr-bl{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45}' +
     '.hdr-br{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
-    '.ft{text-align:center;font-size:12px;font-weight:bold;border:2px solid #0F2050;padding:5px;margin:6px 12px;background-color:#E8EDF5}' +
-    '.sec{margin:0 12px 5px;border:1px solid #ddd;border-radius:3px}' +
-    '.sh{background-color:#0F2050;color:#fff;padding:3px 10px;font-weight:bold;font-size:11px}' +
-    '.sb{padding:7px 10px;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}' +
-    '.fl{font-size:9px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:1px 0;border-bottom:1px solid #ddd;min-height:15px;font-size:11px}' +
-    '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:10px 12px 0}.sl{border-top:2px solid #0F2050;padding-top:4px;text-align:center;font-size:10px;font-weight:bold;color:#0F2050;height:32px}' +
-    '.footer{text-align:center;font-size:9px;color:#555;padding:3px 12px;margin-top:2px}' +
+    '.ft{text-align:center;font-size:13px;font-weight:bold;border:2px solid #0F2050;padding:6px;margin:8px 14px;background-color:#E8EDF5}' +
+    '.sec{margin:0 14px 8px;border:1px solid #ddd;border-radius:4px}' +
+    '.sh{background-color:#0F2050;color:#fff;padding:5px 12px;font-weight:bold;font-size:12px}' +
+    '.sb{padding:9px 12px;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px}' +
+    '.fl{font-size:9px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:2px 0;border-bottom:1px solid #ddd;min-height:17px;font-size:12px}' +
+    '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 14px 0}.sl{border-top:2px solid #0F2050;padding-top:5px;text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:52px}' +
+    '.footer{text-align:center;font-size:9px;color:#555;padding:4px 14px;margin-top:3px}' +
     '.pborder{box-sizing:border-box}' +
     '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
@@ -748,13 +748,13 @@ function printAdmForm() {
     '</div>'+
     '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
     '<div class="sec"><div class="sh">Student Information</div>'+
-      '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px">'+
-        '<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+
+      '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px">'+
+        '<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px">'+
           [['Admission No.',fd.admissionNo||'–'],['Student Name',fd.studentName||''],['Date of Birth',fd.dob||''],['Gender',fd.gender||''],['Blood Group',fd.bloodGroup||''],['Class / Program',fd.classId||''],['Religion',fd.religion||''],['Mother Tongue',fd.motherTongue||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
         '</div>'+
         (fd.studentPhotoUrl?
-          '<div style="width:76px;flex-shrink:0;text-align:center">'+
-            '<div style="width:68px;height:68px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;margin:0 auto;background:#F8F9FB">'+
+          '<div style="width:86px;flex-shrink:0;text-align:center">'+
+            '<div style="width:78px;height:78px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;margin:0 auto;background:#F8F9FB">'+
               '<img src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+')">'+
             '</div>'+
             '<div style="font-size:8px;color:#666;margin-top:3px;font-weight:700">STUDENT PHOTO</div>'+
@@ -776,9 +776,9 @@ function printAdmForm() {
     '<div class="sec"><div class="sh">Emergency Contact</div><div class="sb">'+
       [['Name',fd.emergencyName||''],['Relationship',fd.emergencyRelation||''],['Primary Mobile',fd.emergencyMobile||''],['Alternate Mobile',fd.emergencyAlt||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
-    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:5px 12px;border-radius:3px;font-size:10px;margin:0 12px 5px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
+    '<div style="background:#f9f9f9;border:1px solid #ddd;padding:7px 14px;border-radius:4px;font-size:11px;margin:0 14px 8px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
     '<div class="sigs"><div class="sl">Parent / Guardian Signature</div><div class="sl">Admission Admin</div><div class="sl">'+principal+'</div></div>'+
-    '<div style="text-align:right;font-size:9px;color:#aaa;padding:3px 12px">Date: '+now+'</div>'+
+    '<div style="text-align:right;font-size:9px;color:#aaa;padding:4px 14px">Date: '+now+'</div>'+
   '</div>'+
   '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
   '</body></html>');

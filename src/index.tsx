@@ -1469,7 +1469,7 @@ app.get('/gallery', async (c) => {
   const photoPanelsHtml = tagEntries.map(([tag, items], fIdx) => {
     const accent = tagAccentColors[tag] || '#1AA6CA'
     const playingCardsHtml = items.map(({ photo: p, idx: i }) => `
-      <div data-pidx="${i}" onclick="openLightbox(${i})"
+      <div data-pidx="${i}" data-src="${p.publicUrl}" data-fallback="${p.proxyUrl}" data-title="${p.title.replace(/"/g,'&quot;')}"
            style="cursor:pointer;background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(15,32,80,0.1);overflow:hidden;transition:all 0.25s;border:2px solid ${accent}22"
            onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 32px rgba(15,32,80,0.2)'"
            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(15,32,80,0.1)'">
@@ -1578,96 +1578,6 @@ app.get('/gallery', async (c) => {
   </section>
 
   <script>
-    var _PHOTOS = ${photosJson};
-    var _GROUPS = ${groupsArrayJson};
-    var _lbIdx = 0;
-    var _currentFolder = null;
-    var _lbFolderIndices = null;
-    var _lbFolderPos = 0;
-    var _lbEl = null;
-
-    function updateFolderFromHash() {
-      var m = window.location.hash.match(/^#gf(\d+)$/);
-      if (m) {
-        var fi = parseInt(m[1]);
-        _currentFolder = fi;
-        _lbFolderIndices = _GROUPS[fi] ? _GROUPS[fi].indices : null;
-        _lbFolderPos = 0;
-      } else {
-        _currentFolder = null;
-        _lbFolderIndices = null;
-      }
-    }
-    window.addEventListener('hashchange', updateFolderFromHash);
-    updateFolderFromHash();
-
-    function buildLbEl() {
-      var el = document.createElement('div');
-      el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
-      el.innerHTML =
-        '<button onclick="navLightbox(-1)" style="position:fixed;left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer">&#8249;</button>'
-      + '<button onclick="navLightbox(1)" style="position:fixed;right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;cursor:pointer">&#8250;</button>'
-      + '<button onclick="closeLightbox()" style="position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer">&#215;</button>'
-      + '<div style="max-width:920px;width:100%;text-align:center">'
-      +   '<img id="lbo-img" src="" alt="" style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">'
-      +   '<div id="lbo-title" style="margin-top:14px;color:#fff;font-size:0.95rem;font-weight:700"></div>'
-      +   '<div id="lbo-count" style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:6px"></div>'
-      + '</div>';
-      el.addEventListener('click', function(e) { if (e.target === el) closeLightbox(); });
-      document.body.appendChild(el);
-      return el;
-    }
-
-    function openLightbox(globalIdx) {
-      if (_currentFolder !== null && _GROUPS[_currentFolder]) {
-        var fi = _GROUPS[_currentFolder].indices;
-        _lbFolderIndices = fi;
-        _lbFolderPos = fi.indexOf(globalIdx);
-        if (_lbFolderPos < 0) _lbFolderPos = 0;
-        _lbIdx = fi[_lbFolderPos];
-      } else {
-        _lbFolderIndices = null;
-        _lbIdx = globalIdx;
-      }
-      if (!_lbEl) _lbEl = buildLbEl();
-      _lbEl.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-      showLb();
-    }
-    function closeLightbox() {
-      if (_lbEl) _lbEl.style.display = 'none';
-      document.body.style.overflow = '';
-      _lbFolderIndices = null;
-    }
-    function navLightbox(d) {
-      if (_lbFolderIndices && _lbFolderIndices.length > 0) {
-        _lbFolderPos = (_lbFolderPos + d + _lbFolderIndices.length) % _lbFolderIndices.length;
-        _lbIdx = _lbFolderIndices[_lbFolderPos];
-      } else {
-        _lbIdx = (_lbIdx + d + _PHOTOS.length) % _PHOTOS.length;
-      }
-      showLb();
-    }
-    function showLb() {
-      var p = _PHOTOS[_lbIdx];
-      if (!p || !_lbEl) return;
-      var img = document.getElementById('lbo-img');
-      if (img) { img.src = p.publicUrl; img.onerror = function() { img.onerror = null; img.src = p.proxyUrl; }; img.alt = p.title; }
-      var title = document.getElementById('lbo-title');
-      if (title) title.textContent = p.title;
-      var count = document.getElementById('lbo-count');
-      if (count) {
-        var total = (_lbFolderIndices && _lbFolderIndices.length) ? _lbFolderIndices.length : _PHOTOS.length;
-        var pos = (_lbFolderIndices && _lbFolderIndices.length) ? (_lbFolderPos + 1) : (_lbIdx + 1);
-        count.textContent = pos + ' / ' + total;
-      }
-    }
-    document.addEventListener('keydown', function(e) {
-      if (!_lbEl || _lbEl.style.display === 'none') return;
-      if (e.key === 'ArrowLeft')  navLightbox(-1);
-      if (e.key === 'ArrowRight') navLightbox(1);
-      if (e.key === 'Escape')     closeLightbox();
-    });
     function openVideoLightbox(ytId) {
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -1681,10 +1591,73 @@ app.get('/gallery', async (c) => {
       document.body.appendChild(ov);
     }
 
-    // Attach click listeners directly to every photo card
+    // Photo lightbox — reads src/title directly from DOM data attributes, no global state
     document.querySelectorAll('[data-pidx]').forEach(function(card) {
-      card.addEventListener('click', function() {
-        openLightbox(parseInt(card.getAttribute('data-pidx')));
+      card.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var panel = card.closest('.gfp');
+        var siblings = panel ? Array.from(panel.querySelectorAll('[data-pidx]')) : [card];
+        var pos = siblings.indexOf(card);
+
+        function show(idx) {
+          var c = siblings[idx];
+          lbImg.src = c.getAttribute('data-src') || '';
+          lbImg.onerror = function() { lbImg.onerror = null; lbImg.src = c.getAttribute('data-fallback') || ''; };
+          lbTitle.textContent = c.getAttribute('data-title') || '';
+          lbCount.textContent = (idx + 1) + ' / ' + siblings.length;
+        }
+
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.93);z-index:99999;display:flex;align-items:center;justify-content:center;padding:60px 60px 80px;box-sizing:border-box';
+
+        var lbImg = document.createElement('img');
+        lbImg.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.6);display:block';
+
+        var lbTitle = document.createElement('div');
+        lbTitle.style.cssText = 'position:absolute;bottom:46px;left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:700;padding:0 70px';
+
+        var lbCount = document.createElement('div');
+        lbCount.style.cssText = 'position:absolute;bottom:28px;left:0;right:0;text-align:center;color:rgba(255,255,255,0.5);font-size:12px';
+
+        var btnStyle = 'position:fixed;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+
+        var prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '&#8249;';
+        prevBtn.style.cssText = btnStyle + ';left:10px;top:50%;transform:translateY(-50%);width:46px;height:46px';
+        prevBtn.onclick = function(ev) { ev.stopPropagation(); pos = (pos - 1 + siblings.length) % siblings.length; show(pos); };
+
+        var nextBtn = document.createElement('button');
+        nextBtn.innerHTML = '&#8250;';
+        nextBtn.style.cssText = btnStyle + ';right:10px;top:50%;transform:translateY(-50%);width:46px;height:46px';
+        nextBtn.onclick = function(ev) { ev.stopPropagation(); pos = (pos + 1) % siblings.length; show(pos); };
+
+        var closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&#215;';
+        closeBtn.style.cssText = 'position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer';
+        closeBtn.onclick = function(ev) { ev.stopPropagation(); close(); };
+
+        function close() {
+          document.body.removeChild(ov);
+          document.body.style.overflow = '';
+          document.removeEventListener('keydown', onKey);
+        }
+        function onKey(ev) {
+          if (ev.key === 'ArrowLeft')  { pos = (pos - 1 + siblings.length) % siblings.length; show(pos); }
+          if (ev.key === 'ArrowRight') { pos = (pos + 1) % siblings.length; show(pos); }
+          if (ev.key === 'Escape')     close();
+        }
+
+        ov.onclick = function(ev) { if (ev.target === ov) close(); };
+        ov.appendChild(prevBtn);
+        ov.appendChild(nextBtn);
+        ov.appendChild(closeBtn);
+        ov.appendChild(lbImg);
+        ov.appendChild(lbTitle);
+        ov.appendChild(lbCount);
+        document.body.appendChild(ov);
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', onKey);
+        show(pos);
       });
     });
   </script>

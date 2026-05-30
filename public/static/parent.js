@@ -505,7 +505,7 @@ function renderParentSyllabus() {
   const child = getSelectedChild();
   if (!child) { renderParentHome(); return; }
 
-  const [termFilter, setTermFilter] = [window._parentSylTerm || 'Term 1', (v) => { window._parentSylTerm = v; }];
+  const [termFilter, setTermFilter] = [window._parentSylTerm || 'Semester 1', (v) => { window._parentSylTerm = v; }];
   const syllabi = DB.getSyllabus(child.classId, termFilter);
   const cls = DB.getClass(child.classId);
 
@@ -515,7 +515,7 @@ function renderParentSyllabus() {
       <div class="card-header">
         <div class="card-title"><i class="fas fa-book-open" style="color:#C4893A"></i> Syllabus – ${cls ? cls.name : ''}</div>
         <div style="display:flex;gap:6px">
-          ${['Term 1','Term 2','Term 3'].map(t => `<button class="btn btn-sm ${termFilter===t?'btn-primary':'btn-secondary'}" onclick="window._parentSylTerm='${t}';renderParentSyllabus()">${t}</button>`).join('')}
+          ${['Semester 1','Semester 2'].map(t => `<button class="btn btn-sm ${termFilter===t?'btn-primary':'btn-secondary'}" onclick="window._parentSylTerm='${t}';renderParentSyllabus()">${t}</button>`).join('')}
         </div>
       </div>
 

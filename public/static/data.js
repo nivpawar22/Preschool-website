@@ -93,6 +93,11 @@ const DB = (() => {
         username: 'parent3', password: 'parent123', phone: '+1-555-0303',
         avatar: '#84cc16', active: true, deleted: false, createdAt: '2024-02-05',
         childIds: ['s4', 's5']
+      },
+      {
+        id: 'acc1', role: 'accounting', name: 'Accounts Manager', email: 'accounts@superkidsindia.com',
+        username: 'accounting', password: 'accounts123', phone: '',
+        avatar: '#8b5cf6', active: true, deleted: false, createdAt: '2024-01-01'
       }
     ],
     classes: [
@@ -195,6 +200,8 @@ const DB = (() => {
       { id: 'ev4', title: 'Cultural Festival', description: 'Annual cultural event with performances and exhibitions by students', date: '2024-06-01', time: '3:00 PM', classId: null, type: 'cultural', createdBy: 'u1', createdAt: '2024-04-28T10:00:00' },
     ],
     activityLog: [],
+    purchaseOrders: [],
+    expenses: [],
     gallery: [
       { id: 'gal1', title: 'Sports Day 2024', description: 'Annual sports day activities with fun races and games', imageData: '', date: '2024-04-10', classId: 'cls1', studentIds: ['s1', 's4'], uploadedBy: 'u2', createdAt: '2024-04-10T09:00:00' },
       { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: '2024-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: '2024-04-12T14:00:00' },
@@ -471,6 +478,44 @@ const DB = (() => {
     commit();
   }
 
+  // ---- Purchase Orders ----
+  function getPurchaseOrders() {
+    return (_data.purchaseOrders || []).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }
+
+  function addPurchaseOrder(po) {
+    if (!_data.purchaseOrders) _data.purchaseOrders = [];
+    _data.purchaseOrders.unshift(po);
+    commit();
+  }
+
+  function deletePurchaseOrder(id) {
+    if (!_data.purchaseOrders) return;
+    _data.purchaseOrders = _data.purchaseOrders.filter(p => p.id !== id);
+    commit();
+  }
+
+  // ---- Expenses ----
+  function getExpenses(category) {
+    const expenses = _data.expenses || [];
+    return expenses
+      .filter(e => !category || e.category === category)
+      .slice()
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }
+
+  function addExpense(expense) {
+    if (!_data.expenses) _data.expenses = [];
+    _data.expenses.unshift(expense);
+    commit();
+  }
+
+  function deleteExpense(id) {
+    if (!_data.expenses) return;
+    _data.expenses = _data.expenses.filter(e => e.id !== id);
+    commit();
+  }
+
   // ---- Activity log ----
   function log(userId, action, details) {
     _data.activityLog.unshift({ id: genId('log'), userId, action, details, time: new Date().toISOString() });
@@ -528,6 +573,8 @@ const DB = (() => {
     getAnnouncements,
     getGallery, addGalleryItem, deleteGalleryItem,
     getEvents, addEvent, deleteEvent,
+    getPurchaseOrders, addPurchaseOrder, deletePurchaseOrder,
+    getExpenses, addExpense, deleteExpense,
     calcGrade, calcBMI,
     getMeta, updateMeta,
     defaults,

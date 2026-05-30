@@ -173,6 +173,13 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'fee-collection', icon: 'fa-rupee-sign', label: 'Fee Collection' },
       { id: 'receipts', icon: 'fa-receipt', label: 'Receipts' },
     ];
+  } else if (user.role === 'accounting') {
+    navItems = [
+      { id: 'acc-dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
+      { id: 'acc-fees', icon: 'fa-rupee-sign', label: 'Fee Collection' },
+      { id: 'acc-purchase', icon: 'fa-shopping-cart', label: 'Purchase Orders' },
+      { id: 'acc-expenses', icon: 'fa-file-invoice-rupee', label: 'Expenses' },
+    ];
   } else if (user.role === 'superadmin' || user.role === 'subadmin') {
     const annBadge = Seen.count('ann', user.id, DB.getAnnouncements(''), a => a.date);
     const evtBadge = Seen.count('evt', user.id, data.events || [], e => e.createdAt || e.date);
@@ -245,8 +252,8 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       ${n.badge ? `<span class="badge">${n.badge}</span>` : ''}
     </div>`).join('');
 
-  const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'admission' ? 'Admission Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
-  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'admission' ? '#C4893A' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
+  const roleLabel = isImp ? `Viewing as Sub Admin` : user.role === 'superadmin' ? 'Super Admin' : user.role === 'admission' ? 'Admission Admin' : user.role === 'accounting' ? 'Accounting Admin' : user.role === 'subadmin' ? 'Class Teacher' : 'Parent';
+  const roleColor = user.role === 'superadmin' ? '#0F2050' : user.role === 'admission' ? '#C4893A' : user.role === 'accounting' ? '#8b5cf6' : user.role === 'subadmin' ? '#10b981' : '#E8B020';
 
   document.getElementById('app').innerHTML = `
     <!-- Sidebar -->
@@ -515,6 +522,7 @@ function doLogin() {
 
   if (user.role === 'parent') navigate('parent-home');
   else if (user.role === 'admission') navigate('admission-dashboard');
+  else if (user.role === 'accounting') navigate('acc-dashboard');
   else navigate('dashboard');
 }
 

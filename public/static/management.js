@@ -17,6 +17,7 @@ function renderManagement() {
     { label: 'People Management', color: '#0F2050', tabs: [
       { id: 'subadmins', label: 'Sub Admins', icon: 'fa-user-tie' },
       { id: 'adm-admins', label: 'Admission Admins', icon: 'fa-user-check' },
+      { id: 'acc-admins', label: 'Accounting Admins', icon: 'fa-calculator' },
       { id: 'parents', label: 'Parents', icon: 'fa-users' },
       { id: 'team', label: 'Our Team', icon: 'fa-chalkboard-teacher' },
       { id: 'reviews', label: 'Reviews', icon: 'fa-star' },
@@ -38,6 +39,7 @@ function renderManagement() {
   const tabContent = {
     subadmins: renderSubAdminsTab(),
     'adm-admins': renderAdmAdminsTab(),
+    'acc-admins': renderAccAdminsTab(),
     parents: renderParentsTab(),
     team: renderTeamTab(),
     reviews: renderReviewsTab(),
@@ -191,6 +193,191 @@ function renderAdmAdminsTab() {
         <i class="fas fa-info-circle"></i> Admission Admins can manage the Admissions portal. They do NOT have access to the Management tab.
       </div>
     </div>`;
+}
+
+function renderAccAdminsTab() {
+  const accAdmins = DB.get().users.filter(function(u){ return u.role === 'accounting' && !u.deleted; });
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="fas fa-calculator" style="color:#8b5cf6"></i> Accounting Admins (${accAdmins.length})</div>
+        <button class="btn btn-primary" onclick="openAddAccAdminModal()"><i class="fas fa-plus"></i> Add Accounting Admin</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            ${accAdmins.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:#888;padding:24px">No Accounting Admins found. Add one above.</td></tr>' :
+              accAdmins.map(function(u) {
+                return `<tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      ${avatarHtml(u.name, u.avatar)}
+                      <div style="font-weight:600">${u.name}</div>
+                    </div>
+                  </td>
+                  <td><code style="background:#f1f5f9;padding:2px 8px;border-radius:6px">${u.username}</code></td>
+                  <td>${u.email || '-'}</td>
+                  <td>${u.phone || '-'}</td>
+                  <td><span class="badge ${u.active?'badge-green':'badge-red'}">${u.active?'Active':'Inactive'}</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">
+                      <button class="btn btn-xs btn-primary" title="Edit" onclick="openEditAccAdminModal('${u.id}')"><i class="fas fa-edit"></i></button>
+                      <button class="btn btn-xs" style="${u.active?'background:#FEF7E0;color:#92400e':'background:#d1fae5;color:#065f46'}" onclick="toggleAccAdminStatus('${u.id}')">
+                        <i class="fas ${u.active?'fa-user-slash':'fa-user-check'}"></i>
+                      </button>
+                      ${u.phone ? `<button class="btn btn-xs btn-whatsapp" title="WhatsApp" onclick="wa('${u.phone}','Hello ${u.name}')"><i class="fab fa-whatsapp"></i></button>` : ''}
+                      ${Session.canDelete() ? `<button class="btn btn-xs btn-danger" title="Delete" onclick="deleteAccAdmin('${u.id}')"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')
+            }
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:12px 16px;font-size:12px;color:#6B7A9D;border-top:1px solid #EDF0F7">
+        <i class="fas fa-info-circle"></i> Accounting Admins can manage Fee Collection, Purchase Orders, and Expenses. They do NOT have access to the Management tab.
+      </div>
+    </div>`;
+}
+
+function openAddAccAdminModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fas fa-calculator" style="color:#8b5cf6;margin-right:8px"></i>Add Accounting Admin</h2>
+        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="aac-name" placeholder="Full name"/></div>
+          <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="aac-email" type="email" placeholder="accounts@school.com"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Username *</label><input class="form-control" id="aac-username" placeholder="e.g. accounts1"/></div>
+          <div class="form-group"><label class="form-label">Password *</label><input class="form-control" id="aac-password" type="password" placeholder="Strong password"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="aac-phone" placeholder="+91-98000-00000"/></div>
+          <div class="form-group">
+            <label class="form-label">Avatar Color</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              ${['#8b5cf6','#1AA6CA','#10b981','#E8B020','#ef4444','#C4893A','#06b6d4','#f97316'].map(c => `
+                <div onclick="document.getElementById('aac-avatar').value='${c}';this.parentElement.querySelectorAll('.aac-opt').forEach(el=>el.style.outline='none');this.style.outline='3px solid #1e293b'"
+                     class="aac-opt" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer${c==='#8b5cf6'?';outline:3px solid #1e293b':''}"></div>`).join('')}
+              <input type="hidden" id="aac-avatar" value="#8b5cf6"/>
+            </div>
+          </div>
+        </div>
+        <div style="background:#F0EBFF;border-radius:10px;padding:12px 16px;margin-top:8px;font-size:13px;color:#4c1d95">
+          <i class="fas fa-lock" style="margin-right:6px"></i>
+          <strong>Permissions:</strong> Fee Collection, Purchase Orders, Expenses &amp; Salaries
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewAccAdmin()"><i class="fas fa-save"></i> Create Account</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+function saveNewAccAdmin() {
+  const data = DB.get();
+  const name = document.getElementById('aac-name').value.trim();
+  const email = document.getElementById('aac-email').value.trim();
+  const username = document.getElementById('aac-username').value.trim();
+  const password = document.getElementById('aac-password').value.trim();
+  if (!name || !email || !username || !password) { showToast('Please fill all required fields', 'error'); return; }
+  if (data.users.find(u => u.username === username)) { showToast('Username already exists', 'error'); return; }
+  const u = {
+    id: DB.genId('acc'), role: 'accounting', name, email, username, password,
+    phone: document.getElementById('aac-phone').value.trim(),
+    avatar: document.getElementById('aac-avatar').value || '#8b5cf6',
+    active: true, deleted: false, createdAt: new Date().toISOString().split('T')[0]
+  };
+  data.users.push(u);
+  DB.commit();
+  DB.log(Session.current().id, 'CREATE_ACC_ADMIN', `Created ${name} (${username})`);
+  document.querySelector('.modal-overlay').remove();
+  showToast(`Accounting Admin ${name} created!`, 'success');
+  renderManagement();
+}
+
+function openEditAccAdminModal(userId) {
+  const data = DB.get();
+  const u = data.users.find(x => x.id === userId);
+  if (!u) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Accounting Admin</h2>
+        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="eaac-name" value="${u.name}"/></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="eaac-email" type="email" value="${u.email||''}"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="eaac-phone" value="${u.phone||''}"/></div>
+          <div class="form-group"><label class="form-label">New Password (leave blank to keep)</label><input class="form-control" id="eaac-pass" type="password" placeholder="New password"/></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditAccAdmin('${userId}')"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+function saveEditAccAdmin(userId) {
+  const data = DB.get();
+  const u = data.users.find(x => x.id === userId);
+  if (!u) return;
+  u.name = document.getElementById('eaac-name').value.trim() || u.name;
+  u.email = document.getElementById('eaac-email').value.trim();
+  u.phone = document.getElementById('eaac-phone').value.trim();
+  const np = document.getElementById('eaac-pass').value.trim();
+  if (np) u.password = np;
+  DB.commit();
+  DB.log(Session.current().id, 'EDIT_ACC_ADMIN', `Edited ${u.name}`);
+  document.querySelector('.modal-overlay').remove();
+  showToast('Accounting Admin updated!', 'success');
+  renderManagement();
+}
+
+function toggleAccAdminStatus(userId) {
+  const data = DB.get();
+  const u = data.users.find(x => x.id === userId);
+  if (!u) return;
+  u.active = !u.active;
+  DB.commit();
+  showToast(`${u.name} ${u.active ? 'activated' : 'deactivated'}!`, 'success');
+  renderManagement();
+}
+
+function deleteAccAdmin(userId) {
+  const data = DB.get();
+  const u = data.users.find(x => x.id === userId);
+  if (!u) return;
+  confirmDialog(`Delete ${u.name}? This cannot be undone.`, () => {
+    u.deleted = true;
+    DB.commit();
+    DB.log(Session.current().id, 'DELETE_ACC_ADMIN', `Deleted ${u.name}`);
+    showToast('Accounting Admin deleted', 'warning');
+    renderManagement();
+  });
 }
 
 function openAddSubAdminModal(defaultRole) {

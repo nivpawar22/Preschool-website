@@ -2228,10 +2228,10 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 .hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}
 .hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.3px}
 .hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
-.hdr-bar{background:#dcad92;padding:7px 18px}
+.hdr-bar{background:#dcad92;padding:8px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
-.hdr-contacts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:#0F2050;font-weight:600;line-height:1.8}
-.hdr-addr{font-size:11px;color:#0F2050;font-weight:600;margin-top:4px;line-height:1.6}
+.hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.8}
+.hdr-br{font-size:11px;color:#0F2050;font-weight:600;text-align:right;line-height:1.7}
 .rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
 .ig{display:grid;grid-template-columns:1fr 1fr;border:1px solid #ddd}
 .ic{padding:9px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee}
@@ -2252,13 +2252,16 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
       <div style="flex:1"><div class="hdr-name">${schoolName}</div><div class="hdr-sub">Fee Payment Receipt</div></div>
     </div>
     <div class="hdr-bar">
-      <div class="hdr-contacts">
-        <span><span class="ico-badge"><i class="fas fa-phone"></i></span>${phone1}</span>
-        <span><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>${phone2}</span>
-        <span><span class="ico-badge"><i class="fas fa-envelope"></i></span>${email}</span>
-        <span><span class="ico-badge"><i class="fas fa-globe"></i></span>${website}</span>
+      <div class="hdr-bl">
+        <div><span class="ico-badge"><i class="fas fa-phone"></i></span>${phone1}</div>
+        <div><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>${phone2}</div>
+        <div><span class="ico-badge"><i class="fas fa-envelope"></i></span>${email}</div>
+        <div><span class="ico-badge"><i class="fas fa-globe"></i></span>${website}</div>
       </div>
-      <div class="hdr-addr"><span class="ico-badge"><i class="fas fa-map-marker-alt"></i></span>${rawAddr.replace(/\n/g, ', ')}</div>
+      <div class="hdr-br">
+        <div style="font-weight:800;margin-bottom:2px">${schoolName}</div>
+        <div>${rawAddr.replace(/\n/g, '<br>')}</div>
+      </div>
     </div>
   </div>
   <div class="rt">PAYMENT RECEIPT</div>

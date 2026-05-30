@@ -502,7 +502,14 @@ function doLogin() {
   const err = document.getElementById('login-err');
   if (!u || !p) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Please enter username and password.'; return; }
   const user = Session.login(u, p);
-  if (!user) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Invalid username or password.'; return; }
+  if (!user) {
+    err.style.display = 'flex';
+    const inactiveUser = DB.findUserByCredentials(u, p);
+    document.getElementById('login-err-text').textContent = inactiveUser
+      ? 'Your account is not yet activated. Please contact the school to activate your account.'
+      : 'Invalid username or password.';
+    return;
+  }
   err.style.display = 'none';
   _setupBackGuard();
 
@@ -588,7 +595,23 @@ function doForgotPassword() {
     } else if (r.notFound) {
       _fpMsg('No account found with that email address. Please contact the school.', false);
     } else if (r.notConfigured) {
-      _fpMsg('Email service not configured. Please contact: superkidsprincipal@gmail.com', false);
+      const el = document.getElementById('fp-msg');
+      if (el) {
+        el.style.display = 'block';
+        el.style.background = 'rgba(26,166,202,0.12)';
+        el.style.border = '1px solid rgba(26,166,202,0.35)';
+        el.style.borderRadius = '12px';
+        el.style.padding = '16px';
+        el.style.color = '#fff';
+        el.innerHTML = `
+          <div style="font-weight:700;margin-bottom:10px;font-size:14px"><i class="fas fa-key" style="color:#E8B020;margin-right:6px"></i> Your Login Credentials</div>
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:6px 8px;color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Name</td><td style="padding:6px 8px;font-weight:700">${r.name}</td></tr>
+            <tr><td style="padding:6px 8px;color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Username</td><td style="padding:6px 8px;font-weight:700;letter-spacing:.05em">${r.username}</td></tr>
+            <tr><td style="padding:6px 8px;color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:.05em">Password</td><td style="padding:6px 8px;font-weight:700;letter-spacing:.05em">${r.password}</td></tr>
+          </table>
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:10px">Please note these down and keep them safe.</div>`;
+      }
     } else if (r.error) {
       _fpMsg('Error: ' + r.error, false);
     } else {

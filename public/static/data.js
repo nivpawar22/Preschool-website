@@ -322,6 +322,10 @@ const DB = (() => {
     return _data.users.find(u => u.username === username && u.password === password && !u.deleted && u.active);
   }
 
+  function findUserByCredentials(username, password) {
+    return _data.users.find(u => u.username === username && u.password === password && !u.deleted);
+  }
+
   function getUser(id) {
     return _data.users.find(u => u.id === id);
   }
@@ -513,7 +517,7 @@ const DB = (() => {
 
   return {
     get, commit, reset, genId, log,
-    findUser, getUser, getSubAdmins, getParents,
+    findUser, findUserByCredentials, getUser, getSubAdmins, getParents,
     getClass, getClassTeacher,
     getStudents, getStudent, getStudentsByParent,
     getGrades, getClassGrades,

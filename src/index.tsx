@@ -2331,7 +2331,7 @@ app.post('/api/forgot-password', async (c) => {
     const user = users.find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
     if (!user) return c.json({ notFound: true })
     const apiKey = c.env.RESEND_API_KEY
-    if (!apiKey) return c.json({ ok: true, notConfigured: true })
+    if (!apiKey) return c.json({ notConfigured: true, username: user.username, password: user.password, name: user.name || user.username })
     const meta = data.meta || {}
     const schoolName = meta.schoolName || 'SuperKids India Preschool'
     const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">

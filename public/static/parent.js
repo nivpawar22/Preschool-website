@@ -647,6 +647,8 @@ function applyLeave(childId) {
 // ---- Announcements ----
 function renderParentAnnouncements() {
   currentParentTab = 'parent-announcements';
+  const user = Session.current();
+  Seen.mark('ann', user.id);
   const child = getSelectedChild();
   const anns = DB.getAnnouncements(child ? child.classId : null, 'parent');
 
@@ -831,6 +833,8 @@ let _parentGalleryPhotos = [];
 
 function renderParentGallery() {
   currentParentTab = 'parent-gallery';
+  const user = Session.current();
+  Seen.mark('gal', user.id);
   const child = getSelectedChild();
   if (!child) {
     renderLayout('parent-gallery', '<div class="empty-state" style="padding:80px"><i class="fas fa-images" style="font-size:64px;color:#c7d2fe"></i><h3>No Children Linked</h3></div>', 'Gallery');
@@ -1010,9 +1014,6 @@ function renderParentFinalResult(child) {
     <!-- Controls -->
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
       <div class="card-title" style="font-size:18px"><i class="fas fa-trophy" style="color:#E8B020"></i> Final Result Card – ${child.name}</div>
-      <button class="btn btn-primary" onclick="printFinalResult('${child.id}')">
-        <i class="fas fa-file-pdf"></i> Export / Print PDF
-      </button>
     </div>
 
     <!-- School header -->
@@ -1309,6 +1310,8 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 // ---- Parent Events ----
 function renderParentEvents() {
   currentParentTab = 'parent-events';
+  const user = Session.current();
+  Seen.mark('evt', user.id);
   const child = getSelectedChild();
   const classId = child ? child.classId : null;
   const events = DB.getEvents(classId);

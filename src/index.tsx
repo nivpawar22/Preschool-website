@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 
-type Bindings = { DB: any; MEDIA: any }
+type Bindings = { DB: any; MEDIA: any; RESEND_API_KEY?: string }
 const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/static/*', serveStatic({ root: './public' }))
@@ -2317,6 +2317,56 @@ app.post('/api/fee-config', async (c) => {
     const { config } = await c.req.json()
     await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('fee_config', JSON.stringify(config), new Date().toISOString()).run()
     return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/forgot-password', async (c) => {
+  try {
+    const { email } = await c.req.json()
+    if (!email) return c.json({ error: 'Email required' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+    if (!row) return c.json({ notFound: true })
+    const data = JSON.parse(row.value)
+    const users: any[] = data.users || []
+    const user = users.find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
+    if (!user) return c.json({ notFound: true })
+    const apiKey = c.env.RESEND_API_KEY
+    if (!apiKey) return c.json({ ok: true, notConfigured: true })
+    const meta = data.meta || {}
+    const schoolName = meta.schoolName || 'SuperKids India Preschool'
+    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+      <div style="background:#b8860b;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="color:#fff;margin:0">${schoolName}</h2>
+      </div>
+      <div style="background:#fff;border:1px solid #e5c66b;padding:24px;border-radius:0 0 8px 8px">
+        <p>Hello <strong>${user.name || user.username}</strong>,</p>
+        <p>You requested your login credentials. Here are your account details:</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px;border:1px solid #ddd;background:#fdf5e0;font-weight:bold">Username</td><td style="padding:8px;border:1px solid #ddd">${user.username}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;background:#fdf5e0;font-weight:bold">Password</td><td style="padding:8px;border:1px solid #ddd">${user.password}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #ddd;background:#fdf5e0;font-weight:bold">Role</td><td style="padding:8px;border:1px solid #ddd;text-transform:capitalize">${user.role}</td></tr>
+        </table>
+        <p style="font-size:12px;color:#888">If you did not request this, please contact your school administrator.<br>
+        Phone: ${meta.schoolPhone || '9822-977-644'} / ${meta.schoolPhone2 || '9822-977-944'}<br>
+        Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}</p>
+      </div>
+    </div>`
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: `${schoolName} <onboarding@resend.dev>`,
+        to: [email.trim()],
+        subject: `Your ${schoolName} Login Credentials`,
+        html
+      })
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      console.error('Resend error:', err)
+      return c.json({ error: 'Failed to send email' }, 500)
+    }
+    return c.json({ sent: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

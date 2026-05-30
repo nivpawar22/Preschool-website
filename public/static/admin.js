@@ -1825,6 +1825,7 @@ function confirmReviewLeave(lid, status) {
 // ---- Announcements ----
 function renderAnnouncements() {
   const user = Session.current();
+  Seen.mark('ann', user.id);
   const isSubAdmin = user.role === 'subadmin';
   const myClassId = isSubAdmin ? user.assignedClass : null;
   const anns = DB.getAnnouncements(myClassId);
@@ -2124,6 +2125,7 @@ let _galCurrentTab = 'photo';
 function renderGallery() {
   const data = DB.get();
   const user = Session.current();
+  Seen.mark('gal', user.id);
   const isSubAdmin = user.role === 'subadmin';
   const myClassId = isSubAdmin ? user.assignedClass : null;
   const allClasses = myClassId ? [DB.getClass(myClassId)].filter(Boolean) : data.classes;
@@ -2989,6 +2991,7 @@ function _buildEventsUI(events, anniversaryEvents) {
 
 function renderEvents() {
   const user = Session.current();
+  Seen.mark('evt', user.id);
   const events = DB.getEvents();
   const today = new Date().toISOString().split('T')[0];
   const currentYear = new Date().getFullYear();
@@ -3111,6 +3114,228 @@ function deleteEventById(id) {
   });
 }
 
+// ---- Report Card ----
+let rcStudentId = '';
+let rcType = 'Final Result';
+
+function renderReportCard() {
+  const data = DB.get();
+  const user = Session.current();
+  const students = data.students || [];
+  const classes = data.classes || [];
+
+  const classOptions = classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const studentOptions = students.map(s => {
+    const cls = classes.find(c => c.id === s.classId);
+    return `<option value="${s.id}" ${rcStudentId === s.id ? 'selected' : ''}>${s.name}${cls ? ' – ' + cls.name : ''}</option>`;
+  }).join('');
+
+  const tabs = ['Semester 1', 'Semester 2', 'Final Result'];
+  const tabHtml = tabs.map(t => `
+    <button class="btn ${rcType === t ? 'btn-primary' : ''}" onclick="rcSetType('${t}')"
+      style="border-radius:20px;padding:6px 18px;font-size:13px;font-weight:600;margin-right:6px">${t}</button>
+  `).join('');
+
+  let tableHtml = '';
+  if (rcStudentId) {
+    const student = DB.getStudent(rcStudentId);
+    const cls = student ? classes.find(c => c.id === student.classId) : null;
+    const year = (DB.getMeta().academicYear || getAcademicYear()).split('-')[0];
+
+    if (rcType === 'Final Result') {
+      const g1 = DB.getGrades(rcStudentId, 'Semester 1', year);
+      const g2 = DB.getGrades(rcStudentId, 'Semester 2', year);
+      const allSubj = [...new Set([...g1.map(g => g.subject), ...g2.map(g => g.subject)])];
+      const rows = allSubj.map(subj => {
+        const s1 = g1.find(g => g.subject === subj);
+        const s2 = g2.find(g => g.subject === subj);
+        const scores = [s1, s2].filter(Boolean);
+        const avg = scores.length ? Math.round(scores.reduce((s, g) => s + g.score / g.maxScore * 100, 0) / scores.length) : 0;
+        const grade = DB.calcGrade(avg, 100);
+        return `<tr>
+          <td>${subj}</td>
+          <td style="text-align:center">${s1 ? Math.round(s1.score/s1.maxScore*100)+'%' : '—'}</td>
+          <td style="text-align:center">${s2 ? Math.round(s2.score/s2.maxScore*100)+'%' : '—'}</td>
+          <td style="text-align:center;font-weight:700">${avg}%</td>
+          <td style="text-align:center"><span class="badge" style="background:${avg>=80?'#d1fae5':avg>=60?'#dbeafe':'#ffedd5'};color:${avg>=80?'#065f46':avg>=60?'#1e40af':'#9a3412'}">${grade}</span></td>
+        </tr>`;
+      }).join('');
+      const overallAvg = allSubj.length ? Math.round(allSubj.map(subj => {
+        const s1 = g1.find(g => g.subject === subj); const s2 = g2.find(g => g.subject === subj);
+        const scores = [s1,s2].filter(Boolean);
+        return scores.length ? scores.reduce((s,g) => s + g.score/g.maxScore*100, 0) / scores.length : 0;
+      }).reduce((a,b)=>a+b,0)/allSubj.length) : 0;
+      const att = DB.getAttendanceSummary(rcStudentId);
+      tableHtml = `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+          <div class="card" style="padding:16px;text-align:center"><div style="font-size:32px;font-weight:900;color:${overallAvg>=80?'#10b981':overallAvg>=60?'#1AA6CA':'#ef4444'}">${overallAvg}%</div><div style="font-size:12px;color:#888;margin-top:4px">Overall Score</div></div>
+          <div class="card" style="padding:16px;text-align:center"><div style="font-size:36px;font-weight:900;color:#0F2050">${DB.calcGrade(overallAvg,100)}</div><div style="font-size:12px;color:#888;margin-top:4px">Final Grade</div></div>
+          <div class="card" style="padding:16px;text-align:center"><div style="font-size:28px;font-weight:900;color:${att.pct>=90?'#10b981':'#E8B020'}">${att.pct}%</div><div style="font-size:12px;color:#888;margin-top:4px">Attendance</div></div>
+        </div>
+        <table class="data-table"><thead><tr><th>Subject</th><th>Semester 1</th><th>Semester 2</th><th>Final %</th><th>Grade</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#888">No grades recorded</td></tr>'}</tbody></table>`;
+    } else {
+      const grades = DB.getGrades(rcStudentId, rcType, year);
+      const rows = grades.map(g => {
+        const pct = Math.round(g.score / g.maxScore * 100);
+        const grade = DB.calcGrade(pct, 100);
+        return `<tr>
+          <td>${g.subject}</td>
+          <td style="text-align:center">${g.score} / ${g.maxScore}</td>
+          <td style="text-align:center;font-weight:700">${pct}%</td>
+          <td style="text-align:center"><span class="badge" style="background:${pct>=80?'#d1fae5':pct>=60?'#dbeafe':'#ffedd5'};color:${pct>=80?'#065f46':pct>=60?'#1e40af':'#9a3412'}">${grade}</span></td>
+          ${g.remarks ? `<td>${g.remarks}</td>` : '<td style="color:#aaa">—</td>'}
+        </tr>`;
+      }).join('');
+      tableHtml = `<table class="data-table"><thead><tr><th>Subject</th><th>Score</th><th>Percentage</th><th>Grade</th><th>Remarks</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#888">No grades recorded for ' + rcType + '</td></tr>'}</tbody></table>`;
+    }
+  }
+
+  const content = `
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <label class="form-label">Select Student</label>
+          <select class="form-control" id="rc-student-sel" onchange="rcSetStudent(this.value)">
+            <option value="">-- Select a student --</option>
+            ${studentOptions}
+          </select>
+        </div>
+        ${rcStudentId ? `<button class="btn btn-success" onclick="printAdminResult('${rcStudentId}','${rcType}')" style="margin-top:20px"><i class="fas fa-file-pdf"></i> Download PDF</button>` : ''}
+      </div>
+    </div>
+    ${rcStudentId ? `
+    <div class="card" style="margin-bottom:16px">
+      <div style="margin-bottom:12px">${tabHtml}</div>
+      ${tableHtml}
+    </div>` : '<div style="text-align:center;color:#888;padding:40px 0;font-size:15px"><i class="fas fa-clipboard-list" style="font-size:40px;display:block;margin-bottom:12px;opacity:0.3"></i>Select a student to view their report card</div>'}`;
+
+  renderLayout('report-card', content, 'Report Card', 'View & download student report cards');
+}
+
+function rcSetStudent(id) { rcStudentId = id; renderReportCard(); }
+function rcSetType(t) { rcType = t; renderReportCard(); }
+
+function printAdminResult(studentId, type) {
+  const student = DB.getStudent(studentId);
+  if (!student) return;
+  const data = DB.get();
+  const cls = DB.getClass(student.classId);
+  const teacher = cls ? DB.getClassTeacher(student.classId) : null;
+  const meta = DB.getMeta();
+  const year = (meta.academicYear || getAcademicYear()).split('-')[0];
+  const academicYear = meta.academicYear || getAcademicYear();
+  const scoreColor = (p) => p >= 80 ? '#10b981' : p >= 60 ? '#1AA6CA' : '#ef4444';
+  const gradeBg = { 'A+':'#d1fae5','A':'#d1fae5','A-':'#d1fae5','B+':'#dbeafe','B':'#dbeafe','B-':'#dbeafe','C+':'#FEF7E0','C':'#FEF7E0','C-':'#FEF7E0','D':'#ffedd5','F':'#fee2e2' };
+  const gradeFg = { 'A+':'#065f46','A':'#065f46','A-':'#065f46','B+':'#1e40af','B':'#1e40af','B-':'#1e40af','C+':'#9A6A00','C':'#9A6A00','C-':'#9A6A00','D':'#9a3412','F':'#991b1b' };
+
+  let tableHtml = '';
+  let summaryHtml = '';
+  let docTitle = type + ' Card';
+
+  if (type === 'Final Result') {
+    const g1 = DB.getGrades(studentId, 'Semester 1', year);
+    const g2 = DB.getGrades(studentId, 'Semester 2', year);
+    const allSubj = [...new Set([...g1.map(g => g.subject), ...g2.map(g => g.subject)])];
+    const subjectData = allSubj.map(subj => {
+      const s1 = g1.find(g => g.subject === subj); const s2 = g2.find(g => g.subject === subj);
+      const scores = [s1,s2].filter(Boolean);
+      const avg = scores.length ? Math.round(scores.reduce((s,g) => s + g.score/g.maxScore*100, 0)/scores.length) : 0;
+      return { subject: subj, s1Pct: s1 ? Math.round(s1.score/s1.maxScore*100) : null, s2Pct: s2 ? Math.round(s2.score/s2.maxScore*100) : null, avg, grade: DB.calcGrade(avg, 100) };
+    });
+    const overallAvg = subjectData.length ? Math.round(subjectData.reduce((s,d)=>s+d.avg,0)/subjectData.length) : 0;
+    const overallGrade = DB.calcGrade(overallAvg, 100);
+    const att = DB.getAttendanceSummary(studentId);
+    summaryHtml = `<div class="summary">
+      <div class="s-card"><div style="font-size:36px;font-weight:900;color:${scoreColor(overallAvg)}">${overallAvg}%</div><div style="color:#6B7A9D;margin-top:4px">Overall Score</div></div>
+      <div class="s-card"><div style="font-size:48px;font-weight:900;color:${gradeFg[overallGrade]||'#2A3B60'}">${overallGrade}</div><div style="color:#6B7A9D;margin-top:4px">Final Grade</div></div>
+      <div class="s-card"><div style="font-size:28px;font-weight:900;color:${att.pct>=90?'#10b981':'#E8B020'}">${att.pct}%</div><div style="color:#6B7A9D;margin-top:4px">Attendance</div><div style="font-size:11px;color:#6B7A9D">${att.present}P · ${att.absent}A · ${att.late}L</div></div>
+    </div>`;
+    tableHtml = `<table><thead><tr><th>Subject</th><th>Semester 1</th><th>Semester 2</th><th>Final %</th><th>Grade</th><th style="width:120px">Performance</th></tr></thead><tbody>
+      ${subjectData.map(d=>`<tr><td><strong>${d.subject}</strong></td><td style="text-align:center">${d.s1Pct!==null?d.s1Pct+'%':'—'}</td><td style="text-align:center">${d.s2Pct!==null?d.s2Pct+'%':'—'}</td><td style="text-align:center;font-weight:700;color:${scoreColor(d.avg)}">${d.avg}%</td><td><span class="badge" style="background:${gradeBg[d.grade]||'#f1f5f9'};color:${gradeFg[d.grade]||'#2A3B60'}">${d.grade}</span></td><td><div class="bar-wrap"><div class="bar-fill" style="width:${d.avg}%;background:${scoreColor(d.avg)}"></div></div></td></tr>`).join('')}
+      <tr class="tfoot"><td colspan="3"><strong>Overall Average</strong></td><td style="text-align:center;font-weight:900;color:${scoreColor(overallAvg)}">${overallAvg}%</td><td><span class="badge" style="background:${gradeBg[overallGrade]};color:${gradeFg[overallGrade]}">${overallGrade}</span></td><td></td></tr>
+    </tbody></table>`;
+  } else {
+    const grades = DB.getGrades(studentId, type, year);
+    const avgPct = grades.length ? Math.round(grades.reduce((s,g) => s + g.score/g.maxScore*100, 0)/grades.length) : 0;
+    const overallGrade = DB.calcGrade(avgPct, 100);
+    summaryHtml = `<div class="summary">
+      <div class="s-card"><div style="font-size:36px;font-weight:900;color:${scoreColor(avgPct)}">${avgPct}%</div><div style="color:#6B7A9D;margin-top:4px">Average Score</div></div>
+      <div class="s-card"><div style="font-size:48px;font-weight:900;color:${gradeFg[overallGrade]||'#2A3B60'}">${overallGrade}</div><div style="color:#6B7A9D;margin-top:4px">Overall Grade</div></div>
+      <div class="s-card"><div style="font-size:28px;font-weight:900;color:#1AA6CA">${grades.length}</div><div style="color:#6B7A9D;margin-top:4px">Subjects Evaluated</div></div>
+    </div>`;
+    tableHtml = `<table><thead><tr><th>Subject</th><th>Score</th><th>Percentage</th><th>Grade</th><th>Remarks</th></tr></thead><tbody>
+      ${grades.length ? grades.map(g => {
+        const pct = Math.round(g.score/g.maxScore*100);
+        const gr = DB.calcGrade(pct, 100);
+        return `<tr><td><strong>${g.subject}</strong></td><td style="text-align:center">${g.score} / ${g.maxScore}</td><td style="text-align:center;font-weight:700;color:${scoreColor(pct)}">${pct}%</td><td><span class="badge" style="background:${gradeBg[gr]||'#f1f5f9'};color:${gradeFg[gr]||'#2A3B60'}">${gr}</span></td><td style="color:#555">${g.remarks||'—'}</td></tr>`;
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#888">No grades recorded</td></tr>'}
+    </tbody></table>`;
+  }
+
+  const dob = student.dob ? (() => { try { return new Date(student.dob).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e) { return student.dob; } })() : '—';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${docTitle} – ${student.name}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+body{font-family:Arial,sans-serif;color:#0F1E3D;padding:24px;background:#fff}
+.header{display:flex;align-items:center;gap:20px;padding:20px 24px;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;border-radius:10px;margin-bottom:18px}
+.logo{width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);object-fit:cover;background:#fff;flex-shrink:0}
+.school-name{font-size:22px;font-weight:900}
+.report-title{font-size:15px;color:#fbbf24;font-weight:700;margin-top:6px;letter-spacing:.5px}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}
+.info-label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.05em}
+.info-value{font-size:13px;font-weight:700;margin-top:3px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.s-card{border:1px solid #DCE1EF;border-radius:8px;padding:14px;text-align:center}
+table{width:100%;border-collapse:collapse;border:1px solid #DCE1EF;border-radius:8px;overflow:hidden;margin-bottom:16px}
+th{background:#f1f5f9;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6B7A9D;text-align:left;border-bottom:2px solid #DCE1EF}
+td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
+.tfoot td{background:#F8F9FB;font-weight:700;border-top:2px solid #DCE1EF}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700}
+.bar-wrap{width:100%;background:#DCE1EF;border-radius:4px;height:7px}
+.bar-fill{height:7px;border-radius:4px}
+.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;padding:16px;border:1px solid #DCE1EF;border-radius:8px}
+.sig-line{height:52px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+.sig-date{height:52px;border-bottom:1.5px solid #0F1E3D;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-weight:700;font-size:13px}
+.sig-label{font-size:12px;font-weight:700;text-align:center}
+.sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
+.result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
+@media print{body{padding:2px;font-size:12px}.header{padding:10px 14px!important;margin-bottom:8px!important}.no-print{display:none}}
+</style></head><body>
+<div class="header">
+  <img src="${meta.schoolLogo||'/static/logo.png'}" class="logo" alt="Logo"/>
+  <div style="flex:1">
+    <div class="school-name">${meta.schoolName||'SuperKids India Preschool'}</div>
+    <div style="color:#c7d2fe;font-size:12px;margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">
+      ${meta.schoolPhone ? `<span>&#128222; ${meta.schoolPhone}</span>` : '<span>&#128222; 9822-977-644 / 9822-977-944</span>'}
+      ${meta.schoolEmail ? `<span>&#9993; ${meta.schoolEmail}</span>` : '<span>&#9993; superkidsprincipal@gmail.com</span>'}
+    </div>
+    ${meta.schoolAddress ? `<div style="color:#a5b4fc;font-size:11px;margin-top:3px">&#128205; ${meta.schoolAddress}</div>` : ''}
+    <div class="report-title">${docTitle.toUpperCase()} – Academic Year ${academicYear}</div>
+  </div>
+</div>
+<div class="info-grid">
+  <div><div class="info-label">Student Name</div><div class="info-value">${student.name}</div></div>
+  <div><div class="info-label">Roll Number</div><div class="info-value">${student.rollNo||'—'}</div></div>
+  <div><div class="info-label">Class</div><div class="info-value">${cls ? cls.name : '—'}</div></div>
+  <div><div class="info-label">Date of Birth</div><div class="info-value">${dob}</div></div>
+</div>
+${summaryHtml}
+${tableHtml}
+<div class="sigs">
+  <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div><div class="sig-name">${teacher ? teacher.name : ''}</div></div>
+  <div><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-name">${meta.principalName||''}</div></div>
+  <div><div class="sig-date">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div class="sig-label">Date of Issue</div></div>
+</div>
+<div class="result-footer">${meta.schoolName||'SuperKids India Preschool'}${meta.schoolAddress?' | '+meta.schoolAddress:''}${meta.schoolWebsite?' | '+meta.schoolWebsite:' | https://superkidsindia.com'}</div>
+<script>window.onload=()=>{window.print();};<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to export PDF', 'warning');
+}
+
 // ---- Register all admin routes ----
 registerRoute('dashboard', renderDashboard);
 registerRoute('students', renderStudents);
@@ -3125,6 +3350,7 @@ registerRoute('announcements', renderAnnouncements);
 registerRoute('messages', renderMessages);
 registerRoute('gallery', renderGallery);
 registerRoute('events', renderEvents);
+registerRoute('report-card', renderReportCard);
 registerRoute('school-settings', renderSchoolSettings);
 
 // ---- School Settings ----

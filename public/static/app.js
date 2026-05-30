@@ -140,6 +140,18 @@ function wa(phone, msg) {
   else showToast('No phone number available', 'error');
 }
 
+// ---- Seen (unread tracker) ----
+const Seen = (() => {
+  const key = (s, uid) => 'seen_v1_' + s + '_' + uid;
+  const mark = (s, uid) => { try { localStorage.setItem(key(s, uid), Date.now().toString()); } catch(e) {} };
+  const ts   = (s, uid) => parseInt(localStorage.getItem(key(s, uid)) || '0');
+  const count = (s, uid, items, getTs) => {
+    const t = ts(s, uid); if (!t) return 0;
+    return items.filter(i => { try { return new Date(getTs(i)).getTime() > t; } catch(e) { return false; } }).length;
+  };
+  return { mark, count };
+})();
+
 // ---- Render shared sidebar + layout ----
 function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
   const user = Session.current();
@@ -162,9 +174,14 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'receipts', icon: 'fa-receipt', label: 'Receipts' },
     ];
   } else if (user.role === 'superadmin' || user.role === 'subadmin') {
+    const annBadge = Seen.count('ann', user.id, DB.getAnnouncements(''), a => a.date);
+    const evtBadge = Seen.count('evt', user.id, data.events || [], e => e.createdAt || e.date);
+    const msgBadge = (data.messages || []).filter(m => m.to === user.id && !m.read).length;
+    const galBadge = Seen.count('gal', user.id, data.gallery || [], g => g.createdAt || g.date);
     navItems = [
       { id: 'dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
       { id: 'students', icon: 'fa-user-graduate', label: 'Students' },
+      { id: 'report-card', icon: 'fa-clipboard-list', label: 'Report Card' },
       { id: 'classes', icon: 'fa-school', label: 'Classes' },
       { id: 'attendance', icon: 'fa-calendar-check', label: 'Attendance' },
       { id: 'grades', icon: 'fa-star', label: 'Grades' },
@@ -172,10 +189,10 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'activities', icon: 'fa-running', label: 'Activities' },
       { id: 'syllabus', icon: 'fa-book-open', label: 'Syllabus' },
       { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: data.leaves.filter(l => l.status === 'pending').length || 0 },
-      { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements' },
-      { id: 'events', icon: 'fa-calendar-alt', label: 'Events' },
-      { id: 'messages', icon: 'fa-comment-dots', label: 'Messages' },
-      { id: 'gallery', icon: 'fa-images', label: 'Gallery' },
+      { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: annBadge },
+      { id: 'events', icon: 'fa-calendar-alt', label: 'Events', badge: evtBadge },
+      { id: 'messages', icon: 'fa-comment-dots', label: 'Messages', badge: msgBadge },
+      { id: 'gallery', icon: 'fa-images', label: 'Gallery', badge: galBadge },
     ];
 
     // Management tab only for superadmin (not impersonated)
@@ -198,10 +215,11 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     // parent — compute notification badges
     const pChildren = DB.getStudentsByParent(user.id);
     const pPendingLeaves = pChildren.reduce((sum, c) => sum + DB.getLeaves(c.id).filter(l => l.status === 'pending').length, 0);
-    const annCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const seenAnns = new Set();
-    pChildren.forEach(c => DB.getAnnouncements(c.classId, 'parent').forEach(a => { if (a.date >= annCutoff) seenAnns.add(a.id); }));
+    const pAllAnns = pChildren.reduce((arr, c) => { DB.getAnnouncements(c.classId, 'parent').forEach(a => { if (!arr.find(x => x.id === a.id)) arr.push(a); }); return arr; }, []);
+    const pAnnBadge = Seen.count('ann', user.id, pAllAnns, a => a.date);
+    const pEvtBadge = Seen.count('evt', user.id, data.events || [], e => e.createdAt || e.date);
     const pUnreadMsgs = (data.messages || []).filter(m => m.to === user.id && !m.read).length;
+    const pGalBadge = Seen.count('gal', user.id, data.gallery || [], g => g.createdAt || g.date);
 
     navItems = [
       { id: 'parent-home', icon: 'fa-home', label: 'Home' },
@@ -211,10 +229,10 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'parent-activities', icon: 'fa-running', label: 'Activities' },
       { id: 'parent-syllabus', icon: 'fa-book-open', label: 'Syllabus' },
       { id: 'parent-leaves', icon: 'fa-calendar-times', label: 'Apply Leave', badge: pPendingLeaves },
-      { id: 'parent-announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: seenAnns.size },
-      { id: 'parent-events', icon: 'fa-calendar-alt', label: 'Events' },
+      { id: 'parent-announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: pAnnBadge },
+      { id: 'parent-events', icon: 'fa-calendar-alt', label: 'Events', badge: pEvtBadge },
       { id: 'parent-messages', icon: 'fa-comment-dots', label: 'Messages', badge: pUnreadMsgs },
-      { id: 'parent-gallery', icon: 'fa-images', label: 'Gallery' },
+      { id: 'parent-gallery', icon: 'fa-images', label: 'Gallery', badge: pGalBadge },
       { id: 'parent-review', icon: 'fa-star', label: 'Write a Review' },
     ];
   }
@@ -429,7 +447,17 @@ function renderLogin() {
           <i class="fas fa-sign-in-alt"></i> Sign In
         </button>
 
-        <p style="text-align:center;margin-top:28px;font-size:11px;color:rgba(255,255,255,0.2);letter-spacing:0.3px">
+        <!-- Forgot Password -->
+        <div style="text-align:center;margin-top:16px">
+          <button onclick="renderForgotPassword()"
+            style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;text-decoration:underline;padding:4px 8px;transition:color 0.15s"
+            onmouseenter="this.style.color='rgba(255,255,255,0.85)'"
+            onmouseleave="this.style.color='rgba(255,255,255,0.5)'">
+            Forgot Password?
+          </button>
+        </div>
+
+        <p style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.2);letter-spacing:0.3px">
           © ${new Date().getFullYear()} SuperKids India Preschool
         </p>
       </div>
@@ -481,6 +509,96 @@ function doLogin() {
   if (user.role === 'parent') navigate('parent-home');
   else if (user.role === 'admission') navigate('admission-dashboard');
   else navigate('dashboard');
+}
+
+// ---- Forgot Password ----
+function renderForgotPassword() {
+  document.getElementById('app').innerHTML = `
+    <div class="login-bg">
+      <div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(26,166,202,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>
+      <div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(196,137,58,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>
+      <div class="login-card">
+        <div style="text-align:center;margin-bottom:28px">
+          <img src="/static/logo.png" alt="SuperKids Logo" style="width:72px;height:72px;border-radius:50%;object-fit:contain;border:2px solid rgba(196,137,58,0.5);margin-bottom:14px"/>
+          <h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 6px">Forgot Password?</h2>
+          <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0">Enter your registered email and we'll send your credentials.</p>
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.55);display:block;margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase">Email Address</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:14px"><i class="fas fa-envelope"></i></span>
+            <input id="fp-email" type="email" placeholder="Enter your registered email"
+              style="padding-left:42px;padding-right:16px;width:100%;box-sizing:border-box"/>
+          </div>
+        </div>
+        <div id="fp-msg" style="display:none;margin-bottom:16px"></div>
+        <button onclick="doForgotPassword()" id="fp-btn"
+          style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(15,32,80,0.35)">
+          <i class="fas fa-paper-plane"></i> Send Credentials
+        </button>
+        <div style="text-align:center;margin-top:16px">
+          <button onclick="renderLogin()"
+            style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;text-decoration:underline;padding:4px 8px"
+            onmouseenter="this.style.color='rgba(255,255,255,0.85)'"
+            onmouseleave="this.style.color='rgba(255,255,255,0.5)'">
+            ← Back to Login
+          </button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('fp-email').addEventListener('keydown', e => { if (e.key === 'Enter') doForgotPassword(); });
+}
+
+function _fpMsg(text, success) {
+  const el = document.getElementById('fp-msg');
+  if (!el) return;
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.gap = '8px';
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '10px';
+  el.style.fontSize = '13px';
+  if (success) {
+    el.style.background = 'rgba(16,185,129,0.15)';
+    el.style.border = '1px solid rgba(16,185,129,0.35)';
+    el.style.color = '#6ee7b7';
+  } else {
+    el.style.background = 'rgba(239,68,68,0.12)';
+    el.style.border = '1px solid rgba(239,68,68,0.25)';
+    el.style.color = '#fca5a5';
+  }
+  el.innerHTML = `<i class="fas ${success ? 'fa-check-circle' : 'fa-exclamation-circle'}" style="flex-shrink:0"></i><span>${text}</span>`;
+}
+
+function doForgotPassword() {
+  const email = (document.getElementById('fp-email') || {}).value || '';
+  if (!email.trim()) { _fpMsg('Please enter your email address.', false); return; }
+  const btn = document.getElementById('fp-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; }
+  fetch('/api/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim() })
+  })
+  .then(r => r.json())
+  .then(r => {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Credentials'; }
+    if (r.sent) {
+      _fpMsg('Credentials sent! Please check your email inbox.', true);
+    } else if (r.notFound) {
+      _fpMsg('No account found with that email address. Please contact the school.', false);
+    } else if (r.notConfigured) {
+      _fpMsg('Email service not configured. Please contact: superkidsprincipal@gmail.com', false);
+    } else if (r.error) {
+      _fpMsg('Error: ' + r.error, false);
+    } else {
+      _fpMsg('Something went wrong. Please contact: superkidsprincipal@gmail.com', false);
+    }
+  })
+  .catch(() => {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Credentials'; }
+    _fpMsg('Network error. Please try again.', false);
+  });
 }
 
 // ---- Init ----

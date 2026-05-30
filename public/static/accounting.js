@@ -40,7 +40,7 @@ function renderAccDashboard() {
         <div class="stat-card" style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #ef4444">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:44px;height:44px;border-radius:12px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center">
-              <i class="fas fa-file-invoice-rupee" style="color:#ef4444;font-size:18px"></i>
+              <i class="fas fa-calculator" style="color:#ef4444;font-size:18px"></i>
             </div>
             <div>
               <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Expenses This Month</div>
@@ -75,7 +75,7 @@ function renderAccDashboard() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
           <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
-            <i class="fas fa-file-invoice-rupee" style="color:#8b5cf6;margin-right:8px"></i>Recent Expenses
+            <i class="fas fa-calculator" style="color:#8b5cf6;margin-right:8px"></i>Recent Expenses
           </h3>
           ${expenses.slice(0, 5).length === 0
             ? '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px"><i class="fas fa-inbox" style="display:block;font-size:28px;margin-bottom:8px"></i>No expenses yet</div>'
@@ -121,8 +121,13 @@ function renderAccDashboard() {
   fetch('/api/payments')
     .then(r => r.ok ? r.json() : { items: [] })
     .then(function(res) {
-      const payments = res.items || res.payments || [];
-      const totalFee = payments.reduce(function(sum, p) { return sum + (parseFloat(p.amount) || 0); }, 0);
+      const rawItems = res.items || res.payments || [];
+      const payments = rawItems.map(function(p) {
+        var d = {};
+        try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch(e) {}
+        return { id: p.id, receiptNo: d.receiptNo || p.id, studentName: d.studentName || '-', classId: d.classId || '-', paymentDate: d.paymentDate || '', total: parseFloat(d.total) || 0, paymentMode: d.paymentMode || 'Cash' };
+      });
+      const totalFee = payments.reduce(function(sum, p) { return sum + p.total; }, 0);
       const feeEl = document.getElementById('acc-dash-fee');
       if (feeEl) feeEl.textContent = '₹' + totalFee.toLocaleString('en-IN');
 
@@ -142,10 +147,10 @@ function renderAccDashboard() {
             <tbody>
               ${recent.map(function(p) {
                 return '<tr style="border-bottom:1px solid #f1f5f9">' +
-                  '<td style="padding:8px 4px;color:#475569;font-size:12px">' + (p.receiptNo || p.id || '-') + '</td>' +
-                  '<td style="padding:8px 4px;color:#374151">' + (p.studentName || p.student || '-') + '</td>' +
-                  '<td style="padding:8px 4px;color:#475569">' + formatDate(p.date || p.createdAt) + '</td>' +
-                  '<td style="padding:8px 4px;text-align:right;font-weight:700;color:#10b981">₹' + parseFloat(p.amount || 0).toLocaleString('en-IN') + '</td>' +
+                  '<td style="padding:8px 4px;color:#475569;font-size:12px">' + (p.receiptNo || '-') + '</td>' +
+                  '<td style="padding:8px 4px;color:#374151">' + p.studentName + '</td>' +
+                  '<td style="padding:8px 4px;color:#475569">' + formatDate(p.paymentDate) + '</td>' +
+                  '<td style="padding:8px 4px;text-align:right;font-weight:700;color:#10b981">₹' + p.total.toLocaleString('en-IN') + '</td>' +
                   '</tr>';
               }).join('')}
             </tbody>
@@ -198,14 +203,19 @@ function renderAccFees() {
   fetch('/api/payments')
     .then(function(r) { return r.ok ? r.json() : { items: [] }; })
     .then(function(res) {
-      const payments = res.items || res.payments || [];
+      const rawItems = res.items || res.payments || [];
+      const payments = rawItems.map(function(p) {
+        var d = {};
+        try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch(e) {}
+        return { id: p.id, receiptNo: d.receiptNo || p.id, studentName: d.studentName || '-', classId: d.classId || '-', paymentDate: d.paymentDate || '', total: parseFloat(d.total) || 0, paymentMode: d.paymentMode || 'Cash' };
+      });
       const now = new Date();
       const thisMonth = now.toISOString().slice(0, 7);
 
-      const total = payments.reduce(function(s, p) { return s + (parseFloat(p.amount) || 0); }, 0);
+      const total = payments.reduce(function(s, p) { return s + p.total; }, 0);
       const monthTotal = payments
-        .filter(function(p) { return (p.date || p.createdAt || '').startsWith(thisMonth); })
-        .reduce(function(s, p) { return s + (parseFloat(p.amount) || 0); }, 0);
+        .filter(function(p) { return (p.paymentDate || '').startsWith(thisMonth); })
+        .reduce(function(s, p) { return s + p.total; }, 0);
 
       const totalEl = document.getElementById('acc-fee-total');
       const monthEl = document.getElementById('acc-fee-month');
@@ -238,16 +248,15 @@ function renderAccFees() {
             </thead>
             <tbody>
               ${payments.map(function(p) {
-                const payId = p.id || p.receiptNo || '';
                 return '<tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
-                  '<td style="padding:10px 12px;color:#475569;font-weight:600;font-size:12px">' + (p.receiptNo || p.id || '-') + '</td>' +
-                  '<td style="padding:10px 12px;color:#374151;font-weight:600">' + (p.studentName || p.student || '-') + '</td>' +
-                  '<td style="padding:10px 12px;color:#64748b">' + (p.className || p.class || '-') + '</td>' +
-                  '<td style="padding:10px 12px;color:#64748b">' + formatDate(p.date || p.createdAt) + '</td>' +
-                  '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹' + parseFloat(p.amount || 0).toLocaleString('en-IN') + '</td>' +
-                  '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600">' + (p.mode || p.paymentMode || 'Cash') + '</span></td>' +
+                  '<td style="padding:10px 12px;color:#475569;font-weight:600;font-size:12px">' + (p.receiptNo || '-') + '</td>' +
+                  '<td style="padding:10px 12px;color:#374151;font-weight:600">' + p.studentName + '</td>' +
+                  '<td style="padding:10px 12px;color:#64748b">' + (p.classId || '-') + '</td>' +
+                  '<td style="padding:10px 12px;color:#64748b">' + formatDate(p.paymentDate) + '</td>' +
+                  '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹' + p.total.toLocaleString('en-IN') + '</td>' +
+                  '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600">' + p.paymentMode + '</span></td>' +
                   '<td style="padding:10px 12px;text-align:center">' +
-                    (payId ? '<button class="btn btn-secondary btn-sm" onclick="window.open(\'/receipt/' + payId + '\',\'_blank\')" title="Download Receipt"><i class="fas fa-download"></i> Receipt</button>' : '-') +
+                    '<button class="btn btn-secondary btn-sm" onclick="window.open(\'/receipt/' + p.id + '\',\'_blank\')" title="Download Receipt"><i class="fas fa-download"></i> Receipt</button>' +
                   '</td>' +
                   '</tr>';
               }).join('')}
@@ -531,7 +540,7 @@ function renderAccExpenses() {
 
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
         <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
-          <i class="fas fa-file-invoice-rupee" style="color:#ef4444;margin-right:8px"></i>Expense Records
+          <i class="fas fa-calculator" style="color:#ef4444;margin-right:8px"></i>Expense Records
           <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${filtered.length} records)</span>
         </h3>
         ${buildExpTable(filtered)}
@@ -562,7 +571,7 @@ window.accShowExpenseModal = function() {
   overlay.innerHTML = `
     <div class="modal" style="max-width:500px;width:100%">
       <div class="modal-header">
-        <h3 class="modal-title"><i class="fas fa-file-invoice-rupee" style="color:#ef4444;margin-right:8px"></i>Add Expense</h3>
+        <h3 class="modal-title"><i class="fas fa-calculator" style="color:#ef4444;margin-right:8px"></i>Add Expense</h3>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('acc-exp-modal').remove()">
           <i class="fas fa-times"></i>
         </button>

@@ -178,7 +178,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'acc-dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
       { id: 'acc-fees', icon: 'fa-rupee-sign', label: 'Fee Collection' },
       { id: 'acc-purchase', icon: 'fa-shopping-cart', label: 'Purchase Orders' },
-      { id: 'acc-expenses', icon: 'fa-file-invoice-rupee', label: 'Expenses' },
+      { id: 'acc-expenses', icon: 'fa-calculator', label: 'Expenses' },
     ];
   } else if (user.role === 'superadmin' || user.role === 'subadmin') {
     const annBadge = Seen.count('ann', user.id, DB.getAnnouncements(''), a => a.date);

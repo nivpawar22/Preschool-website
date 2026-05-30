@@ -1746,46 +1746,137 @@ function deleteSyllabus(sylId) {
 function renderLeaves() {
   const user = Session.current();
   const isSubAdmin = user.role === 'subadmin';
+  const isSuperAdmin = user.role === 'superadmin';
   const myClassId = isSubAdmin ? user.assignedClass : null;
+  const activeTab = window._leavesTab || 'student';
   const leaves = DB.getLeaves(null, null, myClassId);
 
-  const content = `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="fas fa-calendar-times" style="color:#ef4444"></i> Leave Requests (${leaves.length})</div>
-      </div>
-      ${leaves.length ? leaves.map(l => {
-        const stu = DB.getStudent(l.studentId);
-        const par = DB.getUser(l.parentId);
-        const colors = { pending: 'yellow', approved: 'green', rejected: 'red' };
-        return `
-        <div class="leave-card ${l.status}" style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
-            <div>
-              <div style="font-weight:700;font-size:16px">${stu ? stu.name : '-'}</div>
-              <div class="text-muted">${par ? par.name + ' (Parent)' : ''}</div>
-              <div style="margin:8px 0;font-size:14px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}</div>
-              <div style="font-size:14px;color:#2A3B60"><strong>Reason:</strong> ${l.reason}</div>
-              ${l.reviewNote ? `<div style="font-size:13px;color:#6B7A9D;margin-top:4px"><strong>Note:</strong> ${l.reviewNote}</div>` : ''}
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-              <span class="badge badge-${colors[l.status]}">${l.status.toUpperCase()}</span>
-              <span style="font-size:11px;color:#6B7A9D">Applied: ${formatDate(l.appliedOn)}</span>
-              ${l.status === 'pending' ? `
-                <div style="display:flex;gap:6px">
-                  <button class="btn btn-xs btn-success" onclick="reviewLeave('${l.id}','approved')"><i class="fas fa-check"></i> Approve</button>
-                  <button class="btn btn-xs btn-danger" onclick="reviewLeave('${l.id}','rejected')"><i class="fas fa-times"></i> Reject</button>
-                </div>` : ''}
-              ${par ? `<button class="btn btn-xs btn-whatsapp" onclick="wa('${par.phone}','Hello ${par.name}, regarding ${stu ? stu.name : ""}\\'s leave request from ${l.fromDate} to ${l.toDate}: it has been ${l.status}.')">
-                <i class="fab fa-whatsapp"></i> Notify Parent
-              </button>` : ''}
-            </div>
-          </div>
-        </div>`;
-      }).join('') : '<div class="empty-state"><i class="fas fa-calendar-times"></i><h3>No leave requests</h3></div>'}
-    </div>`;
+  // Staff leaves (superadmin only)
+  const staffLeaves = isSuperAdmin ? DB.getStaffLeaves(null) : [];
+  const pendingStaff = staffLeaves.filter(l => l.status === 'Pending').length;
+  const data = DB.get();
 
+  const tabBar = isSuperAdmin ? `
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #e2e8f0">
+      <button onclick="window._leavesTab='student';renderLeaves()" style="padding:10px 20px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:none;color:${activeTab==='student'?'#1AA6CA':'#64748b'};border-bottom:${activeTab==='student'?'2px solid #1AA6CA':'2px solid transparent'};margin-bottom:-2px">
+        <i class="fas fa-child" style="margin-right:6px"></i>Student Leaves (${leaves.length})
+      </button>
+      <button onclick="window._leavesTab='staff';renderLeaves()" style="padding:10px 20px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:none;color:${activeTab==='staff'?'#10b981':'#64748b'};border-bottom:${activeTab==='staff'?'2px solid #10b981':'2px solid transparent'};margin-bottom:-2px">
+        <i class="fas fa-chalkboard-teacher" style="margin-right:6px"></i>Staff Leaves (${staffLeaves.length})${pendingStaff > 0 ? ` <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px">${pendingStaff}</span>` : ''}
+      </button>
+    </div>` : '';
+
+  let tabContent = '';
+  if (!isSuperAdmin || activeTab === 'student') {
+    tabContent = `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-calendar-times" style="color:#ef4444"></i> Student Leave Requests (${leaves.length})</div>
+        </div>
+        ${leaves.length ? leaves.map(l => {
+          const stu = DB.getStudent(l.studentId);
+          const par = DB.getUser(l.parentId);
+          const colors = { pending: 'yellow', approved: 'green', rejected: 'red' };
+          return `
+          <div class="leave-card ${l.status}" style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+              <div>
+                <div style="font-weight:700;font-size:16px">${stu ? stu.name : '-'}</div>
+                <div class="text-muted">${par ? par.name + ' (Parent)' : ''}</div>
+                <div style="margin:8px 0;font-size:14px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}</div>
+                <div style="font-size:14px;color:#2A3B60"><strong>Reason:</strong> ${l.reason}</div>
+                ${l.reviewNote ? `<div style="font-size:13px;color:#6B7A9D;margin-top:4px"><strong>Note:</strong> ${l.reviewNote}</div>` : ''}
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+                <span class="badge badge-${colors[l.status]}">${l.status.toUpperCase()}</span>
+                <span style="font-size:11px;color:#6B7A9D">Applied: ${formatDate(l.appliedOn)}</span>
+                ${l.status === 'pending' ? `
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-xs btn-success" onclick="reviewLeave('${l.id}','approved')"><i class="fas fa-check"></i> Approve</button>
+                    <button class="btn btn-xs btn-danger" onclick="reviewLeave('${l.id}','rejected')"><i class="fas fa-times"></i> Reject</button>
+                  </div>` : ''}
+                ${par ? `<button class="btn btn-xs btn-whatsapp" onclick="wa('${par.phone}','Hello ${par.name}, regarding ${stu ? stu.name : ""}\\'s leave request from ${l.fromDate} to ${l.toDate}: it has been ${l.status}.')">
+                  <i class="fab fa-whatsapp"></i> Notify Parent
+                </button>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('') : '<div class="empty-state"><i class="fas fa-calendar-times"></i><h3>No leave requests</h3></div>'}
+      </div>`;
+  } else {
+    // Staff leaves tab (superadmin)
+    const statusBadge = (s) => {
+      const map = { Pending: '#fef3c7:#92400e', Approved: '#d1fae5:#065f46', Rejected: '#fee2e2:#991b1b' };
+      const parts = (map[s] || '#f1f5f9:#475569').split(':');
+      return `<span style="background:${parts[0]};color:${parts[1]};padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">${s}</span>`;
+    };
+    tabContent = `
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        ${staffLeaves.length === 0
+          ? '<div class="empty-state"><i class="fas fa-umbrella-beach"></i><h3>No staff leave requests</h3></div>'
+          : staffLeaves.map(l => {
+              const teacher = DB.getUser(l.teacherId);
+              return `
+              <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:12px;transition:box-shadow 0.2s" onmouseenter="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" onmouseleave="this.style.boxShadow='none'">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+                  <div>
+                    <div style="font-weight:700;font-size:15px;color:#0F2050">${teacher ? teacher.name : '-'}</div>
+                    <div style="font-size:12px;color:#10b981;font-weight:600">${teacher ? (teacher.designation || 'Teacher') : ''}</div>
+                    <div style="margin:8px 0;font-size:13px;color:#475569">
+                      <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-right:8px">${l.leaveType} Leave</span>
+                      <i class="fas fa-calendar" style="color:#1AA6CA"></i> ${formatDate(l.fromDate)} – ${formatDate(l.toDate)}
+                      <span style="font-weight:700;margin-left:8px">${l.days} day${l.days!==1?'s':''}</span>
+                    </div>
+                    <div style="font-size:13px;color:#374151"><strong>Reason:</strong> ${l.reason}</div>
+                    ${l.remarks ? `<div style="font-size:12px;color:#64748b;margin-top:4px"><strong>Remarks:</strong> ${l.remarks}</div>` : ''}
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">Applied: ${formatDate(l.createdAt)}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+                    ${statusBadge(l.status)}
+                    ${l.status === 'Pending' ? `
+                      <div style="display:flex;gap:6px">
+                        <button class="btn btn-xs btn-success" onclick="reviewStaffLeave('${l.id}','Approved')"><i class="fas fa-check"></i> Approve</button>
+                        <button class="btn btn-xs btn-danger" onclick="reviewStaffLeave('${l.id}','Rejected')"><i class="fas fa-times"></i> Reject</button>
+                      </div>` : ''}
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+      </div>`;
+  }
+
+  const content = tabBar + tabContent;
   renderLayout('leaves', content, 'Leave Requests');
+}
+
+function reviewStaffLeave(lid, status) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header"><h2 class="modal-title">${status === 'Approved' ? 'Approve' : 'Reject'} Staff Leave</h2><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Remarks (optional)</label>
+          <textarea class="form-control" id="staff-leave-remark" rows="3" placeholder="e.g. Approved. Please arrange a substitute."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn ${status==='Approved'?'btn-success':'btn-danger'}" onclick="confirmReviewStaffLeave('${lid}','${status}')">
+          ${status === 'Approved' ? 'Approve' : 'Reject'}
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+function confirmReviewStaffLeave(lid, status) {
+  const remarks = (document.getElementById('staff-leave-remark').value || '').trim();
+  DB.updateStaffLeave(lid, { status: status, remarks: remarks, approvedBy: Session.current().id, approvedAt: new Date().toISOString() });
+  document.querySelector('.modal-overlay').remove();
+  showToast('Staff leave ' + status.toLowerCase() + '!', status === 'Approved' ? 'success' : 'warning');
+  renderLeaves();
 }
 
 function reviewLeave(lid, status) {

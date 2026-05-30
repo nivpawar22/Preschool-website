@@ -177,6 +177,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
     navItems = [
       { id: 'acc-dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
       { id: 'acc-fees', icon: 'fa-rupee-sign', label: 'Fee Collection' },
+      { id: 'acc-payroll', icon: 'fa-money-check-alt', label: 'Staff Payroll' },
       { id: 'acc-purchase', icon: 'fa-shopping-cart', label: 'Purchase Orders' },
       { id: 'acc-expenses', icon: 'fa-calculator', label: 'Expenses' },
     ];
@@ -217,6 +218,12 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
         if (permMap[n.id] !== undefined) return perms[permMap[n.id]];
         return true; // dashboard, classes, messages always allowed
       });
+      // Self-account section — always visible to teachers
+      const pendingOwnLeaves = (DB.getStaffLeaves(user.id) || []).filter(l => l.status === 'Pending').length;
+      navItems.push({ id: 'teacher-profile', icon: 'fa-id-badge', label: 'My Profile', divider: true, dividerLabel: 'My Account' });
+      navItems.push({ id: 'teacher-attendance', icon: 'fa-fingerprint', label: 'My Attendance' });
+      navItems.push({ id: 'teacher-leaves', icon: 'fa-umbrella-beach', label: 'My Leaves', badge: pendingOwnLeaves });
+      navItems.push({ id: 'teacher-salary', icon: 'fa-money-check-alt', label: 'Salary Slips' });
     }
   } else {
     // parent — compute notification badges
@@ -245,7 +252,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
   }
 
   const navHtml = navItems.map(n => `
-    ${n.divider ? '<div class="nav-section-title" style="margin-top:8px">Admin</div>' : ''}
+    ${n.divider ? `<div class="nav-section-title" style="margin-top:8px">${n.dividerLabel || 'Admin'}</div>` : ''}
     <div class="nav-item ${activeTab === n.id ? 'active' : ''}" onclick="navigate('${n.id}')">
       <span class="icon"><i class="fas ${n.icon}"></i></span>
       ${n.label}

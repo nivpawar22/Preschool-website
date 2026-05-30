@@ -653,8 +653,253 @@ window.accSaveExpense = function() {
   renderAccExpenses();
 };
 
+// ---- Staff Payroll ----
+function renderAccPayroll() {
+  const user = Session.current();
+  if (!user || user.role !== 'accounting') { renderLogin(); return; }
+
+  const data = DB.get();
+  const teachers = (data.users || []).filter(function(u) { return u.role === 'subadmin' && !u.deleted; });
+  const allPayments = DB.getSalaryPayments(null);
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const thisMonthTotal = allPayments
+    .filter(function(p) { return (p.month || '') === thisMonth; })
+    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+
+  const getLastPaid = function(teacherId) {
+    var p = allPayments.find(function(p) { return p.teacherId === teacherId; });
+    if (!p) return '-';
+    var [y, m] = (p.month || '').split('-');
+    return (monthNames[parseInt(m)-1] || m) + ' ' + y;
+  };
+
+  const content = `
+    <div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #10b981">
+          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Paid This Month</div>
+          <div style="font-size:24px;font-weight:900;color:#0F2050">₹${thisMonthTotal.toLocaleString('en-IN')}</div>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8b5cf6">
+          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Total Staff</div>
+          <div style="font-size:24px;font-weight:900;color:#0F2050">${teachers.length}</div>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #f59e0b">
+          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Total Slips Issued</div>
+          <div style="font-size:24px;font-weight:900;color:#0F2050">${allPayments.length}</div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
+          <i class="fas fa-chalkboard-teacher" style="color:#10b981;margin-right:8px"></i>Teaching Staff
+        </h3>
+        ${teachers.length === 0
+          ? '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px">No teaching staff found. Add teachers under Management.</div>'
+          : `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Name</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Designation</th>
+                <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Base Salary</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Last Paid</th>
+                <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>
+              </tr></thead>
+              <tbody>
+                ${teachers.map(function(t) {
+                  return '<tr style="border-bottom:1px solid #f1f5f9" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
+                    '<td style="padding:10px 12px"><div style="font-weight:700;color:#0F2050">' + (t.name||'') + '</div><div style="font-size:11px;color:#94a3b8">' + (t.username||'') + '</div></td>' +
+                    '<td style="padding:10px 12px;color:#64748b">' + (t.designation||'Class Teacher') + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;font-weight:700;color:#374151">₹' + parseFloat(t.baseSalary||0).toLocaleString('en-IN') + '</td>' +
+                    '<td style="padding:10px 12px;color:#64748b">' + getLastPaid(t.id) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center">' +
+                      '<button class="btn btn-primary btn-sm" onclick="accProcessSalary(\'' + t.id + '\')"><i class="fas fa-money-check-alt"></i> Process Salary</button>' +
+                    '</td>' +
+                    '</tr>';
+                }).join('')}
+              </tbody>
+            </table></div>`}
+      </div>
+
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
+          <i class="fas fa-history" style="color:#8b5cf6;margin-right:8px"></i>Payment History
+          <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${allPayments.length} records)</span>
+        </h3>
+        ${allPayments.length === 0
+          ? '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px">No salary payments recorded yet.</div>'
+          : `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Month</th>
+                <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Basic</th>
+                <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Pay</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Mode</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>
+                <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>
+              </tr></thead>
+              <tbody>
+                ${allPayments.map(function(p) {
+                  var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
+                  var [y, m] = (p.month || '').split('-');
+                  var mLabel = (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]||m)+' '+y;
+                  return '<tr style="border-bottom:1px solid #f1f5f9">' +
+                    '<td style="padding:10px 12px;font-weight:600;color:#374151">' + (t ? t.name : '-') + '</td>' +
+                    '<td style="padding:10px 12px;color:#475569">' + mLabel + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;color:#374151">₹' + parseFloat(p.baseSalary||0).toLocaleString('en-IN') + '</td>' +
+                    '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹' + parseFloat(p.netAmount||0).toLocaleString('en-IN') + '</td>' +
+                    '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (p.paymentMode||'Bank Transfer') + '</span></td>' +
+                    '<td style="padding:10px 12px;color:#64748b">' + formatDate(p.paymentDate) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center">' +
+                      '<button class="btn btn-danger btn-sm" onclick="accDeletePayroll(\'' + p.id + '\')"><i class="fas fa-trash"></i></button>' +
+                    '</td>' +
+                    '</tr>';
+                }).join('')}
+              </tbody>
+            </table></div>`}
+      </div>
+    </div>`;
+
+  renderLayout('acc-payroll', content, 'Staff Payroll', 'Accounting / Staff Payroll');
+}
+
+window.accProcessSalary = function(teacherId) {
+  const data = DB.get();
+  const teacher = (data.users || []).find(function(u) { return u.id === teacherId; });
+  if (!teacher) return;
+  const today = new Date().toISOString().split('T')[0];
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const baseSalary = parseFloat(teacher.baseSalary || 0);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'acc-payroll-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:520px;width:100%">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-money-check-alt" style="color:#10b981;margin-right:8px"></i>Process Salary — ${teacher.name}</h3>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('acc-payroll-modal').remove()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="padding:24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="grid-column:1/-1">
+            <label class="form-label">Pay Month *</label>
+            <input id="pr-month" class="form-control" type="month" value="${thisMonth}"/>
+          </div>
+          <div>
+            <label class="form-label">Basic Salary (₹) *</label>
+            <input id="pr-basic" class="form-control" type="number" min="0" step="0.01" value="${baseSalary}" oninput="accCalcNetPay()"/>
+          </div>
+          <div>
+            <label class="form-label">Set as Base Salary</label>
+            <select id="pr-save-base" class="form-control">
+              <option value="yes">Yes — update employee record</option>
+              <option value="no">No — one-time only</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Allowances (₹)</label>
+            <input id="pr-allow" class="form-control" type="number" min="0" step="0.01" value="0" oninput="accCalcNetPay()"/>
+          </div>
+          <div>
+            <label class="form-label">Deductions (₹)</label>
+            <input id="pr-deduct" class="form-control" type="number" min="0" step="0.01" value="0" oninput="accCalcNetPay()"/>
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="form-label">Net Pay (₹)</label>
+            <input id="pr-net" class="form-control" type="text" readonly style="background:#f0fdf4;font-weight:800;font-size:16px;color:#10b981" value="${baseSalary.toFixed(2)}"/>
+          </div>
+          <div>
+            <label class="form-label">Payment Mode</label>
+            <select id="pr-mode" class="form-control">
+              <option>Bank Transfer</option>
+              <option>Cash</option>
+              <option>Cheque</option>
+              <option>UPI</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Payment Date *</label>
+            <input id="pr-date" class="form-control" type="date" value="${today}"/>
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="form-label">Remarks</label>
+            <textarea id="pr-remarks" class="form-control" rows="2" placeholder="Optional remarks..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">
+        <button class="btn btn-secondary" onclick="document.getElementById('acc-payroll-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="accSavePayroll('${teacherId}')"><i class="fas fa-save"></i> Process Payment</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+window.accCalcNetPay = function() {
+  var basic = parseFloat(document.getElementById('pr-basic').value) || 0;
+  var allow = parseFloat(document.getElementById('pr-allow').value) || 0;
+  var deduct = parseFloat(document.getElementById('pr-deduct').value) || 0;
+  var net = basic + allow - deduct;
+  var el = document.getElementById('pr-net');
+  if (el) el.value = net.toFixed(2);
+};
+
+window.accSavePayroll = function(teacherId) {
+  const user = Session.current();
+  var month = document.getElementById('pr-month').value;
+  var baseSalary = parseFloat(document.getElementById('pr-basic').value) || 0;
+  var allowances = parseFloat(document.getElementById('pr-allow').value) || 0;
+  var deductions = parseFloat(document.getElementById('pr-deduct').value) || 0;
+  var netAmount = baseSalary + allowances - deductions;
+  var paymentMode = document.getElementById('pr-mode').value;
+  var paymentDate = document.getElementById('pr-date').value;
+  var remarks = (document.getElementById('pr-remarks').value || '').trim();
+  var saveBase = document.getElementById('pr-save-base').value;
+
+  if (!month) { showToast('Pay month is required', 'error'); return; }
+  if (!paymentDate) { showToast('Payment date is required', 'error'); return; }
+  if (baseSalary <= 0) { showToast('Basic salary must be greater than 0', 'error'); return; }
+
+  var payment = {
+    id: 'sp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    teacherId: teacherId,
+    month: month,
+    baseSalary: baseSalary,
+    allowances: allowances,
+    deductions: deductions,
+    netAmount: netAmount,
+    paymentMode: paymentMode,
+    paymentDate: paymentDate,
+    remarks: remarks,
+    status: 'Paid',
+    paidBy: user ? user.id : '',
+    createdAt: new Date().toISOString()
+  };
+
+  DB.addSalaryPayment(payment);
+  if (saveBase === 'yes') { DB.updateUser(teacherId, { baseSalary: baseSalary }); }
+
+  var modal = document.getElementById('acc-payroll-modal');
+  if (modal) modal.remove();
+  showToast('Salary processed for ' + month + '!', 'success');
+  renderAccPayroll();
+};
+
+window.accDeletePayroll = function(id) {
+  confirmDialog('Delete this salary payment record?', function() {
+    DB.deleteSalaryPayment(id);
+    showToast('Payment record deleted', 'success');
+    renderAccPayroll();
+  });
+};
+
 // ---- Route Registration ----
 registerRoute('acc-dashboard', renderAccDashboard);
 registerRoute('acc-fees', renderAccFees);
+registerRoute('acc-payroll', renderAccPayroll);
 registerRoute('acc-purchase', renderAccPurchase);
 registerRoute('acc-expenses', renderAccExpenses);

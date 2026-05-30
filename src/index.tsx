@@ -1935,17 +1935,18 @@ app.get('/parent-portal', (c) => {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/style.css?v=22"/>
+  <link rel="stylesheet" href="/static/style.css?v=23"/>
 </head>
 <body>
   <div id="app"></div>
-  <script src="/static/data.js?v=22"></script>
-  <script src="/static/app.js?v=22"></script>
-  <script src="/static/admin.js?v=22"></script>
-  <script src="/static/management.js?v=22"></script>
-  <script src="/static/parent.js?v=22"></script>
-  <script src="/static/admissions.js?v=22"></script>
-  <script src="/static/accounting.js?v=22"></script>
+  <script src="/static/data.js?v=23"></script>
+  <script src="/static/app.js?v=23"></script>
+  <script src="/static/admin.js?v=23"></script>
+  <script src="/static/management.js?v=23"></script>
+  <script src="/static/parent.js?v=23"></script>
+  <script src="/static/admissions.js?v=23"></script>
+  <script src="/static/accounting.js?v=23"></script>
+  <script src="/static/teacher.js?v=23"></script>
 </body>
 </html>`)
 })

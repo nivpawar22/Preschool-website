@@ -202,6 +202,9 @@ const DB = (() => {
     activityLog: [],
     purchaseOrders: [],
     expenses: [],
+    staffAttendance: [],
+    staffLeaves: [],
+    salaryPayments: [],
     gallery: [
       { id: 'gal1', title: 'Sports Day 2024', description: 'Annual sports day activities with fun races and games', imageData: '', date: '2024-04-10', classId: 'cls1', studentIds: ['s1', 's4'], uploadedBy: 'u2', createdAt: '2024-04-10T09:00:00' },
       { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: '2024-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: '2024-04-12T14:00:00' },
@@ -257,6 +260,9 @@ const DB = (() => {
       });
       if (!_data.purchaseOrders) { _data.purchaseOrders = []; mergeChanged = true; }
       if (!_data.expenses) { _data.expenses = []; mergeChanged = true; }
+      if (!_data.staffAttendance) { _data.staffAttendance = []; mergeChanged = true; }
+      if (!_data.staffLeaves) { _data.staffLeaves = []; mergeChanged = true; }
+      if (!_data.salaryPayments) { _data.salaryPayments = []; mergeChanged = true; }
       save(_data);
       if (mergeChanged) saveToServer(_data);
     }
@@ -540,6 +546,93 @@ const DB = (() => {
     commit();
   }
 
+  // ---- Update User ----
+  function updateUser(id, updates) {
+    const u = (_data.users || []).find(function(u) { return u.id === id; });
+    if (u) { Object.assign(u, updates); commit(); }
+  }
+
+  // ---- Staff Attendance ----
+  function getStaffAttendance(teacherId, month) {
+    return (_data.staffAttendance || [])
+      .filter(function(r) { return (!teacherId || r.teacherId === teacherId) && (!month || (r.date || '').startsWith(month)); })
+      .sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+  }
+
+  function addStaffAttendance(record) {
+    if (!_data.staffAttendance) _data.staffAttendance = [];
+    var idx = _data.staffAttendance.findIndex(function(r) { return r.teacherId === record.teacherId && r.date === record.date; });
+    if (idx >= 0) { Object.assign(_data.staffAttendance[idx], record); }
+    else { _data.staffAttendance.unshift(record); }
+    commit();
+  }
+
+  function updateStaffAttendance(id, updates) {
+    var r = (_data.staffAttendance || []).find(function(r) { return r.id === id; });
+    if (r) { Object.assign(r, updates); commit(); }
+  }
+
+  function deleteStaffAttendance(id) {
+    if (!_data.staffAttendance) return;
+    _data.staffAttendance = _data.staffAttendance.filter(function(r) { return r.id !== id; });
+    commit();
+  }
+
+  // ---- Staff Leaves ----
+  function getStaffLeaves(teacherId) {
+    return (_data.staffLeaves || [])
+      .filter(function(l) { return !teacherId || l.teacherId === teacherId; })
+      .sort(function(a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+  }
+
+  function addStaffLeave(leave) {
+    if (!_data.staffLeaves) _data.staffLeaves = [];
+    _data.staffLeaves.unshift(leave);
+    commit();
+  }
+
+  function updateStaffLeave(id, updates) {
+    var l = (_data.staffLeaves || []).find(function(l) { return l.id === id; });
+    if (l) { Object.assign(l, updates); commit(); }
+  }
+
+  function deleteStaffLeave(id) {
+    if (!_data.staffLeaves) return;
+    _data.staffLeaves = _data.staffLeaves.filter(function(l) { return l.id !== id; });
+    commit();
+  }
+
+  function getLeaveBalance(teacherId, year) {
+    var limits = { Casual: 12, Sick: 12, Earned: 15 };
+    var approved = (_data.staffLeaves || []).filter(function(l) {
+      return l.teacherId === teacherId && l.status === 'Approved' && (l.fromDate || '').startsWith(year);
+    });
+    var used = {};
+    approved.forEach(function(l) { used[l.leaveType] = (used[l.leaveType] || 0) + (l.days || 0); });
+    return Object.keys(limits).map(function(type) {
+      return { type: type, total: limits[type], used: used[type] || 0, remaining: limits[type] - (used[type] || 0) };
+    });
+  }
+
+  // ---- Salary Payments ----
+  function getSalaryPayments(teacherId) {
+    return (_data.salaryPayments || [])
+      .filter(function(p) { return !teacherId || p.teacherId === teacherId; })
+      .sort(function(a, b) { return (b.month || '').localeCompare(a.month || ''); });
+  }
+
+  function addSalaryPayment(payment) {
+    if (!_data.salaryPayments) _data.salaryPayments = [];
+    _data.salaryPayments.unshift(payment);
+    commit();
+  }
+
+  function deleteSalaryPayment(id) {
+    if (!_data.salaryPayments) return;
+    _data.salaryPayments = _data.salaryPayments.filter(function(p) { return p.id !== id; });
+    commit();
+  }
+
   // ---- Activity log ----
   function log(userId, action, details) {
     _data.activityLog.unshift({ id: genId('log'), userId, action, details, time: new Date().toISOString() });
@@ -599,6 +692,10 @@ const DB = (() => {
     getEvents, addEvent, deleteEvent,
     getPurchaseOrders, addPurchaseOrder, deletePurchaseOrder,
     getExpenses, addExpense, deleteExpense,
+    updateUser,
+    getStaffAttendance, addStaffAttendance, updateStaffAttendance, deleteStaffAttendance,
+    getStaffLeaves, addStaffLeave, updateStaffLeave, deleteStaffLeave, getLeaveBalance,
+    getSalaryPayments, addSalaryPayment, deleteSalaryPayment,
     calcGrade, calcBMI,
     getMeta, updateMeta,
     defaults,

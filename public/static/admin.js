@@ -198,7 +198,7 @@ function openStudentProfile(sid) {
   const user = Session.current();
   const cls = DB.getClass(s.classId);
   const par = DB.getUser(s.parentId);
-  const grades = DB.getGrades(sid, 'Term 1', '2024');
+  const grades = DB.getGrades(sid, 'Semester 1', '2024');
   const att = DB.getAttendanceSummary(sid);
   const growth = DB.getGrowth(sid);
   const lastGrowth = growth[growth.length - 1];
@@ -240,7 +240,7 @@ function openStudentProfile(sid) {
 
         <!-- Grades Table -->
         <div class="card" style="margin-bottom:16px">
-          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-star" style="color:#1AA6CA"></i> Grades - Term 1 2024</div>
+          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-star" style="color:#1AA6CA"></i> Grades - Semester 1 2024</div>
           ${grades.length ? `<div class="table-wrap"><table>
             <thead><tr><th>Subject</th><th>Score</th><th>Grade</th><th>Teacher Comment</th><th>Actions</th></tr></thead>
             <tbody>${grades.map(g => `<tr>
@@ -958,7 +958,7 @@ function openAddGradeModal(studentId, classId) {
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Term</label>
+            <label class="form-label">Semester</label>
             <select class="form-control" id="gr-term">
               <option>Semester 1</option><option>Semester 2</option>
             </select>
@@ -1086,7 +1086,7 @@ function openBulkGradeModal() {
             <select class="form-control" id="bulk-sub">${subjects.map(s => `<option>${s}</option>`).join('')}</select>
           </div>
           <div class="form-group">
-            <label class="form-label">Term</label>
+            <label class="form-label">Semester</label>
             <select class="form-control" id="bulk-term"><option>Semester 1</option><option>Semester 2</option></select>
           </div>
         </div>
@@ -1533,7 +1533,7 @@ function deleteActivity(actId) {
 
 // ---- Syllabus ----
 let syllabusClassFilter2 = '';
-let syllabusTerm2 = 'Term 1';
+let syllabusTerm2 = 'Semester 1';
 
 function renderSyllabus() {
   const user = Session.current();
@@ -1553,8 +1553,8 @@ function renderSyllabus() {
             <option value="">Select Class</option>
             ${data.classes.map(c => `<option value="${c.id}" ${syllabusClassFilter2===c.id?'selected':''}>${c.name}</option>`).join('')}
           </select>` : ''}
-          <select class="form-control" style="width:120px" onchange="syllabusTerm2=this.value;renderSyllabus()">
-            <option>Term 1</option><option>Term 2</option><option>Term 3</option>
+          <select class="form-control" style="width:130px" onchange="syllabusTerm2=this.value;renderSyllabus()">
+            <option ${syllabusTerm2==='Semester 1'?'selected':''}>Semester 1</option><option ${syllabusTerm2==='Semester 2'?'selected':''}>Semester 2</option>
           </select>
           ${(myClassId || isSubAdmin) ? `<button class="btn btn-primary" onclick="openAddSyllabusModal('${myClassId}')"><i class="fas fa-plus"></i> Add Subject Syllabus</button>` : ''}
         </div>
@@ -1630,8 +1630,8 @@ function openAddSyllabusModal(classId) {
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Term</label>
-            <select class="form-control" id="syl-term"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select>
+            <label class="form-label">Semester</label>
+            <select class="form-control" id="syl-term"><option>Semester 1</option><option>Semester 2</option></select>
           </div>
           <div class="form-group">
             <label class="form-label">Year</label>

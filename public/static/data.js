@@ -187,7 +187,7 @@ const DB = (() => {
     announcements: [
       { id: 'ann1', title: 'Parent-Teacher Meeting', body: 'The PTM is scheduled for April 20th, 2024 from 9 AM to 1 PM. All parents are requested to attend.', postedBy: 'u1', targetRole: 'all', date: '2024-04-05', classId: null },
       { id: 'ann2', title: 'Sports Day Registration Open', body: 'Annual Sports Day is on May 5th. Register your child by April 25th with their class teacher.', postedBy: 'u2', targetRole: 'parent', date: '2024-04-10', classId: 'cls1' },
-      { id: 'ann3', title: 'Term 2 Exam Schedule', body: 'Term 2 examinations will begin from May 15th. Detailed schedule attached to your email.', postedBy: 'u1', targetRole: 'all', date: '2024-04-12', classId: null },
+      { id: 'ann3', title: 'Semester 2 Exam Schedule', body: 'Semester 2 examinations will begin from May 15th. Detailed schedule attached to your email.', postedBy: 'u1', targetRole: 'all', date: '2024-04-12', classId: null },
     ],
     messages: [
       { id: 'm1', from: 'p1', to: 'u2', studentId: 's1', text: 'Hello Mr. Carter, Emma was feeling unwell today. Will she miss the test tomorrow?', time: '2024-04-08 10:30', read: true, type: 'inapp' },

@@ -246,7 +246,19 @@ const DB = (() => {
     const serverData = await loadFromServer();
     if (serverData) {
       _data = serverData;
+      // Merge in any new default users (e.g. accounting admin) missing from saved data
+      let mergeChanged = false;
+      const existingIds = new Set((_data.users || []).map(function(u) { return u.id; }));
+      defaults.users.forEach(function(du) {
+        if (!existingIds.has(du.id)) {
+          (_data.users = _data.users || []).push(JSON.parse(JSON.stringify(du)));
+          mergeChanged = true;
+        }
+      });
+      if (!_data.purchaseOrders) { _data.purchaseOrders = []; mergeChanged = true; }
+      if (!_data.expenses) { _data.expenses = []; mergeChanged = true; }
       save(_data);
+      if (mergeChanged) saveToServer(_data);
     }
     // Sync classes from Management → Classes & Seat Capacity
     try {
@@ -282,19 +294,31 @@ const DB = (() => {
           const cls = (_data.classes || []).find(function(c) {
             return c.name.toLowerCase() === (d.classId || '').toLowerCase() || c.id.toLowerCase() === (d.classId || '').toLowerCase();
           });
-          // Create student if not already present
-          const hasStu = (_data.students || []).some(function(s) { return s.id === stuId || s.admissionId === adm.id; });
-          if (!hasStu) {
+          // Compose address from admission form fields
+          const fullAddr = [d.address1, d.address2, d.city, d.pincode].filter(Boolean).join(', ') || d.address || '';
+          const resolvedClassId = cls ? cls.id : (d.classId || '');
+          // Create student if not already present; update address/class if missing
+          const existingStu = (_data.students || []).find(function(s) { return s.id === stuId || s.admissionId === adm.id; });
+          if (!existingStu) {
             (_data.students = _data.students || []).push({
               id: stuId, name: d.studentName,
               rollNo: d.admissionNo || stuId.slice(-6).toUpperCase(),
-              classId: cls ? cls.id : (d.classId || ''),
+              classId: resolvedClassId,
               dob: d.dob || '', gender: d.gender || '', parentId: parId,
-              photo: null, address: d.address || '', bloodGroup: d.bloodGroup || '',
+              photo: null, address: fullAddr, bloodGroup: d.bloodGroup || '',
               deleted: false, joinDate: d.admissionDate || new Date().toISOString().split('T')[0],
               admissionId: adm.id
             });
             changed = true;
+          } else {
+            // Update address and classId if they are missing/blank on existing student
+            if ((!existingStu.address || existingStu.address === '') && fullAddr) {
+              existingStu.address = fullAddr; changed = true;
+            }
+            if ((!existingStu.classId || existingStu.classId === '') && resolvedClassId) {
+              existingStu.classId = resolvedClassId; changed = true;
+            }
+            if (!existingStu.admissionId) { existingStu.admissionId = adm.id; changed = true; }
           }
           // Create parent profile if not already present
           const hasPar = (_data.users || []).some(function(u) { return u.id === parId || u.admissionId === adm.id; });

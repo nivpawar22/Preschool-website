@@ -357,13 +357,19 @@ function _syncAdmToPortal(adm) {
   var cls=(data.classes||[]).find(function(c){
     return c.name.toLowerCase()===(d.classId||'').toLowerCase()||c.id.toLowerCase()===(d.classId||'').toLowerCase();
   });
-  var hasStu=(data.students||[]).some(function(s){return s.id===stuId||s.admissionId===adm.id;});
-  if(!hasStu){
+  var fullAddr=[d.address1,d.address2,d.city,d.pincode].filter(Boolean).join(', ')||d.address||'';
+  var resolvedClassId=cls?cls.id:(d.classId||'');
+  var existingStu=(data.students||[]).find(function(s){return s.id===stuId||s.admissionId===adm.id;});
+  if(!existingStu){
     data.students.push({id:stuId,name:d.studentName,rollNo:d.admissionNo||stuId.slice(-6).toUpperCase(),
-      classId:cls?cls.id:(d.classId||''),dob:d.dob||'',gender:d.gender||'',parentId:parId,
-      photo:null,address:d.address||'',bloodGroup:d.bloodGroup||'',deleted:false,
+      classId:resolvedClassId,dob:d.dob||'',gender:d.gender||'',parentId:parId,
+      photo:null,address:fullAddr,bloodGroup:d.bloodGroup||'',deleted:false,
       joinDate:new Date().toISOString().split('T')[0],admissionId:adm.id});
     showToast(d.studentName+' added to Students tab','success');
+  } else {
+    if((!existingStu.address||existingStu.address==='')&&fullAddr){existingStu.address=fullAddr;}
+    if((!existingStu.classId||existingStu.classId==='')&&resolvedClassId){existingStu.classId=resolvedClassId;}
+    if(!existingStu.admissionId){existingStu.admissionId=adm.id;}
   }
   var hasPar=(data.users||[]).some(function(u){return u.id===parId||u.admissionId===adm.id;});
   if(!hasPar){

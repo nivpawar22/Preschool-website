@@ -1914,6 +1914,24 @@ app.get('/contact', (c) => {
 })
 
 // ================================================================
+// ── Service Worker ────────────────────────────────────────────
+app.get('/sw.js', (c) => {
+  const js = `const CACHE='sk-parent-v25';
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/parent-portal'])));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  const u=new URL(e.request.url);
+  if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/r2/'))return;
+  e.respondWith(fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return r;}).catch(()=>caches.match(e.request)));
+});`;
+  return new Response(js, { headers: {
+    'Content-Type': 'application/javascript; charset=utf-8',
+    'Service-Worker-Allowed': '/parent-portal',
+    'Cache-Control': 'no-cache, no-store'
+  }});
+})
+
 // PARENT PORTAL
 // ================================================================
 app.get('/parent-portal', (c) => {
@@ -1939,6 +1957,28 @@ app.get('/parent-portal', (c) => {
 </head>
 <body>
   <div id="app"></div>
+
+  <!-- PWA Install Banner (Android / Desktop Chrome) -->
+  <div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0F2050;color:#fff;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 -2px 16px rgba(0,0,0,0.35);font-family:Arial,sans-serif">
+    <img src="/static/school-logo.png" style="width:42px;height:42px;border-radius:50%;border:2px solid #C4893A;flex-shrink:0;object-fit:contain;background:#fff" onerror="this.style.display='none'">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:14px">Install SuperKids App</div>
+      <div style="font-size:11px;opacity:0.8;margin-top:1px">Quick access from your home screen</div>
+    </div>
+    <button onclick="window._installPWA()" style="background:#C4893A;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0">Install</button>
+    <button onclick="document.getElementById('pwa-install-banner').style.display='none';sessionStorage.setItem('pwa-banner-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px">&times;</button>
+  </div>
+
+  <!-- PWA iOS Banner -->
+  <div id="pwa-ios-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#0F2050;color:#fff;padding:12px 16px;align-items:flex-start;gap:12px;box-shadow:0 -2px 16px rgba(0,0,0,0.35);font-family:Arial,sans-serif">
+    <img src="/static/school-logo.png" style="width:40px;height:40px;border-radius:10px;border:2px solid #C4893A;flex-shrink:0;object-fit:contain;background:#fff;margin-top:2px" onerror="this.style.display='none'">
+    <div style="flex:1;min-width:0;font-size:13px;line-height:1.5">
+      <div style="font-weight:700;margin-bottom:3px">Add to Home Screen</div>
+      <div style="opacity:0.85">Tap the <strong style="color:#C4893A">Share</strong> button <span style="font-size:15px">&#x2197;</span> at the bottom of your browser, then tap <strong style="color:#C4893A">"Add to Home Screen"</strong></div>
+    </div>
+    <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
+  </div>
+
   <script src="/static/data.js?v=25"></script>
   <script src="/static/app.js?v=25"></script>
   <script src="/static/admin.js?v=25"></script>
@@ -1948,6 +1988,45 @@ app.get('/parent-portal', (c) => {
   <script src="/static/accounting.js?v=25"></script>
   <script src="/static/teacher.js?v=25"></script>
   <script src="/static/teachers.js?v=25"></script>
+  <script>
+  (function(){
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) return; // already running as installed app, hide everything
+
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/parent-portal' }).catch(function(){});
+    }
+
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    // iOS: show manual instructions (once per session unless permanently dismissed)
+    if (isIOS && !localStorage.getItem('pwa-ios-dismissed')) {
+      document.getElementById('pwa-ios-banner').style.display = 'flex';
+    }
+
+    // Android / Desktop Chrome: capture beforeinstallprompt
+    var _prompt = null;
+    window._installPWA = function() {
+      if (!_prompt) return;
+      _prompt.prompt();
+      _prompt.userChoice.then(function(r) {
+        document.getElementById('pwa-install-banner').style.display = 'none';
+        _prompt = null;
+      });
+    };
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      _prompt = e;
+      if (!sessionStorage.getItem('pwa-banner-dismissed')) {
+        document.getElementById('pwa-install-banner').style.display = 'flex';
+      }
+    });
+    window.addEventListener('appinstalled', function() {
+      document.getElementById('pwa-install-banner').style.display = 'none';
+    });
+  })();
+  </script>
 </body>
 </html>`)
 })

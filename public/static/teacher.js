@@ -1,676 +1,977 @@
 // ============================================================
-// Teacher Self-Account Module
-// Role: subadmin (Class Teacher)
+// Teacher Self-Service Module — subadmin role
+// Sections: Profile, Attendance, Leaves, Salary, Documents, Resignation
 // ============================================================
 
-// ---- My Profile ----
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _tFmtMonth(m) { if(!m)return '-'; var n=['January','February','March','April','May','June','July','August','September','October','November','December']; var p=m.split('-'); return (n[parseInt(p[1])-1]||p[1])+' '+p[0]; }
+function _statusBadge(s, map) { var m=map||{Pending:'#fef3c7:#92400e',Approved:'#d1fae5:#065f46',Rejected:'#fee2e2:#991b1b',Fulfilled:'#dbeafe:#1e40af',Active:'#d1fae5:#065f46',Resigned:'#fef3c7:#92400e'}; var p=(m[s]||'#f1f5f9:#475569').split(':'); return '<span style="background:'+p[0]+';color:'+p[1]+';padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">'+escHtml(s)+'</span>'; }
+
+// ============================================================
+// 1. PROFILE MANAGEMENT
+// ============================================================
 function renderTeacherProfile() {
-  const user = Session.current();
+  var user = Session.current();
   if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var data = DB.get();
+  var myClass = (data.classes||[]).find(function(c){return c.teacherId===user.id;});
+  var pendingReq = (DB.getProfileChangeRequests(user.id)||[]).find(function(r){return r.status==='Pending';});
+  var tab = window._tpTab || 'info';
 
-  const data = DB.get();
-  const myClass = (data.classes || []).find(function(c) { return c.teacherId === user.id; });
+  var tabs = [
+    {id:'info', label:'Personal Info', icon:'fa-user'},
+    {id:'address', label:'Address & Emergency', icon:'fa-map-marker-alt'},
+    {id:'bank', label:'Bank Details', icon:'fa-university'},
+    {id:'docs', label:'Documents', icon:'fa-folder-open'},
+    {id:'password', label:'Change Password', icon:'fa-lock'}
+  ];
 
-  const content = `
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;flex-wrap:wrap">
-      <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center">
-        <div style="width:80px;height:80px;border-radius:50%;background:${user.avatar||'#10b981'};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;font-weight:900;color:#fff">
-          ${(user.name||'T').charAt(0).toUpperCase()}
+  var docTypes = ['Aadhaar Card','PAN Card','Educational Certificate','Experience Certificate','Other'];
+
+  var myDocs = (user.documents||[]);
+
+  function tabHtml() {
+    if (tab==='info') return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><label class="form-label">Full Name</label><input id="tp-name" class="form-control" value="${escHtml(user.name||'')}"/></div>
+        <div><label class="form-label">Phone</label><input id="tp-phone" class="form-control" value="${escHtml(user.phone||'')}"/></div>
+        <div><label class="form-label">Email</label><input id="tp-email" class="form-control" type="email" value="${escHtml(user.email||'')}"/></div>
+        <div><label class="form-label">Date of Birth</label><input id="tp-dob" class="form-control" type="date" value="${escHtml(user.dob||'')}"/></div>
+        <div><label class="form-label">Gender</label>
+          <select id="tp-gender" class="form-control">
+            ${['Male','Female','Other'].map(function(g){return '<option value="'+g+'"'+(user.gender===g?' selected':'')+'>'+g+'</option>';}).join('')}
+          </select>
         </div>
-        <div style="font-size:18px;font-weight:800;color:#0F2050;margin-bottom:4px">${user.name||''}</div>
-        <div style="font-size:13px;color:#10b981;font-weight:700;margin-bottom:8px">${user.designation||'Class Teacher'}</div>
-        ${user.employeeId ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px">EMP ID: <strong>${user.employeeId}</strong></div>` : ''}
-        ${user.department ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px">Dept: ${user.department}</div>` : ''}
-        ${user.qualification ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px">Qualification: ${user.qualification}</div>` : ''}
-        ${user.joiningDate ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px">Joined: ${formatDate(user.joiningDate)}</div>` : ''}
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0">
-          <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:700;margin-bottom:8px">Login</div>
-          <code style="background:#f1f5f9;padding:4px 10px;border-radius:6px;font-size:12px;color:#475569">${user.username||''}</code>
+        <div><label class="form-label">Blood Group</label><input id="tp-blood" class="form-control" value="${escHtml(user.bloodGroup||'')}"/></div>
+        <div style="grid-column:1/-1"><label class="form-label">Qualification</label><input id="tp-qual" class="form-control" value="${escHtml(user.qualification||'')}"/></div>
+        ${pendingReq ? '<div style="grid-column:1/-1"><div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e"><i class="fas fa-clock" style="margin-right:6px"></i>Profile update request is pending admin approval</div></div>' : ''}
+      </div>`;
+    if (tab==='address') return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="grid-column:1/-1"><h4 style="font-size:13px;font-weight:700;color:#0F2050;margin:0 0 12px">Current Address</h4></div>
+        <div style="grid-column:1/-1"><label class="form-label">Address Line</label><textarea id="tp-addr" class="form-control" rows="2" style="resize:none">${escHtml(user.address||'')}</textarea></div>
+        <div><label class="form-label">City</label><input id="tp-city" class="form-control" value="${escHtml(user.city||'')}"/></div>
+        <div><label class="form-label">State</label><input id="tp-state" class="form-control" value="${escHtml(user.state||'')}"/></div>
+        <div><label class="form-label">PIN Code</label><input id="tp-pin" class="form-control" value="${escHtml(user.pinCode||'')}"/></div>
+        <div style="grid-column:1/-1"><h4 style="font-size:13px;font-weight:700;color:#0F2050;margin:16px 0 12px">Emergency Contact</h4></div>
+        <div><label class="form-label">Contact Name</label><input id="tp-emname" class="form-control" value="${escHtml(user.emergencyName||'')}"/></div>
+        <div><label class="form-label">Relationship</label><input id="tp-emrel" class="form-control" value="${escHtml(user.emergencyRelation||'')}"/></div>
+        <div><label class="form-label">Contact Phone</label><input id="tp-emphone" class="form-control" value="${escHtml(user.emergencyPhone||'')}"/></div>
+        <div><label class="form-label">Alt Phone</label><input id="tp-emphone2" class="form-control" value="${escHtml(user.emergencyPhone2||'')}"/></div>
+      </div>`;
+    if (tab==='bank') return `
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e">
+        <i class="fas fa-shield-alt" style="margin-right:6px"></i>Bank details are view-only. Contact HR to update bank information.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><label class="form-label">Account Holder Name</label><input class="form-control" value="${escHtml(user.bankAccountName||user.name||'')}" readonly style="background:#f8fafc"/></div>
+        <div><label class="form-label">Account Number</label><input class="form-control" value="${escHtml(user.bankAccount||'')}" readonly style="background:#f8fafc"/></div>
+        <div><label class="form-label">IFSC Code</label><input class="form-control" value="${escHtml(user.bankIFSC||'')}" readonly style="background:#f8fafc"/></div>
+        <div><label class="form-label">Bank Name</label><input class="form-control" value="${escHtml(user.bankName||'')}" readonly style="background:#f8fafc"/></div>
+        <div><label class="form-label">Branch</label><input class="form-control" value="${escHtml(user.bankBranch||'')}" readonly style="background:#f8fafc"/></div>
+        <div><label class="form-label">Payment Mode</label><input class="form-control" value="${escHtml(user.paymentMode||'Bank Transfer')}" readonly style="background:#f8fafc"/></div>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:16px" onclick="teacherRequestDoc('Bank Details Update Request')"><i class="fas fa-paper-plane"></i> Request Bank Update from HR</button>`;
+    if (tab==='docs') {
+      var docRows = myDocs.length > 0 ? myDocs.map(function(d,i){
+        return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;font-size:13px;font-weight:600;color:#374151">'+escHtml(d.type)+'</td><td style="padding:10px 12px;font-size:12px;color:#64748b">'+escHtml(d.fileName||'')+'</td><td style="padding:10px 12px;font-size:11px;color:#94a3b8">'+formatDate(d.uploadedAt)+'</td><td style="padding:10px 12px;text-align:center"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">Uploaded</span></td></tr>';
+      }).join('') : '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8">No documents uploaded yet</td></tr>';
+      return `
+        <div style="margin-bottom:20px">
+          <h4 style="font-size:13px;font-weight:800;color:#0F2050;margin:0 0 12px">Upload Document</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+            <div><label class="form-label">Document Type</label>
+              <select id="tp-doctype" class="form-control">
+                ${docTypes.map(function(d){return '<option>'+d+'</option>';}).join('')}
+              </select>
+            </div>
+            <div><label class="form-label">Select File</label><input id="tp-docfile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png"/></div>
+            <button class="btn btn-primary" onclick="teacherUploadDoc()"><i class="fas fa-upload"></i> Upload</button>
+          </div>
         </div>
-        ${myClass ? `
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0">
-          <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:700;margin-bottom:8px">My Class</div>
-          <div style="font-size:14px;font-weight:800;color:#0F2050">${myClass.name}</div>
-          <div style="font-size:12px;color:#64748b">Capacity: ${myClass.capacity} • Subjects: ${(myClass.subjects||[]).length}</div>
-        </div>` : ''}
+        <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+              <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Document Type</th>
+              <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">File Name</th>
+              <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Uploaded</th>
+              <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th>
+            </tr></thead>
+            <tbody>${docRows}</tbody>
+          </table>
+        </div>`;
+    }
+    if (tab==='password') return `
+      <div style="max-width:400px">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af">
+          <i class="fas fa-info-circle" style="margin-right:6px"></i>Use a strong password with letters, numbers and symbols.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div><label class="form-label">Current Password</label><input id="tp-curpwd" class="form-control" type="password" placeholder="Enter current password"/></div>
+          <div><label class="form-label">New Password</label><input id="tp-newpwd" class="form-control" type="password" placeholder="Min 8 characters"/></div>
+          <div><label class="form-label">Confirm New Password</label><input id="tp-confpwd" class="form-control" type="password" placeholder="Re-enter new password"/></div>
+          <button class="btn btn-primary" onclick="teacherChangePassword()"><i class="fas fa-key"></i> Change Password</button>
+        </div>
+      </div>`;
+    return '';
+  }
+
+  var hasSaveBtn = tab === 'info' || tab === 'address';
+  var saveLabel = pendingReq ? 'Re-submit Update' : 'Submit for Approval';
+
+  var content = `
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+      <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center;position:sticky;top:20px">
+        <div style="width:80px;height:80px;border-radius:50%;background:${user.avatar||'#10b981'};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;font-weight:900;color:#fff">${(user.name||'T').charAt(0).toUpperCase()}</div>
+        <div style="font-size:18px;font-weight:800;color:#0F2050;margin-bottom:4px">${escHtml(user.name||'')}</div>
+        <div style="font-size:13px;color:#10b981;font-weight:700;margin-bottom:8px">${escHtml(user.designation||'Class Teacher')}</div>
+        ${user.employeeId||user.empId ? `<div style="font-family:monospace;font-size:12px;font-weight:700;color:#64748b;background:#f1f5f9;padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:8px">${escHtml(user.employeeId||user.empId||'')}</div>` : ''}
+        ${user.department ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px"><i class="fas fa-building" style="margin-right:4px;color:#94a3b8"></i>${escHtml(user.department)}</div>` : ''}
+        ${user.joiningDate ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px"><i class="fas fa-calendar" style="margin-right:4px;color:#94a3b8"></i>Joined: ${formatDate(user.joiningDate)}</div>` : ''}
+        ${myClass ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0"><div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:4px">My Class</div><div style="font-size:14px;font-weight:800;color:#0F2050">${escHtml(myClass.name)}</div></div>` : ''}
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0">
+          <div style="font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:4px">Documents</div>
+          <div style="font-size:20px;font-weight:900;color:#0F2050">${myDocs.length}</div>
+          <div style="font-size:11px;color:#94a3b8">uploaded</div>
+        </div>
       </div>
 
       <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        <h3 style="font-size:15px;font-weight:800;margin:0 0 20px;color:#0F2050">
-          <i class="fas fa-edit" style="color:#10b981;margin-right:8px"></i>Edit My Profile
-        </h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <label class="form-label">Full Name</label>
-            <input id="tp-name" class="form-control" type="text" value="${escHtml(user.name||'')}"/>
-          </div>
-          <div>
-            <label class="form-label">Phone</label>
-            <input id="tp-phone" class="form-control" type="text" value="${escHtml(user.phone||'')}"/>
-          </div>
-          <div>
-            <label class="form-label">Email</label>
-            <input id="tp-email" class="form-control" type="email" value="${escHtml(user.email||'')}"/>
-          </div>
-          <div>
-            <label class="form-label">Designation</label>
-            <input id="tp-designation" class="form-control" type="text" value="${escHtml(user.designation||'Class Teacher')}" placeholder="e.g. Head Teacher"/>
-          </div>
-          <div>
-            <label class="form-label">Qualification</label>
-            <input id="tp-qualification" class="form-control" type="text" value="${escHtml(user.qualification||'')}" placeholder="e.g. B.Ed, M.Ed"/>
-          </div>
-          <div>
-            <label class="form-label">Joining Date</label>
-            <input id="tp-joining" class="form-control" type="date" value="${user.joiningDate||''}"/>
-          </div>
-          <div>
-            <label class="form-label">Employee ID</label>
-            <input id="tp-empid" class="form-control" type="text" value="${escHtml(user.employeeId||'')}" placeholder="e.g. EMP-001"/>
-          </div>
-          <div>
-            <label class="form-label">Department</label>
-            <input id="tp-dept" class="form-control" type="text" value="${escHtml(user.department||'')}" placeholder="e.g. Primary"/>
-          </div>
-          <div style="grid-column:1/-1">
-            <label class="form-label">Residential Address</label>
-            <textarea id="tp-address" class="form-control" rows="2" placeholder="Home address">${escHtml(user.address||'')}</textarea>
-          </div>
-          <div>
-            <label class="form-label">Emergency Contact Name</label>
-            <input id="tp-ecname" class="form-control" type="text" value="${escHtml(user.emergencyContactName||'')}" placeholder="Name"/>
-          </div>
-          <div>
-            <label class="form-label">Emergency Contact Phone</label>
-            <input id="tp-ecphone" class="form-control" type="text" value="${escHtml(user.emergencyContactPhone||'')}" placeholder="+91 9XXXXXXXXX"/>
-          </div>
-          <div>
-            <label class="form-label">Bank Account No.</label>
-            <input id="tp-bank" class="form-control" type="text" value="${escHtml(user.bankAccount||'')}" placeholder="XXXX XXXX XXXX"/>
-          </div>
-          <div>
-            <label class="form-label">Bank IFSC Code</label>
-            <input id="tp-ifsc" class="form-control" type="text" value="${escHtml(user.ifsc||'')}" placeholder="e.g. HDFC0001234"/>
-          </div>
-          <div style="grid-column:1/-1">
-            <label class="form-label">New Password <span style="font-weight:400;color:#94a3b8">(leave blank to keep current)</span></label>
-            <input id="tp-newpass" class="form-control" type="password" placeholder="New password"/>
-          </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:2px solid #f1f5f9;padding-bottom:16px">
+          ${tabs.map(function(t){return '<button class="btn btn-sm '+(t.id===tab?'btn-primary':'btn-secondary')+'" onclick="window._tpTab=\''+t.id+'\';renderTeacherProfile()"><i class="fas '+t.icon+'" style="margin-right:4px"></i>'+t.label+'</button>';}).join('')}
         </div>
-        <div style="margin-top:20px;text-align:right">
-          <button class="btn btn-primary" onclick="saveTeacherProfile()">
-            <i class="fas fa-save"></i> Save Profile
-          </button>
-        </div>
+        ${tabHtml()}
+        ${hasSaveBtn ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="saveTeacherProfile()"><i class="fas fa-paper-plane"></i> ${saveLabel}</button>
+          <div style="font-size:12px;color:#94a3b8;align-self:center"><i class="fas fa-info-circle"></i> Changes require admin approval before taking effect</div>
+        </div>` : ''}
       </div>
     </div>`;
 
   renderLayout('teacher-profile', content, 'My Profile', 'My Account / Profile');
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+window._tpTab = 'info';
+
+window.teacherUploadDoc = function() {
+  var user = Session.current(); if(!user) return;
+  var type = (document.getElementById('tp-doctype')||{}).value;
+  var file = (document.getElementById('tp-docfile')||{}).files;
+  if (!type || !file || !file[0]) { showToast('Please select a document type and file', 'error'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var docs = user.documents ? JSON.parse(JSON.stringify(user.documents)) : [];
+    docs.push({ type: type, fileName: file[0].name, data: e.target.result, uploadedAt: new Date().toISOString() });
+    DB.updateUser(user.id, { documents: docs });
+    // Refresh session user
+    var data = DB.get(); var updated = (data.users||[]).find(function(u){return u.id===user.id;}); if(updated) Session.updateCurrent(updated);
+    showToast('Document uploaded!', 'success');
+    renderTeacherProfile();
+  };
+  reader.readAsDataURL(file[0]);
+};
 
 window.saveTeacherProfile = function() {
-  const user = Session.current();
-  if (!user) return;
-  const updates = {
-    name: (document.getElementById('tp-name').value || '').trim() || user.name,
-    phone: (document.getElementById('tp-phone').value || '').trim(),
-    email: (document.getElementById('tp-email').value || '').trim(),
-    designation: (document.getElementById('tp-designation').value || '').trim(),
-    qualification: (document.getElementById('tp-qualification').value || '').trim(),
-    joiningDate: document.getElementById('tp-joining').value,
-    employeeId: (document.getElementById('tp-empid').value || '').trim(),
-    department: (document.getElementById('tp-dept').value || '').trim(),
-    address: (document.getElementById('tp-address').value || '').trim(),
-    emergencyContactName: (document.getElementById('tp-ecname').value || '').trim(),
-    emergencyContactPhone: (document.getElementById('tp-ecphone').value || '').trim(),
-    bankAccount: (document.getElementById('tp-bank').value || '').trim(),
-    ifsc: (document.getElementById('tp-ifsc').value || '').trim(),
-  };
-  const newPass = (document.getElementById('tp-newpass').value || '').trim();
-  if (newPass) updates.password = newPass;
-  DB.updateUser(user.id, updates);
-  showToast('Profile updated!', 'success');
+  var user = Session.current(); if (!user) return;
+  var tab = window._tpTab || 'info';
+  var updates = {};
+  if (tab === 'info') {
+    updates.name = (document.getElementById('tp-name')||{}).value||'';
+    updates.phone = (document.getElementById('tp-phone')||{}).value||'';
+    updates.email = (document.getElementById('tp-email')||{}).value||'';
+    updates.dob = (document.getElementById('tp-dob')||{}).value||'';
+    updates.gender = (document.getElementById('tp-gender')||{}).value||'';
+    updates.bloodGroup = (document.getElementById('tp-blood')||{}).value||'';
+    updates.qualification = (document.getElementById('tp-qual')||{}).value||'';
+  } else if (tab === 'address') {
+    updates.address = (document.getElementById('tp-addr')||{}).value||'';
+    updates.city = (document.getElementById('tp-city')||{}).value||'';
+    updates.state = (document.getElementById('tp-state')||{}).value||'';
+    updates.pinCode = (document.getElementById('tp-pin')||{}).value||'';
+    updates.emergencyName = (document.getElementById('tp-emname')||{}).value||'';
+    updates.emergencyRelation = (document.getElementById('tp-emrel')||{}).value||'';
+    updates.emergencyPhone = (document.getElementById('tp-emphone')||{}).value||'';
+    updates.emergencyPhone2 = (document.getElementById('tp-emphone2')||{}).value||'';
+  }
+  if (!Object.keys(updates).length) return;
+  // Submit as profile change request
+  var existing = (DB.getProfileChangeRequests(user.id)||[]).find(function(r){return r.status==='Pending';});
+  if (existing) {
+    DB.updateProfileChangeRequest(existing.id, { changes: updates, updatedAt: new Date().toISOString() });
+  } else {
+    DB.addProfileChangeRequest({ id:'pcr_'+Date.now(), teacherId: user.id, teacherName: user.name, changes: updates, status: 'Pending', section: tab, createdAt: new Date().toISOString() });
+  }
+  showToast('Profile update submitted for admin approval!', 'success');
   renderTeacherProfile();
 };
 
-// ---- My Attendance ----
+window.teacherChangePassword = function() {
+  var user = Session.current(); if(!user) return;
+  var cur = (document.getElementById('tp-curpwd')||{}).value||'';
+  var nw = (document.getElementById('tp-newpwd')||{}).value||'';
+  var conf = (document.getElementById('tp-confpwd')||{}).value||'';
+  if (cur !== user.password) { showToast('Current password is incorrect', 'error'); return; }
+  if (nw.length < 6) { showToast('New password must be at least 6 characters', 'error'); return; }
+  if (nw !== conf) { showToast('Passwords do not match', 'error'); return; }
+  DB.updateUser(user.id, { password: nw });
+  var data = DB.get(); var updated = (data.users||[]).find(function(u){return u.id===user.id;}); if(updated) Session.updateCurrent(updated);
+  showToast('Password changed successfully!', 'success');
+  renderTeacherProfile();
+};
+
+// ============================================================
+// 2. ATTENDANCE MANAGEMENT
+// ============================================================
 function renderTeacherAttendance() {
-  const user = Session.current();
+  var user = Session.current();
   if (!user || user.role !== 'subadmin') { renderLogin(); return; }
 
-  const now = new Date();
-  const selMonth = window._tAttMonth || now.toISOString().slice(0, 7);
-  const parts = selMonth.split('-');
-  const selYear = parseInt(parts[0]);
-  const selMon = parseInt(parts[1]);
+  var now = new Date();
+  var defMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var month = window._tAttMonth || defMonth;
+  var [yr, mo] = month.split('-');
+  var allRecs = DB.getStaffAttendance(user.id);
+  var monthRecs = allRecs.filter(function(r){return r.date&&r.date.startsWith(month);});
 
-  const records = DB.getStaffAttendance(user.id, selMonth);
-  const recordMap = {};
-  records.forEach(function(r) { recordMap[r.date] = r; });
+  var todayStr = now.toISOString().slice(0,10);
+  var todayRec = allRecs.find(function(r){return r.date===todayStr;});
 
-  const todayStr = now.toISOString().split('T')[0];
-  const todayRec = recordMap[todayStr];
+  var stats = {
+    present: monthRecs.filter(function(r){return r.status==='Present';}).length,
+    absent: monthRecs.filter(function(r){return r.status==='Absent';}).length,
+    halfDay: monthRecs.filter(function(r){return r.status==='Half-Day';}).length,
+    late: monthRecs.filter(function(r){return r.lateArrival;}).length,
+    onLeave: monthRecs.filter(function(r){return r.status==='On-Leave';}).length
+  };
+  var total = monthRecs.length;
+  var attPct = total ? Math.round((stats.present + stats.halfDay*0.5) / total * 100) : 0;
 
-  const present = records.filter(function(r) { return r.status === 'Present'; }).length;
-  const absent = records.filter(function(r) { return r.status === 'Absent'; }).length;
-  const halfDay = records.filter(function(r) { return r.status === 'Half-Day'; }).length;
-  const onLeave = records.filter(function(r) { return r.status === 'On-Leave'; }).length;
-  const workingDays = present + absent + halfDay + onLeave;
+  // Build calendar
+  var daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
+  var firstDay = new Date(parseInt(yr), parseInt(mo)-1, 1).getDay();
+  var recMap = {};
+  monthRecs.forEach(function(r){recMap[r.date]=r;});
 
-  const firstDay = new Date(selYear, selMon - 1, 1).getDay();
-  const daysInMonth = new Date(selYear, selMon, 0).getDate();
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let calCells = dayNames.map(function(d) {
-    return '<div style="text-align:center;font-size:11px;font-weight:700;color:#64748b;padding:6px 0">' + d + '</div>';
-  }).join('');
-  for (var i = 0; i < firstDay; i++) calCells += '<div></div>';
-  const statusColors = { Present: '#d1fae5', Absent: '#fee2e2', 'Half-Day': '#fef3c7', 'On-Leave': '#dbeafe' };
-  const statusTextC = { Present: '#065f46', Absent: '#991b1b', 'Half-Day': '#92400e', 'On-Leave': '#1e40af' };
-  for (var d = 1; d <= daysInMonth; d++) {
-    const dateStr = selYear + '-' + String(selMon).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const rec = recordMap[dateStr];
-    const isToday = dateStr === todayStr;
-    const dow = new Date(selYear, selMon-1, d).getDay();
-    const isWeekend = dow === 0 || dow === 6;
-    const bg = rec ? (statusColors[rec.status] || '#f8fafc') : (isWeekend ? '#f1f5f9' : '#fff');
-    const textColor = rec ? (statusTextC[rec.status] || '#374151') : (isWeekend ? '#94a3b8' : '#374151');
-    const shortLabel = rec ? (rec.status === 'Half-Day' ? 'H/D' : rec.status === 'On-Leave' ? 'OL' : rec.status.slice(0,3).toUpperCase()) : '';
-    calCells += '<div style="border-radius:8px;padding:5px 4px;min-height:38px;background:' + bg + ';text-align:center;border:' + (isToday ? '2px solid #10b981' : '1px solid #e2e8f0') + '">' +
-      '<div style="font-size:13px;font-weight:' + (isToday?'900':'600') + ';color:' + textColor + '">' + d + '</div>' +
-      (shortLabel ? '<div style="font-size:9px;font-weight:700;color:' + textColor + '">' + shortLabel + '</div>' : '') +
-      '</div>';
+  var calDays = '';
+  for (var i=0;i<firstDay;i++) calDays += '<div></div>';
+  for (var d=1;d<=daysInMonth;d++) {
+    var dateStr = yr+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var rec = recMap[dateStr];
+    var isToday = dateStr===todayStr;
+    var dow = new Date(parseInt(yr),parseInt(mo)-1,d).getDay();
+    var isWeekend = dow===0||dow===6;
+    var bg='#f8fafc', col='#64748b', border='1px solid #e2e8f0';
+    if(isToday){border='2px solid #6366f1';}
+    if(rec){
+      if(rec.status==='Present'){bg='#d1fae5';col='#065f46';}
+      else if(rec.status==='Absent'){bg='#fee2e2';col='#991b1b';}
+      else if(rec.status==='Half-Day'){bg='#fef3c7';col='#92400e';}
+      else if(rec.status==='On-Leave'){bg='#e0e7ff';col='#3730a3';}
+    } else if(isWeekend){bg='#f1f5f9';col='#94a3b8';}
+    var lateTag = rec&&rec.lateArrival ? '<div style="font-size:8px;color:#f97316;font-weight:700;line-height:1">LATE</div>' : '';
+    calDays += '<div style="background:'+bg+';border:'+border+';border-radius:8px;padding:6px;text-align:center;cursor:default;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
+      '<div style="font-size:13px;font-weight:'+(isToday?'900':'600')+';color:'+col+'">'+(isToday?'<strong>':'')+(d)+(isToday?'</strong>':'')+'</div>'+
+      (rec?'<div style="font-size:9px;font-weight:700;color:'+col+';line-height:1;margin-top:2px">'+rec.status.slice(0,4).toUpperCase()+'</div>':'')+
+      lateTag+
+    '</div>';
   }
 
-  const prevMonth = new Date(selYear, selMon - 2, 1).toISOString().slice(0, 7);
-  const nextMonth = new Date(selYear, selMon, 1).toISOString().slice(0, 7);
-  const canCheckIn = !todayRec || !todayRec.inTime;
-  const canCheckOut = todayRec && todayRec.inTime && !todayRec.outTime;
+  var corrReqs = DB.getAttendanceCorrectionRequests(user.id)||[];
 
-  const content = `
+  var content = `
     <div>
-      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">
-        <h3 style="font-size:15px;font-weight:800;margin:0 0 14px;color:#0F2050">
-          <i class="fas fa-clock" style="color:#10b981;margin-right:8px"></i>Today — ${formatDate(todayStr)}
-        </h3>
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-          <div style="display:flex;gap:20px;flex-wrap:wrap">
-            ${todayRec
-              ? `<div><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase">Status</div><div style="font-size:16px;font-weight:800;color:${statusTextC[todayRec.status]||'#10b981'}">${todayRec.status}</div></div>
-                 ${todayRec.inTime ? `<div><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase">Check In</div><div style="font-size:16px;font-weight:800;color:#0F2050">${todayRec.inTime}</div></div>` : ''}
-                 ${todayRec.outTime ? `<div><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase">Check Out</div><div style="font-size:16px;font-weight:800;color:#0F2050">${todayRec.outTime}</div></div>` : ''}`
-              : '<span style="color:#94a3b8;font-size:14px">Not marked yet</span>'}
-          </div>
-          <div style="display:flex;gap:8px;margin-left:auto">
-            ${canCheckIn ? '<button class="btn btn-primary" onclick="teacherCheckIn()"><i class="fas fa-sign-in-alt"></i> Check In</button>' : ''}
-            ${canCheckOut ? '<button class="btn btn-success" onclick="teacherCheckOut()"><i class="fas fa-sign-out-alt"></i> Check Out</button>' : ''}
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-secondary btn-sm" onclick="teacherAttPrevMonth()"><i class="fas fa-chevron-left"></i></button>
+          <span style="font-size:15px;font-weight:800;color:#0F2050;min-width:130px;text-align:center">${_tFmtMonth(month)}</span>
+          <button class="btn btn-secondary btn-sm" onclick="teacherAttNextMonth()"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${!todayRec ? `<button class="btn btn-primary" onclick="teacherMarkAttendance()"><i class="fas fa-fingerprint"></i> Mark Today</button>` :
+            `<div style="background:#d1fae5;color:#065f46;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700"><i class="fas fa-check-circle" style="margin-right:6px"></i>Marked: ${escHtml(todayRec.status)}${todayRec.checkIn?' at '+todayRec.checkIn:''}</div>`}
+          <button class="btn btn-secondary" onclick="teacherRequestCorrection()"><i class="fas fa-edit"></i> Request Correction</button>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-        ${[['Present',present,'#d1fae5','#065f46','fa-check-circle'],['Absent',absent,'#fee2e2','#991b1b','fa-times-circle'],['Half-Day',halfDay,'#fef3c7','#92400e','fa-adjust'],['On-Leave',onLeave,'#dbeafe','#1e40af','fa-umbrella-beach']].map(function(item) {
-          return '<div style="background:' + item[2] + ';border-radius:12px;padding:16px;text-align:center">' +
-            '<div style="font-size:22px;font-weight:900;color:' + item[3] + '">' + item[1] + '</div>' +
-            '<div style="font-size:11px;font-weight:700;color:' + item[3] + ';text-transform:uppercase;margin-top:2px">' + item[0] + '</div>' +
-            '</div>';
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+        ${[['Present',stats.present,'#d1fae5','#065f46','fa-check-circle'],['Absent',stats.absent,'#fee2e2','#991b1b','fa-times-circle'],['Half-Day',stats.halfDay,'#fef3c7','#92400e','fa-adjust'],['Late',stats.late,'#fff7ed','#c2410c','fa-clock'],['Attendance',attPct+'%','#eff6ff','#1e40af','fa-chart-pie']].map(function(s){
+          return '<div style="background:'+s[2]+';border-radius:14px;padding:16px;text-align:center"><i class="fas '+s[4]+'" style="font-size:18px;color:'+s[3]+';margin-bottom:8px;display:block"></i><div style="font-size:22px;font-weight:900;color:'+s[3]+'">'+s[1]+'</div><div style="font-size:10px;font-weight:700;color:'+s[3]+';text-transform:uppercase">'+s[0]+'</div></div>';
         }).join('')}
       </div>
 
-      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <button class="btn btn-secondary btn-sm" onclick="teacherAttSetMonth('${prevMonth}')"><i class="fas fa-chevron-left"></i></button>
-            <h3 style="font-size:15px;font-weight:800;margin:0;color:#0F2050;min-width:160px;text-align:center">${monthNames[selMon-1]} ${selYear}</h3>
-            <button class="btn btn-secondary btn-sm" onclick="teacherAttSetMonth('${nextMonth}')"><i class="fas fa-chevron-right"></i></button>
-          </div>
-          <div style="font-size:12px;color:#64748b">Working days recorded: <strong>${workingDays}</strong></div>
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px">
+          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(function(d){return '<div style="text-align:center;font-size:11px;font-weight:700;color:#94a3b8;padding:6px">'+d+'</div>';}).join('')}
         </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
-          ${calCells}
-        </div>
-        <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
-          <span style="font-size:11px;font-weight:600;color:#065f46"><span style="background:#d1fae5;padding:2px 8px;border-radius:4px">P</span> Present</span>
-          <span style="font-size:11px;font-weight:600;color:#991b1b"><span style="background:#fee2e2;padding:2px 8px;border-radius:4px">A</span> Absent</span>
-          <span style="font-size:11px;font-weight:600;color:#92400e"><span style="background:#fef3c7;padding:2px 8px;border-radius:4px">H/D</span> Half-Day</span>
-          <span style="font-size:11px;font-weight:600;color:#1e40af"><span style="background:#dbeafe;padding:2px 8px;border-radius:4px">OL</span> On-Leave</span>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">${calDays}</div>
+        <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+          ${[['#d1fae5','#065f46','Present'],['#fee2e2','#991b1b','Absent'],['#fef3c7','#92400e','Half-Day'],['#e0e7ff','#3730a3','On Leave']].map(function(l){return '<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:3px;background:'+l[0]+';border:1px solid '+l[1]+'"></div><span style="font-size:11px;color:#64748b">'+l[2]+'</span></div>';}).join('')}
         </div>
       </div>
+
+      ${corrReqs.length > 0 ? `
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <h3 style="font-size:14px;font-weight:800;color:#0F2050;margin:0 0 16px"><i class="fas fa-edit" style="color:#f59e0b;margin-right:8px"></i>Correction Requests</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:700">Date</th>
+            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:700">Requested Status</th>
+            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:700">Reason</th>
+            <th style="text-align:center;padding:8px 12px;color:#64748b;font-weight:700">Status</th>
+          </tr></thead>
+          <tbody>${corrReqs.map(function(r){return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 12px;color:#374151">'+formatDate(r.date)+'</td><td style="padding:8px 12px">'+_statusBadge(r.requestedStatus,{'Present':'#d1fae5:#065f46','Half-Day':'#fef3c7:#92400e'})+'</td><td style="padding:8px 12px;color:#64748b;font-size:11px">'+escHtml(r.reason||'')+'</td><td style="padding:8px 12px;text-align:center">'+_statusBadge(r.status)+'</td></tr>';}).join('')}</tbody>
+        </table>
+      </div>` : ''}
     </div>`;
 
   renderLayout('teacher-attendance', content, 'My Attendance', 'My Account / Attendance');
 }
 
-window.teacherCheckIn = function() {
-  const user = Session.current();
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const inTime = now.toTimeString().slice(0, 5);
-  const month = now.toISOString().slice(0, 7);
-  const existing = DB.getStaffAttendance(user.id, month).find(function(r) { return r.date === todayStr; });
-  if (existing) {
-    DB.updateStaffAttendance(existing.id, { inTime: inTime, status: 'Present' });
-  } else {
-    DB.addStaffAttendance({
-      id: 'sa_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
-      teacherId: user.id, date: todayStr, status: 'Present',
-      inTime: inTime, outTime: '', notes: '',
-      markedBy: user.id, createdAt: now.toISOString()
-    });
-  }
-  showToast('Checked in at ' + inTime, 'success');
+window.teacherAttPrevMonth = function() {
+  var m = window._tAttMonth || new Date().toISOString().slice(0,7);
+  var d = new Date(m+'-01'); d.setMonth(d.getMonth()-1);
+  window._tAttMonth = d.toISOString().slice(0,7);
+  renderTeacherAttendance();
+};
+window.teacherAttNextMonth = function() {
+  var m = window._tAttMonth || new Date().toISOString().slice(0,7);
+  var d = new Date(m+'-01'); d.setMonth(d.getMonth()+1);
+  window._tAttMonth = d.toISOString().slice(0,7);
+  renderTeacherAttendance();
+};
+window.teacherAttSetMonth = function(m) { window._tAttMonth = m; renderTeacherAttendance(); };
+
+window.teacherMarkAttendance = function() {
+  var user = Session.current(); if(!user) return;
+  var now = new Date();
+  var todayStr = now.toISOString().slice(0,10);
+  var timeStr = now.toTimeString().slice(0,5);
+  // Determine if late (after 9:15 AM)
+  var lateArrival = now.getHours() > 9 || (now.getHours()===9 && now.getMinutes()>15);
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0F2050"><i class="fas fa-fingerprint" style="color:#6366f1;margin-right:8px"></i>Mark Attendance — '+formatDate(todayStr)+'</h3>'+
+    (lateArrival?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#c2410c"><i class="fas fa-clock" style="margin-right:6px"></i>Late arrival will be noted (after 9:15 AM)</div>':'')+
+    '<div style="margin-bottom:14px"><label class="form-label">Status</label><select id="mark-att-status" class="form-control"><option value="Present">Present</option><option value="Half-Day">Half-Day</option></select></div>'+
+    '<div style="margin-bottom:14px"><label class="form-label">Check-In Time</label><input id="mark-att-time" class="form-control" type="time" value="'+timeStr+'"/></div>'+
+    '<div style="margin-bottom:16px"><label class="form-label">Note (optional)</label><input id="mark-att-note" class="form-control" placeholder="Any note..."/></div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn btn-primary" onclick="teacherSaveMarkAttendance(\''+todayStr+'\','+lateArrival+')"><i class="fas fa-fingerprint"></i> Confirm</button></div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+};
+
+window.teacherSaveMarkAttendance = function(date, lateArrival) {
+  var user = Session.current(); if(!user) return;
+  var status = (document.getElementById('mark-att-status')||{}).value||'Present';
+  var checkIn = (document.getElementById('mark-att-time')||{}).value||'';
+  var note = (document.getElementById('mark-att-note')||{}).value||'';
+  DB.addStaffAttendance({ id:'sa_'+Date.now(), teacherId:user.id, date:date, status:status, checkIn:checkIn, lateArrival:lateArrival, note:note, createdAt:new Date().toISOString() });
+  document.querySelector('.modal-overlay').remove();
+  showToast('Attendance marked!','success');
   renderTeacherAttendance();
 };
 
+window.teacherCheckIn = function() { teacherMarkAttendance(); };
 window.teacherCheckOut = function() {
-  const user = Session.current();
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const outTime = now.toTimeString().slice(0, 5);
-  const month = now.toISOString().slice(0, 7);
-  const existing = DB.getStaffAttendance(user.id, month).find(function(r) { return r.date === todayStr; });
-  if (existing) {
-    DB.updateStaffAttendance(existing.id, { outTime: outTime });
-    showToast('Checked out at ' + outTime, 'success');
-    renderTeacherAttendance();
-  }
-};
-
-window.teacherAttSetMonth = function(month) {
-  window._tAttMonth = month;
+  var user = Session.current(); if(!user) return;
+  var todayStr = new Date().toISOString().slice(0,10);
+  var recs = DB.getStaffAttendance(user.id);
+  var todayRec = recs.find(function(r){return r.date===todayStr;});
+  if(!todayRec){showToast('No check-in record found for today','error');return;}
+  var timeStr = new Date().toTimeString().slice(0,5);
+  DB.updateStaffAttendance(todayRec.id, { checkOut: timeStr });
+  showToast('Check-out recorded at '+timeStr,'success');
   renderTeacherAttendance();
 };
 
-// ---- My Leaves ----
+window.teacherRequestCorrection = function() {
+  var user = Session.current(); if(!user) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0F2050"><i class="fas fa-edit" style="color:#f59e0b;margin-right:8px"></i>Request Attendance Correction</h3>'+
+    '<div style="margin-bottom:14px"><label class="form-label">Date *</label><input id="corr-date" class="form-control" type="date" value="'+new Date().toISOString().slice(0,10)+'"/></div>'+
+    '<div style="margin-bottom:14px"><label class="form-label">Requested Status *</label><select id="corr-status" class="form-control"><option value="Present">Present</option><option value="Half-Day">Half-Day</option><option value="On-Leave">On Leave</option></select></div>'+
+    '<div style="margin-bottom:14px"><label class="form-label">Check-In Time</label><input id="corr-checkin" class="form-control" type="time"/></div>'+
+    '<div style="margin-bottom:16px"><label class="form-label">Reason *</label><textarea id="corr-reason" class="form-control" rows="2" placeholder="Explain why correction is needed..." style="resize:none"></textarea></div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn btn-primary" onclick="teacherSaveCorrection()"><i class="fas fa-paper-plane"></i> Submit Request</button></div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+};
+
+window.teacherSaveCorrection = function() {
+  var user = Session.current(); if(!user) return;
+  var date = (document.getElementById('corr-date')||{}).value;
+  var status = (document.getElementById('corr-status')||{}).value;
+  var checkIn = (document.getElementById('corr-checkin')||{}).value;
+  var reason = (document.getElementById('corr-reason')||{}).value||'';
+  if(!date||!status||!reason.trim()){showToast('Please fill required fields','error');return;}
+  DB.addAttendanceCorrectionRequest({ id:'acr_'+Date.now(), teacherId:user.id, teacherName:user.name, date:date, requestedStatus:status, checkIn:checkIn, reason:reason, status:'Pending', createdAt:new Date().toISOString() });
+  document.querySelector('.modal-overlay').remove();
+  showToast('Correction request submitted!','success');
+  renderTeacherAttendance();
+};
+
+// ============================================================
+// 3. LEAVE MANAGEMENT
+// ============================================================
 function renderTeacherLeaves() {
-  const user = Session.current();
+  var user = Session.current();
   if (!user || user.role !== 'subadmin') { renderLogin(); return; }
 
-  const year = new Date().getFullYear().toString();
-  const balance = DB.getLeaveBalance(user.id, year);
-  const leaves = DB.getStaffLeaves(user.id);
+  var year = new Date().getFullYear().toString();
+  var balance = DB.getLeaveBalance(user.id, year);
+  var leaves = DB.getStaffLeaves(user.id);
+  var holidays = DB.getHolidays();
+  var tab = window._tlTab || 'leaves';
 
-  function statusBadge(s) {
-    const map = { Pending: '#fef3c7:#92400e', Approved: '#d1fae5:#065f46', Rejected: '#fee2e2:#991b1b' };
-    const p = (map[s] || '#f1f5f9:#475569').split(':');
-    return '<span style="background:' + p[0] + ';color:' + p[1] + ';padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">' + s + '</span>';
-  }
+  var upcoming = holidays.filter(function(h){return h.date >= new Date().toISOString().slice(0,10);}).slice(0,10);
 
-  const content = `
-    <div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-        ${balance.map(function(b) {
-          var barColor = b.remaining > 3 ? '#10b981' : b.remaining > 0 ? '#f59e0b' : '#ef4444';
-          var pct = Math.round((b.remaining / b.total) * 100);
-          return '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid ' + barColor + '">' +
-            '<div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px">' + b.type + ' Leave</div>' +
-            '<div style="font-size:32px;font-weight:900;color:#0F2050">' + b.remaining + '</div>' +
-            '<div style="font-size:12px;color:#94a3b8">of ' + b.total + ' days remaining</div>' +
-            '<div style="background:#e2e8f0;border-radius:4px;height:6px;margin-top:10px;overflow:hidden">' +
-              '<div style="background:' + barColor + ';height:100%;width:' + pct + '%;border-radius:4px;transition:width 0.3s"></div>' +
-            '</div>' +
-            '<div style="font-size:11px;color:#94a3b8;margin-top:4px">' + b.used + ' used this year</div>' +
+  var leaveContent = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+      ${balance.map(function(b){
+        var barColor = b.remaining>3?'#10b981':b.remaining>0?'#f59e0b':'#ef4444';
+        var pct = Math.round((b.remaining/b.total)*100);
+        return '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-top:4px solid '+barColor+'">'+
+          '<div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:8px">'+escHtml(b.type)+'</div>'+
+          '<div style="font-size:32px;font-weight:900;color:#0F2050">'+b.remaining+'<span style="font-size:13px;color:#94a3b8;font-weight:500">/'+b.total+'</span></div>'+
+          '<div style="font-size:11px;color:#94a3b8">days remaining</div>'+
+          '<div style="background:#e2e8f0;border-radius:4px;height:6px;margin-top:10px;overflow:hidden"><div style="background:'+barColor+';height:100%;width:'+pct+'%;border-radius:4px"></div></div>'+
+          '<div style="font-size:11px;color:#94a3b8;margin-top:4px">'+b.used+' used this year</div>'+
+        '</div>';
+      }).join('')}
+    </div>
+    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <h3 style="font-size:14px;font-weight:800;margin:0;color:#0F2050"><i class="fas fa-list" style="color:#6366f1;margin-right:8px"></i>My Leave Requests</h3>
+        <button class="btn btn-primary" onclick="teacherApplyLeave()"><i class="fas fa-plus"></i> Apply Leave</button>
+      </div>
+      ${leaves.length===0?'<div style="text-align:center;color:#94a3b8;padding:40px"><i class="fas fa-umbrella-beach" style="font-size:36px;display:block;margin-bottom:12px"></i>No leave requests yet</div>':
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+          '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">From</th><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">To</th><th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Days</th><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Reason</th><th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Remarks</th><th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Action</th></tr></thead>'+
+          '<tbody>'+leaves.map(function(l){return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">'+escHtml(l.leaveType)+'</span></td><td style="padding:10px 12px;color:#475569">'+formatDate(l.fromDate)+'</td><td style="padding:10px 12px;color:#475569">'+formatDate(l.toDate)+'</td><td style="padding:10px 12px;text-align:center;font-weight:700">'+l.days+'</td><td style="padding:10px 12px;color:#374151;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escHtml(l.reason||'')+'">'+escHtml(l.reason||'')+'</td><td style="padding:10px 12px;text-align:center">'+_statusBadge(l.status)+'</td><td style="padding:10px 12px;color:#64748b;font-size:12px">'+escHtml(l.remarks||'—')+'</td><td style="padding:10px 12px;text-align:center">'+(l.status==='Pending'?'<button class="btn btn-danger btn-sm" onclick="teacherCancelLeave(\''+l.id+'\')"><i class="fas fa-times"></i></button>':'')+'</td></tr>';}).join('')+
+          '</tbody></table></div>'}
+    </div>`;
+
+  var holidayContent = `
+    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <h3 style="font-size:14px;font-weight:800;margin:0 0 16px;color:#0F2050"><i class="fas fa-calendar-alt" style="color:#ef4444;margin-right:8px"></i>School Holiday Calendar ${new Date().getFullYear()}</h3>
+      ${holidays.length===0?'<div style="text-align:center;color:#94a3b8;padding:40px">No holidays configured</div>':
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">'+
+          holidays.map(function(h){
+            var isPast = h.date < new Date().toISOString().slice(0,10);
+            var typeColors = {National:'#fee2e2:#991b1b',Festival:'#fef3c7:#92400e',School:'#e0e7ff:#3730a3'};
+            var tc = (typeColors[h.type]||'#f1f5f9:#475569').split(':');
+            return '<div style="background:'+tc[0]+';border-radius:12px;padding:16px;opacity:'+(isPast?'0.6':'1')+'">'+
+              '<div style="font-size:13px;font-weight:800;color:'+tc[1]+'">'+escHtml(h.name)+'</div>'+
+              '<div style="font-size:12px;color:'+tc[1]+';margin-top:4px;opacity:0.8">'+formatDate(h.date)+'</div>'+
+              '<span style="font-size:10px;background:rgba(0,0,0,0.08);color:'+tc[1]+';padding:2px 8px;border-radius:4px;font-weight:700;display:inline-block;margin-top:6px">'+escHtml(h.type)+'</span>'+
+              (isPast?'<span style="font-size:10px;color:'+tc[1]+';margin-left:6px;opacity:0.7">Past</span>':'')+
             '</div>';
-        }).join('')}
-      </div>
+          }).join('')+
+        '</div>'}
+    </div>`;
 
-      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-          <h3 style="font-size:15px;font-weight:800;margin:0;color:#0F2050">
-            <i class="fas fa-umbrella-beach" style="color:#1AA6CA;margin-right:8px"></i>My Leave Requests
-            <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:6px">(${leaves.length})</span>
-          </h3>
-          <button class="btn btn-primary" onclick="teacherApplyLeave()">
-            <i class="fas fa-plus"></i> Apply for Leave
-          </button>
-        </div>
-        ${leaves.length === 0
-          ? '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px"><i class="fas fa-umbrella-beach" style="display:block;font-size:36px;margin-bottom:12px"></i>No leave requests yet</div>'
-          : '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
-              '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">From</th>' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">To</th>' +
-                '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Days</th>' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Reason</th>' +
-                '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th>' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Remarks</th>' +
-                '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Action</th>' +
-              '</tr></thead>' +
-              '<tbody>' +
-                leaves.map(function(l) {
-                  return '<tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
-                    '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">' + l.leaveType + '</span></td>' +
-                    '<td style="padding:10px 12px;color:#475569">' + formatDate(l.fromDate) + '</td>' +
-                    '<td style="padding:10px 12px;color:#475569">' + formatDate(l.toDate) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center;font-weight:700;color:#374151">' + l.days + '</td>' +
-                    '<td style="padding:10px 12px;color:#374151;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escHtml(l.reason||'') + '">' + escHtml(l.reason||'') + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center">' + statusBadge(l.status) + '</td>' +
-                    '<td style="padding:10px 12px;color:#64748b;font-size:12px">' + escHtml(l.remarks||'') + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center">' +
-                      (l.status === 'Pending' ? '<button class="btn btn-danger btn-sm" onclick="teacherCancelLeave(\'' + l.id + '\')"><i class="fas fa-times"></i> Cancel</button>' : '') +
-                    '</td>' +
-                    '</tr>';
-                }).join('') +
-              '</tbody></table></div>'}
+  var content = `
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-sm ${tab==='leaves'?'btn-primary':'btn-secondary'}" onclick="window._tlTab='leaves';renderTeacherLeaves()"><i class="fas fa-umbrella-beach" style="margin-right:4px"></i>My Leaves</button>
+        <button class="btn btn-sm ${tab==='holidays'?'btn-primary':'btn-secondary'}" onclick="window._tlTab='holidays';renderTeacherLeaves()"><i class="fas fa-calendar-alt" style="margin-right:4px"></i>Holiday Calendar</button>
       </div>
+      ${tab==='leaves' ? leaveContent : holidayContent}
     </div>`;
 
   renderLayout('teacher-leaves', content, 'My Leaves', 'My Account / Leaves');
 }
 
 window.teacherApplyLeave = function() {
-  const today = new Date().toISOString().split('T')[0];
-  const overlay = document.createElement('div');
+  var user = Session.current(); if(!user) return;
+  var today = new Date().toISOString().slice(0,10);
+  var ltConfig = DB.getLeaveTypeConfig().filter(function(lt){return lt.active;});
+  var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.id = 'teacher-leave-modal';
-  overlay.innerHTML = `
-    <div class="modal" style="max-width:480px;width:100%">
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="fas fa-umbrella-beach" style="color:#1AA6CA;margin-right:8px"></i>Apply for Leave</h3>
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('teacher-leave-modal').remove()"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="modal-body" style="padding:24px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div style="grid-column:1/-1">
-            <label class="form-label">Leave Type *</label>
-            <select id="tl-type" class="form-control">
-              ${DB.getLeaveTypeConfig().filter(function(lt){return lt.active;}).map(function(lt){return '<option value="'+lt.name+'">'+lt.name+' ('+lt.code+')</option>';}).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="form-label">From Date *</label>
-            <input id="tl-from" class="form-control" type="date" value="${today}" onchange="teacherCalcDays()"/>
-          </div>
-          <div>
-            <label class="form-label">To Date *</label>
-            <input id="tl-to" class="form-control" type="date" value="${today}" onchange="teacherCalcDays()"/>
-          </div>
-          <div style="grid-column:1/-1">
-            <label class="form-label">Number of Days</label>
-            <input id="tl-days" class="form-control" type="text" readonly value="1" style="background:#f8fafc;font-weight:700;color:#0F2050"/>
-          </div>
-          <div style="grid-column:1/-1">
-            <label class="form-label">Reason *</label>
-            <textarea id="tl-reason" class="form-control" rows="3" placeholder="Please provide a reason for leave..."></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">
-        <button class="btn btn-secondary" onclick="document.getElementById('teacher-leave-modal').remove()">Cancel</button>
-        <button class="btn btn-primary" onclick="teacherSaveLeave()"><i class="fas fa-paper-plane"></i> Submit</button>
-      </div>
-    </div>`;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<h3 style="margin:0 0 20px;font-size:16px;font-weight:800;color:#0F2050"><i class="fas fa-umbrella-beach" style="color:#1AA6CA;margin-right:8px"></i>Apply for Leave</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+      '<div style="grid-column:1/-1"><label class="form-label">Leave Type *</label><select id="tl-type" class="form-control">'+ltConfig.map(function(lt){return '<option value="'+escHtml(lt.name)+'">'+escHtml(lt.name)+' ('+escHtml(lt.code)+')</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">From Date *</label><input id="tl-from" class="form-control" type="date" value="'+today+'" onchange="teacherCalcDays()"/></div>'+
+      '<div><label class="form-label">To Date *</label><input id="tl-to" class="form-control" type="date" value="'+today+'" onchange="teacherCalcDays()"/></div>'+
+      '<div style="grid-column:1/-1;background:#f8fafc;border-radius:10px;padding:12px;text-align:center"><span style="font-size:13px;color:#64748b;font-weight:600">Duration: </span><span id="tl-days" style="font-size:18px;font-weight:900;color:#0F2050">1</span><span style="font-size:13px;color:#64748b"> day(s)</span></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Reason *</label><textarea id="tl-reason" class="form-control" rows="3" placeholder="Reason for leave..." style="resize:none"></textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn btn-primary" onclick="teacherSaveLeave()"><i class="fas fa-paper-plane"></i> Submit</button></div>'+
+  '</div>';
   document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
 };
 
 window.teacherCalcDays = function() {
-  const from = document.getElementById('tl-from').value;
-  const to = document.getElementById('tl-to').value;
+  var from = (document.getElementById('tl-from')||{}).value;
+  var to = (document.getElementById('tl-to')||{}).value;
   if (from && to) {
-    const d1 = new Date(from), d2 = new Date(to);
-    if (d2 >= d1) {
-      const days = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-      const el = document.getElementById('tl-days');
-      if (el) el.value = days;
-    }
+    var d = Math.max(1, Math.round((new Date(to)-new Date(from))/(1000*86400))+1);
+    var el = document.getElementById('tl-days'); if(el) el.textContent = d;
   }
 };
 
 window.teacherSaveLeave = function() {
-  const user = Session.current();
-  const leaveType = document.getElementById('tl-type').value;
-  const fromDate = document.getElementById('tl-from').value;
-  const toDate = document.getElementById('tl-to').value;
-  const days = parseInt(document.getElementById('tl-days').value) || 1;
-  const reason = (document.getElementById('tl-reason').value || '').trim();
-
-  if (!fromDate) { showToast('From date is required', 'error'); return; }
-  if (!toDate || toDate < fromDate) { showToast('To date must be on or after from date', 'error'); return; }
-  if (!reason) { showToast('Reason is required', 'error'); return; }
-
-  DB.addStaffLeave({
-    id: 'sl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    teacherId: user.id,
-    leaveType: leaveType,
-    fromDate: fromDate,
-    toDate: toDate,
-    days: days,
-    reason: reason,
-    status: 'Pending',
-    approvedBy: '',
-    remarks: '',
-    createdAt: new Date().toISOString()
-  });
-  document.getElementById('teacher-leave-modal').remove();
-  showToast('Leave application submitted!', 'success');
+  var user = Session.current(); if(!user) return;
+  var type = (document.getElementById('tl-type')||{}).value;
+  var from = (document.getElementById('tl-from')||{}).value;
+  var to = (document.getElementById('tl-to')||{}).value;
+  var reason = ((document.getElementById('tl-reason')||{}).value||'').trim();
+  if(!type||!from||!to||!reason){showToast('Please fill all required fields','error');return;}
+  var days = Math.max(1,Math.round((new Date(to)-new Date(from))/(1000*86400))+1);
+  DB.addStaffLeave({ id:'sl_'+Date.now(), teacherId:user.id, teacherName:user.name, leaveType:type, fromDate:from, toDate:to, days:days, reason:reason, status:'Pending', createdAt:new Date().toISOString() });
+  document.querySelector('.modal-overlay').remove();
+  showToast('Leave request submitted!','success');
   renderTeacherLeaves();
 };
 
 window.teacherCancelLeave = function(id) {
-  confirmDialog('Cancel this leave application?', function() {
+  confirmDialog('Cancel this leave request?', function() {
     DB.deleteStaffLeave(id);
-    showToast('Leave request cancelled', 'success');
+    showToast('Leave request cancelled','warning');
     renderTeacherLeaves();
   });
 };
 
-// ---- Salary Slips ----
+// ============================================================
+// 4. SALARY & PAYROLL
+// ============================================================
 function renderTeacherSalary() {
-  const user = Session.current();
+  var user = Session.current();
   if (!user || user.role !== 'subadmin') { renderLogin(); return; }
 
-  const payments = DB.getSalaryPayments(user.id);
-  const thisYear = new Date().getFullYear().toString();
-  const yearTotal = payments
-    .filter(function(p) { return (p.month || '').startsWith(thisYear); })
-    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  var payments = DB.getSalaryPayments(user.id);
+  var structs = DB.getSalaryStructures(user.id);
+  var latestStruct = structs[0] || null;
+  var thisYear = new Date().getFullYear().toString();
+  var yearTotal = payments.filter(function(p){return (p.month||'').startsWith(thisYear);}).reduce(function(s,p){return s+parseFloat(p.netAmount||0);},0);
+  var tab = window._tSalTab || 'slips';
 
-  function formatMonth(m) {
-    if (!m) return '-';
-    const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const parts = m.split('-');
-    return (names[parseInt(parts[1])-1] || parts[1]) + ' ' + parts[0];
+  function structView() {
+    if (!latestStruct) return '<div style="text-align:center;color:#94a3b8;padding:60px"><i class="fas fa-rupee-sign" style="font-size:40px;display:block;margin-bottom:12px"></i>No salary structure defined yet.<br><span style="font-size:13px">Contact HR for details.</span></div>';
+    var earn = [['Basic Salary','basicSalary'],['HRA','hra'],['Conveyance','conveyance'],['Special Allowance','specialAllowance'],['Bonus','bonus']];
+    var ded = [['PF Deduction','pfDeduction'],['Professional Tax','professionalTax'],['TDS','tds'],['Other Deductions','otherDeductions']];
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px">
+        <h4 style="font-size:13px;font-weight:800;color:#065f46;margin:0 0 14px"><i class="fas fa-plus-circle" style="margin-right:6px"></i>Earnings</h4>
+        ${earn.map(function(e){var v=parseFloat(latestStruct[e[1]]||0);return v>0?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #d1fae5"><span style="font-size:13px;color:#374151">'+e[0]+'</span><span style="font-weight:700;color:#065f46">₹'+v.toLocaleString('en-IN')+'</span></div>':'';}).join('')}
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;margin-top:4px"><span style="font-size:13px;font-weight:800;color:#065f46">Gross Salary</span><span style="font-size:16px;font-weight:900;color:#065f46">₹${parseFloat(latestStruct.grossSalary||0).toLocaleString('en-IN')}</span></div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px">
+        <h4 style="font-size:13px;font-weight:800;color:#991b1b;margin:0 0 14px"><i class="fas fa-minus-circle" style="margin-right:6px"></i>Deductions</h4>
+        ${ded.map(function(e){var v=parseFloat(latestStruct[e[1]]||0);return v>0?'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #fecaca"><span style="font-size:13px;color:#374151">'+e[0]+'</span><span style="font-weight:700;color:#991b1b">₹'+v.toLocaleString('en-IN')+'</span></div>':'';}).join('')}
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;margin-top:4px"><span style="font-size:13px;font-weight:800;color:#991b1b">Total Deductions</span><span style="font-size:16px;font-weight:900;color:#991b1b">₹${parseFloat(latestStruct.totalDeductions||0).toLocaleString('en-IN')}</span></div>
+      </div>
+      <div style="grid-column:1/-1;background:linear-gradient(135deg,#0F2050,#1AA6CA);border-radius:14px;padding:24px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:700;text-transform:uppercase">Net Monthly Salary</div><div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">Effective from ${formatDate(latestStruct.effectiveFrom)}</div></div>
+        <div style="font-size:32px;font-weight:900;color:#fff">₹${parseFloat(latestStruct.netSalary||0).toLocaleString('en-IN')}</div>
+      </div>
+    </div>
+    ${structs.length>1?`<div style="margin-top:20px"><h4 style="font-size:13px;font-weight:800;color:#0F2050;margin:0 0 12px"><i class="fas fa-history" style="margin-right:6px"></i>Increment History</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Effective From</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Gross</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Salary</th></tr></thead>
+      <tbody>${structs.map(function(s){return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;color:#374151">'+formatDate(s.effectiveFrom)+'</td><td style="padding:10px 12px;text-align:right;color:#374151">₹'+parseFloat(s.grossSalary||0).toLocaleString('en-IN')+'</td><td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹'+parseFloat(s.netSalary||0).toLocaleString('en-IN')+'</td></tr>';}).join('')}</tbody></table></div>`:''}`;
   }
 
-  function statusBadge(s) {
-    return s === 'Paid'
-      ? '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">PAID</span>'
-      : '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">PENDING</span>';
+  function slipsView() {
+    return `<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:14px;font-weight:800;margin:0;color:#0F2050"><i class="fas fa-money-check-alt" style="color:#10b981;margin-right:8px"></i>Salary Slips</h3>
+        <button class="btn btn-secondary btn-sm" onclick="teacherDownloadSalaryCert()"><i class="fas fa-download"></i> Salary Certificate</button>
+      </div>
+      ${payments.length===0?'<div style="text-align:center;color:#94a3b8;padding:60px"><i class="fas fa-money-check-alt" style="font-size:40px;display:block;margin-bottom:12px"></i>No salary slips yet</div>':
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+          '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Month</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Basic</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">+Allow</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">-Deduct</th><th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Pay</th><th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th><th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th></tr></thead>'+
+          '<tbody>'+payments.map(function(p){return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;font-weight:700;color:#374151">'+_tFmtMonth(p.month)+'</td><td style="padding:10px 12px;text-align:right;color:#374151">₹'+parseFloat(p.baseSalary||0).toLocaleString('en-IN')+'</td><td style="padding:10px 12px;text-align:right;color:#10b981">+₹'+parseFloat(p.allowances||0).toLocaleString('en-IN')+'</td><td style="padding:10px 12px;text-align:right;color:#ef4444">-₹'+parseFloat(p.deductions||0).toLocaleString('en-IN')+'</td><td style="padding:10px 12px;text-align:right;font-weight:800;color:#0F2050;font-size:14px">₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</td><td style="padding:10px 12px;text-align:center">'+_statusBadge(p.status||'Pending',{Paid:'#d1fae5:#065f46',Pending:'#fef3c7:#92400e'})+'</td><td style="padding:10px 12px;text-align:center"><div style="display:flex;gap:4px;justify-content:center"><button class="btn btn-secondary btn-sm" onclick="teacherViewSlip(\''+p.id+'\')" title="View"><i class="fas fa-eye"></i></button><button class="btn btn-secondary btn-sm" onclick="teacherPrintSlip(\''+p.id+'\')" title="Print"><i class="fas fa-print"></i></button></div></td></tr>';}).join('')+
+          '</tbody></table></div>'}
+    </div>`;
   }
 
-  const content = `
+  var content = `
     <div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #10b981">
-          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Total Paid ${thisYear}</div>
-          <div style="font-size:24px;font-weight:900;color:#0F2050">₹${yearTotal.toLocaleString('en-IN')}</div>
-        </div>
-        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8b5cf6">
-          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Salary Slips</div>
-          <div style="font-size:24px;font-weight:900;color:#0F2050">${payments.length}</div>
-        </div>
-        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #f59e0b">
-          <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Monthly Salary</div>
-          <div style="font-size:24px;font-weight:900;color:#0F2050">₹${parseFloat(user.baseSalary||0).toLocaleString('en-IN')}</div>
-        </div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #10b981"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Total Paid ${thisYear}</div><div style="font-size:24px;font-weight:900;color:#0F2050">₹${yearTotal.toLocaleString('en-IN')}</div></div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8b5cf6"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Salary Slips</div><div style="font-size:24px;font-weight:900;color:#0F2050">${payments.length}</div></div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #f59e0b"><div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px">Net Monthly</div><div style="font-size:24px;font-weight:900;color:#0F2050">₹${parseFloat(latestStruct?latestStruct.netSalary:user.baseSalary||0).toLocaleString('en-IN')}</div></div>
       </div>
-
-      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
-          <i class="fas fa-money-check-alt" style="color:#10b981;margin-right:8px"></i>Salary Slips
-        </h3>
-        ${payments.length === 0
-          ? '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px"><i class="fas fa-money-check-alt" style="display:block;font-size:36px;margin-bottom:12px"></i>No salary slips yet.<br><span style="font-size:13px">Your accounting department will add slips once salary is processed.</span></div>'
-          : '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
-              '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Month</th>' +
-                '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Basic</th>' +
-                '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">+Allow</th>' +
-                '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">-Deduct</th>' +
-                '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Pay</th>' +
-                '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Mode</th>' +
-                '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th>' +
-                '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>' +
-              '</tr></thead>' +
-              '<tbody>' +
-                payments.map(function(p) {
-                  return '<tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
-                    '<td style="padding:10px 12px;font-weight:700;color:#374151">' + formatMonth(p.month) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;color:#374151">₹' + parseFloat(p.baseSalary||0).toLocaleString('en-IN') + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;color:#10b981">+₹' + parseFloat(p.allowances||0).toLocaleString('en-IN') + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;color:#ef4444">-₹' + parseFloat(p.deductions||0).toLocaleString('en-IN') + '</td>' +
-                    '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#0F2050;font-size:14px">₹' + parseFloat(p.netAmount||0).toLocaleString('en-IN') + '</td>' +
-                    '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (p.paymentMode||'Bank Transfer') + '</span></td>' +
-                    '<td style="padding:10px 12px;text-align:center">' + statusBadge(p.status) + '</td>' +
-                    '<td style="padding:10px 12px;text-align:center;display:flex;gap:4px;justify-content:center">' +
-                      '<button class="btn btn-secondary btn-sm" onclick="teacherViewSlip(\'' + p.id + '\')"><i class="fas fa-eye"></i></button>' +
-                      '<button class="btn btn-secondary btn-sm" onclick="teacherPrintSlip(\'' + p.id + '\')"><i class="fas fa-print"></i></button>' +
-                    '</td>' +
-                    '</tr>';
-                }).join('') +
-              '</tbody></table></div>'}
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-sm ${tab==='slips'?'btn-primary':'btn-secondary'}" onclick="window._tSalTab='slips';renderTeacherSalary()"><i class="fas fa-money-check-alt" style="margin-right:4px"></i>Salary Slips</button>
+        <button class="btn btn-sm ${tab==='structure'?'btn-primary':'btn-secondary'}" onclick="window._tSalTab='structure';renderTeacherSalary()"><i class="fas fa-layer-group" style="margin-right:4px"></i>Salary Structure</button>
       </div>
+      ${tab==='slips' ? slipsView() : '<div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+structView()+'</div>'}
     </div>`;
 
-  renderLayout('teacher-salary', content, 'Salary Slips', 'My Account / Salary');
+  renderLayout('teacher-salary', content, 'Salary & Payroll', 'My Account / Salary');
 }
 
 window.teacherViewSlip = function(id) {
-  const user = Session.current();
-  const data = DB.get();
-  const payment = (data.salaryPayments || []).find(function(p) { return p.id === id; });
-  if (!payment) { showToast('Salary slip not found', 'error'); return; }
-  const paidByUser = payment.paidBy ? DB.getUser(payment.paidBy) : null;
-  const meta = DB.getMeta();
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const mParts = (payment.month || '').split('-');
-  const mLabel = (months[parseInt(mParts[1])-1] || mParts[1]) + ' ' + mParts[0];
-
-  const overlay = document.createElement('div');
+  var user = Session.current(); if(!user) return;
+  var p = (DB.getSalaryPayments(user.id)||[]).find(function(x){return x.id===id;});
+  if(!p) return;
+  var meta = DB.getMeta();
+  var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.id = 'salary-slip-modal';
-  overlay.innerHTML = `
-    <div class="modal" style="max-width:580px;width:100%">
-      <div style="padding:24px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0">
-          <div>
-            <div style="font-size:20px;font-weight:900;color:#0F2050">SALARY SLIP</div>
-            <div style="font-size:13px;color:#64748b;margin-top:2px">${meta.schoolName || 'SuperKids India Preschool'}</div>
-          </div>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('salary-slip-modal').remove()"><i class="fas fa-times"></i></button>
-        </div>
-        <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-          <div><span style="color:#64748b;font-weight:600">Employee:</span> <strong>${user.name}</strong></div>
-          <div><span style="color:#64748b;font-weight:600">Emp ID:</span> ${user.employeeId||'N/A'}</div>
-          <div><span style="color:#64748b;font-weight:600">Designation:</span> ${user.designation||'Class Teacher'}</div>
-          <div><span style="color:#64748b;font-weight:600">Department:</span> ${user.department||'Teaching'}</div>
-          <div><span style="color:#64748b;font-weight:600">Pay Period:</span> <strong>${mLabel}</strong></div>
-          <div><span style="color:#64748b;font-weight:600">Payment Date:</span> ${formatDate(payment.paymentDate)}</div>
-          <div><span style="color:#64748b;font-weight:600">Payment Mode:</span> ${payment.paymentMode||'Bank Transfer'}</div>
-          <div><span style="color:#64748b;font-weight:600">Status:</span> <span style="color:#10b981;font-weight:800">${payment.status}</span></div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-          <thead>
-            <tr style="background:#f8fafc">
-              <th style="text-align:left;padding:10px 12px;border:1px solid #e2e8f0;color:#64748b">Earnings</th>
-              <th style="text-align:right;padding:10px 12px;border:1px solid #e2e8f0;color:#64748b">Amount</th>
-              <th style="text-align:left;padding:10px 12px;border:1px solid #e2e8f0;color:#64748b">Deductions</th>
-              <th style="text-align:right;padding:10px 12px;border:1px solid #e2e8f0;color:#64748b">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0">Basic Salary</td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right">₹${parseFloat(payment.baseSalary||0).toLocaleString('en-IN')}</td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0">Deductions</td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#ef4444">₹${parseFloat(payment.deductions||0).toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0">Allowances</td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#10b981">₹${parseFloat(payment.allowances||0).toLocaleString('en-IN')}</td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0"></td>
-              <td style="padding:10px 12px;border:1px solid #e2e8f0"></td>
-            </tr>
-            <tr style="background:#f0fdf4">
-              <td style="padding:12px;border:2px solid #10b981;font-weight:800;color:#0F2050">Net Pay</td>
-              <td style="padding:12px;border:2px solid #10b981;text-align:right;font-size:18px;font-weight:900;color:#10b981">₹${parseFloat(payment.netAmount||0).toLocaleString('en-IN')}</td>
-              <td colspan="2" style="padding:12px;border:2px solid #10b981;color:#64748b;font-size:12px">
-                ${paidByUser ? 'Processed by: ' + paidByUser.name : ''}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        ${payment.remarks ? '<div style="font-size:12px;color:#64748b;margin-bottom:16px"><strong>Remarks:</strong> ' + escHtml(payment.remarks) + '</div>' : ''}
-      </div>
-      <div style="padding:12px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:12px">
-        <button class="btn btn-secondary" onclick="document.getElementById('salary-slip-modal').remove()">Close</button>
-        <button class="btn btn-primary" onclick="teacherPrintSlip('${id}')"><i class="fas fa-print"></i> Print</button>
-      </div>
-    </div>`;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  var earn = [['Basic Salary',p.baseSalary],['Allowances',p.allowances]];
+  var ded = [['Deductions',p.deductions]];
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<div style="background:linear-gradient(135deg,#0F2050,#1AA6CA);padding:24px;border-radius:16px 16px 0 0;color:#fff">'+
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:0.8;margin-bottom:4px">'+escHtml(meta.name||'SuperKids India Preschool')+'</div>'+
+      '<div style="font-size:18px;font-weight:900;margin-bottom:4px">Salary Slip — '+_tFmtMonth(p.month)+'</div>'+
+    '</div>'+
+    '<div style="padding:24px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;padding:16px;background:#f8fafc;border-radius:10px;font-size:13px">'+
+        '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Employee Name</div><div style="font-weight:700;color:#0F2050">'+escHtml(user.name)+'</div></div>'+
+        '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Employee ID</div><div style="font-weight:700;color:#0F2050">'+escHtml(user.employeeId||user.empId||user.id)+'</div></div>'+
+        '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Designation</div><div style="font-weight:700;color:#0F2050">'+escHtml(user.designation||'Teacher')+'</div></div>'+
+        '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Payment Mode</div><div style="font-weight:700;color:#0F2050">'+escHtml(p.paymentMode||'Bank Transfer')+'</div></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'+
+        '<div style="background:#f0fdf4;border-radius:10px;padding:16px"><div style="font-size:12px;font-weight:800;color:#065f46;margin-bottom:12px">Earnings</div>'+
+          earn.map(function(e){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d1fae5;font-size:13px"><span style="color:#374151">'+e[0]+'</span><span style="font-weight:700;color:#065f46">₹'+parseFloat(e[1]||0).toLocaleString('en-IN')+'</span></div>';}).join('')+
+        '</div>'+
+        '<div style="background:#fef2f2;border-radius:10px;padding:16px"><div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:12px">Deductions</div>'+
+          ded.map(function(e){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #fecaca;font-size:13px"><span style="color:#374151">'+e[0]+'</span><span style="font-weight:700;color:#991b1b">₹'+parseFloat(e[1]||0).toLocaleString('en-IN')+'</span></div>';}).join('')+
+        '</div>'+
+      '</div>'+
+      '<div style="background:linear-gradient(135deg,#0F2050,#1AA6CA);border-radius:12px;padding:20px;display:flex;justify-content:space-between;align-items:center;color:#fff">'+
+        '<span style="font-size:14px;font-weight:800">Net Pay</span>'+
+        '<span style="font-size:28px;font-weight:900">₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div style="padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">'+
+      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Close</button>'+
+      '<button class="btn btn-primary" onclick="teacherPrintSlip(\''+id+'\')"><i class="fas fa-print"></i> Print</button>'+
+    '</div>'+
+  '</div>';
   document.body.appendChild(overlay);
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
 };
 
 window.teacherPrintSlip = function(id) {
-  const user = Session.current();
-  const data = DB.get();
-  const payment = (data.salaryPayments || []).find(function(p) { return p.id === id; });
-  if (!payment) return;
-  const paidByUser = payment.paidBy ? DB.getUser(payment.paidBy) : null;
-  const meta = DB.getMeta();
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const mParts = (payment.month || '').split('-');
-  const mLabel = (months[parseInt(mParts[1])-1] || mParts[1]) + ' ' + mParts[0];
-
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Salary Slip - ${mLabel}</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width:680px; margin:30px auto; font-size:13px; color:#333; }
-    .header { display:flex; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid #333; }
-    h1 { font-size:20px; margin:0 0 4px; }
-    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; background:#f5f5f5; padding:12px; border-radius:6px; margin-bottom:16px; }
-    table { width:100%; border-collapse:collapse; margin-bottom:16px; }
-    th, td { padding:9px 12px; border:1px solid #ccc; }
-    th { background:#f5f5f5; font-weight:700; }
-    .net td { background:#f0fff4; font-weight:bold; font-size:15px; }
-    .net td:nth-child(2) { color:#10b981; font-size:18px; }
-    @media print { body { margin:10px; } button { display:none; } }
-  </style></head><body>
-  <div class="header">
-    <div><h1>SALARY SLIP</h1><div style="font-size:12px;color:#666">${meta.schoolName || 'SuperKids India Preschool'}</div></div>
-    <div style="text-align:right;font-size:13px"><strong>${mLabel}</strong><br>Issued: ${formatDate(payment.paymentDate)}</div>
-  </div>
-  <div class="info-grid">
-    <div><strong>Employee:</strong> ${user.name}</div>
-    <div><strong>Emp ID:</strong> ${user.employeeId||'N/A'}</div>
-    <div><strong>Designation:</strong> ${user.designation||'Class Teacher'}</div>
-    <div><strong>Department:</strong> ${user.department||'Teaching'}</div>
-    <div><strong>Payment Mode:</strong> ${payment.paymentMode||'Bank Transfer'}</div>
-    <div><strong>Status:</strong> ${payment.status}</div>
-  </div>
-  <table>
-    <thead><tr><th>Earnings</th><th>Amount</th><th>Deductions</th><th>Amount</th></tr></thead>
-    <tbody>
-      <tr><td>Basic Salary</td><td>₹${parseFloat(payment.baseSalary||0).toLocaleString('en-IN')}</td><td>Deductions</td><td>₹${parseFloat(payment.deductions||0).toLocaleString('en-IN')}</td></tr>
-      <tr><td>Allowances</td><td>₹${parseFloat(payment.allowances||0).toLocaleString('en-IN')}</td><td></td><td></td></tr>
-      <tr class="net"><td>Net Pay</td><td>₹${parseFloat(payment.netAmount||0).toLocaleString('en-IN')}</td><td colspan="2">${paidByUser ? 'Processed by: ' + paidByUser.name : ''}</td></tr>
-    </tbody>
-  </table>
-  ${payment.remarks ? '<p><strong>Remarks:</strong> ' + escHtml(payment.remarks) + '</p>' : ''}
-  <script>window.onload=function(){window.print();}<\/script>
-  </body></html>`);
+  var user = Session.current(); if(!user) return;
+  var p = (DB.getSalaryPayments(user.id)||[]).find(function(x){return x.id===id;});
+  if(!p) return;
+  var meta = DB.getMeta();
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html><head><title>Salary Slip - '+_tFmtMonth(p.month)+'</title><style>body{font-family:Arial,sans-serif;margin:40px;color:#333}h1{color:#0F2050;font-size:18px;text-align:center;margin-bottom:4px}.sub{text-align:center;font-size:12px;color:#666;margin-bottom:30px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f8fafc;font-weight:700;color:#475569}.net{background:#0F2050;color:#fff;font-size:16px;font-weight:900;text-align:right;padding:14px}@media print{body{margin:20px}}</style></head><body>'+
+    '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1><div class="sub">'+escHtml(meta.address||'')+'</div>'+
+    '<div style="text-align:center;font-size:15px;font-weight:700;text-decoration:underline;margin-bottom:20px">SALARY SLIP — '+_tFmtMonth(p.month)+'</div>'+
+    '<table><tr><td><strong>Name:</strong> '+escHtml(user.name)+'</td><td><strong>EMP ID:</strong> '+escHtml(user.employeeId||user.empId||user.id)+'</td></tr><tr><td><strong>Designation:</strong> '+escHtml(user.designation||'Teacher')+'</td><td><strong>Payment Mode:</strong> '+escHtml(p.paymentMode||'Bank Transfer')+'</td></tr></table>'+
+    '<table><tr><th>Earnings</th><th>Amount</th><th>Deductions</th><th>Amount</th></tr>'+
+    '<tr><td>Basic Salary</td><td>₹'+parseFloat(p.baseSalary||0).toLocaleString('en-IN')+'</td><td>Total Deductions</td><td>₹'+parseFloat(p.deductions||0).toLocaleString('en-IN')+'</td></tr>'+
+    '<tr><td>Allowances</td><td>₹'+parseFloat(p.allowances||0).toLocaleString('en-IN')+'</td><td></td><td></td></tr>'+
+    '<tr><td><strong>Gross</strong></td><td><strong>₹'+parseFloat((parseFloat(p.baseSalary||0)+parseFloat(p.allowances||0))).toLocaleString('en-IN')+'</strong></td><td></td><td></td></tr>'+
+    '</table>'+
+    '<table><tr><td class="net" colspan="2">NET PAY: ₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</td></tr></table>'+
+    '<script>window.onload=function(){window.print();}<\/script></body></html>');
   win.document.close();
 };
 
-// ---- Route Registration ----
+window.teacherDownloadSalaryCert = function() {
+  var user = Session.current(); if(!user) return;
+  var meta = DB.getMeta();
+  var structs = DB.getSalaryStructures(user.id);
+  var latest = structs[0];
+  var today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html><head><title>Salary Certificate</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}p{font-size:14px}@media print{body{margin:40px}}</style></head><body>'+
+    '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
+    '<div style="text-align:center;font-size:12px;color:#666;margin-bottom:40px">'+escHtml(meta.address||'')+'</div>'+
+    '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">SALARY CERTIFICATE</div>'+
+    '<p style="text-align:right">Date: '+today+'</p>'+
+    '<p>To Whom It May Concern,</p>'+
+    '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong>, Employee ID: <strong>'+escHtml(user.employeeId||user.empId||user.id)+'</strong>, is working as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at '+escHtml(meta.name||'our institution')+(user.joiningDate?' since <strong>'+formatDate(user.joiningDate)+'</strong>':'')+'.</p>'+
+    (latest?'<p>Their current monthly salary is <strong>₹'+parseFloat(latest.netSalary||0).toLocaleString('en-IN')+'</strong> (Rupees '+escHtml(_numToWords(Math.round(latest.netSalary||0)))+' only) per month.</p>':'<p>Their current monthly salary is <strong>₹'+parseFloat(user.baseSalary||0).toLocaleString('en-IN')+'</strong> per month.</p>')+
+    '<p>This certificate is issued on request for official purposes.</p>'+
+    '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+    '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  win.document.close();
+};
+
+function _numToWords(n) {
+  if (n===0) return 'Zero';
+  var ones=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var tens=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function two(n){return n<20?ones[n]:tens[Math.floor(n/10)]+(n%10?' '+ones[n%10]:'');}
+  function three(n){return n>=100?ones[Math.floor(n/100)]+' Hundred'+(n%100?' '+two(n%100):''):two(n);}
+  if(n<1000)return three(n);
+  if(n<100000)return three(Math.floor(n/1000))+' Thousand'+(n%1000?' '+three(n%1000):'');
+  if(n<10000000)return three(Math.floor(n/100000))+' Lakh'+(n%100000?' '+_numToWords(n%100000):'');
+  return three(Math.floor(n/10000000))+' Crore'+(n%10000000?' '+_numToWords(n%10000000):'');
+}
+
+// ============================================================
+// 5. DOCUMENTS & LETTERS
+// ============================================================
+function renderTeacherDocuments() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+
+  var myLetters = DB.getHRLetters(user.id);
+  var myRequests = DB.getHRDocumentRequests(user.id);
+  var tab = window._tDocTab || 'letters';
+
+  var letterTypeIcons = {'Offer Letter':'fa-envelope-open-text','Appointment Letter':'fa-user-check','Probation Confirmation':'fa-check-circle','Promotion Letter':'fa-arrow-up','Increment Letter':'fa-chart-line','Experience Letter':'fa-certificate','Relieving Letter':'fa-sign-out-alt','Salary Certificate':'fa-file-invoice','Service Certificate':'fa-award'};
+  var letterTypeBg = {'Offer Letter':'#dbeafe:#1e40af','Appointment Letter':'#d1fae5:#065f46','Probation Confirmation':'#fef3c7:#92400e','Promotion Letter':'#e0e7ff:#3730a3','Increment Letter':'#dcfce7:#166534','Experience Letter':'#fce7f3:#9d174d','Relieving Letter':'#fee2e2:#991b1b','Salary Certificate':'#f0fdf4:#065f46','Service Certificate':'#eff6ff:#1e40af'};
+
+  var requestableTypes = ['Offer Letter','Appointment Letter','Experience Letter','Salary Certificate','Service Certificate','NOC','Form-16','Increment Letter'];
+
+  var lettersContent = `
+    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <h3 style="font-size:14px;font-weight:800;margin:0 0 16px;color:#0F2050"><i class="fas fa-file-contract" style="color:#6366f1;margin-right:8px"></i>My HR Letters & Documents</h3>
+      ${myLetters.length===0?'<div style="text-align:center;color:#94a3b8;padding:60px"><i class="fas fa-folder-open" style="font-size:40px;display:block;margin-bottom:12px"></i>No documents issued yet.<br><span style="font-size:13px">Request from HR using the "Request Document" tab.</span></div>':
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">'+
+          myLetters.map(function(l){
+            var icon = letterTypeIcons[l.type]||'fa-file-alt';
+            var bg = (letterTypeBg[l.type]||'#f1f5f9:#475569').split(':');
+            return '<div style="background:'+bg[0]+';border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px">'+
+              '<i class="fas '+icon+'" style="font-size:24px;color:'+bg[1]+'"></i>'+
+              '<div style="font-size:13px;font-weight:800;color:'+bg[1]+'">'+escHtml(l.type)+'</div>'+
+              '<div style="font-size:11px;color:'+bg[1]+';opacity:0.7">Issued: '+formatDate(l.issuedDate)+'</div>'+
+              '<button onclick="teacherPrintIssuedLetter(\''+l.id+'\')" style="background:rgba(0,0,0,0.1);border:none;border-radius:8px;padding:6px 12px;color:'+bg[1]+';font-size:11px;font-weight:700;cursor:pointer"><i class="fas fa-download" style="margin-right:4px"></i>Download</button>'+
+            '</div>';
+          }).join('')+
+        '</div>'}
+    </div>`;
+
+  var requestContent = `
+    <div>
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">
+        <h3 style="font-size:14px;font-weight:800;margin:0 0 16px;color:#0F2050"><i class="fas fa-paper-plane" style="color:#10b981;margin-right:8px"></i>Request a Document</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+          ${requestableTypes.map(function(type){
+            var icon = letterTypeIcons[type]||'fa-file-alt';
+            return '<button onclick="teacherRequestDoc(\''+escHtml(type)+'\')" style="padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all 0.2s" onmouseenter="this.style.borderColor=\'#6366f1\';this.style.background=\'#eff6ff\'" onmouseleave="this.style.borderColor=\'#e2e8f0\';this.style.background=\'#f8fafc\'">'+
+              '<i class="fas '+icon+'" style="font-size:20px;color:#6366f1"></i>'+
+              '<span style="font-size:12px;font-weight:700;color:#374151">'+escHtml(type)+'</span>'+
+            '</button>';
+          }).join('')}
+        </div>
+      </div>
+      ${myRequests.length > 0 ? `
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <h3 style="font-size:14px;font-weight:800;margin:0 0 16px;color:#0F2050">Request History</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
+            <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Document Type</th>
+            <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Requested</th>
+            <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Note</th>
+            <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th>
+          </tr></thead>
+          <tbody>${myRequests.map(function(r){return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;font-weight:600;color:#374151">'+escHtml(r.docType)+'</td><td style="padding:10px 12px;color:#64748b;font-size:12px">'+formatDate(r.createdAt)+'</td><td style="padding:10px 12px;color:#64748b;font-size:12px">'+escHtml(r.note||'—')+'</td><td style="padding:10px 12px;text-align:center">'+_statusBadge(r.status)+'</td></tr>';}).join('')}</tbody>
+        </table>
+      </div>` : ''}
+    </div>`;
+
+  var content = `
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-sm ${tab==='letters'?'btn-primary':'btn-secondary'}" onclick="window._tDocTab='letters';renderTeacherDocuments()"><i class="fas fa-folder-open" style="margin-right:4px"></i>My Letters</button>
+        <button class="btn btn-sm ${tab==='request'?'btn-primary':'btn-secondary'}" onclick="window._tDocTab='request';renderTeacherDocuments()"><i class="fas fa-paper-plane" style="margin-right:4px"></i>Request Document</button>
+      </div>
+      ${tab==='letters' ? lettersContent : requestContent}
+    </div>`;
+
+  renderLayout('teacher-documents', content, 'My Documents', 'My Account / Documents');
+}
+
+window.teacherRequestDoc = function(docType) {
+  var user = Session.current(); if(!user) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0F2050"><i class="fas fa-paper-plane" style="color:#10b981;margin-right:8px"></i>Request: '+escHtml(docType)+'</h3>'+
+    '<div style="margin-bottom:14px"><label class="form-label">Purpose / Note (optional)</label><textarea id="docreq-note" class="form-control" rows="3" placeholder="Why do you need this document?" style="resize:none"></textarea></div>'+
+    '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1e40af"><i class="fas fa-info-circle" style="margin-right:6px"></i>HR will process your request within 2-3 working days.</div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn btn-primary" onclick="teacherSubmitDocRequest(\''+escHtml(docType)+'\')"><i class="fas fa-paper-plane"></i> Submit Request</button></div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+};
+
+window.teacherSubmitDocRequest = function(docType) {
+  var user = Session.current(); if(!user) return;
+  var note = ((document.getElementById('docreq-note')||{}).value||'').trim();
+  DB.addHRDocumentRequest({ id:'hdr_'+Date.now(), teacherId:user.id, teacherName:user.name, docType:docType, note:note, status:'Pending', createdAt:new Date().toISOString() });
+  document.querySelector('.modal-overlay').remove();
+  showToast('Document request submitted to HR!','success');
+  renderTeacherDocuments();
+};
+
+window.teacherPrintIssuedLetter = function(letterId) {
+  var user = Session.current(); if(!user) return;
+  var letters = DB.getHRLetters(user.id);
+  var letter = letters.find(function(l){return l.id===letterId;});
+  if(!letter){showToast('Letter not found','error');return;}
+  // Re-generate the letter using the same generator from teachers.js if available
+  if(typeof generateHRLetter === 'function') {
+    generateHRLetter(user.id, letter.type);
+  } else {
+    var meta = DB.getMeta();
+    var win = window.open('','_blank');
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(letter.type)+'</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}@media print{body{margin:40px}}</style></head><body>'+
+      '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
+      '<div style="text-align:center;margin-bottom:40px;font-size:12px;color:#666">'+escHtml(meta.address||'')+'</div>'+
+      '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">'+escHtml(letter.type.toUpperCase())+'</div>'+
+      '<p>Date: '+formatDate(letter.issuedDate||letter.createdAt)+'</p>'+
+      '<p>To Whom It May Concern,</p>'+
+      '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Employee ID: '+escHtml(user.employeeId||user.empId||user.id)+') is employed with us as <strong>'+escHtml(user.designation||'Teacher')+'</strong>.</p>'+
+      '<p>This letter is issued on request for official purposes.</p>'+
+      '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+      '<script>window.onload=function(){window.print();}<\/script></body></html>');
+    win.document.close();
+  }
+};
+
+// ============================================================
+// 6 & 7. RESIGNATION & EXIT DOCUMENTS
+// ============================================================
+function renderTeacherResignation() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+
+  var myResignation = (DB.getResignationRecords(user.id)||[])[0];
+  var myExitRec = (DB.getStaffExitRecords(user.id)||[])[0];
+  var tab = window._tResTab || (myResignation ? 'status' : 'submit');
+
+  var statusColors = { Pending:'#fef3c7:#92400e', Approved:'#d1fae5:#065f46', Rejected:'#fee2e2:#991b1b', Processing:'#dbeafe:#1e40af', Completed:'#f0fdf4:#065f46' };
+
+  var submitContent = myResignation && myResignation.status !== 'Rejected' ? `
+    <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:12px;padding:20px;text-align:center">
+      <i class="fas fa-check-circle" style="font-size:40px;color:#059669;display:block;margin-bottom:12px"></i>
+      <div style="font-size:16px;font-weight:800;color:#065f46">Resignation Already Submitted</div>
+      <div style="font-size:13px;color:#065f46;margin-top:8px">Status: ${_statusBadge(myResignation.status)}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:6px">Submitted on ${formatDate(myResignation.createdAt)}</div>
+    </div>` : `
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#991b1b">
+        <i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>
+        Please read your employment contract before submitting resignation. A notice period as specified will apply.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><label class="form-label">Resignation Date *</label><input id="res-date" class="form-control" type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
+        <div><label class="form-label">Proposed Last Working Day *</label><input id="res-lwd" class="form-control" type="date"/></div>
+        <div style="grid-column:1/-1"><label class="form-label">Reason for Resignation *</label>
+          <select id="res-reason" class="form-control">
+            <option value="">-- Select reason --</option>
+            ${['Personal Reasons','Career Growth','Higher Studies','Relocation','Better Opportunity','Health Reasons','Other'].map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('')}
+          </select>
+        </div>
+        <div style="grid-column:1/-1"><label class="form-label">Resignation Letter / Additional Note</label><textarea id="res-note" class="form-control" rows="4" placeholder="Write your resignation note or paste resignation letter content..." style="resize:none"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-danger" onclick="teacherSubmitResignation()"><i class="fas fa-paper-plane"></i> Submit Resignation</button>
+      </div>
+    </div>`;
+
+  var statusContent = myResignation ? `
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h3 style="font-size:15px;font-weight:800;color:#0F2050;margin:0 0 6px">Resignation Status</h3>
+          <div>${_statusBadge(myResignation.status)}</div>
+        </div>
+        ${myResignation.status==='Rejected'?'<button class="btn btn-danger btn-sm" onclick="window._tResTab=\'submit\';renderTeacherResignation()"><i class="fas fa-redo"></i> Re-submit</button>':''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px">
+        <div style="background:#f8fafc;border-radius:10px;padding:14px"><div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:4px">SUBMITTED ON</div><div style="font-weight:700;color:#374151">${formatDate(myResignation.createdAt)}</div></div>
+        <div style="background:#f8fafc;border-radius:10px;padding:14px"><div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:4px">PROPOSED LAST DAY</div><div style="font-weight:700;color:#374151">${formatDate(myResignation.lastWorkingDay)}</div></div>
+        <div style="background:#f8fafc;border-radius:10px;padding:14px"><div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:4px">REASON</div><div style="font-weight:700;color:#374151">${escHtml(myResignation.reason||'—')}</div></div>
+        <div style="background:#f8fafc;border-radius:10px;padding:14px"><div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:4px">HR REMARKS</div><div style="font-weight:700;color:#374151">${escHtml(myResignation.hrRemarks||'Awaiting review')}</div></div>
+      </div>
+      ${myResignation.note?'<div style="margin-top:16px;background:#f8fafc;border-radius:10px;padding:14px"><div style="font-size:11px;color:#94a3b8;font-weight:700;margin-bottom:4px">RESIGNATION NOTE</div><div style="font-size:13px;color:#374151;line-height:1.6">'+escHtml(myResignation.note)+'</div></div>':''}
+    </div>` : '<div style="text-align:center;color:#94a3b8;padding:60px"><i class="fas fa-inbox" style="font-size:40px;display:block;margin-bottom:12px"></i>No resignation submitted yet</div>';
+
+  // Exit Documents Section
+  var exitDocTypes = ['Experience Letter','Relieving Letter','Service Certificate','Salary Certificate','Full & Final Settlement Letter'];
+  var canDownloadExit = myExitRec && (myExitRec.exitStatus === 'Relieved' || myExitRec.exitStatus === 'Archived' || myResignation && myResignation.status === 'Approved');
+
+  var exitDocsContent = `
+    <div style="background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <h3 style="font-size:14px;font-weight:800;margin:0 0 16px;color:#0F2050"><i class="fas fa-file-export" style="color:#6366f1;margin-right:8px"></i>Exit Documents</h3>
+      ${!canDownloadExit ? '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;font-size:13px;color:#92400e;margin-bottom:16px"><i class="fas fa-lock" style="margin-right:6px"></i>Exit documents will be available after your resignation is approved and relieving is processed by HR.</div>' : ''}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        ${exitDocTypes.map(function(type){
+          var icons={'Experience Letter':'fa-certificate','Relieving Letter':'fa-sign-out-alt','Service Certificate':'fa-award','Salary Certificate':'fa-file-invoice','Full & Final Settlement Letter':'fa-rupee-sign'};
+          var icon = icons[type]||'fa-file-alt';
+          return '<div style="border:1px solid '+(canDownloadExit?'#e2e8f0':'#e2e8f0')+';border-radius:12px;padding:20px;text-align:center;background:'+(canDownloadExit?'#f8fafc':'#f1f5f9')+'">'+
+            '<i class="fas '+icon+'" style="font-size:24px;color:'+(canDownloadExit?'#6366f1':'#cbd5e1')+';display:block;margin-bottom:8px"></i>'+
+            '<div style="font-size:12px;font-weight:700;color:'+(canDownloadExit?'#374151':'#94a3b8')+';margin-bottom:8px">'+escHtml(type)+'</div>'+
+            (canDownloadExit?'<button onclick="teacherDownloadExitDoc(\''+escHtml(type)+'\')" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer"><i class="fas fa-download" style="margin-right:4px"></i>Download</button>':
+              '<span style="font-size:11px;color:#94a3b8"><i class="fas fa-lock" style="margin-right:4px"></i>Locked</span>')+
+          '</div>';
+        }).join('')}
+      </div>
+    </div>`;
+
+  var content = `
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button class="btn btn-sm ${tab==='submit'?'btn-primary':'btn-secondary'}" onclick="window._tResTab='submit';renderTeacherResignation()"><i class="fas fa-paper-plane" style="margin-right:4px"></i>Submit Resignation</button>
+        <button class="btn btn-sm ${tab==='status'?'btn-primary':'btn-secondary'}" onclick="window._tResTab='status';renderTeacherResignation()"><i class="fas fa-tasks" style="margin-right:4px"></i>Track Status</button>
+        <button class="btn btn-sm ${tab==='exit'?'btn-primary':'btn-secondary'}" onclick="window._tResTab='exit';renderTeacherResignation()"><i class="fas fa-file-export" style="margin-right:4px"></i>Exit Documents</button>
+      </div>
+      ${tab==='submit' ? submitContent : tab==='status' ? statusContent : exitDocsContent}
+    </div>`;
+
+  renderLayout('teacher-resignation', content, 'Resignation', 'My Account / Resignation');
+}
+
+window.teacherSubmitResignation = function() {
+  var user = Session.current(); if(!user) return;
+  var date = (document.getElementById('res-date')||{}).value;
+  var lwd = (document.getElementById('res-lwd')||{}).value;
+  var reason = (document.getElementById('res-reason')||{}).value;
+  var note = ((document.getElementById('res-note')||{}).value||'').trim();
+  if(!date||!lwd||!reason){showToast('Please fill all required fields','error');return;}
+  if(lwd<=date){showToast('Last working day must be after resignation date','error');return;}
+  DB.addResignationRecord({ id:'res_'+Date.now(), teacherId:user.id, teacherName:user.name, designation:user.designation||'Teacher', resignationDate:date, lastWorkingDay:lwd, reason:reason, note:note, status:'Pending', hrRemarks:'', createdAt:new Date().toISOString() });
+  showToast('Resignation submitted successfully!','success');
+  window._tResTab='status';
+  renderTeacherResignation();
+};
+
+window.teacherDownloadExitDoc = function(type) {
+  var user = Session.current(); if(!user) return;
+  if(typeof generateHRLetter === 'function') {
+    generateHRLetter(user.id, type);
+  } else {
+    var meta = DB.getMeta();
+    var today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+    var myExit = (DB.getStaffExitRecords(user.id)||[])[0];
+    var lwd = myExit&&myExit.lastWorkingDate ? new Date(myExit.lastWorkingDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : today;
+    var joining = user.joiningDate ? new Date(user.joiningDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+    var win = window.open('','_blank');
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(type)+'</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}@media print{body{margin:40px}}</style></head><body>'+
+      '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
+      '<div style="text-align:center;font-size:12px;color:#666;margin-bottom:40px">'+escHtml(meta.address||'')+'</div>'+
+      '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">'+escHtml(type.toUpperCase())+'</div>'+
+      '<p>Date: '+today+'</p><p>To Whom It May Concern,</p>'+
+      '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Emp ID: '+escHtml(user.employeeId||user.empId||user.id)+') worked as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at <strong>'+escHtml(meta.name||'')+'</strong> from <strong>'+joining+'</strong> to <strong>'+lwd+'</strong>.</p>'+
+      '<p>They have discharged their duties diligently. We wish them the very best in their future endeavours.</p>'+
+      '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+      '<script>window.onload=function(){window.print();}<\/script></body></html>');
+    win.document.close();
+    DB.addHRLetter({id:'rl_'+Date.now(), teacherId:user.id, type:type, issuedDate:new Date().toISOString().slice(0,10), issuedBy:user.id, createdAt:new Date().toISOString()});
+  }
+};
+
+// ============================================================
+// ROUTES
+// ============================================================
 registerRoute('teacher-profile', renderTeacherProfile);
 registerRoute('teacher-attendance', renderTeacherAttendance);
 registerRoute('teacher-leaves', renderTeacherLeaves);
 registerRoute('teacher-salary', renderTeacherSalary);
+registerRoute('teacher-documents', renderTeacherDocuments);
+registerRoute('teacher-resignation', renderTeacherResignation);

@@ -351,12 +351,18 @@ function _tobDocWidget(docType, label, existingDocs) {
   var docs = existingDocs || [];
   var existing = docs.find(function(d) { return d.type === docType; });
   var domKey = docType.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-  var previewHtml = existing
-    ? '<div id="tob-prev-'+domKey+'" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">'+
-        '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(existing.name||label)+
-        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px" title="Remove"><i class="fas fa-times-circle"></i></button>'+
-      '</div>'
-    : '<div id="tob-prev-'+domKey+'" style="display:none"></div>';
+  var previewHtml;
+  if (existing) {
+    var viewLink = existing.r2Key
+      ? ' &nbsp;<a href="/r2/'+existing.r2Key+'" target="_blank" style="color:#065f46;font-size:10px;font-weight:700;text-decoration:underline">[view]</a>'
+      : (existing.fileData ? ' &nbsp;<a href="'+existing.fileData+'" target="_blank" style="color:#065f46;font-size:10px;font-weight:700;text-decoration:underline">[view]</a>' : '');
+    previewHtml = '<div id="tob-prev-'+domKey+'" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">'+
+      '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(existing.name||label)+viewLink+
+      '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px" title="Remove"><i class="fas fa-times-circle"></i></button>'+
+      '</div>';
+  } else {
+    previewHtml = '<div id="tob-prev-'+domKey+'" style="display:none"></div>';
+  }
   return '<div>'+
     '<label class="form-label" style="font-size:12px">'+_escH(label)+'</label>'+
     '<div style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:8px 10px;background:#fafbfc;display:flex;flex-direction:column;gap:6px">'+
@@ -373,27 +379,50 @@ function _tobDocWidget(docType, label, existingDocs) {
 window._tobDocSelect = function(domKey, docType, inputEl) {
   var file = inputEl.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('File must be under 5MB.'); inputEl.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    if (!window._tobPendingDocs) window._tobPendingDocs = {};
-    window._tobPendingDocs[docType] = { name: file.name, fileData: e.target.result, uploadedAt: new Date().toISOString() };
-    var prev = document.getElementById('tob-prev-' + domKey);
-    if (prev) {
-      prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46';
-      prev.innerHTML = '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(file.name)+
-        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px"><i class="fas fa-times-circle"></i></button>';
-    }
-    var lbl = document.getElementById('tob-label-' + domKey);
-    if (lbl) lbl.textContent = 'Replace file...';
-  };
-  reader.readAsDataURL(file);
+  if (file.size > 10 * 1024 * 1024) { alert('File must be under 10MB.'); inputEl.value = ''; return; }
+
+  var prev = document.getElementById('tob-prev-' + domKey);
+  var lbl  = document.getElementById('tob-label-' + domKey);
+  if (prev) {
+    prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fef3c7;border-radius:6px;font-size:11px;font-weight:700;color:#92400e';
+    prev.innerHTML = '<i class="fas fa-spinner" style="animation:spin 1s linear infinite"></i>&nbsp;Uploading '+_escH(file.name)+'...';
+  }
+  if (lbl) lbl.textContent = 'Uploading...';
+
+  var formData = new FormData();
+  formData.append('file', file);
+  fetch('/api/upload?folder=teacher-docs', { method: 'POST', body: formData })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (res.error) throw new Error(res.error);
+      if (!window._tobPendingDocs) window._tobPendingDocs = {};
+      window._tobPendingDocs[docType] = { name: file.name, r2Key: res.key, uploadedAt: new Date().toISOString() };
+      if (prev) {
+        prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46';
+        prev.innerHTML = '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(file.name)+
+          ' &nbsp;<a href="/r2/'+res.key+'" target="_blank" style="color:#065f46;font-size:10px;text-decoration:underline">[view]</a>'+
+          '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px"><i class="fas fa-times-circle"></i></button>';
+      }
+      if (lbl) lbl.textContent = 'Replace file...';
+    })
+    .catch(function(err) {
+      if (prev) {
+        prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fee2e2;border-radius:6px;font-size:11px;font-weight:700;color:#991b1b';
+        prev.innerHTML = '<i class="fas fa-times-circle"></i>&nbsp;Upload failed: '+_escH(err.message||'Check connection');
+      }
+      if (lbl) lbl.textContent = 'Choose PDF or image...';
+      inputEl.value = '';
+    });
 };
 
 window._tobRemoveDoc = function(domKey, docType) {
   if (!window._tobRemovedDocs) window._tobRemovedDocs = [];
   if (!window._tobPendingDocs) window._tobPendingDocs = {};
   if (window._tobRemovedDocs.indexOf(docType) === -1) window._tobRemovedDocs.push(docType);
+  var pending = window._tobPendingDocs[docType];
+  if (pending && pending.r2Key) {
+    fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: pending.r2Key }) });
+  }
   delete window._tobPendingDocs[docType];
   var prev = document.getElementById('tob-prev-' + domKey);
   if (prev) { prev.style.display = 'none'; prev.innerHTML = ''; }
@@ -627,7 +656,8 @@ window._saveTeacherOnboarding = function(teacherId) {
   Object.keys(pendingDocs).forEach(function(docType) {
     existingDocs = existingDocs.filter(function(d){ return d.type !== docType; });
     var pd = pendingDocs[docType];
-    existingDocs.push({ type: docType, name: pd.name, fileData: pd.fileData, uploadedAt: pd.uploadedAt });
+    // Store r2Key reference — never store raw fileData to avoid D1 SQLITE_TOOBIG
+    existingDocs.push({ type: docType, name: pd.name, r2Key: pd.r2Key, uploadedAt: pd.uploadedAt });
   });
   updates.documents = existingDocs;
   window._tobPendingDocs = {};

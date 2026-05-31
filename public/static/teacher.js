@@ -74,7 +74,10 @@ function renderTeacherProfile() {
       <button class="btn btn-secondary" style="margin-top:16px" onclick="teacherRequestDoc('Bank Details Update Request')"><i class="fas fa-paper-plane"></i> Request Bank Update from HR</button>`;
     if (tab==='docs') {
       var docRows = myDocs.length > 0 ? myDocs.map(function(d,i){
-        return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;font-size:13px;font-weight:600;color:#374151">'+escHtml(d.type)+'</td><td style="padding:10px 12px;font-size:12px;color:#64748b">'+escHtml(d.fileName||'')+'</td><td style="padding:10px 12px;font-size:11px;color:#94a3b8">'+formatDate(d.uploadedAt)+'</td><td style="padding:10px 12px;text-align:center"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">Uploaded</span></td></tr>';
+        var viewBtn = d.r2Key
+          ? '<a href="/r2/'+escHtml(d.r2Key)+'" target="_blank" class="btn btn-sm btn-secondary" style="font-size:11px"><i class="fas fa-eye"></i> View</a>'
+          : (d.fileData||d.data ? '<a href="'+(d.fileData||d.data)+'" target="_blank" class="btn btn-sm btn-secondary" style="font-size:11px"><i class="fas fa-eye"></i> View</a>' : '—');
+        return '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:10px 12px;font-size:13px;font-weight:600;color:#374151">'+escHtml(d.type)+'</td><td style="padding:10px 12px;font-size:12px;color:#64748b">'+escHtml(d.name||d.fileName||'')+'</td><td style="padding:10px 12px;font-size:11px;color:#94a3b8">'+formatDate(d.uploadedAt)+'</td><td style="padding:10px 12px;text-align:center">'+viewBtn+'</td></tr>';
       }).join('') : '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8">No documents uploaded yet</td></tr>';
       return `
         <div style="margin-bottom:20px">
@@ -156,19 +159,27 @@ window._tpTab = 'info';
 window.teacherUploadDoc = function() {
   var user = Session.current(); if(!user) return;
   var type = (document.getElementById('tp-doctype')||{}).value;
-  var file = (document.getElementById('tp-docfile')||{}).files;
-  if (!type || !file || !file[0]) { showToast('Please select a document type and file', 'error'); return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var docs = user.documents ? JSON.parse(JSON.stringify(user.documents)) : [];
-    docs.push({ type: type, fileName: file[0].name, data: e.target.result, uploadedAt: new Date().toISOString() });
-    DB.updateUser(user.id, { documents: docs });
-    // Refresh session user
-    var data = DB.get(); var updated = (data.users||[]).find(function(u){return u.id===user.id;}); if(updated) Session.updateCurrent(updated);
-    showToast('Document uploaded!', 'success');
-    renderTeacherProfile();
-  };
-  reader.readAsDataURL(file[0]);
+  var fileList = (document.getElementById('tp-docfile')||{}).files;
+  if (!type || !fileList || !fileList[0]) { showToast('Please select a document type and file', 'error'); return; }
+  var file = fileList[0];
+  if (file.size > 10 * 1024 * 1024) { showToast('File must be under 10MB', 'error'); return; }
+  showToast('Uploading...', 'default', 10000);
+  var formData = new FormData();
+  formData.append('file', file);
+  fetch('/api/upload?folder=teacher-docs', { method: 'POST', body: formData })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (res.error) throw new Error(res.error);
+      var docs = user.documents ? JSON.parse(JSON.stringify(user.documents)) : [];
+      docs.push({ type: type, name: file.name, r2Key: res.key, uploadedAt: new Date().toISOString() });
+      DB.updateUser(user.id, { documents: docs });
+      var data = DB.get(); var updated = (data.users||[]).find(function(u){return u.id===user.id;}); if(updated) Session.updateCurrent(updated);
+      showToast('Document uploaded!', 'success');
+      renderTeacherProfile();
+    })
+    .catch(function(err) {
+      showToast('Upload failed: '+(err.message||'Check connection'), 'error');
+    });
 };
 
 window.saveTeacherProfile = function() {

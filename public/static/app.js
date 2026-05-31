@@ -225,10 +225,16 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       });
       // Self-account section — always visible to teachers
       const pendingOwnLeaves = (DB.getStaffLeaves(user.id) || []).filter(l => l.status === 'Pending').length;
+      const pendingDocReqs = (DB.getHRDocumentRequests(user.id) || []).filter(r => r.status === 'Fulfilled').length;
+      const myResignation = (DB.getResignationRecords(user.id) || [])[0];
       navItems.push({ id: 'teacher-profile', icon: 'fa-id-badge', label: 'My Profile', divider: true, dividerLabel: 'My Account' });
       navItems.push({ id: 'teacher-attendance', icon: 'fa-fingerprint', label: 'My Attendance' });
       navItems.push({ id: 'teacher-leaves', icon: 'fa-umbrella-beach', label: 'My Leaves', badge: pendingOwnLeaves });
-      navItems.push({ id: 'teacher-salary', icon: 'fa-money-check-alt', label: 'Salary Slips' });
+      navItems.push({ id: 'teacher-salary', icon: 'fa-money-check-alt', label: 'Salary & Payroll' });
+      navItems.push({ id: 'teacher-documents', icon: 'fa-folder-open', label: 'My Documents', badge: pendingDocReqs || 0 });
+      if (myResignation || true) {
+        navItems.push({ id: 'teacher-resignation', icon: 'fa-sign-out-alt', label: 'Resignation' });
+      }
     }
   } else {
     // parent — compute notification badges

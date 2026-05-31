@@ -85,6 +85,16 @@ function renderTeachers() {
         }).join('')+
       '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        (function(){
+          var pendingPCR = (DB.getProfileChangeRequests ? DB.getProfileChangeRequests() : []).filter(function(r){ return r.status === 'Pending'; }).length;
+          var pendingACR = (DB.getAttendanceCorrectionRequests ? DB.getAttendanceCorrectionRequests() : []).filter(function(r){ return r.status === 'Pending'; }).length;
+          var pendingDocR = (DB.getHRDocumentRequests ? DB.getHRDocumentRequests() : []).filter(function(r){ return r.status === 'Pending'; }).length;
+          var pendingResign = (DB.getResignationRecords ? DB.getResignationRecords() : []).filter(function(r){ return r.status === 'Pending'; }).length;
+          var totalPending = pendingPCR + pendingACR + pendingDocR + pendingResign;
+          var badge = totalPending > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:50%;font-size:10px;font-weight:800;padding:1px 5px;margin-left:4px">'+totalPending+'</span>' : '';
+          return '<button class="btn btn-secondary" onclick="openStaffRequestsInbox()" title="Staff Requests"><i class="fas fa-inbox"></i> Requests'+badge+'</button>';
+        })() +
+        '<button class="btn btn-secondary" onclick="openHolidayManagement()" title="Manage Holidays"><i class="fas fa-calendar-alt"></i> Holidays</button>'+
         '<button class="btn btn-secondary" onclick="openAttendanceReport(null)" title="Attendance Report"><i class="fas fa-chart-bar"></i> Attendance</button>'+
         '<button class="btn btn-secondary" onclick="openLeaveTypeConfig()" title="Configure Leave Types"><i class="fas fa-sliders-h"></i> Leave Config</button>'+
         '<button class="btn btn-primary" onclick="openTeacherOnboarding(null)"><i class="fas fa-user-plus"></i> Add Teacher</button>'+
@@ -336,9 +346,68 @@ window.openAccPayrollForTeacher = function(teacherId) {
   accProcessSalary(teacherId);
 };
 
+// ==================== ONBOARDING DOC UPLOAD HELPERS ====================
+function _tobDocWidget(docType, label, existingDocs) {
+  var docs = existingDocs || [];
+  var existing = docs.find(function(d) { return d.type === docType; });
+  var domKey = docType.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  var previewHtml = existing
+    ? '<div id="tob-prev-'+domKey+'" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">'+
+        '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(existing.name||label)+
+        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px" title="Remove"><i class="fas fa-times-circle"></i></button>'+
+      '</div>'
+    : '<div id="tob-prev-'+domKey+'" style="display:none"></div>';
+  return '<div>'+
+    '<label class="form-label" style="font-size:12px">'+_escH(label)+'</label>'+
+    '<div style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:8px 10px;background:#fafbfc;display:flex;flex-direction:column;gap:6px">'+
+      previewHtml+
+      '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;margin:0">'+
+        '<i class="fas fa-paperclip" style="color:#6366f1;font-size:13px;flex-shrink:0"></i>'+
+        '<span id="tob-label-'+domKey+'" style="flex:1">'+( existing ? 'Replace file...' : 'Choose PDF or image...')+'</span>'+
+        '<input type="file" id="tob-doc-'+domKey+'" accept="image/*,application/pdf" onchange="_tobDocSelect(\''+domKey+'\',\''+docType+'\',this)" style="display:none">'+
+      '</label>'+
+    '</div>'+
+  '</div>';
+}
+
+window._tobDocSelect = function(domKey, docType, inputEl) {
+  var file = inputEl.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('File must be under 5MB.'); inputEl.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (!window._tobPendingDocs) window._tobPendingDocs = {};
+    window._tobPendingDocs[docType] = { name: file.name, fileData: e.target.result, uploadedAt: new Date().toISOString() };
+    var prev = document.getElementById('tob-prev-' + domKey);
+    if (prev) {
+      prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46';
+      prev.innerHTML = '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(file.name)+
+        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px"><i class="fas fa-times-circle"></i></button>';
+    }
+    var lbl = document.getElementById('tob-label-' + domKey);
+    if (lbl) lbl.textContent = 'Replace file...';
+  };
+  reader.readAsDataURL(file);
+};
+
+window._tobRemoveDoc = function(domKey, docType) {
+  if (!window._tobRemovedDocs) window._tobRemovedDocs = [];
+  if (!window._tobPendingDocs) window._tobPendingDocs = {};
+  if (window._tobRemovedDocs.indexOf(docType) === -1) window._tobRemovedDocs.push(docType);
+  delete window._tobPendingDocs[docType];
+  var prev = document.getElementById('tob-prev-' + domKey);
+  if (prev) { prev.style.display = 'none'; prev.innerHTML = ''; }
+  var inp = document.getElementById('tob-doc-' + domKey);
+  if (inp) inp.value = '';
+  var lbl = document.getElementById('tob-label-' + domKey);
+  if (lbl) lbl.textContent = 'Choose PDF or image...';
+};
+
 // ==================== ONBOARDING MODAL ====================
 window.openTeacherOnboarding = function(teacherId) {
   var isEdit = !!teacherId;
+  window._tobPendingDocs = {};
+  window._tobRemovedDocs = [];
   var data = DB.get();
   var t = isEdit ? ((data.users||[]).find(function(u){return u.id===teacherId;}) || {}) : {};
   var empId = isEdit ? (t.employeeId||'') : _genEmpId();
@@ -397,14 +466,19 @@ window.openTeacherOnboarding = function(teacherId) {
 
       // ---- DOCUMENTS ----
       '<div id="tob-sec-1" style="display:none">'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
-          '<div><label class="form-label">Aadhaar Card Number</label><input id="tob-aadhaar" class="form-control" type="text" value="'+_escH(t.aadhaarNo||'')+'" placeholder="XXXX XXXX XXXX"/></div>'+
-          '<div><label class="form-label">PAN Card Number</label><input id="tob-pan" class="form-control" type="text" value="'+_escH(t.panNo||'')+'" placeholder="ABCDE1234F"/></div>'+
-          '<div><label class="form-label">Passport Number (Optional)</label><input id="tob-passport" class="form-control" type="text" value="'+_escH(t.passportNo||'')+'" placeholder="e.g. J1234567"/></div>'+
-          '<div><label class="form-label">Driving License (Optional)</label><input id="tob-dl" class="form-control" type="text" value="'+_escH(t.drivingLicenseNo||'')+'" placeholder="License number"/></div>'+
+        '<div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#1e40af">'+
+          '<i class="fas fa-shield-alt" style="margin-right:6px"></i>Enter reference numbers and attach scanned copies (PDF or image, max 5MB each). Uploaded files are saved with the teacher record.'+
         '</div>'+
-        '<div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px dashed #cbd5e1;font-size:12px;color:#64748b">'+
-          '<i class="fas fa-info-circle" style="margin-right:6px;color:#1AA6CA"></i>Currently storing document reference numbers. Physical document uploads can be added in a future update.</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+          '<div><label class="form-label">Aadhaar Card Number <span style="color:#ef4444">*</span></label><input id="tob-aadhaar" class="form-control" type="text" value="'+_escH(t.aadhaarNo||'')+'" placeholder="XXXX XXXX XXXX"/></div>'+
+          _tobDocWidget('Aadhaar Card','Upload Aadhaar Card',t.documents)+
+          '<div><label class="form-label">PAN Card Number</label><input id="tob-pan" class="form-control" type="text" value="'+_escH(t.panNo||'')+'" placeholder="ABCDE1234F"/></div>'+
+          _tobDocWidget('PAN Card','Upload PAN Card',t.documents)+
+          '<div><label class="form-label">Passport Number <span style="font-size:11px;font-weight:400;color:#94a3b8">(Optional)</span></label><input id="tob-passport" class="form-control" type="text" value="'+_escH(t.passportNo||'')+'" placeholder="e.g. J1234567"/></div>'+
+          _tobDocWidget('Passport','Upload Passport',t.documents)+
+          '<div><label class="form-label">Driving License <span style="font-size:11px;font-weight:400;color:#94a3b8">(Optional)</span></label><input id="tob-dl" class="form-control" type="text" value="'+_escH(t.drivingLicenseNo||'')+'" placeholder="License number"/></div>'+
+          _tobDocWidget('Driving License','Upload Driving License',t.documents)+
+        '</div>'+
       '</div>'+
 
       // ---- EDUCATION ----
@@ -417,6 +491,18 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div style="grid-column:1/-1"><label class="form-label">Other Certifications</label><textarea id="tob-othcert" class="form-control" rows="2" placeholder="CTET, TET, CPR, etc.">'+_escH(t.qualOther||'')+'</textarea></div>'+
           '<div style="grid-column:1/-1"><label class="form-label">Previous Work Experience</label><textarea id="tob-exp" class="form-control" rows="3" placeholder="School names, duration, roles...">'+_escH(t.experienceSummary||'')+'</textarea></div>'+
         '</div>'+
+        '<div style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:16px">'+
+          '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">'+
+            '<i class="fas fa-folder-open" style="color:#6366f1;margin-right:6px"></i>Certificate &amp; Document Uploads'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+            _tobDocWidget('SSC Certificate','SSC Marksheet / Certificate',t.documents)+
+            _tobDocWidget('HSC Certificate','HSC Marksheet / Certificate',t.documents)+
+            _tobDocWidget('Graduation Certificate','Graduation Degree / Certificate',t.documents)+
+            _tobDocWidget('Teaching Certificate','B.Ed. / D.Ed. / NTT Certificate',t.documents)+
+            '<div style="grid-column:1/-1">'+_tobDocWidget('Experience Letters','Experience Letters (Previous Employers)',t.documents)+'</div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
 
       // ---- BANK ----
@@ -427,6 +513,7 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div><label class="form-label">Account Number</label><input id="tob-accno" class="form-control" type="text" value="'+_escH(t.bankAccount||'')+'" placeholder="XXXXXXXXXXXX"/></div>'+
           '<div><label class="form-label">IFSC Code</label><input id="tob-ifsc" class="form-control" type="text" value="'+_escH(t.ifsc||'')+'" placeholder="e.g. HDFC0001234"/></div>'+
           '<div><label class="form-label">UPI ID (Optional)</label><input id="tob-upi" class="form-control" type="text" value="'+_escH(t.upiId||'')+'" placeholder="mobile@upi"/></div>'+
+          '<div>'+_tobDocWidget('Cancelled Cheque','Cancelled Cheque / Bank Passbook',t.documents)+'</div>'+
         '</div>'+
       '</div>'+
 
@@ -529,6 +616,22 @@ window._saveTeacherOnboarding = function(teacherId) {
 
   var pass = document.getElementById('tob-pass') ? document.getElementById('tob-pass').value : '';
   if (pass) updates.password = pass;
+
+  // Merge uploaded documents
+  var dbData = DB.get();
+  var tCurrent = isEdit ? ((dbData.users||[]).find(function(u){ return u.id===teacherId; })||{}) : {};
+  var existingDocs = (tCurrent.documents || []).slice();
+  var pendingDocs = window._tobPendingDocs || {};
+  var removedDocs = window._tobRemovedDocs || [];
+  existingDocs = existingDocs.filter(function(d){ return removedDocs.indexOf(d.type) === -1; });
+  Object.keys(pendingDocs).forEach(function(docType) {
+    existingDocs = existingDocs.filter(function(d){ return d.type !== docType; });
+    var pd = pendingDocs[docType];
+    existingDocs.push({ type: docType, name: pd.name, fileData: pd.fileData, uploadedAt: pd.uploadedAt });
+  });
+  updates.documents = existingDocs;
+  window._tobPendingDocs = {};
+  window._tobRemovedDocs = [];
 
   if (isEdit) {
     DB.updateUser(teacherId, updates);
@@ -1534,10 +1637,399 @@ window._tchQuickActions = function(teacherId) {
           '<i class="fas fa-sign-out-alt" style="font-size:20px;color:#ef4444"></i><span style="font-size:12px;font-weight:700;color:#ef4444">Exit</span>'+
         '</button>'+
       '</div>'+
+      '<div style="padding:12px 24px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end">'+
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'tch-quick-modal\').remove();openStaffRequestsInbox()"><i class="fas fa-inbox"></i> View Staff Requests</button>'+
+      '</div>'+
     '</div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
 };
+
+// ==================== STAFF REQUESTS INBOX ====================
+window.openStaffRequestsInbox = function() {
+  var data = DB.get();
+  var users = data.users || [];
+  function _name(id) { var u = users.find(function(u){ return u.id === id; }); return u ? u.name : id; }
+
+  var tabs = ['Profile Changes','Attendance Corrections','Document Requests','Resignations'];
+  var activeTab = window._srTab || 'Profile Changes';
+
+  var pcr = (DB.getProfileChangeRequests ? DB.getProfileChangeRequests() : []).slice().reverse();
+  var acr = (DB.getAttendanceCorrectionRequests ? DB.getAttendanceCorrectionRequests() : []).slice().reverse();
+  var docR = (DB.getHRDocumentRequests ? DB.getHRDocumentRequests() : []).slice().reverse();
+  var resign = (DB.getResignationRecords ? DB.getResignationRecords() : []).slice().reverse();
+
+  function _badge(status) {
+    var m = { Pending:'#fef3c7:#92400e', Approved:'#d1fae5:#065f46', Rejected:'#fee2e2:#991b1b', Fulfilled:'#d1fae5:#065f46', Reviewed:'#dbeafe:#1e40af' };
+    var p = (m[status]||'#f1f5f9:#475569').split(':');
+    return '<span style="background:'+p[0]+';color:'+p[1]+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(status)+'</span>';
+  }
+
+  var pcrRows = pcr.map(function(r) {
+    var changes = r.changes || {};
+    var changedFields = Object.keys(changes).map(function(k){ return _escH(k)+': <em>'+_escH(changes[k])+'</em>'; }).join(', ');
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(_name(r.teacherId))+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b;font-size:12px">'+changedFields+'</td>'+
+      '<td style="padding:10px 12px;color:#94a3b8;font-size:12px">'+(r.requestedAt||'').slice(0,10)+'</td>'+
+      '<td style="padding:10px 12px">'+_badge(r.status||'Pending')+'</td>'+
+      '<td style="padding:10px 12px;text-align:right">'+
+        (r.status==='Pending'
+          ? '<button class="btn btn-sm btn-primary" onclick="_reviewProfileRequest(\''+r.id+'\',\'Approved\')" style="margin-right:4px">Approve</button><button class="btn btn-sm btn-danger" onclick="_reviewProfileRequest(\''+r.id+'\',\'Rejected\')">Reject</button>'
+          : '<span style="color:#94a3b8;font-size:12px">Reviewed</span>')
+      +'</td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="padding:32px;text-align:center;color:#94a3b8">No profile change requests</td></tr>';
+
+  var acrRows = acr.map(function(r) {
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(_name(r.teacherId))+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(r.date||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+_escH(r.requestedStatus||'—')+' (was: '+_escH(r.currentStatus||'—')+')</td>'+
+      '<td style="padding:10px 12px;color:#64748b;font-size:12px">'+_escH(r.reason||'—')+'</td>'+
+      '<td style="padding:10px 12px">'+_badge(r.status||'Pending')+'</td>'+
+      '<td style="padding:10px 12px;text-align:right">'+
+        (r.status==='Pending'
+          ? '<button class="btn btn-sm btn-primary" onclick="_reviewAttendanceCorrection(\''+r.id+'\',\'Approved\')" style="margin-right:4px">Approve</button><button class="btn btn-sm btn-danger" onclick="_reviewAttendanceCorrection(\''+r.id+'\',\'Rejected\')">Reject</button>'
+          : '<span style="color:#94a3b8;font-size:12px">Reviewed</span>')
+      +'</td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="6" style="padding:32px;text-align:center;color:#94a3b8">No attendance correction requests</td></tr>';
+
+  var docRows = docR.map(function(r) {
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(_name(r.teacherId))+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+_escH(r.docType||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b;font-size:12px">'+_escH(r.purpose||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#94a3b8;font-size:12px">'+(r.requestedAt||'').slice(0,10)+'</td>'+
+      '<td style="padding:10px 12px">'+_badge(r.status||'Pending')+'</td>'+
+      '<td style="padding:10px 12px;text-align:right">'+
+        (r.status==='Pending'
+          ? '<button class="btn btn-sm btn-primary" onclick="_fulfillDocRequest(\''+r.id+'\')">Fulfill</button>'
+          : '<span style="color:#94a3b8;font-size:12px">Done</span>')
+      +'</td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="6" style="padding:32px;text-align:center;color:#94a3b8">No document requests</td></tr>';
+
+  var resignRows = resign.map(function(r) {
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(_name(r.teacherId))+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(r.submittedDate||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(r.lastWorkingDay||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b;font-size:12px">'+_escH(r.reason||'—')+'</td>'+
+      '<td style="padding:10px 12px">'+_badge(r.status||'Pending')+'</td>'+
+      '<td style="padding:10px 12px;text-align:right">'+
+        (r.status==='Pending'
+          ? '<button class="btn btn-sm btn-primary" onclick="_openResignationReview(\''+r.id+'\')"><i class="fas fa-eye"></i> Review</button>'
+          : '<span style="color:#94a3b8;font-size:12px">Reviewed</span>')
+      +'</td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="6" style="padding:32px;text-align:center;color:#94a3b8">No resignation requests</td></tr>';
+
+  var tabContent = {
+    'Profile Changes':
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Requested Changes</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="padding:10px 12px"></th>'+
+        '</tr></thead><tbody>'+pcrRows+'</tbody></table>',
+    'Attendance Corrections':
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Correction</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Reason</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="padding:10px 12px"></th>'+
+        '</tr></thead><tbody>'+acrRows+'</tbody></table>',
+    'Document Requests':
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Document Type</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Purpose</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="padding:10px 12px"></th>'+
+        '</tr></thead><tbody>'+docRows+'</tbody></table>',
+    'Resignations':
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Submitted</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Last Working Day</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Reason</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="padding:10px 12px"></th>'+
+        '</tr></thead><tbody>'+resignRows+'</tbody></table>'
+  };
+
+  var pcrCount = pcr.filter(function(r){ return r.status==='Pending'; }).length;
+  var acrCount = acr.filter(function(r){ return r.status==='Pending'; }).length;
+  var docCount = docR.filter(function(r){ return r.status==='Pending'; }).length;
+  var resCount = resign.filter(function(r){ return r.status==='Pending'; }).length;
+  var counts = { 'Profile Changes': pcrCount, 'Attendance Corrections': acrCount, 'Document Requests': docCount, 'Resignations': resCount };
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'staff-requests-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:860px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+      '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:18px;font-weight:800;color:#0F2050"><i class="fas fa-inbox" style="color:#6366f1;margin-right:8px"></i>Staff Requests Inbox</div>'+
+        '<button onclick="document.getElementById(\'staff-requests-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+      '</div>'+
+      '<div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;gap:4px;flex-wrap:wrap">'+
+        tabs.map(function(t){
+          var cnt = counts[t];
+          var badge = cnt > 0 ? '<span style="background:#ef4444;color:#fff;border-radius:9px;font-size:10px;font-weight:800;padding:1px 6px;margin-left:5px">'+cnt+'</span>' : '';
+          var active = t === activeTab;
+          return '<button onclick="window._srTab=\''+t+'\';openStaffRequestsInbox()" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:'+(active?'#6366f1':'#f1f5f9')+';color:'+(active?'#fff':'#475569')+'">'+t+badge+'</button>';
+        }).join('')+
+      '</div>'+
+      '<div style="padding:20px 24px;overflow-x:auto">'+
+        tabContent[activeTab]+
+      '</div>'+
+    '</div>';
+  var existing = document.getElementById('staff-requests-modal');
+  if (existing) existing.remove();
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) { window._srTab = null; overlay.remove(); } });
+};
+
+window._reviewProfileRequest = function(reqId, action) {
+  var reqs = DB.getProfileChangeRequests ? DB.getProfileChangeRequests() : [];
+  var req = reqs.find(function(r){ return r.id === reqId; });
+  if (!req) return;
+  if (action === 'Approved') {
+    var data = DB.get();
+    var users = data.users || [];
+    var teacher = users.find(function(u){ return u.id === req.teacherId; });
+    if (teacher) {
+      var changes = req.changes || {};
+      Object.keys(changes).forEach(function(k){ teacher[k] = changes[k]; });
+      DB.commit();
+    }
+  }
+  if (DB.updateProfileChangeRequest) {
+    DB.updateProfileChangeRequest(reqId, { status: action, reviewedAt: new Date().toISOString(), reviewedBy: Session.current() ? Session.current().id : '' });
+  }
+  openStaffRequestsInbox();
+};
+
+window._reviewAttendanceCorrection = function(reqId, action) {
+  var reqs = DB.getAttendanceCorrectionRequests ? DB.getAttendanceCorrectionRequests() : [];
+  var req = reqs.find(function(r){ return r.id === reqId; });
+  if (!req) return;
+  if (action === 'Approved') {
+    var data = DB.get();
+    var attList = data.staffAttendance || [];
+    var existing = attList.find(function(a){ return a.teacherId === req.teacherId && a.date === req.date; });
+    if (existing) {
+      existing.status = req.requestedStatus;
+      existing.corrected = true;
+    } else {
+      attList.push({ id: 'att_cor_'+Date.now(), teacherId: req.teacherId, date: req.date, status: req.requestedStatus, corrected: true });
+      data.staffAttendance = attList;
+    }
+    DB.commit();
+  }
+  if (DB.updateAttendanceCorrectionRequest) {
+    DB.updateAttendanceCorrectionRequest(reqId, { status: action, reviewedAt: new Date().toISOString(), reviewedBy: Session.current() ? Session.current().id : '' });
+  }
+  openStaffRequestsInbox();
+};
+
+window._fulfillDocRequest = function(reqId) {
+  var reqs = DB.getHRDocumentRequests ? DB.getHRDocumentRequests() : [];
+  var req = reqs.find(function(r){ return r.id === reqId; });
+  if (!req) return;
+  var data = DB.get();
+  var teacher = (data.users || []).find(function(u){ return u.id === req.teacherId; });
+  if (!teacher) return;
+
+  // Auto-generate the letter if generator available
+  if (typeof generateHRLetter === 'function') {
+    try { generateHRLetter(req.teacherId, req.docType); } catch(e) { /* non-fatal */ }
+  } else {
+    // Generic fulfillment record
+    var letters = data.hrLetters || [];
+    letters.push({
+      id: 'hr_'+Date.now(),
+      teacherId: req.teacherId,
+      type: req.docType,
+      issuedDate: new Date().toISOString().slice(0,10),
+      issuedBy: Session.current() ? Session.current().id : '',
+      purpose: req.purpose || '',
+      createdAt: new Date().toISOString()
+    });
+    data.hrLetters = letters;
+    DB.commit();
+  }
+
+  if (DB.updateHRDocumentRequest) {
+    DB.updateHRDocumentRequest(reqId, { status: 'Fulfilled', fulfilledAt: new Date().toISOString(), fulfilledBy: Session.current() ? Session.current().id : '' });
+  }
+  openStaffRequestsInbox();
+};
+
+window._openResignationReview = function(reqId) {
+  var reqs = DB.getResignationRecords ? DB.getResignationRecords() : [];
+  var req = reqs.find(function(r){ return r.id === reqId; });
+  if (!req) return;
+  var data = DB.get();
+  var teacher = (data.users || []).find(function(u){ return u.id === req.teacherId; });
+  if (!teacher) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'resign-review-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">'+
+      '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">'+
+        '<div style="font-size:16px;font-weight:800;color:#0F2050">Review Resignation — '+_escH(teacher.name)+'</div>'+
+        '<button onclick="document.getElementById(\'resign-review-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+      '</div>'+
+      '<div style="padding:24px;display:flex;flex-direction:column;gap:14px">'+
+        '<div style="background:#fef9ec;border:1px solid #fde68a;border-radius:10px;padding:14px">'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">'+
+            '<div><span style="color:#64748b">Submitted:</span> <strong>'+(req.submittedDate||'—')+'</strong></div>'+
+            '<div><span style="color:#64748b">Last Working Day:</span> <strong>'+(req.lastWorkingDay||'—')+'</strong></div>'+
+            '<div><span style="color:#64748b">Notice Period:</span> <strong>'+(req.noticePeriod||'—')+'</strong></div>'+
+            '<div><span style="color:#64748b">Reason:</span> <strong>'+_escH(req.reason||'—')+'</strong></div>'+
+          '</div>'+
+          (req.resignationLetter ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #fde68a;color:#374151;font-size:12px;white-space:pre-wrap">'+_escH(req.resignationLetter)+'</div>' : '')+
+        '</div>'+
+        '<div>'+
+          '<label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Confirm Last Working Date</label>'+
+          '<input type="date" id="resign-lwd" value="'+(req.lastWorkingDay||'')+'" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%">'+
+        '</div>'+
+        '<div>'+
+          '<label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px">HR Remarks (Optional)</label>'+
+          '<textarea id="resign-remarks" rows="3" placeholder="Add internal remarks..." style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;resize:vertical">'+_escH(req.hrRemarks||'')+'</textarea>'+
+        '</div>'+
+        '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">'+
+          '<button class="btn btn-danger" onclick="_submitResignationReview(\''+reqId+'\',\'Rejected\')">Reject</button>'+
+          '<button class="btn btn-primary" onclick="_submitResignationReview(\''+reqId+'\',\'Approved\')"><i class="fas fa-check"></i> Approve Resignation</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+};
+
+window._submitResignationReview = function(reqId, action) {
+  var lwd = (document.getElementById('resign-lwd')||{}).value || '';
+  var remarks = (document.getElementById('resign-remarks')||{}).value || '';
+  var reqs = DB.getResignationRecords ? DB.getResignationRecords() : [];
+  var req = reqs.find(function(r){ return r.id === reqId; });
+  if (!req) return;
+
+  if (DB.updateResignationRecord) {
+    DB.updateResignationRecord(reqId, {
+      status: action,
+      lastWorkingDay: lwd || req.lastWorkingDay,
+      hrRemarks: remarks,
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: Session.current() ? Session.current().id : ''
+    });
+  }
+
+  if (action === 'Approved') {
+    var data = DB.get();
+    var teacher = (data.users || []).find(function(u){ return u.id === req.teacherId; });
+    if (teacher) {
+      teacher.employmentStatus = 'Notice Period';
+      teacher.lastWorkingDay = lwd || req.lastWorkingDay;
+      DB.commit();
+    }
+  }
+
+  var m = document.getElementById('resign-review-modal');
+  if (m) m.remove();
+  openStaffRequestsInbox();
+};
+
+// ==================== HOLIDAY MANAGEMENT ====================
+window.openHolidayManagement = function() {
+  var holidays = DB.getHolidays ? DB.getHolidays() : [];
+  holidays = holidays.slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+
+  var typeColors = { National: '#fee2e2:#991b1b', Festival: '#fef3c7:#92400e', School: '#e0e7ff:#3730a3', Optional: '#d1fae5:#065f46' };
+
+  var rows = holidays.map(function(h) {
+    var p = (typeColors[h.type] || '#f1f5f9:#475569').split(':');
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(h.name)+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(h.date||'—')+'</td>'+
+      '<td style="padding:10px 12px"><span style="background:'+p[0]+';color:'+p[1]+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(h.type||'School')+'</span></td>'+
+      '<td style="padding:10px 12px;text-align:center"><span style="color:'+(h.optional?'#f59e0b':'#10b981')+';font-weight:700;font-size:12px">'+(h.optional?'Optional':'Mandatory')+'</span></td>'+
+      '<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm btn-danger" onclick="_deleteHoliday(\''+h.id+'\')"><i class="fas fa-trash"></i></button></td>'+
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="padding:32px;text-align:center;color:#94a3b8">No holidays added yet</td></tr>';
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'holiday-mgmt-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+      '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'+
+        '<div style="font-size:18px;font-weight:800;color:#0F2050"><i class="fas fa-calendar-alt" style="color:#6366f1;margin-right:8px"></i>Holiday Calendar Management</div>'+
+        '<button onclick="document.getElementById(\'holiday-mgmt-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+      '</div>'+
+      '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;background:#f8fafc;border-radius:0">'+
+        '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">Add New Holiday</div>'+
+        '<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">'+
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Holiday Name</label><input id="hol-name" type="text" placeholder="e.g. Independence Day" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Date</label><input id="hol-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Type</label><select id="hol-type" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"><option>National</option><option>Festival</option><option>School</option><option>Optional</option></select></div>'+
+          '<button class="btn btn-primary" onclick="_addHoliday()" style="white-space:nowrap">+ Add</button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="padding:20px 24px;overflow-x:auto">'+
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+          '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Holiday</th>'+
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+            '<th style="padding:10px 12px"></th>'+
+          '</tr></thead>'+
+          '<tbody>'+rows+'</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>';
+  var existing = document.getElementById('holiday-mgmt-modal');
+  if (existing) existing.remove();
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+};
+
+window._addHoliday = function() {
+  var name = (document.getElementById('hol-name')||{}).value || '';
+  var date = (document.getElementById('hol-date')||{}).value || '';
+  var type = (document.getElementById('hol-type')||{}).value || 'School';
+  if (!name || !date) { alert('Please enter holiday name and date.'); return; }
+  if (DB.addHoliday) {
+    DB.addHoliday({ id: 'hol_'+Date.now(), name: name, date: date, type: type, optional: type === 'Optional' });
+  }
+  openHolidayManagement();
+};
+
+window._deleteHoliday = function(id) {
+  if (!confirm('Delete this holiday?')) return;
+  if (DB.deleteHoliday) DB.deleteHoliday(id);
+  openHolidayManagement();
+};
+
+// ==================== QUICK ACTIONS — update to include Requests tile ====================
+window._tchQuickActionsUpdated = true; // marker so we know this version is loaded
 
 // ==================== ROUTE ====================
 registerRoute('teachers', renderTeachers);

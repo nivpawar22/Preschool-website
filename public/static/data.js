@@ -208,6 +208,19 @@ const DB = (() => {
     salaryStructures: [],
     hrLetters: [],
     staffExitRecords: [],
+    holidays: [
+      { id: 'hol1', name: 'Republic Day', date: '2025-01-26', type: 'National', optional: false },
+      { id: 'hol2', name: 'Holi', date: '2025-03-14', type: 'Festival', optional: false },
+      { id: 'hol3', name: 'Good Friday', date: '2025-04-18', type: 'Festival', optional: false },
+      { id: 'hol4', name: 'Independence Day', date: '2025-08-15', type: 'National', optional: false },
+      { id: 'hol5', name: 'Gandhi Jayanti', date: '2025-10-02', type: 'National', optional: false },
+      { id: 'hol6', name: 'Diwali', date: '2025-10-20', type: 'Festival', optional: false },
+      { id: 'hol7', name: 'Christmas', date: '2025-12-25', type: 'Festival', optional: false }
+    ],
+    profileChangeRequests: [],
+    attendanceCorrectionRequests: [],
+    hrDocumentRequests: [],
+    resignationRecords: [],
     leaveTypeConfig: [
       { id: 'ltc_casual', name: 'Casual Leave', code: 'CL', totalDays: 12, carryForward: false, paid: true, active: true },
       { id: 'ltc_sick', name: 'Sick Leave', code: 'SL', totalDays: 12, carryForward: false, paid: true, active: true },
@@ -274,6 +287,11 @@ const DB = (() => {
       if (!_data.salaryStructures) { _data.salaryStructures = []; mergeChanged = true; }
       if (!_data.hrLetters) { _data.hrLetters = []; mergeChanged = true; }
       if (!_data.staffExitRecords) { _data.staffExitRecords = []; mergeChanged = true; }
+      if (!_data.holidays) { _data.holidays = JSON.parse(JSON.stringify(defaults.holidays)); mergeChanged = true; }
+      if (!_data.profileChangeRequests) { _data.profileChangeRequests = []; mergeChanged = true; }
+      if (!_data.attendanceCorrectionRequests) { _data.attendanceCorrectionRequests = []; mergeChanged = true; }
+      if (!_data.hrDocumentRequests) { _data.hrDocumentRequests = []; mergeChanged = true; }
+      if (!_data.resignationRecords) { _data.resignationRecords = []; mergeChanged = true; }
       if (!_data.leaveTypeConfig) { _data.leaveTypeConfig = JSON.parse(JSON.stringify(defaults.leaveTypeConfig)); mergeChanged = true; }
       save(_data);
       if (mergeChanged) saveToServer(_data);
@@ -709,6 +727,41 @@ const DB = (() => {
     commit();
   }
 
+  // ---- Holidays ----
+  function getHolidays() {
+    return (_data.holidays || defaults.holidays).slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  }
+  function addHoliday(h) { if(!_data.holidays)_data.holidays=[]; _data.holidays.push(h); commit(); }
+  function deleteHoliday(id) { if(!_data.holidays)return; _data.holidays=_data.holidays.filter(function(h){return h.id!==id;}); commit(); }
+
+  // ---- Profile Change Requests ----
+  function getProfileChangeRequests(teacherId) {
+    return (_data.profileChangeRequests||[]).filter(function(r){return !teacherId||r.teacherId===teacherId;}).sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  }
+  function addProfileChangeRequest(r) { if(!_data.profileChangeRequests)_data.profileChangeRequests=[]; _data.profileChangeRequests.unshift(r); commit(); }
+  function updateProfileChangeRequest(id,updates) { var r=(_data.profileChangeRequests||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+
+  // ---- Attendance Correction Requests ----
+  function getAttendanceCorrectionRequests(teacherId) {
+    return (_data.attendanceCorrectionRequests||[]).filter(function(r){return !teacherId||r.teacherId===teacherId;}).sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  }
+  function addAttendanceCorrectionRequest(r) { if(!_data.attendanceCorrectionRequests)_data.attendanceCorrectionRequests=[]; _data.attendanceCorrectionRequests.unshift(r); commit(); }
+  function updateAttendanceCorrectionRequest(id,updates) { var r=(_data.attendanceCorrectionRequests||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+
+  // ---- HR Document Requests ----
+  function getHRDocumentRequests(teacherId) {
+    return (_data.hrDocumentRequests||[]).filter(function(r){return !teacherId||r.teacherId===teacherId;}).sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  }
+  function addHRDocumentRequest(r) { if(!_data.hrDocumentRequests)_data.hrDocumentRequests=[]; _data.hrDocumentRequests.unshift(r); commit(); }
+  function updateHRDocumentRequest(id,updates) { var r=(_data.hrDocumentRequests||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+
+  // ---- Resignation Records ----
+  function getResignationRecords(teacherId) {
+    return (_data.resignationRecords||[]).filter(function(r){return !teacherId||r.teacherId===teacherId;}).sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  }
+  function addResignationRecord(r) { if(!_data.resignationRecords)_data.resignationRecords=[]; _data.resignationRecords.unshift(r); commit(); }
+  function updateResignationRecord(id,updates) { var r=(_data.resignationRecords||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+
   // ---- Activity log ----
   function log(userId, action, details) {
     _data.activityLog.unshift({ id: genId('log'), userId, action, details, time: new Date().toISOString() });
@@ -776,6 +829,11 @@ const DB = (() => {
     getHRLetters, addHRLetter, deleteHRLetter,
     getStaffExitRecords, addStaffExitRecord, updateStaffExitRecord, deleteStaffExitRecord,
     getLeaveTypeConfig, saveLeaveTypeConfig,
+    getHolidays, addHoliday, deleteHoliday,
+    getProfileChangeRequests, addProfileChangeRequest, updateProfileChangeRequest,
+    getAttendanceCorrectionRequests, addAttendanceCorrectionRequest, updateAttendanceCorrectionRequest,
+    getHRDocumentRequests, addHRDocumentRequest, updateHRDocumentRequest,
+    getResignationRecords, addResignationRecord, updateResignationRecord,
     calcGrade, calcBMI,
     getMeta, updateMeta,
     defaults,

@@ -2116,7 +2116,7 @@ function buildLetterheadHtml(meta, lh) {
   var body = lh.body || '[Letter content will appear here…]';
   var closing = lh.closing || 'Yours Sincerely,';
   var today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
-  var ico = function(fa) { return '<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;vertical-align:middle;margin-right:4px;flex-shrink:0"><i class="'+fa+'"></i></span>'; };
+  var ico = function(fa) { return '<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;vertical-align:middle;margin-right:4px;flex-shrink:0"><i class="'+fa+'"></i></span>'; };
   var addrHtml = address.replace(/\n/g,'<br>');
 
   return '<div style="font-family:Georgia,serif;font-size:13px;color:#1a1a2e;background:#fff">' +
@@ -2258,7 +2258,7 @@ window.printLetterhead = function() {
     '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
     '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
+    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
     '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
     '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
     '.body{padding:28px}' +

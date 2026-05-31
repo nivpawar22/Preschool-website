@@ -2231,7 +2231,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 .hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.3px}
 .hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
 .hdr-bar{background:#dcad92;padding:8px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
+.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
 .hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.8}
 .hdr-br{font-size:11px;color:#0F2050;font-weight:600;text-align:right;line-height:1.7}
 .rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}

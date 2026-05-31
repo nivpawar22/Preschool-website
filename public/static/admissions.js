@@ -760,7 +760,7 @@ function printAdmForm() {
     '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
     '.hdr-sub{font-size:8px;color:#E8B020;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;margin-top:2px}' +
     '.hdr-bar{background-color:#dcad92;padding:6px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#29B6F6;color:#fff;font-size:6px;flex-shrink:0;margin-right:3px}' +
+    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#0F2050;color:#fff;font-size:6px;flex-shrink:0;margin-right:3px}' +
     '.hdr-bl{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45}' +
     '.hdr-br{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
     '.ft{text-align:center;font-size:13px;font-weight:bold;border:2px solid #0F2050;padding:6px;margin:8px 14px;background-color:#E8EDF5}' +
@@ -1060,7 +1060,7 @@ function printReceipt(payId) {
       '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
       '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
       '.hdr-bar{background-color:#dcad92;padding:7px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
-      '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#29B6F6;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
+      '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
       '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
       '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
       '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +

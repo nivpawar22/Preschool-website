@@ -227,7 +227,7 @@ window.openTeacherDetail = function(teacherId) {
           ['Offer Letter','Appointment Letter','Probation Confirmation','Promotion Letter','Increment Letter','Experience Letter','Relieving Letter'].map(function(ltype){
             var p = (letterTypeBadge[ltype]||'#f1f5f9:#475569').split(':');
             var icon = {'Offer Letter':'fa-envelope-open-text','Appointment Letter':'fa-user-check','Probation Confirmation':'fa-check-circle','Promotion Letter':'fa-arrow-up','Increment Letter':'fa-chart-line','Experience Letter':'fa-certificate','Relieving Letter':'fa-sign-out-alt'}[ltype]||'fa-file-alt';
-            return '<button onclick="generateHRLetter(\''+teacherId+'\',\''+ltype+\'\')" style="padding:14px;border:2px solid '+p[0]+';border-radius:12px;background:'+p[0]+';cursor:pointer;text-align:left;transition:box-shadow 0.2s" onmouseenter="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'+
+            return '<button onclick="generateHRLetter(\''+teacherId+'\',\''+ltype+'\')" style="padding:14px;border:2px solid '+p[0]+';border-radius:12px;background:'+p[0]+';cursor:pointer;text-align:left;transition:box-shadow 0.2s" onmouseenter="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'+
               '<i class="fas '+icon+'" style="color:'+p[1]+';font-size:20px;display:block;margin-bottom:8px"></i>'+
               '<div style="font-size:12px;font-weight:700;color:'+p[1]+'">'+ltype+'</div>'+
               '<div style="font-size:10px;color:'+p[1]+';opacity:0.7;margin-top:2px">Generate & Print</div>'+
@@ -600,7 +600,7 @@ window.openTeacherLetters = function(teacherId) {
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:24px">'+
         letterTypes.map(function(lt){
           var c = colors[lt]||['#f1f5f9','#475569'];
-          return '<button onclick="generateHRLetter(\''+teacherId+'\',\''+lt+\'\')" style="padding:16px;border:2px solid '+c[0]+';border-radius:12px;background:'+c[0]+';cursor:pointer;text-align:center;transition:box-shadow 0.2s" onmouseenter="this.style.boxShadow=\'0 4px 14px rgba(0,0,0,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'+
+          return '<button onclick="generateHRLetter(\''+teacherId+'\',\''+lt+'\')" style="padding:16px;border:2px solid '+c[0]+';border-radius:12px;background:'+c[0]+';cursor:pointer;text-align:center;transition:box-shadow 0.2s" onmouseenter="this.style.boxShadow=\'0 4px 14px rgba(0,0,0,0.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'+
             '<i class="fas '+(icons[lt]||'fa-file-alt')+'" style="color:'+c[1]+';font-size:22px;display:block;margin-bottom:8px"></i>'+
             '<div style="font-size:12px;font-weight:700;color:'+c[1]+'">'+lt+'</div>'+
           '</button>';

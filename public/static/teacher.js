@@ -661,18 +661,40 @@ window.teacherPrintSlip = function(id) {
   var p = (DB.getSalaryPayments(user.id)||[]).find(function(x){return x.id===id;});
   if(!p) return;
   var meta = DB.getMeta();
+  var lh = (typeof _skLetterhead==='function') ? _skLetterhead(meta, 'SALARY SLIP — '+_tFmtMonth(p.month), 'Pay Period: '+_tFmtMonth(p.month)+'&nbsp;&nbsp;|&nbsp;&nbsp;Generated: '+new Date().toLocaleDateString('en-IN')) : null;
   var win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Salary Slip - '+_tFmtMonth(p.month)+'</title><style>body{font-family:Arial,sans-serif;margin:40px;color:#333}h1{color:#0F2050;font-size:18px;text-align:center;margin-bottom:4px}.sub{text-align:center;font-size:12px;color:#666;margin-bottom:30px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f8fafc;font-weight:700;color:#475569}.net{background:#0F2050;color:#fff;font-size:16px;font-weight:900;text-align:right;padding:14px}@media print{body{margin:20px}}</style></head><body>'+
-    '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1><div class="sub">'+escHtml(meta.address||'')+'</div>'+
-    '<div style="text-align:center;font-size:15px;font-weight:700;text-decoration:underline;margin-bottom:20px">SALARY SLIP — '+_tFmtMonth(p.month)+'</div>'+
-    '<table><tr><td><strong>Name:</strong> '+escHtml(user.name)+'</td><td><strong>EMP ID:</strong> '+escHtml(user.employeeId||user.empId||user.id)+'</td></tr><tr><td><strong>Designation:</strong> '+escHtml(user.designation||'Teacher')+'</td><td><strong>Payment Mode:</strong> '+escHtml(p.paymentMode||'Bank Transfer')+'</td></tr></table>'+
-    '<table><tr><th>Earnings</th><th>Amount</th><th>Deductions</th><th>Amount</th></tr>'+
-    '<tr><td>Basic Salary</td><td>₹'+parseFloat(p.baseSalary||0).toLocaleString('en-IN')+'</td><td>Total Deductions</td><td>₹'+parseFloat(p.deductions||0).toLocaleString('en-IN')+'</td></tr>'+
-    '<tr><td>Allowances</td><td>₹'+parseFloat(p.allowances||0).toLocaleString('en-IN')+'</td><td></td><td></td></tr>'+
-    '<tr><td><strong>Gross</strong></td><td><strong>₹'+parseFloat((parseFloat(p.baseSalary||0)+parseFloat(p.allowances||0))).toLocaleString('en-IN')+'</strong></td><td></td><td></td></tr>'+
-    '</table>'+
-    '<table><tr><td class="net" colspan="2">NET PAY: ₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</td></tr></table>'+
-    '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  if (lh) {
+    win.document.write('<!DOCTYPE html><html><head><title>Salary Slip - '+_tFmtMonth(p.month)+'</title><style>'+lh.css+'</style></head><body>'+
+      lh.header+
+      '<div class="sk-body">'+
+        '<table style="margin-bottom:16px">'+
+          '<tr><td style="width:50%;border:none;padding:4px 0"><strong>Name:</strong> '+escHtml(user.name)+'</td><td style="border:none;padding:4px 0"><strong>Emp ID:</strong> '+escHtml(user.employeeId||user.empId||user.id)+'</td></tr>'+
+          '<tr><td style="border:none;padding:4px 0"><strong>Designation:</strong> '+escHtml(user.designation||'Teacher')+'</td><td style="border:none;padding:4px 0"><strong>Payment Mode:</strong> '+escHtml(p.paymentMode||'Bank Transfer')+'</td></tr>'+
+          '<tr><td style="border:none;padding:4px 0"><strong>Bank:</strong> '+escHtml(user.bankName||'—')+'</td><td style="border:none;padding:4px 0"><strong>Account No:</strong> '+escHtml(user.bankAccount||'—')+'</td></tr>'+
+        '</table>'+
+        '<table>'+
+          '<thead><tr><th>Earnings</th><th style="text-align:right">Amount (₹)</th><th>Deductions</th><th style="text-align:right">Amount (₹)</th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td>Basic Salary</td><td style="text-align:right">'+parseFloat(p.baseSalary||0).toLocaleString('en-IN')+'</td><td>Total Deductions</td><td style="text-align:right">'+parseFloat(p.deductions||0).toLocaleString('en-IN')+'</td></tr>'+
+            '<tr><td>Allowances</td><td style="text-align:right">'+parseFloat(p.allowances||0).toLocaleString('en-IN')+'</td><td></td><td></td></tr>'+
+            '<tr><td><strong>Gross Earnings</strong></td><td style="text-align:right"><strong>'+parseFloat((parseFloat(p.baseSalary||0)+parseFloat(p.allowances||0))).toLocaleString('en-IN')+'</strong></td><td></td><td></td></tr>'+
+          '</tbody>'+
+        '</table>'+
+        '<table><tr><td class="net-row" colspan="4">NET PAY: ₹ '+parseFloat(p.netAmount||0).toLocaleString('en-IN')+' &nbsp;('+escHtml((typeof _numToWords==='function'?_numToWords(Math.round(p.netAmount||0)):''))+' Only)</td></tr></table>'+
+        '<div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">'+
+          '<div><p>Employee Signature</p><br><p style="font-weight:700">______________________________</p></div>'+
+          '<div style="text-align:right"><p>Authorized Signatory</p><br><p style="font-weight:700">______________________________</p><p style="color:#666">'+escHtml(meta.schoolName||'SuperKids India Preschool')+'</p></div>'+
+        '</div>'+
+        '<div class="footer-note">This is a computer-generated salary slip. No signature required.</div>'+
+      '</div>'+
+      '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  } else {
+    // Fallback if _skLetterhead not yet loaded
+    win.document.write('<!DOCTYPE html><html><head><title>Salary Slip</title></head><body>'+
+      '<h2>'+escHtml(meta.schoolName||'SuperKids India Preschool')+'</h2>'+
+      '<p>NET PAY: ₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</p>'+
+      '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  }
   win.document.close();
 };
 
@@ -682,17 +704,24 @@ window.teacherDownloadSalaryCert = function() {
   var structs = DB.getSalaryStructures(user.id);
   var latest = structs[0];
   var today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var lh = (typeof _skLetterhead==='function') ? _skLetterhead(meta, 'SALARY CERTIFICATE', 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/SC/'+new Date().getFullYear()) : null;
+  var sName = meta.schoolName||meta.name||'SuperKids India Preschool';
   var win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Salary Certificate</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}p{font-size:14px}@media print{body{margin:40px}}</style></head><body>'+
-    '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
-    '<div style="text-align:center;font-size:12px;color:#666;margin-bottom:40px">'+escHtml(meta.address||'')+'</div>'+
-    '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">SALARY CERTIFICATE</div>'+
-    '<p style="text-align:right">Date: '+today+'</p>'+
-    '<p>To Whom It May Concern,</p>'+
-    '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong>, Employee ID: <strong>'+escHtml(user.employeeId||user.empId||user.id)+'</strong>, is working as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at '+escHtml(meta.name||'our institution')+(user.joiningDate?' since <strong>'+formatDate(user.joiningDate)+'</strong>':'')+'.</p>'+
-    (latest?'<p>Their current monthly salary is <strong>₹'+parseFloat(latest.netSalary||0).toLocaleString('en-IN')+'</strong> (Rupees '+escHtml(_numToWords(Math.round(latest.netSalary||0)))+' only) per month.</p>':'<p>Their current monthly salary is <strong>₹'+parseFloat(user.baseSalary||0).toLocaleString('en-IN')+'</strong> per month.</p>')+
-    '<p>This certificate is issued on request for official purposes.</p>'+
-    '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+  win.document.write('<!DOCTYPE html><html><head><title>Salary Certificate</title><style>'+(lh?lh.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px;font-size:14px}</style></head><body>'+
+    (lh ? lh.header : '<h1>'+escHtml(sName)+'</h1>')+
+    '<div class="sk-body">'+
+      '<p>To Whom It May Concern,</p>'+
+      '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong>, Employee ID: <strong>'+escHtml(user.employeeId||user.empId||user.id)+'</strong>, is employed as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at <strong>'+escHtml(sName)+'</strong>'+(user.joiningDate?' with effect from <strong>'+formatDate(user.joiningDate)+'</strong>':'')+'.</p>'+
+      (latest?'<p>Their gross monthly salary is <strong>₹'+parseFloat(latest.grossSalary||0).toLocaleString('en-IN')+'</strong> and net monthly salary is <strong>₹'+parseFloat(latest.netSalary||0).toLocaleString('en-IN')+'</strong> (Rupees '+escHtml(_numToWords(Math.round(latest.netSalary||0)))+' only).</p>':'<p>Their current monthly salary is <strong>₹'+parseFloat(user.baseSalary||0).toLocaleString('en-IN')+'</strong> per month.</p>')+
+      '<p>This certificate is issued on request for official/banking/visa purposes only and does not constitute any guarantee or obligation on the part of the institution.</p>'+
+      '<div class="signature">'+
+        '<p>Yours faithfully,</p><br><br>'+
+        '<p style="font-weight:700">______________________________</p>'+
+        '<p style="font-weight:700">Principal / HR Manager</p>'+
+        '<p style="color:#666">'+escHtml(sName)+'</p>'+
+      '</div>'+
+      '<div class="footer-note">Computer-generated salary certificate — '+escHtml(sName)+'. Not valid without official stamp.</div>'+
+    '</div>'+
     '<script>window.onload=function(){window.print();}<\/script></body></html>');
   win.document.close();
 };
@@ -818,16 +847,24 @@ window.teacherPrintIssuedLetter = function(letterId) {
     generateHRLetter(user.id, letter.type);
   } else {
     var meta = DB.getMeta();
+    var today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+    var lh2 = (typeof _skLetterhead==='function') ? _skLetterhead(meta, letter.type.toUpperCase(), 'Date: '+formatDate(letter.issuedDate||letter.createdAt)+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/'+new Date().getFullYear()) : null;
+    var sName2 = meta.schoolName||meta.name||'SuperKids India Preschool';
     var win = window.open('','_blank');
-    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(letter.type)+'</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}@media print{body{margin:40px}}</style></head><body>'+
-      '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
-      '<div style="text-align:center;margin-bottom:40px;font-size:12px;color:#666">'+escHtml(meta.address||'')+'</div>'+
-      '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">'+escHtml(letter.type.toUpperCase())+'</div>'+
-      '<p>Date: '+formatDate(letter.issuedDate||letter.createdAt)+'</p>'+
-      '<p>To Whom It May Concern,</p>'+
-      '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Employee ID: '+escHtml(user.employeeId||user.empId||user.id)+') is employed with us as <strong>'+escHtml(user.designation||'Teacher')+'</strong>.</p>'+
-      '<p>This letter is issued on request for official purposes.</p>'+
-      '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(letter.type)+'</title><style>'+(lh2?lh2.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
+      (lh2?lh2.header:'<h1>'+escHtml(sName2)+'</h1>')+
+      '<div class="sk-body">'+
+        '<p>To Whom It May Concern,</p>'+
+        '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Employee ID: '+escHtml(user.employeeId||user.empId||user.id)+') is employed with <strong>'+escHtml(sName2)+'</strong> as <strong>'+escHtml(user.designation||'Teacher')+'</strong>.</p>'+
+        '<p>This letter is issued on request for official purposes.</p>'+
+        '<div class="signature">'+
+          '<p>Yours faithfully,</p><br><br>'+
+          '<p style="font-weight:700">______________________________</p>'+
+          '<p style="font-weight:700">Principal / HR Manager</p>'+
+          '<p style="color:#666">'+escHtml(sName2)+'</p>'+
+        '</div>'+
+        '<div class="footer-note">Computer-generated document — '+escHtml(sName2)+'</div>'+
+      '</div>'+
       '<script>window.onload=function(){window.print();}<\/script></body></html>');
     win.document.close();
   }
@@ -951,15 +988,23 @@ window.teacherDownloadExitDoc = function(type) {
     var myExit = (DB.getStaffExitRecords(user.id)||[])[0];
     var lwd = myExit&&myExit.lastWorkingDate ? new Date(myExit.lastWorkingDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : today;
     var joining = user.joiningDate ? new Date(user.joiningDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—';
+    var lhX = (typeof _skLetterhead==='function') ? _skLetterhead(meta, type.toUpperCase(), 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/'+new Date().getFullYear()) : null;
+    var sNameX = meta.schoolName||meta.name||'SuperKids India Preschool';
     var win = window.open('','_blank');
-    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(type)+'</title><style>body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}h1{color:#0F2050;font-size:20px;text-align:center}@media print{body{margin:40px}}</style></head><body>'+
-      '<h1>'+escHtml(meta.name||'SuperKids India Preschool')+'</h1>'+
-      '<div style="text-align:center;font-size:12px;color:#666;margin-bottom:40px">'+escHtml(meta.address||'')+'</div>'+
-      '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:30px">'+escHtml(type.toUpperCase())+'</div>'+
-      '<p>Date: '+today+'</p><p>To Whom It May Concern,</p>'+
-      '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Emp ID: '+escHtml(user.employeeId||user.empId||user.id)+') worked as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at <strong>'+escHtml(meta.name||'')+'</strong> from <strong>'+joining+'</strong> to <strong>'+lwd+'</strong>.</p>'+
-      '<p>They have discharged their duties diligently. We wish them the very best in their future endeavours.</p>'+
-      '<div style="margin-top:60px"><p>Yours faithfully,</p><br><p><strong>______________________________</strong></p><p><strong>Principal / HR Manager</strong></p><p>'+escHtml(meta.name||'')+'</p></div>'+
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(type)+'</title><style>'+(lhX?lhX.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
+      (lhX?lhX.header:'<h1>'+escHtml(sNameX)+'</h1>')+
+      '<div class="sk-body">'+
+        '<p>To Whom It May Concern,</p>'+
+        '<p>This is to certify that <strong>'+escHtml(user.name)+'</strong> (Emp ID: <strong>'+escHtml(user.employeeId||user.empId||user.id)+'</strong>) worked as <strong>'+escHtml(user.designation||'Teacher')+'</strong> at <strong>'+escHtml(sNameX)+'</strong> from <strong>'+joining+'</strong> to <strong>'+lwd+'</strong>.</p>'+
+        '<p>They have discharged their duties diligently and professionally. We wish them the very best in their future endeavours.</p>'+
+        '<div class="signature">'+
+          '<p>Yours faithfully,</p><br><br>'+
+          '<p style="font-weight:700">______________________________</p>'+
+          '<p style="font-weight:700">Principal / HR Manager</p>'+
+          '<p style="color:#666">'+escHtml(sNameX)+'</p>'+
+        '</div>'+
+        '<div class="footer-note">Computer-generated document — '+escHtml(sNameX)+'</div>'+
+      '</div>'+
       '<script>window.onload=function(){window.print();}<\/script></body></html>');
     win.document.close();
     DB.addHRLetter({id:'rl_'+Date.now(), teacherId:user.id, type:type, issuedDate:new Date().toISOString().slice(0,10), issuedBy:user.id, createdAt:new Date().toISOString()});

@@ -746,6 +746,71 @@ window._delHRLetterFromModal = function(lid, teacherId) {
   });
 };
 
+// ==================== SHARED LETTERHEAD ====================
+// Returns complete CSS + header HTML for all printed/exported documents.
+// Matches the official SuperKids India Preschool letterhead design.
+window._skLetterhead = function(meta, docTitle, refLine) {
+  var sName  = meta.schoolName  || meta.name     || 'SuperKids India Preschool';
+  var ph1    = meta.schoolPhone || meta.phone     || '9822-977-644';
+  var ph2    = meta.schoolPhone2|| meta.phone2    || '9822-977-944';
+  var email  = meta.schoolEmail || meta.email     || 'superkidsprincipal@gmail.com';
+  var web    = meta.schoolWebsite||meta.website   || 'https://superkidsindia.com/';
+  var addr   = (meta.schoolAddress||meta.address  || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran, Pin:411026').replace(/\n/g,'<br>');
+  var logoSrc = (window.location.origin||'') + '/static/school-logo.png';
+
+  // Beige contact-bar row helper
+  function cRow(sym, text) {
+    if (!text) return '';
+    return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#0D1B4A;line-height:1.6">'+
+      '<span style="display:inline-flex;width:19px;height:19px;border-radius:50%;background:#0D1B4A;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0">'+sym+'</span>'+
+      '<span>'+text+'</span>'+
+    '</div>';
+  }
+
+  var css =
+    '*{margin:0;padding:0;box-sizing:border-box}'+
+    'body{font-family:Arial,sans-serif;color:#333;font-size:13px;line-height:1.65}'+
+    '.sk-lh-top{background:#0D1B4A;padding:16px 30px;display:flex;align-items:center;gap:18px}'+
+    '.sk-lh-bar{background:#C4A47A;padding:10px 30px;display:flex;justify-content:space-between;align-items:center;gap:16px}'+
+    '.sk-lh-bar-left{display:flex;flex-direction:column;gap:3px}'+
+    '.sk-lh-bar-right{text-align:right;font-size:11px;font-weight:700;color:#0D1B4A;line-height:1.6}'+
+    '.sk-doc-title{text-align:center;padding:14px 30px 0}'+
+    '.sk-doc-title-inner{display:inline-block;border-bottom:3px solid #D4A017;padding-bottom:4px;font-size:16px;font-weight:900;letter-spacing:2px;color:#0D1B4A;text-transform:uppercase}'+
+    '.sk-ref{font-size:11.5px;color:#666;padding:6px 30px 0;text-align:right}'+
+    '.sk-body{padding:20px 30px 50px}'+
+    'table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}'+
+    'th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}'+
+    'th{background:#f8fafc;font-weight:700;color:#475569}'+
+    '.net-row{background:#0D1B4A;color:#fff;font-size:15px;font-weight:900;text-align:right;padding:12px 16px}'+
+    '.signature{margin-top:50px}'+
+    '.footer-note{font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:8px;margin-top:24px}'+
+    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
+
+  var header =
+    '<div class="sk-lh-top">'+
+      '<img src="'+logoSrc+'" style="width:68px;height:68px;border-radius:50%;border:2.5px solid #D4A017;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'+
+      '<div>'+
+        '<div style="color:#fff;font-size:22px;font-weight:900;letter-spacing:-0.3px">'+sName+'</div>'+
+        '<div style="color:#D4A017;font-size:10px;font-weight:700;letter-spacing:3.5px;margin-top:5px">OFFICIAL SCHOOL CORRESPONDENCE</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="sk-lh-bar">'+
+      '<div class="sk-lh-bar-left">'+
+        cRow('&#9990;', ph1)+
+        cRow('&#128241;', ph2)+
+        cRow('&#9993;', email)+
+        cRow('&#127760;', web)+
+      '</div>'+
+      '<div class="sk-lh-bar-right"><strong>'+sName+'</strong><br>'+addr+'</div>'+
+    '</div>'+
+    (docTitle
+      ? '<div class="sk-doc-title"><span class="sk-doc-title-inner">'+docTitle+'</span></div>'+
+        (refLine ? '<div class="sk-ref">'+refLine+'</div>' : '')
+      : '');
+
+  return { css: css, header: header };
+};
+
 window.generateHRLetter = function(teacherId, letterType) {
   var data = DB.get();
   var t = (data.users||[]).find(function(u){return u.id===teacherId;}) || {};
@@ -818,26 +883,30 @@ window.generateHRLetter = function(teacherId, letterType) {
       '</tbody></table>';
   }
 
+  var lh = _skLetterhead(meta, letterType.toUpperCase(), 'Date: '+todayStr+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+_escH(t.employeeId||'N/A')+'/'+new Date().getFullYear());
   var win = window.open('','_blank');
   win.document.write('<!DOCTYPE html><html><head><title>'+letterType+' — '+_escH(t.name)+'</title>'+
-    '<style>body{font-family:Arial,sans-serif;max-width:750px;margin:30px auto;font-size:13px;color:#333;line-height:1.6}'+
-    '.letterhead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0F2050;padding-bottom:14px;margin-bottom:20px}'+
-    '.lh-school h1{font-size:20px;margin:0 0 4px;color:#0F2050}.lh-school p{font-size:11px;color:#666;margin:2px 0}'+
-    '.ref-box{background:#f8f8f8;padding:10px 14px;border-radius:6px;margin-bottom:16px;font-size:12px}'+
-    '.signature{margin-top:40px;text-align:right}.signature p{margin:2px 0;font-size:12px}'+
-    '@media print{body{margin:10px}}</style></head><body>'+
-    '<div class="letterhead">'+
-      '<div class="lh-school"><h1>'+sName+'</h1><p>'+sAddr+'</p></div>'+
-      '<div style="text-align:right;font-size:12px;color:#666"><strong>'+letterType+'</strong><br>Date: '+todayStr+'<br>Ref: '+_escH(t.employeeId||'N/A')+'</div>'+
+    '<style>'+lh.css+
+    '.ref-box{background:#f9f6f0;border-left:3px solid #D4A017;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}'+
+    '</style></head><body>'+
+    lh.header+
+    '<div class="sk-body">'+
+      '<div class="ref-box">'+
+        '<strong>To:</strong> '+_escH(t.name)+'&nbsp;&nbsp;|&nbsp;&nbsp;'+
+        '<strong>Designation:</strong> '+_escH(t.designation||'Teacher')+'&nbsp;&nbsp;|&nbsp;&nbsp;'+
+        '<strong>Emp ID:</strong> '+_escH(t.employeeId||'N/A')+
+      '</div>'+
+      bodyHTML+
+      salStructSection+
+      '<div class="signature" style="margin-top:50px">'+
+        '<p style="font-size:13px">Yours sincerely,</p>'+
+        '<br><br>'+
+        '<p style="font-weight:700">______________________________</p>'+
+        '<p style="font-weight:700">'+_escH(principal.name||'Principal / HR Manager')+'</p>'+
+        '<p style="color:#666">'+sName+'</p>'+
+      '</div>'+
+      '<div class="footer-note">This is a computer-generated document issued by '+sName+'. For queries contact '+_escH(meta.schoolEmail||'')+'</div>'+
     '</div>'+
-    bodyHTML+
-    salStructSection+
-    '<div class="signature">'+
-      '<p><strong>Authorized Signatory</strong></p>'+
-      '<p>'+_escH(principal.name||'Principal')+'</p>'+
-      '<p>'+sName+'</p>'+
-    '</div>'+
-    '<p style="font-size:10px;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:8px">This is a computer-generated letter.</p>'+
     '<script>window.onload=function(){window.print();}<\/script>'+
   '</body></html>');
   win.document.close();
@@ -1349,14 +1418,18 @@ window._printAttReport = function() {
     return '<tr><td>'+_escH(t.name)+'</td><td>'+_escH(t.designation||'-')+'</td><td>'+present+'</td><td>'+absent+'</td><td>'+halfDay+'</td><td>'+late+'</td><td>'+pct+'%</td></tr>';
   }).join('');
   var meta = DB.getMeta();
+  var lh = _skLetterhead(meta, 'STAFF ATTENDANCE REPORT', 'Period: '+_fmtMonth(month)+'&nbsp;&nbsp;|&nbsp;&nbsp;Generated: '+new Date().toLocaleDateString('en-IN'));
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>Attendance Report</title><style>'+
-    'body{font-family:Arial,sans-serif;margin:30px;color:#333}h2{color:#0F2050}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f8fafc;font-weight:700;color:#475569}tr:nth-child(even){background:#f9fafb}'+
-    '.header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0F2050;padding-bottom:12px;margin-bottom:20px}'+
+    lh.css+
+    'tr:nth-child(even){background:#f9fafb}'+
     '@media print{.noprint{display:none}}'+
     '</style></head><body>'+
-    '<div class="header"><div><h2>'+_escH(meta.name||'SuperKids India')+'</h2><div style="font-size:12px;color:#666">Staff Attendance Report — '+_fmtMonth(month)+'</div></div><div style="font-size:11px;color:#666;text-align:right">Generated: '+new Date().toLocaleString('en-IN')+'</div></div>'+
+    lh.header+
+    '<div class="sk-body">'+
     '<table><thead><tr><th>Teacher</th><th>Designation</th><th>Present</th><th>Absent</th><th>Half-Day</th><th>Late</th><th>Attendance%</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="footer-note">Computer-generated attendance report — '+meta.schoolName||'SuperKids India Preschool'+'</div>'+
+    '</div>'+
     '<script>window.onload=function(){window.print();}<\/script>'+
     '</body></html>');
   win.document.close();
@@ -1562,28 +1635,28 @@ window.generateExitLetter = function(teacherId) {
   var lwd = exitRec && exitRec.lastWorkingDate ? new Date(exitRec.lastWorkingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : today;
   var joining = teacher.joiningDate ? new Date(teacher.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
 
+  var lh = _skLetterhead(meta, 'RELIEVING LETTER', 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+_escH(teacher.empId||teacher.id)+'/REL/'+new Date().getFullYear());
   var win = window.open('', '_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Relieving Letter</title><style>'+
-    'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.7}'+
-    'h1{color:#0F2050;font-size:20px;text-align:center;margin-bottom:4px}'+
-    '.school-sub{text-align:center;color:#666;font-size:13px;margin-bottom:40px}'+
-    '.letter-ref{color:#666;font-size:12px;margin-bottom:30px}'+
-    '.signature{margin-top:60px}'+
-    '@media print{body{margin:40px}}'+
+  win.document.write('<!DOCTYPE html><html><head><title>Relieving Letter — '+_escH(teacher.name)+'</title><style>'+
+    lh.css+
+    'p{margin-bottom:14px}'+
     '</style></head><body>'+
-    '<h1>'+_escH(schoolName)+'</h1>'+
-    '<div class="school-sub">'+_escH(meta.address||'')+'<br/>'+_escH(meta.phone||'')+' | '+_escH(meta.email||'')+'</div>'+
-    '<div style="text-align:center;font-size:16px;font-weight:700;text-decoration:underline;margin-bottom:24px;color:#0F2050">RELIEVING LETTER</div>'+
-    '<div class="letter-ref">Date: '+today+'<br/>Ref: '+_escH(teacher.empId||teacher.id)+'/REL/'+(new Date().getFullYear())+'</div>'+
-    '<p>To Whom It May Concern,</p>'+
-    '<p>This is to certify that <strong>'+_escH(teacher.name)+'</strong>, Employee ID: <strong>'+_escH(teacher.empId||teacher.id)+'</strong>, was employed with <strong>'+_escH(schoolName)+'</strong> as <strong>'+_escH(teacher.designation||'Teacher')+'</strong> from <strong>'+joining+'</strong> to <strong>'+lwd+'</strong>.</p>'+
-    '<p>'+_escH(teacher.name)+' has been relieved from their duties effective <strong>'+lwd+'</strong> following '+(exitRec&&exitRec.exitType ? exitRec.exitType.toLowerCase() : 'separation')+'. During their tenure, they have discharged their responsibilities sincerely and diligently.</p>'+
-    '<p>We wish them all the best in their future endeavours.</p>'+
-    '<div class="signature">'+
-      '<p>Yours faithfully,</p><br/><br/>'+
-      '<p><strong>______________________________</strong></p>'+
-      '<p><strong>Principal / HR Manager</strong></p>'+
-      '<p>'+_escH(schoolName)+'</p>'+
+    lh.header+
+    '<div class="sk-body">'+
+      '<div style="background:#f9f6f0;border-left:3px solid #D4A017;padding:10px 14px;border-radius:4px;margin-bottom:20px;font-size:12px">'+
+        '<strong>To:</strong> '+_escH(teacher.name)+'&nbsp;&nbsp;|&nbsp;&nbsp;<strong>Emp ID:</strong> '+_escH(teacher.empId||teacher.id)+'&nbsp;&nbsp;|&nbsp;&nbsp;<strong>Designation:</strong> '+_escH(teacher.designation||'Teacher')+
+      '</div>'+
+      '<p>To Whom It May Concern,</p>'+
+      '<p>This is to certify that <strong>'+_escH(teacher.name)+'</strong>, Employee ID: <strong>'+_escH(teacher.empId||teacher.id)+'</strong>, was employed with <strong>'+_escH(schoolName)+'</strong> as <strong>'+_escH(teacher.designation||'Teacher')+'</strong> from <strong>'+joining+'</strong> to <strong>'+lwd+'</strong>.</p>'+
+      '<p>'+_escH(teacher.name)+' has been relieved from their duties effective <strong>'+lwd+'</strong> following '+(exitRec&&exitRec.exitType ? exitRec.exitType.toLowerCase() : 'separation')+'. During their tenure, they have discharged their responsibilities sincerely and diligently.</p>'+
+      '<p>We wish them all the best in their future endeavours.</p>'+
+      '<div class="signature">'+
+        '<p>Yours faithfully,</p><br><br>'+
+        '<p style="font-weight:700">______________________________</p>'+
+        '<p style="font-weight:700">Principal / HR Manager</p>'+
+        '<p style="color:#666">'+_escH(schoolName)+'</p>'+
+      '</div>'+
+      '<div class="footer-note">This is a computer-generated document. For queries contact '+_escH(meta.schoolEmail||'')+'</div>'+
     '</div>'+
     '<script>window.onload=function(){window.print();}<\/script>'+
     '</body></html>');

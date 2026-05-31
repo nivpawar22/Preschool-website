@@ -346,9 +346,68 @@ window.openAccPayrollForTeacher = function(teacherId) {
   accProcessSalary(teacherId);
 };
 
+// ==================== ONBOARDING DOC UPLOAD HELPERS ====================
+function _tobDocWidget(docType, label, existingDocs) {
+  var docs = existingDocs || [];
+  var existing = docs.find(function(d) { return d.type === docType; });
+  var domKey = docType.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  var previewHtml = existing
+    ? '<div id="tob-prev-'+domKey+'" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">'+
+        '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(existing.name||label)+
+        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px" title="Remove"><i class="fas fa-times-circle"></i></button>'+
+      '</div>'
+    : '<div id="tob-prev-'+domKey+'" style="display:none"></div>';
+  return '<div>'+
+    '<label class="form-label" style="font-size:12px">'+_escH(label)+'</label>'+
+    '<div style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:8px 10px;background:#fafbfc;display:flex;flex-direction:column;gap:6px">'+
+      previewHtml+
+      '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;margin:0">'+
+        '<i class="fas fa-paperclip" style="color:#6366f1;font-size:13px;flex-shrink:0"></i>'+
+        '<span id="tob-label-'+domKey+'" style="flex:1">'+( existing ? 'Replace file...' : 'Choose PDF or image...')+'</span>'+
+        '<input type="file" id="tob-doc-'+domKey+'" accept="image/*,application/pdf" onchange="_tobDocSelect(\''+domKey+'\',\''+docType+'\',this)" style="display:none">'+
+      '</label>'+
+    '</div>'+
+  '</div>';
+}
+
+window._tobDocSelect = function(domKey, docType, inputEl) {
+  var file = inputEl.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('File must be under 5MB.'); inputEl.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (!window._tobPendingDocs) window._tobPendingDocs = {};
+    window._tobPendingDocs[docType] = { name: file.name, fileData: e.target.result, uploadedAt: new Date().toISOString() };
+    var prev = document.getElementById('tob-prev-' + domKey);
+    if (prev) {
+      prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46';
+      prev.innerHTML = '<i class="fas fa-check-circle"></i>&nbsp;'+_escH(file.name)+
+        '&nbsp;<button type="button" onclick="_tobRemoveDoc(\''+domKey+'\',\''+docType+'\')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#991b1b;font-size:12px"><i class="fas fa-times-circle"></i></button>';
+    }
+    var lbl = document.getElementById('tob-label-' + domKey);
+    if (lbl) lbl.textContent = 'Replace file...';
+  };
+  reader.readAsDataURL(file);
+};
+
+window._tobRemoveDoc = function(domKey, docType) {
+  if (!window._tobRemovedDocs) window._tobRemovedDocs = [];
+  if (!window._tobPendingDocs) window._tobPendingDocs = {};
+  if (window._tobRemovedDocs.indexOf(docType) === -1) window._tobRemovedDocs.push(docType);
+  delete window._tobPendingDocs[docType];
+  var prev = document.getElementById('tob-prev-' + domKey);
+  if (prev) { prev.style.display = 'none'; prev.innerHTML = ''; }
+  var inp = document.getElementById('tob-doc-' + domKey);
+  if (inp) inp.value = '';
+  var lbl = document.getElementById('tob-label-' + domKey);
+  if (lbl) lbl.textContent = 'Choose PDF or image...';
+};
+
 // ==================== ONBOARDING MODAL ====================
 window.openTeacherOnboarding = function(teacherId) {
   var isEdit = !!teacherId;
+  window._tobPendingDocs = {};
+  window._tobRemovedDocs = [];
   var data = DB.get();
   var t = isEdit ? ((data.users||[]).find(function(u){return u.id===teacherId;}) || {}) : {};
   var empId = isEdit ? (t.employeeId||'') : _genEmpId();
@@ -407,14 +466,19 @@ window.openTeacherOnboarding = function(teacherId) {
 
       // ---- DOCUMENTS ----
       '<div id="tob-sec-1" style="display:none">'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
-          '<div><label class="form-label">Aadhaar Card Number</label><input id="tob-aadhaar" class="form-control" type="text" value="'+_escH(t.aadhaarNo||'')+'" placeholder="XXXX XXXX XXXX"/></div>'+
-          '<div><label class="form-label">PAN Card Number</label><input id="tob-pan" class="form-control" type="text" value="'+_escH(t.panNo||'')+'" placeholder="ABCDE1234F"/></div>'+
-          '<div><label class="form-label">Passport Number (Optional)</label><input id="tob-passport" class="form-control" type="text" value="'+_escH(t.passportNo||'')+'" placeholder="e.g. J1234567"/></div>'+
-          '<div><label class="form-label">Driving License (Optional)</label><input id="tob-dl" class="form-control" type="text" value="'+_escH(t.drivingLicenseNo||'')+'" placeholder="License number"/></div>'+
+        '<div style="margin-bottom:14px;padding:10px 14px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#1e40af">'+
+          '<i class="fas fa-shield-alt" style="margin-right:6px"></i>Enter reference numbers and attach scanned copies (PDF or image, max 5MB each). Uploaded files are saved with the teacher record.'+
         '</div>'+
-        '<div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px dashed #cbd5e1;font-size:12px;color:#64748b">'+
-          '<i class="fas fa-info-circle" style="margin-right:6px;color:#1AA6CA"></i>Currently storing document reference numbers. Physical document uploads can be added in a future update.</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+          '<div><label class="form-label">Aadhaar Card Number <span style="color:#ef4444">*</span></label><input id="tob-aadhaar" class="form-control" type="text" value="'+_escH(t.aadhaarNo||'')+'" placeholder="XXXX XXXX XXXX"/></div>'+
+          _tobDocWidget('Aadhaar Card','Upload Aadhaar Card',t.documents)+
+          '<div><label class="form-label">PAN Card Number</label><input id="tob-pan" class="form-control" type="text" value="'+_escH(t.panNo||'')+'" placeholder="ABCDE1234F"/></div>'+
+          _tobDocWidget('PAN Card','Upload PAN Card',t.documents)+
+          '<div><label class="form-label">Passport Number <span style="font-size:11px;font-weight:400;color:#94a3b8">(Optional)</span></label><input id="tob-passport" class="form-control" type="text" value="'+_escH(t.passportNo||'')+'" placeholder="e.g. J1234567"/></div>'+
+          _tobDocWidget('Passport','Upload Passport',t.documents)+
+          '<div><label class="form-label">Driving License <span style="font-size:11px;font-weight:400;color:#94a3b8">(Optional)</span></label><input id="tob-dl" class="form-control" type="text" value="'+_escH(t.drivingLicenseNo||'')+'" placeholder="License number"/></div>'+
+          _tobDocWidget('Driving License','Upload Driving License',t.documents)+
+        '</div>'+
       '</div>'+
 
       // ---- EDUCATION ----
@@ -427,6 +491,18 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div style="grid-column:1/-1"><label class="form-label">Other Certifications</label><textarea id="tob-othcert" class="form-control" rows="2" placeholder="CTET, TET, CPR, etc.">'+_escH(t.qualOther||'')+'</textarea></div>'+
           '<div style="grid-column:1/-1"><label class="form-label">Previous Work Experience</label><textarea id="tob-exp" class="form-control" rows="3" placeholder="School names, duration, roles...">'+_escH(t.experienceSummary||'')+'</textarea></div>'+
         '</div>'+
+        '<div style="margin-top:18px;border-top:1px solid #e2e8f0;padding-top:16px">'+
+          '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">'+
+            '<i class="fas fa-folder-open" style="color:#6366f1;margin-right:6px"></i>Certificate &amp; Document Uploads'+
+          '</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+            _tobDocWidget('SSC Certificate','SSC Marksheet / Certificate',t.documents)+
+            _tobDocWidget('HSC Certificate','HSC Marksheet / Certificate',t.documents)+
+            _tobDocWidget('Graduation Certificate','Graduation Degree / Certificate',t.documents)+
+            _tobDocWidget('Teaching Certificate','B.Ed. / D.Ed. / NTT Certificate',t.documents)+
+            '<div style="grid-column:1/-1">'+_tobDocWidget('Experience Letters','Experience Letters (Previous Employers)',t.documents)+'</div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
 
       // ---- BANK ----
@@ -437,6 +513,7 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div><label class="form-label">Account Number</label><input id="tob-accno" class="form-control" type="text" value="'+_escH(t.bankAccount||'')+'" placeholder="XXXXXXXXXXXX"/></div>'+
           '<div><label class="form-label">IFSC Code</label><input id="tob-ifsc" class="form-control" type="text" value="'+_escH(t.ifsc||'')+'" placeholder="e.g. HDFC0001234"/></div>'+
           '<div><label class="form-label">UPI ID (Optional)</label><input id="tob-upi" class="form-control" type="text" value="'+_escH(t.upiId||'')+'" placeholder="mobile@upi"/></div>'+
+          '<div>'+_tobDocWidget('Cancelled Cheque','Cancelled Cheque / Bank Passbook',t.documents)+'</div>'+
         '</div>'+
       '</div>'+
 
@@ -539,6 +616,22 @@ window._saveTeacherOnboarding = function(teacherId) {
 
   var pass = document.getElementById('tob-pass') ? document.getElementById('tob-pass').value : '';
   if (pass) updates.password = pass;
+
+  // Merge uploaded documents
+  var dbData = DB.get();
+  var tCurrent = isEdit ? ((dbData.users||[]).find(function(u){ return u.id===teacherId; })||{}) : {};
+  var existingDocs = (tCurrent.documents || []).slice();
+  var pendingDocs = window._tobPendingDocs || {};
+  var removedDocs = window._tobRemovedDocs || [];
+  existingDocs = existingDocs.filter(function(d){ return removedDocs.indexOf(d.type) === -1; });
+  Object.keys(pendingDocs).forEach(function(docType) {
+    existingDocs = existingDocs.filter(function(d){ return d.type !== docType; });
+    var pd = pendingDocs[docType];
+    existingDocs.push({ type: docType, name: pd.name, fileData: pd.fileData, uploadedAt: pd.uploadedAt });
+  });
+  updates.documents = existingDocs;
+  window._tobPendingDocs = {};
+  window._tobRemovedDocs = [];
 
   if (isEdit) {
     DB.updateUser(teacherId, updates);

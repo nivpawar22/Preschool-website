@@ -48,7 +48,7 @@ const DB = (() => {
   }
 
   const defaults = {
-    meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: 'https://superkidsindia.com', schoolAddress: 'Plot number 51, Sector number 10, Bhosari Pradhikaran, Pune – 411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
+    meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: 'https://superkidsindia.com', schoolAddress: 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
     users: [
       {
         id: 'u1', role: 'superadmin', name: 'Dr. Sarah Mitchell', email: 'admin@school.edu',
@@ -293,6 +293,11 @@ const DB = (() => {
       if (!_data.hrDocumentRequests) { _data.hrDocumentRequests = []; mergeChanged = true; }
       if (!_data.resignationRecords) { _data.resignationRecords = []; mergeChanged = true; }
       if (!_data.leaveTypeConfig) { _data.leaveTypeConfig = JSON.parse(JSON.stringify(defaults.leaveTypeConfig)); mergeChanged = true; }
+      // Migrate old single-line address to 3-line format
+      if (_data.meta && _data.meta.schoolAddress && _data.meta.schoolAddress.indexOf('\n') === -1 && _data.meta.schoolAddress.indexOf('Plot') !== -1) {
+        _data.meta.schoolAddress = 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+        mergeChanged = true;
+      }
       save(_data);
       if (mergeChanged) saveToServer(_data);
     }

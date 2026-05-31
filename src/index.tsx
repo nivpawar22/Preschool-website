@@ -2256,7 +2256,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
   .hdr-sub{font-size:8px;letter-spacing:.08em}
   .hdr-bar{flex-direction:column;gap:6px;padding:8px 12px}
   .hdr-bl,.hdr-br{font-size:10px;line-height:1.7;word-break:break-word}
-  .hdr-br{text-align:left}
+  .hdr-br{text-align:right;width:100%}
   .rt{font-size:12px;padding:6px}
   .ig{grid-template-columns:1fr}
   .ic{border-right:none}

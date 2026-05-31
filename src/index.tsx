@@ -2250,13 +2250,14 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 @media(max-width:500px){
   body{padding:0;background:#fff}
   .wrap{border-radius:0;box-shadow:none}
-  .hdr-top{padding:10px 12px;gap:10px}
-  .hdr-top img{width:46px;height:46px;border:2px solid #E8B020}
-  .hdr-name{font-size:14px}
-  .hdr-sub{font-size:8px;letter-spacing:.08em}
-  .hdr-bar{flex-direction:column;gap:6px;padding:8px 12px}
-  .hdr-bl,.hdr-br{font-size:10px;line-height:1.7;word-break:break-word}
-  .hdr-br{text-align:right;width:100%}
+  .hdr-top{padding:10px 12px;gap:8px}
+  .hdr-top img{width:44px;height:44px;border:2px solid #E8B020}
+  .hdr-name{font-size:13px}
+  .hdr-sub{font-size:7px;letter-spacing:.06em}
+  .hdr-bar{flex-direction:row;gap:6px;padding:7px 10px;align-items:flex-start}
+  .hdr-bl{font-size:9px;line-height:1.7;word-break:break-word;flex:1;min-width:0}
+  .hdr-br{font-size:9px;line-height:1.6;word-break:break-word;flex:1;min-width:0;text-align:right}
+  .hdr-bl div .ico-badge{width:12px;height:12px;font-size:6px;margin-top:2px}
   .rt{font-size:12px;padding:6px}
   .ig{grid-template-columns:1fr}
   .ic{border-right:none}

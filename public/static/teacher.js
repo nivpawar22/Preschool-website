@@ -380,9 +380,7 @@ window.teacherApplyLeave = function() {
           <div style="grid-column:1/-1">
             <label class="form-label">Leave Type *</label>
             <select id="tl-type" class="form-control">
-              <option value="Casual">Casual Leave (CL)</option>
-              <option value="Sick">Sick Leave (SL)</option>
-              <option value="Earned">Earned / Annual Leave (EL)</option>
+              ${DB.getLeaveTypeConfig().filter(function(lt){return lt.active;}).map(function(lt){return '<option value="'+lt.name+'">'+lt.name+' ('+lt.code+')</option>';}).join('')}
             </select>
           </div>
           <div>

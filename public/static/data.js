@@ -205,6 +205,14 @@ const DB = (() => {
     staffAttendance: [],
     staffLeaves: [],
     salaryPayments: [],
+    salaryStructures: [],
+    hrLetters: [],
+    staffExitRecords: [],
+    leaveTypeConfig: [
+      { id: 'ltc_casual', name: 'Casual Leave', code: 'CL', totalDays: 12, carryForward: false, paid: true, active: true },
+      { id: 'ltc_sick', name: 'Sick Leave', code: 'SL', totalDays: 12, carryForward: false, paid: true, active: true },
+      { id: 'ltc_earned', name: 'Earned Leave', code: 'EL', totalDays: 15, carryForward: true, paid: true, active: true }
+    ],
     gallery: [
       { id: 'gal1', title: 'Sports Day 2024', description: 'Annual sports day activities with fun races and games', imageData: '', date: '2024-04-10', classId: 'cls1', studentIds: ['s1', 's4'], uploadedBy: 'u2', createdAt: '2024-04-10T09:00:00' },
       { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: '2024-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: '2024-04-12T14:00:00' },
@@ -263,6 +271,10 @@ const DB = (() => {
       if (!_data.staffAttendance) { _data.staffAttendance = []; mergeChanged = true; }
       if (!_data.staffLeaves) { _data.staffLeaves = []; mergeChanged = true; }
       if (!_data.salaryPayments) { _data.salaryPayments = []; mergeChanged = true; }
+      if (!_data.salaryStructures) { _data.salaryStructures = []; mergeChanged = true; }
+      if (!_data.hrLetters) { _data.hrLetters = []; mergeChanged = true; }
+      if (!_data.staffExitRecords) { _data.staffExitRecords = []; mergeChanged = true; }
+      if (!_data.leaveTypeConfig) { _data.leaveTypeConfig = JSON.parse(JSON.stringify(defaults.leaveTypeConfig)); mergeChanged = true; }
       save(_data);
       if (mergeChanged) saveToServer(_data);
     }
@@ -603,14 +615,14 @@ const DB = (() => {
   }
 
   function getLeaveBalance(teacherId, year) {
-    var limits = { Casual: 12, Sick: 12, Earned: 15 };
+    var ltConfig = (_data.leaveTypeConfig || defaults.leaveTypeConfig).filter(function(lt) { return lt.active; });
     var approved = (_data.staffLeaves || []).filter(function(l) {
       return l.teacherId === teacherId && l.status === 'Approved' && (l.fromDate || '').startsWith(year);
     });
     var used = {};
     approved.forEach(function(l) { used[l.leaveType] = (used[l.leaveType] || 0) + (l.days || 0); });
-    return Object.keys(limits).map(function(type) {
-      return { type: type, total: limits[type], used: used[type] || 0, remaining: limits[type] - (used[type] || 0) };
+    return ltConfig.map(function(lt) {
+      return { type: lt.name, code: lt.code, total: lt.totalDays, used: used[lt.name] || 0, remaining: lt.totalDays - (used[lt.name] || 0), paid: lt.paid };
     });
   }
 
@@ -630,6 +642,70 @@ const DB = (() => {
   function deleteSalaryPayment(id) {
     if (!_data.salaryPayments) return;
     _data.salaryPayments = _data.salaryPayments.filter(function(p) { return p.id !== id; });
+    commit();
+  }
+
+  // ---- Salary Structures ----
+  function getSalaryStructures(teacherId) {
+    return (_data.salaryStructures || [])
+      .filter(function(s) { return !teacherId || s.teacherId === teacherId; })
+      .sort(function(a, b) { return (b.effectiveFrom || '').localeCompare(a.effectiveFrom || ''); });
+  }
+  function addSalaryStructure(struct) {
+    if (!_data.salaryStructures) _data.salaryStructures = [];
+    _data.salaryStructures.unshift(struct);
+    commit();
+  }
+  function deleteSalaryStructure(id) {
+    if (!_data.salaryStructures) return;
+    _data.salaryStructures = _data.salaryStructures.filter(function(s) { return s.id !== id; });
+    commit();
+  }
+
+  // ---- HR Letters ----
+  function getHRLetters(teacherId) {
+    return (_data.hrLetters || [])
+      .filter(function(l) { return !teacherId || l.teacherId === teacherId; })
+      .sort(function(a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+  }
+  function addHRLetter(letter) {
+    if (!_data.hrLetters) _data.hrLetters = [];
+    _data.hrLetters.unshift(letter);
+    commit();
+  }
+  function deleteHRLetter(id) {
+    if (!_data.hrLetters) return;
+    _data.hrLetters = _data.hrLetters.filter(function(l) { return l.id !== id; });
+    commit();
+  }
+
+  // ---- Exit Records ----
+  function getStaffExitRecords(teacherId) {
+    return (_data.staffExitRecords || [])
+      .filter(function(r) { return !teacherId || r.teacherId === teacherId; })
+      .sort(function(a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+  }
+  function addStaffExitRecord(record) {
+    if (!_data.staffExitRecords) _data.staffExitRecords = [];
+    _data.staffExitRecords.unshift(record);
+    commit();
+  }
+  function updateStaffExitRecord(id, updates) {
+    var r = (_data.staffExitRecords || []).find(function(r) { return r.id === id; });
+    if (r) { Object.assign(r, updates); commit(); }
+  }
+  function deleteStaffExitRecord(id) {
+    if (!_data.staffExitRecords) return;
+    _data.staffExitRecords = _data.staffExitRecords.filter(function(r) { return r.id !== id; });
+    commit();
+  }
+
+  // ---- Leave Type Config ----
+  function getLeaveTypeConfig() {
+    return (_data.leaveTypeConfig || JSON.parse(JSON.stringify(defaults.leaveTypeConfig)));
+  }
+  function saveLeaveTypeConfig(config) {
+    _data.leaveTypeConfig = config;
     commit();
   }
 
@@ -696,6 +772,10 @@ const DB = (() => {
     getStaffAttendance, addStaffAttendance, updateStaffAttendance, deleteStaffAttendance,
     getStaffLeaves, addStaffLeave, updateStaffLeave, deleteStaffLeave, getLeaveBalance,
     getSalaryPayments, addSalaryPayment, deleteSalaryPayment,
+    getSalaryStructures, addSalaryStructure, deleteSalaryStructure,
+    getHRLetters, addHRLetter, deleteHRLetter,
+    getStaffExitRecords, addStaffExitRecord, updateStaffExitRecord, deleteStaffExitRecord,
+    getLeaveTypeConfig, saveLeaveTypeConfig,
     calcGrade, calcBMI,
     getMeta, updateMeta,
     defaults,

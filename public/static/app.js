@@ -205,8 +205,13 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
 
     // Management tab only for superadmin (not impersonated)
     if (user.role === 'superadmin' && !isImp) {
-      navItems.push({ id: 'management', icon: 'fa-cogs', label: 'Management', divider: true });
-      navItems.push({ id: 'my-profile', icon: 'fa-user-circle', label: 'My Profile' });
+      const pendingStaffLeaves = (DB.getStaffLeaves(null) || []).filter(l => l.status === 'Pending').length;
+      // Update leaves badge to include staff leave count
+      const leavesNavItem = navItems.find(n => n.id === 'leaves');
+      if (leavesNavItem) leavesNavItem.badge = (data.leaves.filter(l => l.status === 'pending').length + pendingStaffLeaves) || 0;
+      navItems.push({ id: 'teachers', icon: 'fa-chalkboard-teacher', label: 'Teachers', divider: true, dividerLabel: 'HR' });
+      navItems.push({ id: 'management', icon: 'fa-cogs', label: 'Management' });
+      navItems.push({ id: 'my-profile', icon: 'fa-user-circle', label: 'My Profile', divider: true, dividerLabel: 'Admin' });
       navItems.push({ id: 'school-settings', icon: 'fa-school', label: 'School Settings' });
     }
 

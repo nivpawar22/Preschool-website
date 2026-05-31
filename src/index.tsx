@@ -2261,7 +2261,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
         <div><span class="ico-badge"><i class="fas fa-globe"></i></span>${website}</div>
       </div>
       <div class="hdr-br">
-        <div style="font-weight:800;margin-bottom:2px">${schoolName}</div>
+        <div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>${schoolName}</div>
         <div>${rawAddr.replace(/\n/g, '<br>')}</div>
       </div>
     </div>

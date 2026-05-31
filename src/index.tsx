@@ -2232,7 +2232,9 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 .hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
 .hdr-bar{background:#dcad92;padding:8px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
-.hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.8;min-width:0;word-break:break-all}
+.hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.8;min-width:0}
+.hdr-bl div{display:flex;align-items:flex-start;overflow-wrap:anywhere;word-break:break-word}
+.hdr-bl div .ico-badge{margin-top:2px;flex-shrink:0}
 .hdr-br{font-size:11px;color:#0F2050;font-weight:600;text-align:right;line-height:1.7;min-width:0;word-break:break-word}
 .rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
 .ig{display:grid;grid-template-columns:1fr 1fr;border:1px solid #ddd}

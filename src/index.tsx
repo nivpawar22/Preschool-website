@@ -1925,11 +1925,11 @@ self.addEventListener('fetch',e=>{
   if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/r2/'))return;
   e.respondWith(fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return r;}).catch(()=>caches.match(e.request)));
 });`;
-  return new Response(js, { headers: {
+  return c.body(js, 200, {
     'Content-Type': 'application/javascript; charset=utf-8',
     'Service-Worker-Allowed': '/parent-portal',
     'Cache-Control': 'no-cache, no-store'
-  }});
+  });
 })
 
 // PARENT PORTAL
@@ -2420,6 +2420,97 @@ app.post('/api/fee-config', async (c) => {
     const { config } = await c.req.json()
     await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('fee_config', JSON.stringify(config), new Date().toISOString()).run()
     return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── OTP helpers ───────────────────────────────────────────────
+async function ensureOtpTable(db: any) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS password_reset_otps (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    otp TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used INTEGER DEFAULT 0
+  )`)
+}
+
+app.post('/api/request-otp', async (c) => {
+  try {
+    const { email } = await c.req.json()
+    if (!email) return c.json({ error: 'Email required' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    if (!row) return c.json({ notFound: true })
+    const data = JSON.parse(row.value)
+    const user = (data.users || []).find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
+    if (!user) return c.json({ notFound: true })
+    const apiKey = c.env.RESEND_API_KEY
+    if (!apiKey) return c.json({ noEmail: true })
+    await ensureOtpTable(c.env.DB)
+    const now = Date.now()
+    // Rate limit: block if an OTP was issued in the last 60 seconds
+    const recent = await c.env.DB.prepare(
+      'SELECT id FROM password_reset_otps WHERE email=? AND used=0 AND expires_at > ?'
+    ).bind(email.toLowerCase(), now + 540000).first<{id:string}>()
+    if (recent) return c.json({ rateLimited: true, retryAfter: 60 })
+    // Delete old OTPs for this email and generate new
+    await c.env.DB.prepare('DELETE FROM password_reset_otps WHERE email=?').bind(email.toLowerCase()).run()
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    const id = crypto.randomUUID()
+    await c.env.DB.prepare(
+      'INSERT INTO password_reset_otps (id,email,otp,expires_at,used) VALUES (?,?,?,?,0)'
+    ).bind(id, email.toLowerCase(), otp, now + 600000).run()
+    const meta = data.meta || {}
+    const schoolName = meta.schoolName || 'SuperKids India Preschool'
+    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+      <div style="background:#0F2050;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:#fff">${schoolName}</div>
+        <div style="font-size:11px;color:#C4893A;letter-spacing:.15em;margin-top:4px">PASSWORD RECOVERY</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:28px 24px;border-radius:0 0 8px 8px">
+        <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${user.name || user.username}</strong>,</p>
+        <p style="color:#4a5568;font-size:14px;margin:0 0 20px">Use the one-time password below to recover your account:</p>
+        <div style="text-align:center;margin:0 0 24px">
+          <div style="display:inline-block;background:#0F2050;color:#fff;font-size:34px;font-weight:900;letter-spacing:10px;padding:18px 36px;border-radius:12px;font-family:monospace">${otp}</div>
+          <div style="font-size:12px;color:#718096;margin-top:10px">Valid for <strong>10 minutes</strong>. Do not share this with anyone.</div>
+        </div>
+        <p style="font-size:12px;color:#a0aec0;border-top:1px solid #e2e8f0;padding-top:16px;margin:0">
+          If you did not request this, please contact us immediately.<br>
+          Phone: ${meta.schoolPhone || '9822-977-644'} &nbsp;|&nbsp; Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}
+        </p>
+      </div>
+    </div>`
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: `${schoolName} <onboarding@resend.dev>`,
+        to: [email.trim()],
+        subject: `Your ${schoolName} OTP – Password Recovery`,
+        html
+      })
+    })
+    if (!res.ok) { console.error('Resend OTP error:', await res.text()); return c.json({ error: 'Failed to send OTP email' }, 500) }
+    return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/verify-otp', async (c) => {
+  try {
+    const { email, otp } = await c.req.json()
+    if (!email || !otp) return c.json({ error: 'Email and OTP required' }, 400)
+    await ensureOtpTable(c.env.DB)
+    const now = Date.now()
+    const record = await c.env.DB.prepare(
+      'SELECT * FROM password_reset_otps WHERE email=? AND otp=? AND used=0 AND expires_at > ?'
+    ).bind(email.toLowerCase(), String(otp).trim(), now).first<{id:string}>()
+    if (!record) return c.json({ invalid: true })
+    await c.env.DB.prepare('UPDATE password_reset_otps SET used=1 WHERE id=?').bind(record.id).run()
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    if (!row) return c.json({ error: 'Data not found' }, 500)
+    const data = JSON.parse(row.value)
+    const user = (data.users || []).find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
+    if (!user) return c.json({ error: 'User not found' }, 404)
+    return c.json({ verified: true, name: user.name || user.username, username: user.username, password: user.password })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

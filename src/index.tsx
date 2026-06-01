@@ -2431,13 +2431,7 @@ app.post('/api/fee-config', async (c) => {
 
 // ── OTP helpers ───────────────────────────────────────────────
 async function ensureOtpTable(db: any) {
-  await db.exec(`CREATE TABLE IF NOT EXISTS password_reset_otps (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    otp TEXT NOT NULL,
-    expires_at INTEGER NOT NULL,
-    used INTEGER DEFAULT 0
-  )`)
+  await db.exec('CREATE TABLE IF NOT EXISTS password_reset_otps (id TEXT PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0)')
 }
 
 app.post('/api/request-otp', async (c) => {

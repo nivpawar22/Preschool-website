@@ -3485,6 +3485,23 @@ function renderSchoolSettings() {
           </div>
         </div>
 
+        <div style="border-top:2px solid #E8EDF5;margin:20px 0 16px;padding-top:20px">
+          <div style="font-weight:700;font-size:14px;color:#0F2050;margin-bottom:4px"><i class="fas fa-envelope" style="color:#1AA6CA;margin-right:6px"></i>Email Service Configuration</div>
+          <div style="font-size:12px;color:#6B7A9D;margin-bottom:14px">Required for OTP password recovery emails. Get a free API key at <a href="https://resend.com" target="_blank" style="color:#1AA6CA">resend.com</a> (free tier: 3,000 emails/month).</div>
+          <div class="form-group">
+            <label class="form-label">Resend API Key</label>
+            <div style="position:relative">
+              <input class="form-control" id="ss-resend-key" type="password" value="${meta.resendApiKey || ''}" placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx" style="padding-right:44px;font-family:monospace"/>
+              <button onclick="var f=document.getElementById('ss-resend-key');f.type=f.type==='password'?'text':'password'" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6B7A9D;cursor:pointer;font-size:14px"><i class="fas fa-eye"></i></button>
+            </div>
+            <div style="font-size:12px;margin-top:6px">
+              ${meta.resendApiKey
+                ? '<span style="color:#059669"><i class="fas fa-check-circle"></i> API key is configured — OTP emails are active</span>'
+                : '<span style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i> No API key saved — forgot password OTP will not work</span>'}
+            </div>
+          </div>
+        </div>
+
         <div style="display:flex;gap:12px;margin-top:8px">
           <button class="btn btn-primary" onclick="saveSchoolSettings()"><i class="fas fa-save"></i> Save Settings</button>
           <button class="btn btn-secondary" onclick="navigate('dashboard')">Cancel</button>
@@ -3501,8 +3518,11 @@ function saveSchoolSettings() {
   const email = document.getElementById('ss-email').value.trim();
   const address = document.getElementById('ss-address').value.trim();
   const year = document.getElementById('ss-year').value.trim();
+  const resendKey = document.getElementById('ss-resend-key').value.trim();
   if (!name) { showToast('School name is required', 'error'); return; }
-  DB.updateMeta({ schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year });
+  const updates = { schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year };
+  if (resendKey) updates.resendApiKey = resendKey;
+  DB.updateMeta(updates);
   showToast('School settings saved successfully!', 'success');
   setTimeout(() => renderSchoolSettings(), 600);
 }

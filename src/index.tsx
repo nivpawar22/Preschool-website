@@ -72,9 +72,13 @@ app.get('/api/dbstatus', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const row = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM app_data').first<{ cnt: number }>()
-    const resendConfigured = !!(c.env.RESEND_API_KEY)
-    const keyPrefix = c.env.RESEND_API_KEY ? c.env.RESEND_API_KEY.slice(0, 6) + '...' : 'NOT SET'
-    return c.json({ ok: true, message: 'D1 connected', rows: row?.cnt ?? 0, resendConfigured, keyPrefix })
+    const metaRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    const metaData = metaRow ? JSON.parse(metaRow.value) : {}
+    const effectiveKey = c.env.RESEND_API_KEY || (metaData.meta && metaData.meta.resendApiKey) || ''
+    const resendConfigured = !!effectiveKey
+    const keySource = c.env.RESEND_API_KEY ? 'cloudflare-secret' : (metaData.meta && metaData.meta.resendApiKey ? 'db-settings' : 'not-set')
+    const keyPrefix = effectiveKey ? effectiveKey.slice(0, 6) + '...' : 'NOT SET'
+    return c.json({ ok: true, message: 'D1 connected', rows: row?.cnt ?? 0, resendConfigured, keySource, keyPrefix })
   } catch (e: any) { return c.json({ ok: false, message: e.message || 'D1 not available' }) }
 })
 
@@ -2445,7 +2449,7 @@ app.post('/api/request-otp', async (c) => {
     const data = JSON.parse(row.value)
     const user = (data.users || []).find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
     if (!user) return c.json({ notFound: true })
-    const apiKey = c.env.RESEND_API_KEY
+    const apiKey = c.env.RESEND_API_KEY || (data.meta && data.meta.resendApiKey) || ''
     if (!apiKey) return c.json({ noEmail: true })
     await ensureOtpTable(c.env.DB)
     const now = Date.now()

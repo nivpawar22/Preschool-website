@@ -2483,13 +2483,19 @@ app.post('/api/request-otp', async (c) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: `${schoolName} <onboarding@resend.dev>`,
+        from: 'SuperKids India Preschool <onboarding@resend.dev>',
         to: [email.trim()],
         subject: `Your ${schoolName} OTP – Password Recovery`,
-        html
+        html,
+        reply_to: meta.schoolEmail || undefined
       })
     })
-    if (!res.ok) { console.error('Resend OTP error:', await res.text()); return c.json({ error: 'Failed to send OTP email' }, 500) }
+    if (!res.ok) {
+      let resendError = ''
+      try { const j: any = await res.json(); resendError = j.message || j.name || JSON.stringify(j) } catch { resendError = String(res.status) }
+      console.error('Resend OTP error:', resendError)
+      return c.json({ error: 'Resend error: ' + resendError })
+    }
     return c.json({ sent: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })

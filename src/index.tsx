@@ -2483,11 +2483,11 @@ app.post('/api/request-otp', async (c) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'SuperKids India Preschool <onboarding@resend.dev>',
+        from: meta.resendFromEmail ? `${schoolName} <${meta.resendFromEmail}>` : 'SuperKids India Preschool <onboarding@resend.dev>',
         to: [email.trim()],
         subject: `Your ${schoolName} OTP – Password Recovery`,
         html,
-        reply_to: meta.schoolEmail || undefined
+        ...(meta.schoolEmail ? { reply_to: meta.schoolEmail } : {})
       })
     })
     if (!res.ok) {

@@ -1948,7 +1948,8 @@ function uploadAnnouncementImage(input) {
   showToast('Uploading image…', 'default');
   var form = new FormData();
   form.append('file', input.files[0]);
-  fetch('/api/upload?folder=announcements', {method: 'POST', body: form})
+  var _annTok = localStorage.getItem('sk_session_token');
+  fetch('/api/upload?folder=announcements', {method: 'POST', headers: _annTok ? {'Authorization':'Bearer '+_annTok} : {}, body: form})
     .then(function(r) { return r.json(); })
     .then(function(r) {
       if (r.error) { showToast('Upload failed', 'error'); return; }
@@ -2496,7 +2497,7 @@ function forceSyncGallery() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; }
   fetch('/api/gallery/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
     body: JSON.stringify({ items: published })
   })
   .then(function(r) { return r.json(); })
@@ -2536,7 +2537,7 @@ async function toggleGalleryPublish(photoId) {
       var ext = mime.split('/')[1] || 'jpg';
       var formData = new FormData();
       formData.append('file', blob, 'photo.' + ext);
-      var r = await fetch('/api/upload', { method: 'POST', body: formData });
+      var r = await fetch('/api/upload', { method: 'POST', headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {}, body: formData });
       var result = await r.json();
       if (result.ok) {
         item.imageData = result.url;
@@ -2749,7 +2750,7 @@ async function saveGalleryItem() {
     var blob = new Blob([u8arr], { type: mime });
     var formData = new FormData();
     formData.append('file', blob, file.name || ('photo-' + i + '.jpg'));
-    return fetch('/api/upload', { method: 'POST', body: formData })
+    return fetch('/api/upload', { method: 'POST', headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {}, body: formData })
       .then(function(r) { return r.json(); })
       .then(function(result) {
         if (!result.ok) throw new Error(result.error || 'Upload failed');
@@ -2792,7 +2793,7 @@ function deleteGalleryPhoto(id) {
     var data = DB.get();
     var item = (data.gallery || []).find(function(g) { return g.id === id; });
     if (item && item.r2Key) {
-      fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
+      fetch('/api/upload', { method: 'DELETE', headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}), body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
     }
     DB.deleteGalleryItem(id);
     // Sync updated gallery to D1 so deleted item doesn't reappear on public gallery
@@ -2800,7 +2801,7 @@ function deleteGalleryPhoto(id) {
     var published = (updatedData.gallery || []).filter(function(i) { return i.published; });
     fetch('/api/gallery/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
       body: JSON.stringify({ items: published })
     }).catch(function(){});
     showToast('Photo deleted', 'success');
@@ -2853,7 +2854,7 @@ function autoSyncToWebsite() {
   if (!published.length) return;
   fetch('/api/gallery/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
     body: JSON.stringify({ items: published })
   }).catch(function() {});
 }
@@ -2997,7 +2998,7 @@ function renderEvents() {
   const currentYear = new Date().getFullYear();
 
   if (user.role === 'superadmin' || user.role === 'subadmin') {
-    fetch('/api/admissions')
+    fetch('/api/admissions', { headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {} })
       .then(function(r) { return r.json(); })
       .then(function(result) {
         const admissions = result.items || [];

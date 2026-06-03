@@ -373,8 +373,16 @@ function exitImpersonate() {
 function handleLogout() {
   _removeBackGuard();
   const fullyOut = Session.logout();
-  if (fullyOut) renderLogin();
-  else navigate('dashboard');
+  if (fullyOut) {
+    var token = localStorage.getItem('sk_session_token');
+    if (token) {
+      fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(function() {});
+      localStorage.removeItem('sk_session_token');
+    }
+    renderLogin();
+  } else {
+    navigate('dashboard');
+  }
 }
 
 // ---- Router ----
@@ -513,19 +521,41 @@ function _removeBackGuard() {
   window.removeEventListener('popstate', _backGuardHandler);
 }
 
-function doLogin() {
+async function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value.trim();
   const err = document.getElementById('login-err');
-  if (!u || !p) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Please enter username and password.'; return; }
-  const user = Session.login(u, p);
-  if (!user) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Invalid username or password.'; return; }
-  err.style.display = 'none';
-  _setupBackGuard();
-
-  if (user.role === 'parent') navigate('parent-home');
-  else if (user.role === 'admission') navigate('admission-dashboard');
-  else navigate('dashboard');
+  const errText = document.getElementById('login-err-text');
+  if (!u || !p) { err.style.display = 'flex'; errText.textContent = 'Please enter username and password.'; return; }
+  const btn = document.getElementById('login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…'; }
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      err.style.display = 'flex';
+      errText.textContent = json.error || 'Invalid username or password.';
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In'; }
+      return;
+    }
+    err.style.display = 'none';
+    localStorage.setItem('sk_session_token', json.token);
+    Session.setCurrentUser(json.user);
+    DB.log(json.user.id, 'LOGIN', 'User logged in as ' + json.user.role);
+    _setupBackGuard();
+    if (json.user.role === 'parent') navigate('parent-home');
+    else if (json.user.role === 'admission') navigate('admission-dashboard');
+    else if (json.user.role === 'accounting') navigate('acc-dashboard');
+    else navigate('dashboard');
+  } catch (e) {
+    err.style.display = 'flex';
+    errText.textContent = 'Connection error. Please try again.';
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In'; }
+  }
 }
 
 // ---- Forgot Password ----
@@ -618,12 +648,200 @@ function doForgotPassword() {
   });
 }
 
+function renderOtpStep() {
+  clearInterval(_fpResendTimer);
+  var masked = _maskEmail(_fpEmail);
+  document.getElementById('app').innerHTML =
+    '<div class="login-bg">' +
+    '<div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(26,166,202,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>' +
+    '<div class="login-orb" style="width:220px;height:220px;background:radial-gradient(circle,rgba(196,137,58,0.18) 0%,transparent 70%);bottom:15%;left:10%;animation-delay:-6s"></div>' +
+    '<div class="login-card">' +
+      '<div style="text-align:center;margin-bottom:28px">' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(196,137,58,0.15);border:2px solid rgba(196,137,58,0.5);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px"><i class="fas fa-shield-alt" style="color:#C4893A"></i></div>' +
+        '<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 6px">Enter OTP</h2>' +
+        '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0">A 6-digit OTP was sent to<br><strong style="color:rgba(255,255,255,0.8)">' + masked + '</strong></p>' +
+      '</div>' +
+      '<div style="margin-bottom:20px">' +
+        '<label style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.55);display:block;margin-bottom:8px;letter-spacing:0.5px;text-transform:uppercase">6-Digit OTP</label>' +
+        '<div style="position:relative">' +
+          '<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:14px"><i class="fas fa-key"></i></span>' +
+          '<input id="fp-otp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Enter OTP" style="padding-left:42px;padding-right:16px;width:100%;box-sizing:border-box;letter-spacing:6px;font-size:20px;font-weight:700;text-align:center"/>' +
+        '</div>' +
+      '</div>' +
+      '<div id="fp-otp-msg" style="display:none;margin-bottom:16px"></div>' +
+      '<button onclick="doVerifyOtp()" id="fp-verify-btn" style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(15,32,80,0.35)">' +
+        '<i class="fas fa-unlock-alt"></i> Verify OTP' +
+      '</button>' +
+      '<div style="text-align:center;margin-top:14px">' +
+        '<span style="color:rgba(255,255,255,0.4);font-size:13px">Didn\'t receive it? </span>' +
+        '<button id="fp-resend-btn" onclick="doResendOtp()" disabled style="background:none;border:none;color:rgba(255,255,255,0.35);font-size:13px;cursor:default;padding:0;font-weight:600">Resend OTP (<span id="fp-countdown">60</span>s)</button>' +
+      '</div>' +
+      '<div style="text-align:center;margin-top:8px">' +
+        '<button onclick="renderForgotPassword()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;text-decoration:underline;padding:4px 8px">← Change email</button>' +
+      '</div>' +
+    '</div></div>';
+
+  var otp = document.getElementById('fp-otp');
+  otp.addEventListener('keydown', function(e) { if (e.key === 'Enter') doVerifyOtp(); });
+  otp.addEventListener('input', function() {
+    var msg = document.getElementById('fp-otp-msg');
+    if (msg) msg.style.display = 'none';
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+  });
+  otp.focus();
+
+  var secs = 60;
+  _fpResendTimer = setInterval(function() {
+    secs--;
+    var cd = document.getElementById('fp-countdown');
+    var rb = document.getElementById('fp-resend-btn');
+    if (!cd || !rb) { clearInterval(_fpResendTimer); return; }
+    if (secs <= 0) {
+      clearInterval(_fpResendTimer);
+      rb.disabled = false;
+      rb.style.color = '#1AA6CA';
+      rb.style.cursor = 'pointer';
+      rb.innerHTML = 'Resend OTP';
+    } else {
+      cd.textContent = secs;
+    }
+  }, 1000);
+}
+
+function _fpOtpMsg(text, success) {
+  var el = document.getElementById('fp-otp-msg');
+  if (!el) return;
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.gap = '8px';
+  el.style.padding = '10px 14px';
+  el.style.borderRadius = '10px';
+  el.style.fontSize = '13px';
+  if (success) {
+    el.style.background = 'rgba(16,185,129,0.15)';
+    el.style.border = '1px solid rgba(16,185,129,0.35)';
+    el.style.color = '#6ee7b7';
+  } else {
+    el.style.background = 'rgba(239,68,68,0.12)';
+    el.style.border = '1px solid rgba(239,68,68,0.25)';
+    el.style.color = '#fca5a5';
+  }
+  el.innerHTML = '<i class="fas ' + (success ? 'fa-check-circle' : 'fa-exclamation-circle') + '" style="flex-shrink:0"></i><span>' + text + '</span>';
+}
+
+function doResendOtp() {
+  var rb = document.getElementById('fp-resend-btn');
+  if (rb) { rb.disabled = true; rb.style.color = 'rgba(255,255,255,0.35)'; rb.style.cursor = 'default'; rb.innerHTML = 'Resend OTP (<span id="fp-countdown">60</span>s)'; }
+  fetch('/api/request-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: _fpEmail })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (r.sent) {
+      _fpOtpMsg('New OTP sent to ' + _maskEmail(_fpEmail), true);
+      var secs = 60;
+      _fpResendTimer = setInterval(function() {
+        secs--;
+        var cd = document.getElementById('fp-countdown');
+        var rb2 = document.getElementById('fp-resend-btn');
+        if (!cd || !rb2) { clearInterval(_fpResendTimer); return; }
+        if (secs <= 0) {
+          clearInterval(_fpResendTimer);
+          rb2.disabled = false;
+          rb2.style.color = '#1AA6CA';
+          rb2.style.cursor = 'pointer';
+          rb2.innerHTML = 'Resend OTP';
+        } else { cd.textContent = secs; }
+      }, 1000);
+    } else {
+      _fpOtpMsg('Failed to resend. Please try again.', false);
+      if (rb) { rb.disabled = false; rb.style.color = '#1AA6CA'; rb.style.cursor = 'pointer'; rb.innerHTML = 'Resend OTP'; }
+    }
+  })
+  .catch(function() {
+    _fpOtpMsg('Network error. Please try again.', false);
+    if (rb) { rb.disabled = false; rb.style.color = '#1AA6CA'; rb.style.cursor = 'pointer'; rb.innerHTML = 'Resend OTP'; }
+  });
+}
+
+function doVerifyOtp() {
+  var otp = (document.getElementById('fp-otp') || {}).value || '';
+  if (!otp || otp.replace(/\D/g,'').length !== 6) { _fpOtpMsg('Please enter the 6-digit OTP.', false); return; }
+  var btn = document.getElementById('fp-verify-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...'; }
+  fetch('/api/verify-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: _fpEmail, otp: otp.trim() })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-unlock-alt"></i> Verify OTP'; }
+    if (r.locked) { _fpOtpMsg('Too many incorrect attempts. Please request a new OTP.', false); return; }
+    if (r.invalid) { _fpOtpMsg('Incorrect or expired OTP. Please try again.', false); return; }
+    if (r.error) { _fpOtpMsg('Error: ' + r.error, false); return; }
+    if (r.verified) {
+      clearInterval(_fpResendTimer);
+      document.getElementById('app').innerHTML =
+        '<div class="login-bg">' +
+        '<div class="login-orb" style="width:360px;height:360px;background:radial-gradient(circle,rgba(26,166,202,0.2) 0%,transparent 70%);top:5%;right:5%;animation-delay:-3s"></div>' +
+        '<div class="login-card">' +
+          '<div style="text-align:center;margin-bottom:20px">' +
+            '<div style="width:52px;height:52px;border-radius:50%;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:22px"><i class="fas fa-check-circle" style="color:#10b981"></i></div>' +
+            '<h2 style="font-size:18px;font-weight:800;color:#fff;margin:0 0 4px">Identity Verified</h2>' +
+            '<p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0">Your login credentials are shown below.</p>' +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:18px;margin-bottom:20px">' +
+            '<div style="font-size:11px;font-weight:700;color:#C4893A;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px"><i class="fas fa-key" style="margin-right:6px"></i>Your Login Credentials</div>' +
+            '<table style="width:100%;border-collapse:collapse">' +
+              '<tr><td style="padding:7px 6px;color:rgba(255,255,255,0.45);font-size:11px;text-transform:uppercase;letter-spacing:.05em;width:90px">Name</td><td style="padding:7px 6px;font-weight:700;color:#fff;word-break:break-word">' + (r.name||'') + '</td></tr>' +
+              '<tr><td style="padding:7px 6px;color:rgba(255,255,255,0.45);font-size:11px;text-transform:uppercase;letter-spacing:.05em">Username</td><td style="padding:7px 6px;font-weight:700;color:#fff;letter-spacing:.05em">' + (r.username||'') + '</td></tr>' +
+              '<tr><td style="padding:7px 6px;color:rgba(255,255,255,0.45);font-size:11px;text-transform:uppercase;letter-spacing:.05em">Password</td><td style="padding:7px 6px;font-weight:700;color:#E8B020;letter-spacing:.05em">' + (r.password||'') + '</td></tr>' +
+            '</table>' +
+          '</div>' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:16px">Keep your credentials safe. Do not share them with anyone.</div>' +
+          '<button onclick="renderLogin()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#0F2050 0%,#1AA6CA 100%);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
+            '<i class="fas fa-sign-in-alt"></i> Back to Login' +
+          '</button>' +
+        '</div></div>';
+    }
+  })
+  .catch(function() {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-unlock-alt"></i> Verify OTP'; }
+    _fpOtpMsg('Network error. Please try again.', false);
+  });
+}
+
 // ---- Init ----
 window.addEventListener('DOMContentLoaded', () => {
   // Show loading while fetching data from server
   document.getElementById('app').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0F2050"><img src="/static/logo.png" style="width:80px;height:80px;border-radius:50%;object-fit:contain"><div style="color:#90C4E0;font-size:14px;font-weight:600">Loading SuperKids Portal...</div></div>';
 
   DB.initFromServer().then(function() {
-    renderLogin();
+    var token = localStorage.getItem('sk_session_token');
+    if (token) {
+      fetch('/api/session', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(json) {
+          if (json && json.ok && json.user) {
+            Session.setCurrentUser(json.user);
+            if (json.user.role === 'parent') navigate('parent-home');
+            else if (json.user.role === 'admission') navigate('admission-dashboard');
+            else if (json.user.role === 'accounting') navigate('acc-dashboard');
+            else navigate('dashboard');
+          } else {
+            localStorage.removeItem('sk_session_token');
+            renderLogin();
+          }
+        })
+        .catch(function() {
+          localStorage.removeItem('sk_session_token');
+          renderLogin();
+        });
+    } else {
+      renderLogin();
+    }
   });
 });

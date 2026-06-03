@@ -22,9 +22,12 @@ const DB = (() => {
   }
 
   function saveToServer(data) {
+    var token = localStorage.getItem('sk_session_token');
+    if (!token) return; // no session — skip server sync, local save still happened
+    var authHdr = { 'Authorization': 'Bearer ' + token };
     fetch('/api/db', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHdr),
       body: JSON.stringify(data)
     })
     .then(function(r) {
@@ -41,7 +44,7 @@ const DB = (() => {
     if (gallery.length) {
       fetch('/api/gallery/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHdr),
         body: JSON.stringify({ items: gallery })
       }).catch(function() {});
     }
@@ -52,47 +55,52 @@ const DB = (() => {
     users: [
       {
         id: 'u1', role: 'superadmin', name: 'Dr. Sarah Mitchell', email: 'admin@school.edu',
-        username: 'superadmin', password: 'admin123', phone: '+1-555-0100',
+        username: 'superadmin', password: '', phone: '+1-555-0100',
         avatar: '#6366f1', active: true, deleted: false, createdAt: '2024-01-01'
       },
       {
         id: 'u2', role: 'subadmin', name: 'Mr. James Carter', email: 'jcarter@school.edu',
-        username: 'subadmin1', password: 'teacher123', phone: '+1-555-0201',
+        username: 'subadmin1', password: '', phone: '+1-555-0201',
         avatar: '#10b981', active: true, deleted: false, createdAt: '2024-01-10',
         assignedClass: 'cls1',
         permissions: { students: true, attendance: true, grades: true, growth: true, activities: true, syllabus: true, announcements: true, leaves: true }
       },
       {
         id: 'u3', role: 'subadmin', name: 'Ms. Emily Rodriguez', email: 'erodriguez@school.edu',
-        username: 'subadmin2', password: 'teacher123', phone: '+1-555-0202',
+        username: 'subadmin2', password: '', phone: '+1-555-0202',
         avatar: '#f59e0b', active: true, deleted: false, createdAt: '2024-01-12',
         assignedClass: 'cls2',
         permissions: { students: true, attendance: true, grades: true, growth: true, activities: true, syllabus: true, announcements: true, leaves: true }
       },
       {
         id: 'u4', role: 'subadmin', name: 'Mr. David Kim', email: 'dkim@school.edu',
-        username: 'subadmin3', password: 'teacher123', phone: '+1-555-0203',
+        username: 'subadmin3', password: '', phone: '+1-555-0203',
         avatar: '#ef4444', active: false, deleted: false, createdAt: '2024-02-01',
         assignedClass: 'cls3',
         permissions: { students: true, attendance: true, grades: false, growth: true, activities: true, syllabus: false, announcements: false, leaves: true }
       },
       {
         id: 'p1', role: 'parent', name: 'Robert Johnson', email: 'rjohnson@email.com',
-        username: 'parent1', password: 'parent123', phone: '+1-555-0301',
+        username: 'parent1', password: '', phone: '+1-555-0301',
         avatar: '#8b5cf6', active: true, deleted: false, createdAt: '2024-01-15',
         childIds: ['s1', 's2']
       },
       {
         id: 'p2', role: 'parent', name: 'Maria Williams', email: 'mwilliams@email.com',
-        username: 'parent2', password: 'parent123', phone: '+1-555-0302',
+        username: 'parent2', password: '', phone: '+1-555-0302',
         avatar: '#06b6d4', active: true, deleted: false, createdAt: '2024-01-16',
         childIds: ['s3']
       },
       {
         id: 'p3', role: 'parent', name: 'Thomas Brown', email: 'tbrown@email.com',
-        username: 'parent3', password: 'parent123', phone: '+1-555-0303',
+        username: 'parent3', password: '', phone: '+1-555-0303',
         avatar: '#84cc16', active: true, deleted: false, createdAt: '2024-02-05',
         childIds: ['s4', 's5']
+      },
+      {
+        id: 'acc1', role: 'accounting', name: 'Accounts Manager', email: 'accounts@superkidsindia.com',
+        username: 'accounting', password: '', phone: '',
+        avatar: '#8b5cf6', active: true, deleted: false, createdAt: '2024-01-01'
       }
     ],
     classes: [
@@ -808,5 +816,16 @@ const Session = (() => {
     if (_user && _user.id === updatedUser.id) _user = { ..._user, ...updatedUser };
   }
 
-  return { login, logout, impersonate, current, isImpersonating, originalUser, hasPermission, canDelete, updateCurrent };
+  function setCurrentUser(user) {
+    _user = user;
+    _impersonating = null;
+  }
+
+  return { login, logout, impersonate, current, isImpersonating, originalUser, hasPermission, canDelete, updateCurrent, setCurrentUser };
 })();
+
+// Global auth header helper — used by admin.js and other modules
+function skAuthHeader() {
+  var token = localStorage.getItem('sk_session_token');
+  return token ? { 'Authorization': 'Bearer ' + token } : {};
+}

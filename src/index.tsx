@@ -163,14 +163,32 @@ app.get('/api/gallery', async (c) => {
   return c.json({ items: [...d1Items, ...r2Items], _debug: { d1Count: d1Items.length, r2Count: r2Items.length, d1Error, r2Error } })
 })
 
-const Layout = ({ children, title = 'SuperKids Preschool' }: { children: any; title?: string }) => `
+const Layout = ({ children, title = 'SuperKids India Preschool', description = '', canonical = '', jsonLd = '' }: { children: any; title?: string; description?: string; canonical?: string; jsonLd?: string }) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
+  ${description ? `<meta name="description" content="${description}" />` : ''}
+  ${canonical ? `<link rel="canonical" href="${canonical}" />` : ''}
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SuperKids India Preschool" />
+  <meta property="og:title" content="${title}" />
+  ${description ? `<meta property="og:description" content="${description}" />` : ''}
+  ${canonical ? `<meta property="og:url" content="${canonical}" />` : ''}
+  <meta property="og:image" content="https://superkidsindia.com/static/school-logo.png" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="${title}" />
+  ${description ? `<meta name="twitter:description" content="${description}" />` : ''}
+  <meta name="twitter:image" content="https://superkidsindia.com/static/school-logo.png" />
+  <!-- Indexing -->
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow" />
   <link rel="icon" type="image/png" href="/static/logo.png">
+  ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -776,6 +794,38 @@ const Footer = () => `
 </footer>
 `
 
+// ── SEO: robots.txt & sitemap ─────────────────────────────────
+app.get('/robots.txt', (c) => c.text(
+`User-agent: *
+Allow: /
+Disallow: /parent-portal
+Disallow: /api/
+Disallow: /receipt/
+
+Sitemap: https://superkidsindia.com/sitemap.xml`
+))
+
+app.get('/sitemap.xml', (c) => {
+  const pages = [
+    { url: '/', priority: '1.0', changefreq: 'weekly' },
+    { url: '/about', priority: '0.8', changefreq: 'monthly' },
+    { url: '/programs', priority: '0.9', changefreq: 'monthly' },
+    { url: '/gallery', priority: '0.7', changefreq: 'weekly' },
+    { url: '/contact', priority: '0.8', changefreq: 'monthly' },
+  ]
+  const today = new Date().toISOString().split('T')[0]
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${pages.map(p => `  <url>
+    <loc>https://superkidsindia.com${p.url}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join('\n')}
+</urlset>`
+  return c.body(xml, 200, { 'Content-Type': 'application/xml' })
+})
+
 // ================================================================
 // HOME PAGE
 // ================================================================
@@ -1013,7 +1063,34 @@ app.get('/', async (c) => {
 
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'SuperKids India Preschool - Unleash Your Child\'s Inner Hero!' }))
+  return c.html(Layout({
+    children: content,
+    title: 'SuperKids India Preschool – Bhosari, Pune | Best Preschool for Ages 1.5–6',
+    description: 'SuperKids India Preschool in Bhosari, Pune offers play-based early childhood education for ages 1.5–6. Nursery, Jr. KG, Sr. KG, Day Care & more. Enroll today!',
+    canonical: 'https://superkidsindia.com/',
+    jsonLd: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Preschool",
+      "name": "SuperKids India Preschool",
+      "url": "https://superkidsindia.com",
+      "logo": "https://superkidsindia.com/static/school-logo.png",
+      "image": "https://superkidsindia.com/static/school-logo.png",
+      "description": "Play-based early childhood education for ages 1.5–6 in Bhosari, Pune.",
+      "telephone": "+91-9822-977-644",
+      "email": "superkidsprincipal@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Matoshri Apartment, Plot Number 51, Sector No 10, Bhosari Pradhikaran",
+        "addressLocality": "Bhosari",
+        "addressRegion": "Pune",
+        "postalCode": "411026",
+        "addressCountry": "IN"
+      },
+      "geo": { "@type": "GeoCoordinates", "latitude": "18.638", "longitude": "73.858" },
+      "openingHours": "Mo-Sa 08:00-18:00",
+      "sameAs": ["https://superkidsindia.com"]
+    })
+  }))
 })
 
 // ================================================================
@@ -1198,7 +1275,7 @@ app.get('/about', async (c) => {
 
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'About - SuperKids India Preschool' }))
+  return c.html(Layout({ children: content, title: 'About Us – SuperKids India Preschool, Bhosari Pune', description: 'Learn about SuperKids India Preschool – our mission, teaching philosophy, experienced faculty, and commitment to nurturing every child\'s potential in Bhosari, Pune.', canonical: 'https://superkidsindia.com/about' }))
 })
 
 // ================================================================
@@ -1365,7 +1442,7 @@ app.get('/programs', (c) => {
 
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'Programs - SuperKids India Preschool' }))
+  return c.html(Layout({ children: content, title: 'Programs & Curriculum – SuperKids India Preschool', description: 'Explore our programs: Playgroup, Nursery, Jr. KG, Sr. KG, Day Care, and After School. Play-based learning designed for children aged 1.5–6 in Bhosari, Pune.', canonical: 'https://superkidsindia.com/programs' }))
 })
 
 // ================================================================
@@ -1650,7 +1727,7 @@ app.get('/gallery', async (c) => {
 
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'Gallery - SuperKids India Preschool' }))
+  return c.html(Layout({ children: content, title: 'Gallery – SuperKids India Preschool', description: 'See our classrooms, activities, events, and happy children at SuperKids India Preschool in Bhosari, Pune.', canonical: 'https://superkidsindia.com/gallery' }))
 })
 
 // ================================================================
@@ -1916,7 +1993,7 @@ app.get('/contact', (c) => {
 
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'Contact & Enroll - SuperKids India Preschool' }))
+  return c.html(Layout({ children: content, title: 'Contact & Enroll – SuperKids India Preschool, Bhosari Pune', description: 'Contact SuperKids India Preschool to book a visit or enroll your child. Located at Matoshri Apartment, Sector 10, Bhosari Pradhikaran, Pune 411026. Call: 9822-977-644.', canonical: 'https://superkidsindia.com/contact' }))
 })
 
 // ================================================================

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /parent-portal
+Disallow: /api/
+Disallow: /receipt/
+
+Sitemap: https://superkidsindia.com/sitemap.xml

@@ -794,38 +794,6 @@ const Footer = () => `
 </footer>
 `
 
-// ── SEO: robots.txt & sitemap ─────────────────────────────────
-app.get('/robots.txt', (c) => c.text(
-`User-agent: *
-Allow: /
-Disallow: /parent-portal
-Disallow: /api/
-Disallow: /receipt/
-
-Sitemap: https://superkidsindia.com/sitemap.xml`
-))
-
-app.get('/sitemap.xml', (c) => {
-  const pages = [
-    { url: '/', priority: '1.0', changefreq: 'weekly' },
-    { url: '/about', priority: '0.8', changefreq: 'monthly' },
-    { url: '/programs', priority: '0.9', changefreq: 'monthly' },
-    { url: '/gallery', priority: '0.7', changefreq: 'weekly' },
-    { url: '/contact', priority: '0.8', changefreq: 'monthly' },
-  ]
-  const today = new Date().toISOString().split('T')[0]
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(p => `  <url>
-    <loc>https://superkidsindia.com${p.url}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${p.changefreq}</changefreq>
-    <priority>${p.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`
-  return c.body(xml, 200, { 'Content-Type': 'application/xml' })
-})
-
 // ================================================================
 // HOME PAGE
 // ================================================================

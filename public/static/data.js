@@ -24,6 +24,9 @@ const DB = (() => {
   function saveToServer(data) {
     var token = localStorage.getItem('sk_session_token');
     if (!token) return; // no session — skip server sync, local save still happened
+    // Only admin roles write the full DB blob; parents/accounting use dedicated endpoints
+    var sess = typeof Session !== 'undefined' ? Session.current() : null;
+    if (sess && (sess.role === 'parent' || sess.role === 'admission' || sess.role === 'accounting')) return;
     var authHdr = { 'Authorization': 'Bearer ' + token };
     fetch('/api/db', {
       method: 'POST',
@@ -31,6 +34,11 @@ const DB = (() => {
       body: JSON.stringify(data)
     })
     .then(function(r) {
+      if (r.status === 401) {
+        // Session expired or invalid — clear stale token silently, no toast
+        localStorage.removeItem('sk_session_token');
+        return;
+      }
       if (!r.ok) return r.json().then(function(e) {
         window._dbError = e.error || ('DB save failed: HTTP ' + r.status);
         if (typeof showToast === 'function') showToast('⚠️ Server sync failed: ' + window._dbError, 'error');

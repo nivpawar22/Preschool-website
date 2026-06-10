@@ -6,6 +6,9 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// Browsers auto-request /favicon.ico — serve the school logo PNG for it
+app.get('/favicon.ico', (c) => c.redirect('/static/school-logo.png', 302))
+
 // ── Security helpers ─────────────────────────────────────────
 function esc(s: any): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
@@ -283,7 +286,8 @@ const Layout = ({ children, title = 'SuperKids India Preschool', description = '
   <!-- Indexing -->
   <meta name="robots" content="index, follow" />
   <meta name="googlebot" content="index, follow" />
-  <link rel="icon" type="image/png" href="/static/logo.png">
+  <link rel="icon" type="image/png" href="/static/school-logo.png">
+  <link rel="shortcut icon" href="/favicon.ico">
   ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2095,7 +2099,8 @@ app.get('/parent-portal', (c) => {
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="SuperKids"/>
   <link rel="apple-touch-icon" href="/static/school-logo.png"/>
-  <link rel="icon" href="/static/logo.svg" type="image/svg+xml"/>
+  <link rel="icon" type="image/png" href="/static/school-logo.png"/>
+  <link rel="shortcut icon" href="/favicon.ico"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

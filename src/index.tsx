@@ -2580,4 +2580,92 @@ app.post('/api/forgot-password', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── Staff Attendance (GPS-validated) ─────────────────────────
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000
+  const toRad = (x: number) => x * Math.PI / 180
+  const φ1 = toRad(lat1), φ2 = toRad(lat2)
+  const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1)
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))
+}
+
+async function ensureStaffAttTable(db: any) {
+  await db.exec('CREATE TABLE IF NOT EXISTS staff_attendance (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, date TEXT NOT NULL, check_in TEXT, check_in_lat REAL, check_in_lng REAL, check_out TEXT, check_out_lat REAL, check_out_lng REAL, distance_meters REAL, status TEXT DEFAULT \'Present\', late_arrival INTEGER DEFAULT 0, note TEXT DEFAULT \'\', created_at TEXT DEFAULT CURRENT_TIMESTAMP)')
+}
+
+app.post('/api/staff-attendance', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { status, checkInTime, lat, lng, note } = await c.req.json()
+    if (typeof lat !== 'number' || typeof lng !== 'number') return c.json({ error: 'Valid GPS coordinates required' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    const data = row ? JSON.parse(row.value) : {}
+    const meta = data.meta || {}
+    const schoolLat = Number(meta.schoolLat || 0)
+    const schoolLng = Number(meta.schoolLng || 0)
+    const schoolRadius = Number(meta.schoolRadius || 200)
+    if (!schoolLat || !schoolLng) return c.json({ notConfigured: true, error: 'School location not configured. Ask admin to set GPS coordinates in School Settings.' }, 422)
+    const distance = haversineMeters(lat, lng, schoolLat, schoolLng)
+    if (distance > schoolRadius) return c.json({ outsidePremises: true, distance, limit: Math.round(schoolRadius) }, 403)
+    const user = (data.users || []).find((u: any) => u.id === sess.user_id)
+    const userName = user ? (user.name || user.username) : 'Unknown'
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const now = new Date()
+    const checkIn = checkInTime || now.toTimeString().slice(0, 5)
+    const lateArrival = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15) ? 1 : 0
+    await ensureStaffAttTable(c.env.DB)
+    const existing = await c.env.DB.prepare('SELECT id FROM staff_attendance WHERE user_id=? AND date=?').bind(sess.user_id, todayStr).first<{id:string}>()
+    if (existing) return c.json({ alreadyMarked: true, error: 'Attendance already marked for today' }, 409)
+    const id = `sa_${Date.now()}_${Math.random().toString(36).slice(2,5)}`
+    await c.env.DB.prepare('INSERT INTO staff_attendance (id,user_id,user_name,date,check_in,check_in_lat,check_in_lng,distance_meters,status,late_arrival,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(id, sess.user_id, userName, todayStr, checkIn, lat, lng, distance, status || 'Present', lateArrival, note || '').run()
+    return c.json({ ok: true, id, distance, lateArrival: !!lateArrival })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/staff-attendance/checkout', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    const { lat, lng } = body as any
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const checkOut = new Date().toTimeString().slice(0, 5)
+    await ensureStaffAttTable(c.env.DB)
+    const existing = await c.env.DB.prepare('SELECT id FROM staff_attendance WHERE user_id=? AND date=?').bind(sess.user_id, todayStr).first<{id:string}>()
+    if (!existing) return c.json({ error: 'No check-in found for today' }, 404)
+    await c.env.DB.prepare('UPDATE staff_attendance SET check_out=?,check_out_lat=?,check_out_lng=? WHERE id=?').bind(checkOut, lat || null, lng || null, existing.id).run()
+    return c.json({ ok: true, checkOut })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/staff-attendance', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const month = c.req.query('month') || ''
+    const userId = sess.role === 'superadmin' ? (c.req.query('userId') || '') : sess.user_id
+    let query = 'SELECT * FROM staff_attendance WHERE 1=1'
+    const params: any[] = []
+    if (userId) { query += ' AND user_id=?'; params.push(userId) }
+    if (month) { query += ' AND date LIKE ?'; params.push(month + '%') }
+    query += ' ORDER BY date DESC, check_in'
+    const rows = await c.env.DB.prepare(query).bind(...params).all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/staff-attendance/all', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
+    const rows = await c.env.DB.prepare('SELECT * FROM staff_attendance WHERE date LIKE ? ORDER BY date DESC, user_name').bind(month + '%').all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 export default app

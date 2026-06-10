@@ -3388,6 +3388,17 @@ function renderSchoolSettings() {
             <input class="form-control" id="ss-year" type="text" value="${meta.academicYear || ''}" placeholder="e.g. 2025-2026"/>
             <div style="font-size:12px;color:#6B7A9D;margin-top:5px"><i class="fas fa-info-circle"></i> Auto-compute: July–Dec = current year start, Jan–June = previous year start. Currently: <strong>${getAcademicYear()}</strong></div>
           </div>
+          <div style="grid-column:1/-1;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:8px">
+            <div style="font-size:13px;font-weight:800;color:#0F2050;margin-bottom:12px"><i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:6px"></i>Teacher Attendance Geofencing</div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#065f46"><i class="fas fa-info-circle" style="margin-right:6px"></i>Set the school GPS location and allowed radius. Teachers can only mark attendance from within this area.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+              <div><label class="form-label">School Latitude</label><input class="form-control" id="ss-lat" type="number" step="any" value="${meta.schoolLat || ''}" placeholder="e.g. 19.0760"/></div>
+              <div><label class="form-label">School Longitude</label><input class="form-control" id="ss-lng" type="number" step="any" value="${meta.schoolLng || ''}" placeholder="e.g. 72.8777"/></div>
+              <div><label class="form-label">Radius (meters)</label><input class="form-control" id="ss-radius" type="number" value="${meta.schoolRadius || 200}" placeholder="200"/></div>
+              <button class="btn btn-secondary" onclick="detectSchoolLocation()" type="button" style="white-space:nowrap"><i class="fas fa-crosshairs"></i> Use My Location</button>
+            </div>
+            ${meta.schoolLat && meta.schoolLng ? `<div style="margin-top:10px;font-size:12px;color:#64748b"><i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:4px"></i>Currently: ${meta.schoolLat}, ${meta.schoolLng} · Radius: ${meta.schoolRadius||200}m · <a href="https://maps.google.com/?q=${meta.schoolLat},${meta.schoolLng}" target="_blank" style="color:#1AA6CA">View on Maps</a></div>` : '<div style="margin-top:10px;font-size:12px;color:#94a3b8"><i class="fas fa-info-circle" style="margin-right:4px"></i>No location set yet. Click "Use My Location" to auto-fill, or enter coordinates manually.</div>'}
+          </div>
         </div>
 
         <div style="display:flex;gap:12px;margin-top:8px">
@@ -3406,8 +3417,32 @@ function saveSchoolSettings() {
   const email = document.getElementById('ss-email').value.trim();
   const address = document.getElementById('ss-address').value.trim();
   const year = document.getElementById('ss-year').value.trim();
+  const latVal = document.getElementById('ss-lat').value.trim();
+  const lngVal = document.getElementById('ss-lng').value.trim();
+  const lat = latVal ? parseFloat(latVal) : null;
+  const lng = lngVal ? parseFloat(lngVal) : null;
+  const radius = parseInt(document.getElementById('ss-radius').value) || 200;
   if (!name) { showToast('School name is required', 'error'); return; }
-  DB.updateMeta({ schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year });
+  if ((latVal && isNaN(lat)) || (lngVal && isNaN(lng))) { showToast('Invalid GPS coordinates', 'error'); return; }
+  DB.updateMeta({ schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year, schoolLat: lat, schoolLng: lng, schoolRadius: radius });
   showToast('School settings saved successfully!', 'success');
   setTimeout(() => renderSchoolSettings(), 600);
+}
+
+function detectSchoolLocation() {
+  if (!navigator.geolocation) { showToast('Geolocation is not supported by this browser', 'error'); return; }
+  showToast('Detecting location...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var latEl = document.getElementById('ss-lat');
+      var lngEl = document.getElementById('ss-lng');
+      if (latEl) latEl.value = pos.coords.latitude.toFixed(6);
+      if (lngEl) lngEl.value = pos.coords.longitude.toFixed(6);
+      showToast('Location detected: ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5), 'success');
+    },
+    function(err) {
+      showToast('Could not detect location: ' + (err.message || 'Permission denied'), 'error');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 }

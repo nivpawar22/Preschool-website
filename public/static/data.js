@@ -21,7 +21,7 @@ const DB = (() => {
     return null;
   }
 
-  function saveToServer(data) {
+  function saveToServer(data, quiet) {
     var token = localStorage.getItem('sk_session_token');
     if (!token) return; // no session — skip server sync, local save still happened
     // Only admin roles write the full DB blob; parents/accounting use dedicated endpoints
@@ -39,13 +39,13 @@ const DB = (() => {
         localStorage.removeItem('sk_session_token');
         return;
       }
-      if (!r.ok) return r.json().then(function(e) {
+      if (!r.ok && !quiet) return r.json().then(function(e) {
         window._dbError = e.error || ('DB save failed: HTTP ' + r.status);
         if (typeof showToast === 'function') showToast('⚠️ Server sync failed: ' + window._dbError, 'error');
       });
       window._dbError = null;
     })
-    .catch(function(e) { window._dbError = e.message; });
+    .catch(function() {}); // network errors are silent — local save already succeeded
 
     // Also push published gallery items to a dedicated small endpoint
     var gallery = (data.gallery || []).filter(function(g) { return g.published; });
@@ -310,7 +310,7 @@ const DB = (() => {
         mergeChanged = true;
       }
       save(_data);
-      if (mergeChanged) saveToServer(_data);
+      if (mergeChanged) saveToServer(_data, true); // quiet — session may not be restored yet
     }
     // Sync classes from Management → Classes & Seat Capacity
     try {

@@ -6,6 +6,29 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// ── Security helpers ─────────────────────────────────────────
+function esc(s: any): string {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+}
+
+const ALLOWED_MIME = new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif','image/svg+xml'])
+
+async function ensureSessionTable(db: any) {
+  await db.exec('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id TEXT NOT NULL, role TEXT NOT NULL, expires_at INTEGER NOT NULL)')
+}
+
+async function getSession(c: any): Promise<{token:string,user_id:string,role:string}|null> {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    if (!auth.startsWith('Bearer ')) return null
+    const token = auth.slice(7)
+    if (!token) return null
+    await ensureSessionTable(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM sessions WHERE token=? AND expires_at > ?').bind(token, Date.now()).first<{token:string,user_id:string,role:string}>()
+    return row || null
+  } catch { return null }
+}
+
 // ── DB API ──────────────────────────────────────────────
 app.get('/api/init', async (c) => {
   await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
@@ -16,26 +39,45 @@ app.get('/api/db', async (c) => {
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
-    return c.json(row ? JSON.parse(row.value) : null)
+    if (!row) return c.json(null)
+    const data = JSON.parse(row.value)
+    // Strip passwords before sending to client — auth is server-side
+    if (Array.isArray(data.users)) {
+      data.users = data.users.map((u: any) => { const { password: _p, ...safe } = u; return safe })
+    }
+    return c.json(data)
   } catch { return c.json(null) }
 })
 
 app.post('/api/db', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
-    const data = await c.req.json()
-    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('main', JSON.stringify(data), new Date().toISOString()).run()
+    const incoming = await c.req.json()
+    // Preserve server-side passwords — client never receives them so sends empty strings
+    const existing = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+    if (existing && Array.isArray(incoming.users)) {
+      const existingData = JSON.parse(existing.value)
+      const pwMap: Record<string, string> = {}
+      for (const u of (existingData.users || [])) if (u.id && u.password) pwMap[u.id] = u.password
+      incoming.users = incoming.users.map((u: any) => ({ ...u, password: u.password || pwMap[u.id] || '' }))
+    }
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('main', JSON.stringify(incoming), new Date().toISOString()).run()
     return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
 // ── R2 Upload API ────────────────────────────────────────
 app.post('/api/upload', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const form = await c.req.formData()
     const file = form.get('file') as File | null
     if (!file) return c.json({ error: 'No file provided' }, 400)
-    const ext = file.name.split('.').pop() || 'jpg'
+    if (!ALLOWED_MIME.has(file.type)) return c.json({ error: 'File type not allowed' }, 400)
+    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 10)
     const folder = (c.req.query('folder') || 'gallery').replace(/[^a-z0-9_-]/gi, '')
     const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
@@ -45,6 +87,8 @@ app.post('/api/upload', async (c) => {
 })
 
 app.delete('/api/upload', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const { key } = await c.req.json()
     if (key) await c.env.MEDIA.delete(key)
@@ -82,8 +126,60 @@ app.get('/api/dbstatus', async (c) => {
   } catch (e: any) { return c.json({ ok: false, message: e.message || 'D1 not available' }) }
 })
 
+// ── Auth API ─────────────────────────────────────────────────
+app.post('/api/login', async (c) => {
+  try {
+    const { username, password } = await c.req.json()
+    if (!username || !password) return c.json({ error: 'Username and password required' }, 400)
+    await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    if (!row) return c.json({ error: 'Invalid credentials' }, 401)
+    const data = JSON.parse(row.value)
+    const user = (data.users || []).find((u: any) =>
+      u.username === String(username).trim() && u.password === String(password) && !u.deleted
+    )
+    if (!user) return c.json({ error: 'Invalid credentials' }, 401)
+    if (!user.active) return c.json({ error: 'Account not activated. Please contact the school.' }, 401)
+    await ensureSessionTable(c.env.DB)
+    const token = crypto.randomUUID()
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000
+    await c.env.DB.prepare('DELETE FROM sessions WHERE user_id=? AND expires_at < ?').bind(user.id, Date.now()).run()
+    await c.env.DB.prepare('INSERT INTO sessions (token,user_id,role,expires_at) VALUES (?,?,?,?)').bind(token, user.id, user.role, expiresAt).run()
+    const { password: _pw, ...safeUser } = user
+    return c.json({ ok: true, token, user: safeUser })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/logout', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    if (auth.startsWith('Bearer ')) {
+      const token = auth.slice(7)
+      await ensureSessionTable(c.env.DB)
+      await c.env.DB.prepare('DELETE FROM sessions WHERE token=?').bind(token).run()
+    }
+    return c.json({ ok: true })
+  } catch { return c.json({ ok: true }) }
+})
+
+app.get('/api/session', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ ok: false }, 401)
+  try {
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    if (!row) return c.json({ ok: false }, 401)
+    const data = JSON.parse(row.value)
+    const user = (data.users || []).find((u: any) => u.id === sess.user_id && !u.deleted && u.active)
+    if (!user) return c.json({ ok: false }, 401)
+    const { password: _pw, ...safeUser } = user
+    return c.json({ ok: true, user: safeUser })
+  } catch { return c.json({ ok: false }, 401) }
+})
+
 // Dedicated gallery sync — accepts just published items array (small payload)
 app.post('/api/gallery/sync', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const body = await c.req.json()
@@ -991,14 +1087,14 @@ app.get('/', async (c) => {
             <div class="flex gap-1 mb-4">
               ${'<span style="color:#E8B020">★</span>'.repeat(t.stars)}${'<span style="color:#DCE1EF">★</span>'.repeat(5 - t.stars)}
             </div>
-            <p style="color:#2A3B60;line-height:1.8;font-size:0.95rem;margin-bottom:1.5rem;font-style:italic">"${t.text}"</p>
+            <p style="color:#2A3B60;line-height:1.8;font-size:0.95rem;margin-bottom:1.5rem;font-style:italic">&ldquo;${esc(t.text)}&rdquo;</p>
             <div class="flex items-center gap-3">
               <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#0F2050,#1AA6CA);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0">
-                ${t.parentName.charAt(0).toUpperCase()}
+                ${esc(t.parentName.charAt(0).toUpperCase())}
               </div>
               <div>
-                <div style="font-weight:800;color:#0F1E3D">${t.parentName}</div>
-                <div style="color:#6B7A9D;font-size:0.85rem">${t.childInfo}</div>
+                <div style="font-weight:800;color:#0F1E3D">${esc(t.parentName)}</div>
+                <div style="color:#6B7A9D;font-size:0.85rem">${esc(t.childInfo)}</div>
               </div>
             </div>
           </div>
@@ -1230,11 +1326,11 @@ app.get('/about', async (c) => {
             <div style="width:90px;height:90px;border-radius:50%;border:3px solid ${t.color};box-shadow:0 0 0 6px ${t.color}18;margin:0 auto 1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f8faff;flex-shrink:0">
               ${avatarHtml}
             </div>
-            <h3 style="font-weight:800;color:#0F1E3D;margin-bottom:0.25rem">${t.name}</h3>
-            <p style="color:${t.color};font-size:0.85rem;font-weight:700;margin-bottom:0.5rem">${t.role}</p>
-            ${t.certification ? `<div class="badge mb-2" style="background:${t.color}18;color:${t.color};border:1px solid ${t.color}33;font-size:0.7rem">${t.certification}</div>` : ''}
-            ${t.experience ? `<p style="color:#6B7A9D;font-size:0.8rem">${t.experience} experience</p>` : ''}
-            ${t.bio ? `<p style="color:#6B7A9D;font-size:0.78rem;margin-top:6px;line-height:1.5">${t.bio}</p>` : ''}
+            <h3 style="font-weight:800;color:#0F1E3D;margin-bottom:0.25rem">${esc(t.name)}</h3>
+            <p style="color:${esc(t.color)};font-size:0.85rem;font-weight:700;margin-bottom:0.5rem">${esc(t.role)}</p>
+            ${t.certification ? `<div class="badge mb-2" style="background:${esc(t.color)}18;color:${esc(t.color)};border:1px solid ${esc(t.color)}33;font-size:0.7rem">${esc(t.certification)}</div>` : ''}
+            ${t.experience ? `<p style="color:#6B7A9D;font-size:0.8rem">${esc(t.experience)} experience</p>` : ''}
+            ${t.bio ? `<p style="color:#6B7A9D;font-size:0.78rem;margin-top:6px;line-height:1.5">${esc(t.bio)}</p>` : ''}
           </div>`
         }).join('')}
       </div>
@@ -2092,6 +2188,8 @@ app.get('/api/team', async (c) => {
 })
 
 app.post('/api/team', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await c.env.DB.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
     const { members } = await c.req.json()
@@ -2133,6 +2231,8 @@ app.post('/api/reviews', async (c) => {
 })
 
 app.put('/api/reviews/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const id = c.req.param('id')
     const { status } = await c.req.json()
@@ -2148,6 +2248,8 @@ app.put('/api/reviews/:id', async (c) => {
 })
 
 app.delete('/api/reviews/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const id = c.req.param('id')
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key = ?').bind('reviews').first<{ value: string }>()
@@ -2184,6 +2286,8 @@ async function nextCounter(db: any, key: string, prefix: string, year: string) {
 
 // ── Inquiries ────────────────────────────────────────────────
 app.get('/api/inquiries', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const rows = await c.env.DB.prepare('SELECT * FROM inquiries ORDER BY created_at DESC').all()
@@ -2203,6 +2307,8 @@ app.post('/api/inquiries', async (c) => {
 })
 
 app.put('/api/inquiries/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const id = c.req.param('id')
@@ -2220,6 +2326,8 @@ app.put('/api/inquiries/:id', async (c) => {
 })
 
 app.delete('/api/inquiries/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     await c.env.DB.prepare('DELETE FROM inquiries WHERE id=?').bind(c.req.param('id')).run()
@@ -2229,6 +2337,8 @@ app.delete('/api/inquiries/:id', async (c) => {
 
 // ── Admissions ───────────────────────────────────────────────
 app.get('/api/admissions', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const rows = await c.env.DB.prepare('SELECT * FROM admissions ORDER BY created_at DESC').all()
@@ -2237,6 +2347,8 @@ app.get('/api/admissions', async (c) => {
 })
 
 app.get('/api/admissions/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const row = await c.env.DB.prepare('SELECT * FROM admissions WHERE id=?').bind(c.req.param('id')).first()
@@ -2246,6 +2358,8 @@ app.get('/api/admissions/:id', async (c) => {
 })
 
 app.post('/api/admissions', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const { data, status } = await c.req.json()
@@ -2260,6 +2374,8 @@ app.post('/api/admissions', async (c) => {
 })
 
 app.put('/api/admissions/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const id = c.req.param('id')
@@ -2276,6 +2392,8 @@ app.put('/api/admissions/:id', async (c) => {
 })
 
 app.delete('/api/admissions/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     await c.env.DB.prepare('DELETE FROM admissions WHERE id=?').bind(c.req.param('id')).run()
@@ -2285,6 +2403,8 @@ app.delete('/api/admissions/:id', async (c) => {
 
 // ── Payments ─────────────────────────────────────────────────
 app.get('/api/payments', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const rows = await c.env.DB.prepare('SELECT * FROM payments ORDER BY created_at DESC').all()
@@ -2293,6 +2413,8 @@ app.get('/api/payments', async (c) => {
 })
 
 app.get('/api/payments/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const row = await c.env.DB.prepare('SELECT * FROM payments WHERE id=?').bind(c.req.param('id')).first()
@@ -2302,6 +2424,8 @@ app.get('/api/payments/:id', async (c) => {
 })
 
 app.post('/api/payments', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const { data, admissionId } = await c.req.json()
@@ -2315,6 +2439,8 @@ app.post('/api/payments', async (c) => {
 })
 
 app.delete('/api/payments/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     await c.env.DB.prepare('DELETE FROM payments WHERE id=?').bind(c.req.param('id')).run()
@@ -2449,6 +2575,8 @@ app.get('/api/academic-config', async (c) => {
 })
 
 app.post('/api/academic-config', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const { config } = await c.req.json()
@@ -2466,6 +2594,8 @@ app.get('/api/fee-config', async (c) => {
 })
 
 app.post('/api/fee-config', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
   try {
     await ensureAdmTables(c.env.DB)
     const { config } = await c.req.json()
@@ -2476,7 +2606,8 @@ app.post('/api/fee-config', async (c) => {
 
 // ── OTP helpers ───────────────────────────────────────────────
 async function ensureOtpTable(db: any) {
-  await db.exec('CREATE TABLE IF NOT EXISTS password_reset_otps (id TEXT PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0)')
+  await db.exec('CREATE TABLE IF NOT EXISTS password_reset_otps (id TEXT PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0, attempts INTEGER DEFAULT 0)')
+  try { await db.exec('ALTER TABLE password_reset_otps ADD COLUMN attempts INTEGER DEFAULT 0') } catch {}
 }
 
 app.post('/api/request-otp', async (c) => {
@@ -2551,10 +2682,20 @@ app.post('/api/verify-otp', async (c) => {
     if (!email || !otp) return c.json({ error: 'Email and OTP required' }, 400)
     await ensureOtpTable(c.env.DB)
     const now = Date.now()
+    // Find the active (unused, unexpired) OTP record for this email
     const record = await c.env.DB.prepare(
-      'SELECT * FROM password_reset_otps WHERE email=? AND otp=? AND used=0 AND expires_at > ?'
-    ).bind(email.toLowerCase(), String(otp).trim(), now).first<{id:string}>()
+      'SELECT * FROM password_reset_otps WHERE email=? AND used=0 AND expires_at > ?'
+    ).bind(email.toLowerCase(), now).first<{id:string,otp:string,attempts:number}>()
     if (!record) return c.json({ invalid: true })
+    // Check attempt limit
+    if ((record.attempts || 0) >= 5) return c.json({ locked: true })
+    // Verify OTP value
+    if (record.otp !== String(otp).trim()) {
+      await c.env.DB.prepare('UPDATE password_reset_otps SET attempts=attempts+1 WHERE id=?').bind(record.id).run()
+      const newAttempts = (record.attempts || 0) + 1
+      if (newAttempts >= 5) return c.json({ locked: true })
+      return c.json({ invalid: true })
+    }
     await c.env.DB.prepare('UPDATE password_reset_otps SET used=1 WHERE id=?').bind(record.id).run()
     const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
     if (!row) return c.json({ error: 'Data not found' }, 500)
@@ -2576,7 +2717,7 @@ app.post('/api/forgot-password', async (c) => {
     const user = users.find((u: any) => u.email && u.email.trim().toLowerCase() === email.trim().toLowerCase())
     if (!user) return c.json({ notFound: true })
     const apiKey = c.env.RESEND_API_KEY
-    if (!apiKey) return c.json({ notConfigured: true, username: user.username, password: user.password, name: user.name || user.username })
+    if (!apiKey) return c.json({ notConfigured: true })
     const meta = data.meta || {}
     const schoolName = meta.schoolName || 'SuperKids India Preschool'
     const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
@@ -2612,6 +2753,94 @@ app.post('/api/forgot-password', async (c) => {
       return c.json({ error: 'Failed to send email' }, 500)
     }
     return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Staff Attendance (GPS-validated) ─────────────────────────
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000
+  const toRad = (x: number) => x * Math.PI / 180
+  const φ1 = toRad(lat1), φ2 = toRad(lat2)
+  const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1)
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)))
+}
+
+async function ensureStaffAttTable(db: any) {
+  await db.exec('CREATE TABLE IF NOT EXISTS staff_attendance (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, date TEXT NOT NULL, check_in TEXT, check_in_lat REAL, check_in_lng REAL, check_out TEXT, check_out_lat REAL, check_out_lng REAL, distance_meters REAL, status TEXT DEFAULT \'Present\', late_arrival INTEGER DEFAULT 0, note TEXT DEFAULT \'\', created_at TEXT DEFAULT CURRENT_TIMESTAMP)')
+}
+
+app.post('/api/staff-attendance', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { status, checkInTime, lat, lng, note } = await c.req.json()
+    if (typeof lat !== 'number' || typeof lng !== 'number') return c.json({ error: 'Valid GPS coordinates required' }, 400)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    const data = row ? JSON.parse(row.value) : {}
+    const meta = data.meta || {}
+    const schoolLat = Number(meta.schoolLat || 0)
+    const schoolLng = Number(meta.schoolLng || 0)
+    const schoolRadius = Number(meta.schoolRadius || 200)
+    if (!schoolLat || !schoolLng) return c.json({ notConfigured: true, error: 'School location not configured. Ask admin to set GPS coordinates in School Settings.' }, 422)
+    const distance = haversineMeters(lat, lng, schoolLat, schoolLng)
+    if (distance > schoolRadius) return c.json({ outsidePremises: true, distance, limit: Math.round(schoolRadius) }, 403)
+    const user = (data.users || []).find((u: any) => u.id === sess.user_id)
+    const userName = user ? (user.name || user.username) : 'Unknown'
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const now = new Date()
+    const checkIn = checkInTime || now.toTimeString().slice(0, 5)
+    const lateArrival = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15) ? 1 : 0
+    await ensureStaffAttTable(c.env.DB)
+    const existing = await c.env.DB.prepare('SELECT id FROM staff_attendance WHERE user_id=? AND date=?').bind(sess.user_id, todayStr).first<{id:string}>()
+    if (existing) return c.json({ alreadyMarked: true, error: 'Attendance already marked for today' }, 409)
+    const id = `sa_${Date.now()}_${Math.random().toString(36).slice(2,5)}`
+    await c.env.DB.prepare('INSERT INTO staff_attendance (id,user_id,user_name,date,check_in,check_in_lat,check_in_lng,distance_meters,status,late_arrival,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(id, sess.user_id, userName, todayStr, checkIn, lat, lng, distance, status || 'Present', lateArrival, note || '').run()
+    return c.json({ ok: true, id, distance, lateArrival: !!lateArrival })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/staff-attendance/checkout', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    const { lat, lng } = body as any
+    const todayStr = new Date().toISOString().slice(0, 10)
+    const checkOut = new Date().toTimeString().slice(0, 5)
+    await ensureStaffAttTable(c.env.DB)
+    const existing = await c.env.DB.prepare('SELECT id FROM staff_attendance WHERE user_id=? AND date=?').bind(sess.user_id, todayStr).first<{id:string}>()
+    if (!existing) return c.json({ error: 'No check-in found for today' }, 404)
+    await c.env.DB.prepare('UPDATE staff_attendance SET check_out=?,check_out_lat=?,check_out_lng=? WHERE id=?').bind(checkOut, lat || null, lng || null, existing.id).run()
+    return c.json({ ok: true, checkOut })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/staff-attendance', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const month = c.req.query('month') || ''
+    const userId = sess.role === 'superadmin' ? (c.req.query('userId') || '') : sess.user_id
+    let query = 'SELECT * FROM staff_attendance WHERE 1=1'
+    const params: any[] = []
+    if (userId) { query += ' AND user_id=?'; params.push(userId) }
+    if (month) { query += ' AND date LIKE ?'; params.push(month + '%') }
+    query += ' ORDER BY date DESC, check_in'
+    const rows = await c.env.DB.prepare(query).bind(...params).all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.get('/api/staff-attendance/all', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
+    const rows = await c.env.DB.prepare('SELECT * FROM staff_attendance WHERE date LIKE ? ORDER BY date DESC, user_name').bind(month + '%').all()
+    return c.json({ items: rows.results || [] })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

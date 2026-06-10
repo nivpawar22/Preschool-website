@@ -2044,7 +2044,8 @@ function uploadAnnouncementImage(input) {
   showToast('Uploading image…', 'default');
   var form = new FormData();
   form.append('file', input.files[0]);
-  fetch('/api/upload?folder=announcements', {method: 'POST', body: form})
+  var _annTok = localStorage.getItem('sk_session_token');
+  fetch('/api/upload?folder=announcements', {method: 'POST', headers: _annTok ? {'Authorization':'Bearer '+_annTok} : {}, body: form})
     .then(function(r) { return r.json(); })
     .then(function(r) {
       if (r.error) { showToast('Upload failed', 'error'); return; }
@@ -2592,7 +2593,7 @@ function forceSyncGallery() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; }
   fetch('/api/gallery/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
     body: JSON.stringify({ items: published })
   })
   .then(function(r) { return r.json(); })
@@ -2632,7 +2633,7 @@ async function toggleGalleryPublish(photoId) {
       var ext = mime.split('/')[1] || 'jpg';
       var formData = new FormData();
       formData.append('file', blob, 'photo.' + ext);
-      var r = await fetch('/api/upload', { method: 'POST', body: formData });
+      var r = await fetch('/api/upload', { method: 'POST', headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {}, body: formData });
       var result = await r.json();
       if (result.ok) {
         item.imageData = result.url;
@@ -2845,7 +2846,7 @@ async function saveGalleryItem() {
     var blob = new Blob([u8arr], { type: mime });
     var formData = new FormData();
     formData.append('file', blob, file.name || ('photo-' + i + '.jpg'));
-    return fetch('/api/upload', { method: 'POST', body: formData })
+    return fetch('/api/upload', { method: 'POST', headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {}, body: formData })
       .then(function(r) { return r.json(); })
       .then(function(result) {
         if (!result.ok) throw new Error(result.error || 'Upload failed');
@@ -2888,7 +2889,7 @@ function deleteGalleryPhoto(id) {
     var data = DB.get();
     var item = (data.gallery || []).find(function(g) { return g.id === id; });
     if (item && item.r2Key) {
-      fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
+      fetch('/api/upload', { method: 'DELETE', headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}), body: JSON.stringify({ key: item.r2Key }) }).catch(function(){});
     }
     DB.deleteGalleryItem(id);
     // Sync updated gallery to D1 so deleted item doesn't reappear on public gallery
@@ -2896,7 +2897,7 @@ function deleteGalleryPhoto(id) {
     var published = (updatedData.gallery || []).filter(function(i) { return i.published; });
     fetch('/api/gallery/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
       body: JSON.stringify({ items: published })
     }).catch(function(){});
     showToast('Photo deleted', 'success');
@@ -2949,7 +2950,7 @@ function autoSyncToWebsite() {
   if (!published.length) return;
   fetch('/api/gallery/sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({'Content-Type':'application/json'}, typeof skAuthHeader === 'function' ? skAuthHeader() : {}),
     body: JSON.stringify({ items: published })
   }).catch(function() {});
 }
@@ -3093,7 +3094,7 @@ function renderEvents() {
   const currentYear = new Date().getFullYear();
 
   if (user.role === 'superadmin' || user.role === 'subadmin') {
-    fetch('/api/admissions')
+    fetch('/api/admissions', { headers: typeof skAuthHeader === 'function' ? skAuthHeader() : {} })
       .then(function(r) { return r.json(); })
       .then(function(result) {
         const admissions = result.items || [];
@@ -3483,6 +3484,17 @@ function renderSchoolSettings() {
             <input class="form-control" id="ss-year" type="text" value="${meta.academicYear || ''}" placeholder="e.g. 2025-2026"/>
             <div style="font-size:12px;color:#6B7A9D;margin-top:5px"><i class="fas fa-info-circle"></i> Auto-compute: July–Dec = current year start, Jan–June = previous year start. Currently: <strong>${getAcademicYear()}</strong></div>
           </div>
+          <div style="grid-column:1/-1;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:8px">
+            <div style="font-size:13px;font-weight:800;color:#0F2050;margin-bottom:12px"><i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:6px"></i>Teacher Attendance Geofencing</div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#065f46"><i class="fas fa-info-circle" style="margin-right:6px"></i>Set the school GPS location and allowed radius. Teachers can only mark attendance from within this area.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+              <div><label class="form-label">School Latitude</label><input class="form-control" id="ss-lat" type="number" step="any" value="${meta.schoolLat || ''}" placeholder="e.g. 19.0760"/></div>
+              <div><label class="form-label">School Longitude</label><input class="form-control" id="ss-lng" type="number" step="any" value="${meta.schoolLng || ''}" placeholder="e.g. 72.8777"/></div>
+              <div><label class="form-label">Radius (meters)</label><input class="form-control" id="ss-radius" type="number" value="${meta.schoolRadius || 200}" placeholder="200"/></div>
+              <button class="btn btn-secondary" onclick="detectSchoolLocation()" type="button" style="white-space:nowrap"><i class="fas fa-crosshairs"></i> Use My Location</button>
+            </div>
+            ${meta.schoolLat && meta.schoolLng ? `<div style="margin-top:10px;font-size:12px;color:#64748b"><i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:4px"></i>Currently: ${meta.schoolLat}, ${meta.schoolLng} · Radius: ${meta.schoolRadius||200}m · <a href="https://maps.google.com/?q=${meta.schoolLat},${meta.schoolLng}" target="_blank" style="color:#1AA6CA">View on Maps</a></div>` : '<div style="margin-top:10px;font-size:12px;color:#94a3b8"><i class="fas fa-info-circle" style="margin-right:4px"></i>No location set yet. Click "Use My Location" to auto-fill, or enter coordinates manually.</div>'}
+          </div>
         </div>
 
         <div style="border-top:2px solid #E8EDF5;margin:20px 0 16px;padding-top:20px">
@@ -3527,12 +3539,36 @@ function saveSchoolSettings() {
   const year = document.getElementById('ss-year').value.trim();
   const resendKey = document.getElementById('ss-resend-key').value.trim();
   const resendFrom = document.getElementById('ss-resend-from').value.trim();
+  const latVal = document.getElementById('ss-lat').value.trim();
+  const lngVal = document.getElementById('ss-lng').value.trim();
+  const lat = latVal ? parseFloat(latVal) : null;
+  const lng = lngVal ? parseFloat(lngVal) : null;
+  const radius = parseInt(document.getElementById('ss-radius').value) || 200;
   if (!name) { showToast('School name is required', 'error'); return; }
   if (resendKey && !resendFrom) { showToast('Please enter a From Email Address for Resend', 'error'); return; }
-  const updates = { schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year };
+  if ((latVal && isNaN(lat)) || (lngVal && isNaN(lng))) { showToast('Invalid GPS coordinates', 'error'); return; }
+  const updates = { schoolName: name, principalName: principal, schoolPhone: phone, schoolEmail: email, schoolAddress: address, academicYear: year, schoolLat: lat, schoolLng: lng, schoolRadius: radius };
   if (resendKey) updates.resendApiKey = resendKey;
   if (resendFrom) updates.resendFromEmail = resendFrom;
   DB.updateMeta(updates);
   showToast('School settings saved successfully!', 'success');
   setTimeout(() => renderSchoolSettings(), 600);
+}
+
+function detectSchoolLocation() {
+  if (!navigator.geolocation) { showToast('Geolocation is not supported by this browser', 'error'); return; }
+  showToast('Detecting location...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var latEl = document.getElementById('ss-lat');
+      var lngEl = document.getElementById('ss-lng');
+      if (latEl) latEl.value = pos.coords.latitude.toFixed(6);
+      if (lngEl) lngEl.value = pos.coords.longitude.toFixed(6);
+      showToast('Location detected: ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5), 'success');
+    },
+    function(err) {
+      showToast('Could not detect location: ' + (err.message || 'Permission denied'), 'error');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 }

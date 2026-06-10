@@ -381,8 +381,16 @@ function exitImpersonate() {
 function handleLogout() {
   _removeBackGuard();
   const fullyOut = Session.logout();
-  if (fullyOut) renderLogin();
-  else navigate('dashboard');
+  if (fullyOut) {
+    var token = localStorage.getItem('sk_session_token');
+    if (token) {
+      fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(function() {});
+      localStorage.removeItem('sk_session_token');
+    }
+    renderLogin();
+  } else {
+    navigate('dashboard');
+  }
 }
 
 // ---- Router ----
@@ -521,27 +529,41 @@ function _removeBackGuard() {
   window.removeEventListener('popstate', _backGuardHandler);
 }
 
-function doLogin() {
+async function doLogin() {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value.trim();
   const err = document.getElementById('login-err');
-  if (!u || !p) { err.style.display = 'flex'; document.getElementById('login-err-text').textContent = 'Please enter username and password.'; return; }
-  const user = Session.login(u, p);
-  if (!user) {
+  const errText = document.getElementById('login-err-text');
+  if (!u || !p) { err.style.display = 'flex'; errText.textContent = 'Please enter username and password.'; return; }
+  const btn = document.getElementById('login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…'; }
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.ok) {
+      err.style.display = 'flex';
+      errText.textContent = json.error || 'Invalid username or password.';
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In'; }
+      return;
+    }
+    err.style.display = 'none';
+    localStorage.setItem('sk_session_token', json.token);
+    Session.setCurrentUser(json.user);
+    DB.log(json.user.id, 'LOGIN', 'User logged in as ' + json.user.role);
+    _setupBackGuard();
+    if (json.user.role === 'parent') navigate('parent-home');
+    else if (json.user.role === 'admission') navigate('admission-dashboard');
+    else if (json.user.role === 'accounting') navigate('acc-dashboard');
+    else navigate('dashboard');
+  } catch (e) {
     err.style.display = 'flex';
-    const inactiveUser = DB.findUserByCredentials(u, p);
-    document.getElementById('login-err-text').textContent = inactiveUser
-      ? 'Your account is not yet activated. Please contact the school to activate your account.'
-      : 'Invalid username or password.';
-    return;
+    errText.textContent = 'Connection error. Please try again.';
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In'; }
   }
-  err.style.display = 'none';
-  _setupBackGuard();
-
-  if (user.role === 'parent') navigate('parent-home');
-  else if (user.role === 'admission') navigate('admission-dashboard');
-  else if (user.role === 'accounting') navigate('acc-dashboard');
-  else navigate('dashboard');
 }
 
 // ---- Forgot Password (OTP flow) ----
@@ -765,6 +787,7 @@ function doVerifyOtp() {
   .then(function(r) { return r.json(); })
   .then(function(r) {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-unlock-alt"></i> Verify OTP'; }
+    if (r.locked) { _fpOtpMsg('Too many incorrect attempts. Please request a new OTP.', false); return; }
     if (r.invalid) { _fpOtpMsg('Incorrect or expired OTP. Please try again.', false); return; }
     if (r.error) { _fpOtpMsg('Error: ' + r.error, false); return; }
     if (r.verified) {
@@ -799,13 +822,34 @@ function doVerifyOtp() {
   });
 }
 
-
 // ---- Init ----
 window.addEventListener('DOMContentLoaded', () => {
   // Show loading while fetching data from server
   document.getElementById('app').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;background:#0F2050"><img src="/static/logo.png" style="width:80px;height:80px;border-radius:50%;object-fit:contain"><div style="color:#90C4E0;font-size:14px;font-weight:600">Loading SuperKids Portal...</div></div>';
 
   DB.initFromServer().then(function() {
-    renderLogin();
+    var token = localStorage.getItem('sk_session_token');
+    if (token) {
+      fetch('/api/session', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(function(r) { return r.json(); })
+        .then(function(json) {
+          if (json && json.ok && json.user) {
+            Session.setCurrentUser(json.user);
+            if (json.user.role === 'parent') navigate('parent-home');
+            else if (json.user.role === 'admission') navigate('admission-dashboard');
+            else if (json.user.role === 'accounting') navigate('acc-dashboard');
+            else navigate('dashboard');
+          } else {
+            localStorage.removeItem('sk_session_token');
+            renderLogin();
+          }
+        })
+        .catch(function() {
+          localStorage.removeItem('sk_session_token');
+          renderLogin();
+        });
+    } else {
+      renderLogin();
+    }
   });
 });

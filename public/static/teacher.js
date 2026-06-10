@@ -299,7 +299,10 @@ function renderTeacherAttendance() {
         </div>
         <div style="display:flex;gap:8px">
           ${!todayRec ? `<button class="btn btn-primary" onclick="teacherMarkAttendance()"><i class="fas fa-fingerprint"></i> Mark Today</button>` :
-            `<div style="background:#d1fae5;color:#065f46;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700"><i class="fas fa-check-circle" style="margin-right:6px"></i>Marked: ${escHtml(todayRec.status)}${todayRec.checkIn?' at '+todayRec.checkIn:''}</div>`}
+            `<div style="display:flex;align-items:center;gap:8px">
+              <div style="background:#d1fae5;color:#065f46;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700"><i class="fas fa-check-circle" style="margin-right:6px"></i>Marked: ${escHtml(todayRec.status)}${todayRec.checkIn?' at '+todayRec.checkIn:''}${todayRec.distanceMeters!=null?' · <i class="fas fa-map-marker-alt"></i> '+todayRec.distanceMeters+'m':''}</div>
+              ${!todayRec.checkOut ? `<button class="btn btn-secondary" onclick="teacherCheckOut()"><i class="fas fa-sign-out-alt"></i> Check Out</button>` : `<div style="background:#eff6ff;color:#1e40af;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700"><i class="fas fa-door-open" style="margin-right:4px"></i>Out: ${escHtml(todayRec.checkOut)}</div>`}
+            </div>`}
           <button class="btn btn-secondary" onclick="teacherRequestCorrection()"><i class="fas fa-edit"></i> Request Correction</button>
         </div>
       </div>
@@ -357,45 +360,141 @@ window.teacherMarkAttendance = function() {
   var now = new Date();
   var todayStr = now.toISOString().slice(0,10);
   var timeStr = now.toTimeString().slice(0,5);
-  // Determine if late (after 9:15 AM)
   var lateArrival = now.getHours() > 9 || (now.getHours()===9 && now.getMinutes()>15);
+  window._attLat = null; window._attLng = null;
+
   var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
     '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#0F2050"><i class="fas fa-fingerprint" style="color:#6366f1;margin-right:8px"></i>Mark Attendance — '+formatDate(todayStr)+'</h3>'+
     (lateArrival?'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#c2410c"><i class="fas fa-clock" style="margin-right:6px"></i>Late arrival will be noted (after 9:15 AM)</div>':'')+
+    '<div id="att-location-status" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1e40af"><i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Detecting your location, please wait...</div>'+
     '<div style="margin-bottom:14px"><label class="form-label">Status</label><select id="mark-att-status" class="form-control"><option value="Present">Present</option><option value="Half-Day">Half-Day</option></select></div>'+
     '<div style="margin-bottom:14px"><label class="form-label">Check-In Time</label><input id="mark-att-time" class="form-control" type="time" value="'+timeStr+'"/></div>'+
     '<div style="margin-bottom:16px"><label class="form-label">Note (optional)</label><input id="mark-att-note" class="form-control" placeholder="Any note..."/></div>'+
-    '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button><button class="btn btn-primary" onclick="teacherSaveMarkAttendance(\''+todayStr+'\','+lateArrival+')"><i class="fas fa-fingerprint"></i> Confirm</button></div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>'+
+    '<button id="att-confirm-btn" class="btn btn-primary" disabled onclick="teacherSubmitAttendance(\''+todayStr+'\')"><i class="fas fa-fingerprint"></i> Confirm</button></div>'+
   '</div>';
   document.body.appendChild(overlay);
-  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+
+  if (!navigator.geolocation) {
+    var el = document.getElementById('att-location-status');
+    if (el) { el.innerHTML='<i class="fas fa-times-circle" style="color:#ef4444;margin-right:6px"></i>Geolocation is not supported on this device. Cannot mark attendance.'; el.style.background='#fee2e2'; el.style.borderColor='#fecaca'; el.style.color='#991b1b'; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      window._attLat = pos.coords.latitude;
+      window._attLng = pos.coords.longitude;
+      var el = document.getElementById('att-location-status');
+      if (el) {
+        el.innerHTML = '<i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:6px"></i>Location acquired ('+pos.coords.latitude.toFixed(5)+', '+pos.coords.longitude.toFixed(5)+')';
+        el.style.background='#d1fae5'; el.style.borderColor='#6ee7b7'; el.style.color='#065f46';
+      }
+      var btn = document.getElementById('att-confirm-btn');
+      if (btn) btn.disabled = false;
+    },
+    function(err) {
+      var el = document.getElementById('att-location-status');
+      if (el) {
+        el.innerHTML = '<i class="fas fa-times-circle" style="color:#ef4444;margin-right:6px"></i>Location access denied: '+(err.message||'Permission denied')+'. Cannot mark attendance without location.';
+        el.style.background='#fee2e2'; el.style.borderColor='#fecaca'; el.style.color='#991b1b';
+      }
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
 };
 
-window.teacherSaveMarkAttendance = function(date, lateArrival) {
+window.teacherSubmitAttendance = async function(date) {
   var user = Session.current(); if(!user) return;
-  var status = (document.getElementById('mark-att-status')||{}).value||'Present';
-  var checkIn = (document.getElementById('mark-att-time')||{}).value||'';
-  var note = (document.getElementById('mark-att-note')||{}).value||'';
-  DB.addStaffAttendance({ id:'sa_'+Date.now(), teacherId:user.id, date:date, status:status, checkIn:checkIn, lateArrival:lateArrival, note:note, createdAt:new Date().toISOString() });
-  document.querySelector('.modal-overlay').remove();
-  showToast('Attendance marked!','success');
-  renderTeacherAttendance();
+  var lat = window._attLat;
+  var lng = window._attLng;
+  if (lat == null || lng == null) { showToast('Location not available. Please allow location access and try again.', 'error'); return; }
+  var status = (document.getElementById('mark-att-status')||{}).value || 'Present';
+  var checkInTime = (document.getElementById('mark-att-time')||{}).value || '';
+  var note = (document.getElementById('mark-att-note')||{}).value || '';
+
+  var btn = document.getElementById('att-confirm-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+
+  try {
+    var token = localStorage.getItem('sk_session_token');
+    var res = await fetch('/api/staff-attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token||'') },
+      body: JSON.stringify({ status: status, checkInTime: checkInTime, lat: lat, lng: lng, note: note })
+    });
+    var json = await res.json();
+
+    if (json.outsidePremises) {
+      showToast('Outside school premises ('+json.distance+'m away, limit: '+json.limit+'m). Move closer to the school to mark attendance.', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-fingerprint"></i> Confirm'; }
+      return;
+    }
+    if (json.notConfigured) {
+      showToast('School location is not configured. Ask admin to set GPS coordinates in School Settings.', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-fingerprint"></i> Confirm'; }
+      return;
+    }
+    if (json.alreadyMarked) {
+      showToast('Attendance already marked for today.', 'warning');
+      document.querySelector('.modal-overlay').remove();
+      renderTeacherAttendance();
+      return;
+    }
+    if (!json.ok) {
+      showToast('Error: ' + (json.error || 'Failed to mark attendance'), 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-fingerprint"></i> Confirm'; }
+      return;
+    }
+    // Mirror to local DB for offline calendar display
+    DB.addStaffAttendance({ id: json.id || ('sa_'+Date.now()), teacherId: user.id, date: date, status: status, checkIn: checkInTime, lateArrival: json.lateArrival, note: note, checkInLat: lat, checkInLng: lng, distanceMeters: json.distance, createdAt: new Date().toISOString() });
+    window._attLat = null; window._attLng = null;
+    document.querySelector('.modal-overlay').remove();
+    showToast('Attendance marked!' + (json.lateArrival ? ' Late arrival noted.' : ''), 'success');
+    renderTeacherAttendance();
+  } catch(e) {
+    showToast('Network error. Please check your connection and try again.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-fingerprint"></i> Confirm'; }
+  }
 };
 
 window.teacherCheckIn = function() { teacherMarkAttendance(); };
+
 window.teacherCheckOut = function() {
   var user = Session.current(); if(!user) return;
   var todayStr = new Date().toISOString().slice(0,10);
   var recs = DB.getStaffAttendance(user.id);
   var todayRec = recs.find(function(r){return r.date===todayStr;});
-  if(!todayRec){showToast('No check-in record found for today','error');return;}
+  if (!todayRec) { showToast('No check-in record found for today', 'error'); return; }
   var timeStr = new Date().toTimeString().slice(0,5);
-  DB.updateStaffAttendance(todayRec.id, { checkOut: timeStr });
-  showToast('Check-out recorded at '+timeStr,'success');
-  renderTeacherAttendance();
+
+  function _doCheckOut(lat, lng) {
+    var token = localStorage.getItem('sk_session_token');
+    fetch('/api/staff-attendance/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token||'') },
+      body: JSON.stringify({ lat: lat, lng: lng })
+    }).then(function(r){ return r.json(); }).then(function(json) {
+      DB.updateStaffAttendance(todayRec.id, { checkOut: timeStr, checkOutLat: lat, checkOutLng: lng });
+      showToast('Check-out recorded at ' + timeStr, 'success');
+      renderTeacherAttendance();
+    }).catch(function() {
+      DB.updateStaffAttendance(todayRec.id, { checkOut: timeStr });
+      showToast('Check-out recorded at ' + timeStr, 'success');
+      renderTeacherAttendance();
+    });
+  }
+
+  if (!navigator.geolocation) { _doCheckOut(null, null); return; }
+  showToast('Recording check-out location...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { _doCheckOut(pos.coords.latitude, pos.coords.longitude); },
+    function() { _doCheckOut(null, null); },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 };
 
 window.teacherRequestCorrection = function() {

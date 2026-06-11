@@ -1287,6 +1287,61 @@ window._saveLeaveTypeConfig = function() {
 };
 
 // ==================== ATTENDANCE REPORT ====================
+// Pull authoritative GPS-verified records from the server (D1) and merge
+// into the local staffAttendance list so reports show location data even
+// when the local mirror is missing it. In-memory only — no server write.
+window._mergeServerAtt = function(month) {
+  var token = localStorage.getItem('sk_session_token');
+  if (!token) return Promise.resolve(false);
+  var sess = typeof Session !== 'undefined' ? Session.current() : null;
+  var url = (sess && sess.role === 'superadmin')
+    ? '/api/staff-attendance/all?month=' + encodeURIComponent(month || '')
+    : '/api/staff-attendance?month=' + encodeURIComponent(month || '');
+  return fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r) { return r.json(); })
+    .then(function(json) {
+      var items = (json && json.items) || [];
+      if (!items.length) return false;
+      var data = DB.get();
+      if (!data.staffAttendance) data.staffAttendance = [];
+      var changed = false;
+      items.forEach(function(s) {
+        var local = data.staffAttendance.find(function(r) { return r.teacherId === s.user_id && r.date === s.date; });
+        if (local) {
+          if (s.check_in_lat != null && local.checkInLat == null) {
+            local.checkInLat = s.check_in_lat; local.checkInLng = s.check_in_lng;
+            local.distanceMeters = s.distance_meters; changed = true;
+          }
+          if (s.check_out && !local.checkOut) { local.checkOut = s.check_out; changed = true; }
+          if (!local.checkIn && s.check_in) { local.checkIn = s.check_in; changed = true; }
+        } else {
+          data.staffAttendance.push({
+            id: s.id, teacherId: s.user_id, date: s.date, status: s.status || 'Present',
+            checkIn: s.check_in, checkOut: s.check_out, lateArrival: !!s.late_arrival,
+            note: s.note || '', checkInLat: s.check_in_lat, checkInLng: s.check_in_lng,
+            distanceMeters: s.distance_meters, createdAt: s.created_at
+          });
+          changed = true;
+        }
+      });
+      return changed;
+    })
+    .catch(function() { return false; });
+};
+
+function _attLocText(r) {
+  var lat = r.checkInLat || r.check_in_lat;
+  var lng = r.checkInLng || r.check_in_lng;
+  var dist = r.distanceMeters != null ? r.distanceMeters : (r.distance_meters != null ? r.distance_meters : null);
+  if (!lat || !lng) return null;
+  return {
+    lat: lat, lng: lng, dist: dist,
+    coords: Number(lat).toFixed(6) + ', ' + Number(lng).toFixed(6),
+    label: dist != null ? Math.round(dist) + 'm from school' : 'GPS verified',
+    mapsUrl: 'https://maps.google.com/?q=' + lat + ',' + lng
+  };
+}
+
 window.openAttendanceReport = function(teacherId) {
   var data = DB.get();
   var teachers = teacherId
@@ -1377,10 +1432,11 @@ window.openAttendanceReport = function(teacherId) {
           (teacherId && teachers[0] ? ' — '+_escH(teachers[0].name) : '')+'</h3>'+
         '<button onclick="document.getElementById(\'att-report-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
       '</div>'+
-      '<div style="padding:16px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:12px;flex-shrink:0">'+
+      '<div style="padding:16px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">'+
         '<label style="font-size:13px;font-weight:600;color:#374151">Month:</label>'+
-        '<input type="month" value="'+window._attRptMonth+'" id="att-rpt-month" class="form-control" style="max-width:180px" onchange="window._attRptMonth=this.value;document.getElementById(\'att-rpt-body\').innerHTML=window._buildAttRpt()"/>'+
+        '<input type="month" value="'+window._attRptMonth+'" id="att-rpt-month" class="form-control" style="max-width:180px" onchange="window._attRptMonth=this.value;window._refreshAttRpt()"/>'+
         '<button class="btn btn-secondary btn-sm" onclick="_printAttReport()"><i class="fas fa-print"></i> Print Report</button>'+
+        '<button class="btn btn-secondary btn-sm" onclick="_exportAttCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>'+
       '</div>'+
       '<div id="att-rpt-body" style="padding:20px 24px;flex:1;overflow-y:auto">'+buildReport()+'</div>'+
       '<div style="padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;flex-shrink:0">'+
@@ -1389,8 +1445,21 @@ window.openAttendanceReport = function(teacherId) {
     '</div>';
 
   window._buildAttRpt = buildReport;
+  window._refreshAttRpt = function() {
+    var body = document.getElementById('att-rpt-body');
+    if (body) body.innerHTML = buildReport();
+    _mergeServerAtt(window._attRptMonth).then(function(changed) {
+      var b = document.getElementById('att-rpt-body');
+      if (changed && b) b.innerHTML = buildReport();
+    });
+  };
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  // Enrich with server GPS records, then refresh the table
+  _mergeServerAtt(window._attRptMonth).then(function(changed) {
+    var b = document.getElementById('att-rpt-body');
+    if (changed && b) b.innerHTML = buildReport();
+  });
 };
 
 window.openTeacherAttLog = function(teacherId, month) {
@@ -1478,22 +1547,87 @@ window._printAttReport = function() {
     var pct = total ? Math.round((present + halfDay * 0.5) / total * 100) : 0;
     return '<tr><td>'+_escH(t.name)+'</td><td>'+_escH(t.designation||'-')+'</td><td>'+present+'</td><td>'+absent+'</td><td>'+halfDay+'</td><td>'+late+'</td><td>'+pct+'%</td></tr>';
   }).join('');
+  // Daily detail with check-in location for each staff member
+  var nameById = {};
+  teachers.forEach(function(t) { nameById[t.id] = t.name; });
+  var allRecs = [];
+  teachers.forEach(function(t) {
+    DB.getStaffAttendance(t.id).filter(function(r) { return !month || (r.date && r.date.startsWith(month)); })
+      .forEach(function(r) { allRecs.push(r); });
+  });
+  allRecs.sort(function(a, b) { return (a.date||'').localeCompare(b.date||'') || (nameById[a.teacherId]||'').localeCompare(nameById[b.teacherId]||''); });
+  var detailRows = allRecs.map(function(r) {
+    var loc = _attLocText(r);
+    var locCell = loc
+      ? loc.coords + (loc.dist != null ? '<br/><span style="color:#10b981;font-weight:700">'+Math.round(loc.dist)+'m from school</span>' : '')
+      : '<span style="color:#999">Not recorded</span>';
+    return '<tr>'+
+      '<td>'+formatDate(r.date)+'</td>'+
+      '<td>'+_escH(nameById[r.teacherId]||'-')+'</td>'+
+      '<td>'+_escH(r.status||'-')+'</td>'+
+      '<td>'+(r.checkIn||'—')+'</td>'+
+      '<td>'+(r.checkOut||'—')+'</td>'+
+      '<td>'+(r.lateArrival?'Yes':'—')+'</td>'+
+      '<td style="font-size:11px">'+locCell+'</td>'+
+      '<td style="font-size:11px">'+_escH(r.note||'—')+'</td>'+
+    '</tr>';
+  }).join('');
   var meta = DB.getMeta();
   var lh = _skLetterhead(meta, 'STAFF ATTENDANCE REPORT', 'Period: '+_fmtMonth(month)+'&nbsp;&nbsp;|&nbsp;&nbsp;Generated: '+new Date().toLocaleDateString('en-IN'));
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>Attendance Report</title><style>'+
     lh.css+
     'tr:nth-child(even){background:#f9fafb}'+
+    'h3.sk-sec{font-size:13px;color:#0F2050;margin:26px 0 10px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}'+
     '@media print{.noprint{display:none}}'+
     '</style></head><body>'+
     lh.header+
     '<div class="sk-body">'+
+    '<h3 class="sk-sec">Monthly Summary</h3>'+
     '<table><thead><tr><th>Teacher</th><th>Designation</th><th>Present</th><th>Absent</th><th>Half-Day</th><th>Late</th><th>Attendance%</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-    '<div class="footer-note">Computer-generated attendance report — '+meta.schoolName||'SuperKids India Preschool'+'</div>'+
+    '<h3 class="sk-sec">Daily Log with Check-In Location</h3>'+
+    '<table><thead><tr><th>Date</th><th>Teacher</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Late</th><th>Location (Lat, Lng)</th><th>Note</th></tr></thead><tbody>'+
+    (detailRows || '<tr><td colspan="8" style="text-align:center;color:#999">No records for this month</td></tr>')+'</tbody></table>'+
+    '<div class="footer-note">Computer-generated attendance report — '+(meta.schoolName||'SuperKids India Preschool')+'</div>'+
     '</div>'+
     '<script>window.onload=function(){window.print();}<\/script>'+
     '</body></html>');
   win.document.close();
+};
+
+window._exportAttCSV = function() {
+  var month = window._attRptMonth || '';
+  var data = DB.get();
+  var teachers = (data.users || []).filter(function(u) { return u.role === 'subadmin' && !u.deleted; });
+  var nameById = {};
+  teachers.forEach(function(t) { nameById[t.id] = t.name; });
+  var allRecs = [];
+  teachers.forEach(function(t) {
+    DB.getStaffAttendance(t.id).filter(function(r) { return !month || (r.date && r.date.startsWith(month)); })
+      .forEach(function(r) { allRecs.push(r); });
+  });
+  allRecs.sort(function(a, b) { return (a.date||'').localeCompare(b.date||'') || (nameById[a.teacherId]||'').localeCompare(nameById[b.teacherId]||''); });
+  function q(v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  var lines = ['Date,Teacher,Status,Check In,Check Out,Late,Latitude,Longitude,Distance From School (m),Location Verified,Note'];
+  allRecs.forEach(function(r) {
+    var loc = _attLocText(r);
+    lines.push([
+      r.date || '', nameById[r.teacherId] || '', r.status || '', r.checkIn || '', r.checkOut || '',
+      r.lateArrival ? 'Yes' : 'No',
+      loc ? loc.lat : '', loc ? loc.lng : '',
+      loc && loc.dist != null ? Math.round(loc.dist) : '',
+      loc ? 'Yes' : 'No',
+      r.note || ''
+    ].map(q).join(','));
+  });
+  var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'staff-attendance-' + (month || 'all') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  showToast('CSV downloaded with location data', 'success');
 };
 
 // ==================== EXIT MANAGEMENT ====================

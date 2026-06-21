@@ -1211,7 +1211,7 @@ app.get('/about', async (c) => {
             We believe that when children feel safe, loved, and inspired, there are no limits to what they can achieve.
           </p>
           <p style="color:#2A3B60;line-height:1.9;font-size:1rem;margin-bottom:2rem">
-            Founded in 2009 by Dr. Amanda Powers, a child development specialist and mother of three,
+            Founded in 2026 by Er. Niv Pawar, a child development specialist,
             SuperKids was built on the principle that early childhood is the most critical phase of human development —
             and it should be filled with joy, wonder, and discovery.
           </p>

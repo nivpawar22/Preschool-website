@@ -883,7 +883,7 @@ const Footer = () => `
     <div style="height:2px;background:linear-gradient(90deg,transparent,#0F2050,#C4893A,transparent);margin:2.5rem 0"></div>
 
     <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-      <p style="color:#5A6E8F;font-size:0.85rem">© 2025 SuperKids India Preschool. All rights reserved. Made with ❤️ for little superheroes.</p>
+      <p style="color:#5A6E8F;font-size:0.85rem">© ${new Date().getFullYear()} SuperKids India Preschool. All rights reserved. Made with ❤️ for little superheroes.</p>
       <div class="flex gap-4">
         <a href="#" style="color:#5A6E8F;font-size:0.85rem;text-decoration:none">Privacy Policy</a>
         <a href="#" style="color:#5A6E8F;font-size:0.85rem;text-decoration:none">Terms of Use</a>
@@ -920,7 +920,7 @@ app.get('/', async (c) => {
 
   <div class="marquee-wrap">
     <div class="marquee-track">
-      ${Array(2).fill(['✦ Enrollment Open for 2025!', '🦸 Be A SuperKid!', '✦ Award-Winning Curriculum', '❤️ Safe & Nurturing Environment', '✦ Small Class Sizes', '🎨 Creative Learning Every Day']).flat().map(t =>
+      ${Array(2).fill([`✦ Enrollment Open for ${new Date().getFullYear()}!`, '🦸 Be A SuperKid!', '✦ Award-Winning Curriculum', '❤️ Safe & Nurturing Environment', '✦ Small Class Sizes', '🎨 Creative Learning Every Day']).flat().map(t =>
         `<span style="font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:2px;color:#fff;padding:0 3rem">${t}</span>`
       ).join('')}
     </div>
@@ -1117,7 +1117,7 @@ app.get('/', async (c) => {
         Ready to Join the <span style="color:#0F2050">SuperKids</span> <span style="color:#C4893A">Family?</span>
       </h2>
       <p style="color:#6B7A9D;font-size:1.1rem;line-height:1.8;margin-bottom:2.5rem">
-        Limited spots available for 2025! Schedule a tour today and discover why hundreds of families
+        Limited spots available for ${new Date().getFullYear()}! Schedule a tour today and discover why hundreds of families
         trust SuperKids Preschool to nurture their little heroes.
       </p>
       <div class="flex flex-wrap gap-4 justify-center">

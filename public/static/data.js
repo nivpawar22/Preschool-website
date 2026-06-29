@@ -847,7 +847,11 @@ const DB = (() => {
 
   // ---- Holidays ----
   function getHolidays() {
-    return (_data.holidays || defaults.holidays).slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+    // Always use fresh dynamic defaults for built-in holidays (hol1..hol26).
+    // Only keep user-added custom holidays (IDs not in the default set) from stored data.
+    var defaultIds = defaults.holidays.reduce(function(m,h){ m[h.id]=true; return m; }, {});
+    var custom = (_data.holidays || []).filter(function(h){ return !defaultIds[h.id]; });
+    return defaults.holidays.concat(custom).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
   }
   function addHoliday(h) { if(!_data.holidays)_data.holidays=[]; _data.holidays.push(h); commit(); }
   function deleteHoliday(id) { if(!_data.holidays)return; _data.holidays=_data.holidays.filter(function(h){return h.id!==id;}); commit(); }

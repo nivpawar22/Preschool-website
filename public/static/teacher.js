@@ -855,8 +855,13 @@ function renderTeacherDocuments() {
   var user = Session.current();
   if (!user || user.role !== 'subadmin') { renderLogin(); return; }
 
-  var myLetters = DB.getHRLetters(user.id);
   var myRequests = DB.getHRDocumentRequests(user.id);
+  var fulfilledDocTypes = myRequests
+    .filter(function(r){ return r.status === 'Fulfilled'; })
+    .map(function(r){ return r.docType; });
+  var myLetters = DB.getHRLetters(user.id).filter(function(l){
+    return fulfilledDocTypes.indexOf(l.type) !== -1;
+  });
   var tab = window._tDocTab || 'letters';
 
   var letterTypeIcons = {'Offer Letter':'fa-envelope-open-text','Appointment Letter':'fa-user-check','Probation Confirmation':'fa-check-circle','Promotion Letter':'fa-arrow-up','Increment Letter':'fa-chart-line','Experience Letter':'fa-certificate','Relieving Letter':'fa-sign-out-alt','Salary Certificate':'fa-file-invoice','Service Certificate':'fa-award'};

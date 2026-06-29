@@ -379,6 +379,7 @@ const DB = (() => {
       if (!_data.ptmSlots) { _data.ptmSlots = JSON.parse(JSON.stringify(defaults.ptmSlots)); mergeChanged = true; }
       if (!_data.grievances) { _data.grievances = []; mergeChanged = true; }
       if (!_data.conductRecords) { _data.conductRecords = JSON.parse(JSON.stringify(defaults.conductRecords)); mergeChanged = true; }
+      if (!_data.mealMenus) { _data.mealMenus = {}; mergeChanged = true; }
       // Migrate old single-line address to 3-line format
       if (_data.meta && _data.meta.schoolAddress && _data.meta.schoolAddress.indexOf('\n') === -1 && _data.meta.schoolAddress.indexOf('Plot') !== -1) {
         _data.meta.schoolAddress = 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
@@ -865,24 +866,32 @@ const DB = (() => {
     return (_data.assignments || []).filter(function(a) { return !classId || a.classId === classId; }).sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');});
   }
   function addAssignment(a) { if(!_data.assignments)_data.assignments=[]; _data.assignments.unshift(a); commit(); }
+  function updateAssignment(id, updates) { var r=(_data.assignments||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+  function deleteAssignment(id) { if(!_data.assignments)return; _data.assignments=_data.assignments.filter(function(x){return x.id!==id;}); commit(); }
 
   // ---- Achievements ----
   function getAchievements(studentId) {
     return (_data.achievements || []).filter(function(a) { return !studentId || a.studentId === studentId; }).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   }
   function addAchievement(a) { if(!_data.achievements)_data.achievements=[]; _data.achievements.unshift(a); commit(); }
+  function updateAchievement(id, updates) { var r=(_data.achievements||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+  function deleteAchievement(id) { if(!_data.achievements)return; _data.achievements=_data.achievements.filter(function(x){return x.id!==id;}); commit(); }
 
   // ---- Exams ----
   function getExams(classId) {
     return (_data.exams || []).filter(function(e) { return !classId || e.classId === classId; }).sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
   }
   function addExam(e) { if(!_data.exams)_data.exams=[]; _data.exams.unshift(e); commit(); }
+  function updateExam(id, updates) { var r=(_data.exams||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+  function deleteExam(id) { if(!_data.exams)return; _data.exams=_data.exams.filter(function(x){return x.id!==id;}); commit(); }
 
   // ---- Health Records ----
   function getHealthRecords(studentId) {
     return (_data.healthRecords || []).filter(function(r) { return !studentId || r.studentId === studentId; });
   }
   function addHealthRecord(r) { if(!_data.healthRecords)_data.healthRecords=[]; _data.healthRecords.unshift(r); commit(); }
+  function updateHealthRecord(id, updates) { var r=(_data.healthRecords||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+  function deleteHealthRecord(id) { if(!_data.healthRecords)return; _data.healthRecords=_data.healthRecords.filter(function(x){return x.id!==id;}); commit(); }
 
   // ---- PTM Slots ----
   function getPTMSlots(classId) {
@@ -897,18 +906,34 @@ const DB = (() => {
     if(s){s.status='Available';s.bookedBy=null;commit();}
   }
   function addPTMSlot(s) { if(!_data.ptmSlots)_data.ptmSlots=[]; _data.ptmSlots.push(s); commit(); }
+  function updatePTMSlot(id, updates) { var s=(_data.ptmSlots||[]).find(function(x){return x.id===id;}); if(s){Object.assign(s,updates);commit();} }
+  function deletePTMSlot(id) { if(!_data.ptmSlots)return; _data.ptmSlots=_data.ptmSlots.filter(function(x){return x.id!==id;}); commit(); }
 
   // ---- Grievances ----
   function getGrievances(parentId) {
     return (_data.grievances || []).filter(function(g) { return !parentId || g.parentId === parentId; }).sort(function(a,b){return (b.submittedDate||'').localeCompare(a.submittedDate||'');});
   }
   function addGrievance(g) { if(!_data.grievances)_data.grievances=[]; _data.grievances.unshift(g); commit(); }
+  function updateGrievance(id, updates) { var r=(_data.grievances||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
 
   // ---- Conduct Records ----
   function getConductRecords(studentId) {
     return (_data.conductRecords || []).filter(function(r) { return !studentId || r.studentId === studentId; }).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   }
   function addConductRecord(r) { if(!_data.conductRecords)_data.conductRecords=[]; _data.conductRecords.unshift(r); commit(); }
+  function updateConductRecord(id, updates) { var r=(_data.conductRecords||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+  function deleteConductRecord(id) { if(!_data.conductRecords)return; _data.conductRecords=_data.conductRecords.filter(function(x){return x.id!==id;}); commit(); }
+
+  // ---- Meal Menu ----
+  function getMealMenu(week) {
+    if(!_data.mealMenus) _data.mealMenus = {};
+    return week ? (_data.mealMenus[week] || null) : _data.mealMenus;
+  }
+  function saveMealMenu(week, menuData) {
+    if(!_data.mealMenus) _data.mealMenus = {};
+    _data.mealMenus[week] = menuData;
+    commit();
+  }
 
   // ---- Activity log ----
   function log(userId, action, details) {
@@ -987,13 +1012,14 @@ const DB = (() => {
     defaults,
     initFromServer, R2_BASE,
     getFeeRecords, addFeeRecord, updateFeeRecord,
-    getAssignments, addAssignment,
-    getAchievements, addAchievement,
-    getExams, addExam,
-    getHealthRecords, addHealthRecord,
-    getPTMSlots, bookPTMSlot, cancelPTMSlot, addPTMSlot,
-    getGrievances, addGrievance,
-    getConductRecords, addConductRecord
+    getAssignments, addAssignment, updateAssignment, deleteAssignment,
+    getAchievements, addAchievement, updateAchievement, deleteAchievement,
+    getExams, addExam, updateExam, deleteExam,
+    getHealthRecords, addHealthRecord, updateHealthRecord, deleteHealthRecord,
+    getPTMSlots, bookPTMSlot, cancelPTMSlot, addPTMSlot, updatePTMSlot, deletePTMSlot,
+    getGrievances, addGrievance, updateGrievance,
+    getConductRecords, addConductRecord, updateConductRecord, deleteConductRecord,
+    getMealMenu, saveMealMenu
   };
 })();
 

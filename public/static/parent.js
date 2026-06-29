@@ -2672,6 +2672,82 @@ function renderParentMessages() {
   renderLayout('parent-messages', content, 'Messages', 'Chat with Teachers');
 }
 
+// ---- Meal Menu ----
+function renderParentMeals() {
+  currentParentTab = 'parent-meals';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const today = new Date();
+  const dow = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekKey = window._parentMealWeek || startOfWeek.toISOString().split('T')[0];
+  const menuData = DB.getMealMenu ? (DB.getMealMenu(weekKey) || {}) : {};
+
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  const meals = ['Breakfast','Lunch','Snack'];
+  const mealIcons = { Breakfast: 'fa-sun', Lunch: 'fa-utensils', Snack: 'fa-apple-alt' };
+  const mealColors = { Breakfast: '#E8B020', Lunch: '#1AA6CA', Snack: '#10b981' };
+
+  function fmtWeek(wk) {
+    const d = new Date(wk);
+    const end = new Date(d); end.setDate(d.getDate() + 4);
+    const opts = { month:'short', day:'numeric' };
+    return d.toLocaleDateString('en-IN', opts) + ' – ' + end.toLocaleDateString('en-IN', opts);
+  }
+  function prevWeek(wk) { const d = new Date(wk); d.setDate(d.getDate()-7); return d.toISOString().split('T')[0]; }
+  function nextWeek(wk) { const d = new Date(wk); d.setDate(d.getDate()+7); return d.toISOString().split('T')[0]; }
+
+  const todayDayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][today.getDay()];
+
+  const dayCards = days.map(function(day) {
+    const isToday = day === todayDayName && weekKey === startOfWeek.toISOString().split('T')[0];
+    const dayMenu = menuData[day] || {};
+    const hasMeals = meals.some(function(m){return dayMenu[m];});
+    return `<div style="border:2px solid ${isToday?'#1AA6CA':'#DCE1EF'};border-radius:14px;padding:16px;background:${isToday?'#EFF9FF':'#fff'}">
+      <div style="font-size:13px;font-weight:800;color:${isToday?'#1AA6CA':'#0F1E3D'};margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        ${day}
+        ${isToday?'<span style="background:#1AA6CA;color:#fff;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700">TODAY</span>':''}
+      </div>
+      ${hasMeals
+        ? meals.map(function(meal) {
+            const val = dayMenu[meal];
+            if (!val) return '';
+            return `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+              <div style="width:24px;height:24px;border-radius:50%;background:${mealColors[meal]}22;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fas ${mealIcons[meal]}" style="color:${mealColors[meal]};font-size:11px"></i>
+              </div>
+              <div><div style="font-size:10px;font-weight:700;color:${mealColors[meal]};text-transform:uppercase">${meal}</div>
+              <div style="font-size:12px;color:#374151;margin-top:1px">${val}</div></div>
+            </div>`;
+          }).join('')
+        : '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:16px 0"><i class="fas fa-utensils" style="display:block;font-size:18px;margin-bottom:6px;opacity:0.3"></i>Menu not set</div>'
+      }
+    </div>`;
+  }).join('');
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 style="margin:0;font-size:18px;font-weight:900;color:#0F1E3D">Weekly Meal Menu</h2>
+        <div style="font-size:12px;color:#6B7A9D;margin-top:2px">Week of ${fmtWeek(weekKey)}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="window._parentMealWeek='${prevWeek(weekKey)}';renderParentMeals()"><i class="fas fa-chevron-left"></i> Prev</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._parentMealWeek='${nextWeek(weekKey)}';renderParentMeals()">Next <i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+    ${Object.keys(menuData).length === 0
+      ? '<div class="empty-state"><i class="fas fa-utensils"></i><h3>No meal menu available for this week</h3><p>Please check back later or contact the school.</p></div>'
+      : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">${dayCards}</div>`
+    }`;
+
+  renderLayout('parent-meals', content, 'Meal Menu', child.name);
+}
+
 // ---- Register parent routes ----
 registerRoute('parent-home', renderParentHome);
 registerRoute('parent-reports', renderParentReports);
@@ -2698,3 +2774,4 @@ registerRoute('parent-grievance', renderParentGrievance);
 registerRoute('parent-conduct', renderParentConduct);
 registerRoute('parent-documents', renderParentDocuments);
 registerRoute('parent-notifications', renderParentNotifications);
+registerRoute('parent-meals', renderParentMeals);

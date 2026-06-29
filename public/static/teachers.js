@@ -2299,5 +2299,567 @@ window._deleteHoliday = function(id) {
 // ==================== QUICK ACTIONS — update to include Requests tile ====================
 window._tchQuickActionsUpdated = true; // marker so we know this version is loaded
 
+// ============================================================
+// SUBADMIN — HOMEWORK / ASSIGNMENTS MANAGER
+// ============================================================
+function renderTeacherHomework() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var classId = user.assignedClass;
+  var data = DB.get();
+  var cls = DB.getClass(classId);
+  var subjects = (cls && cls.subjects) ? cls.subjects : ['General'];
+  var assignments = DB.getAssignments(classId);
+  var today = new Date().toISOString().split('T')[0];
+
+  var editId = window._hwEditId || null;
+  var editItem = editId ? assignments.find(function(a){return a.id===editId;}) : null;
+
+  var statusColor = { 'Pending':'#f59e0b', 'Submitted':'#10b981', 'Overdue':'#ef4444' };
+
+  var rows = assignments.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No assignments yet. Add one below.</td></tr>'
+    : assignments.map(function(a) {
+        var sc = statusColor[a.status] || '#94a3b8';
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(a.title)+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_escH(a.subject)+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+_escH(a.type||'Homework')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(a.dueDate||'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+sc+'22;color:'+sc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(a.status||'Pending')+'</span></td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-sm btn-primary" onclick="window._hwEditId=\''+a.id+'\';renderTeacherHomework()"><i class="fas fa-edit"></i></button> '+
+            '<button class="btn btn-sm btn-danger" onclick="_deleteHomework(\''+a.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:8px"></i>'+(editItem?'Edit Assignment':'Add Assignment')+'</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+      '<div><label class="form-label">Title *</label><input id="hw-title" class="form-control" type="text" value="'+_escH(editItem?editItem.title:'')+'" placeholder="Assignment title"/></div>'+
+      '<div><label class="form-label">Subject *</label><select id="hw-subject" class="form-control">'+subjects.map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.subject===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Type</label><select id="hw-type" class="form-control">'+['Homework','Project','Classwork','Test Prep'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Due Date *</label><input id="hw-due" class="form-control" type="date" value="'+(editItem?editItem.dueDate:today)+'"/></div>'+
+      '<div><label class="form-label">Status</label><select id="hw-status" class="form-control">'+['Pending','Submitted','Overdue'].map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.status===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="hw-desc" class="form-control" rows="3" placeholder="Details, instructions, page numbers...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn btn-primary" onclick="_saveHomework(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Assignment')+'</button>'+
+      (editItem?'<button class="btn btn-secondary" onclick="window._hwEditId=null;renderTeacherHomework()">Cancel</button>':'')+
+    '</div>'+
+  '</div>';
+
+  var content = form+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+
+      '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-list" style="color:#C4893A;margin-right:8px"></i>Assignments — '+(cls?_escH(cls.name):'My Class')+' ('+assignments.length+')</h3>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Title</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Subject</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Due Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('teacher-homework', content, 'Homework / Assignments', cls ? cls.name : 'My Class');
+}
+
+window._saveHomework = function(editId) {
+  var title = (document.getElementById('hw-title').value||'').trim();
+  var subject = document.getElementById('hw-subject').value;
+  var type = document.getElementById('hw-type').value;
+  var dueDate = document.getElementById('hw-due').value;
+  var status = document.getElementById('hw-status').value;
+  var description = (document.getElementById('hw-desc').value||'').trim();
+  if (!title) { showToast('Title is required', 'error'); return; }
+  if (!dueDate) { showToast('Due date is required', 'error'); return; }
+  var user = Session.current();
+  var classId = user.assignedClass;
+  if (editId) {
+    DB.updateAssignment(editId, { title: title, subject: subject, type: type, dueDate: dueDate, status: status, description: description });
+    showToast('Assignment updated!', 'success');
+  } else {
+    DB.addAssignment({ id: DB.genId('asgn'), classId: classId, title: title, subject: subject, type: type, dueDate: dueDate, status: status, description: description, createdAt: new Date().toISOString().split('T')[0] });
+    showToast('Assignment added!', 'success');
+  }
+  window._hwEditId = null;
+  renderTeacherHomework();
+};
+
+window._deleteHomework = function(id) {
+  confirmDialog('Delete this assignment?', function() {
+    DB.deleteAssignment(id);
+    showToast('Assignment deleted', 'success');
+    renderTeacherHomework();
+  });
+};
+
+// ============================================================
+// SUBADMIN — STUDENT ACHIEVEMENTS MANAGER
+// ============================================================
+function renderTeacherAchievements() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var classId = user.assignedClass;
+  var students = DB.getStudents(classId);
+  var cls = DB.getClass(classId);
+  var achievements = DB.getAchievements(null).filter(function(a) {
+    return students.some(function(s){return s.id===a.studentId;});
+  });
+  var today = new Date().toISOString().split('T')[0];
+  var editId = window._achEditId || null;
+  var editItem = editId ? achievements.find(function(a){return a.id===editId;}) : null;
+
+  var catColor = { Academic:'#1e40af', Sports:'#065f46', Cultural:'#7e22ce', Behaviour:'#92400e' };
+
+  var rows = achievements.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;padding:32px;color:#94a3b8">No achievements recorded yet.</td></tr>'
+    : achievements.map(function(a) {
+        var stu = DB.getStudent(a.studentId);
+        var cc = catColor[a.category] || '#475569';
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_escH(a.title)+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_escH(stu?stu.name:'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+cc+'22;color:'+cc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(a.category||'—')+'</span></td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(a.date||'—')+'</td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-sm btn-primary" onclick="window._achEditId=\''+a.id+'\';renderTeacherAchievements()"><i class="fas fa-edit"></i></button> '+
+            '<button class="btn btn-sm btn-danger" onclick="_deleteAchievement(\''+a.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var stuOpts = '<option value="">Select Student</option>'+students.map(function(s){return '<option value="'+s.id+'"'+((editItem&&editItem.studentId===s.id)?' selected':'')+'>'+_escH(s.name)+'</option>';}).join('');
+
+  var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:8px"></i>'+(editItem?'Edit Achievement':'Add Achievement')+'</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+      '<div><label class="form-label">Student *</label><select id="ach-student" class="form-control">'+stuOpts+'</select></div>'+
+      '<div><label class="form-label">Category *</label><select id="ach-cat" class="form-control">'+['Academic','Sports','Cultural','Behaviour'].map(function(c){return '<option value="'+c+'"'+((editItem&&editItem.category===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Title *</label><input id="ach-title" class="form-control" type="text" value="'+_escH(editItem?editItem.title:'')+'" placeholder="Achievement title"/></div>'+
+      '<div><label class="form-label">Date *</label><input id="ach-date" class="form-control" type="date" value="'+(editItem?editItem.date:today)+'"/></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="ach-desc" class="form-control" rows="2" placeholder="Details about the achievement...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn btn-primary" onclick="_saveAchievement(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Achievement')+'</button>'+
+      (editItem?'<button class="btn btn-secondary" onclick="window._achEditId=null;renderTeacherAchievements()">Cancel</button>':'')+
+    '</div>'+
+  '</div>';
+
+  var content = form+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+
+      '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-trophy" style="color:#C4893A;margin-right:8px"></i>Achievements — '+(cls?_escH(cls.name):'My Class')+' ('+achievements.length+')</h3>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Title</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('teacher-achievements', content, 'Student Achievements', cls ? cls.name : 'My Class');
+}
+
+window._saveAchievement = function(editId) {
+  var studentId = document.getElementById('ach-student').value;
+  var category = document.getElementById('ach-cat').value;
+  var title = (document.getElementById('ach-title').value||'').trim();
+  var date = document.getElementById('ach-date').value;
+  var description = (document.getElementById('ach-desc').value||'').trim();
+  if (!studentId) { showToast('Please select a student', 'error'); return; }
+  if (!title) { showToast('Title is required', 'error'); return; }
+  if (!date) { showToast('Date is required', 'error'); return; }
+  var iconMap = { Academic:'fa-trophy', Sports:'fa-medal', Cultural:'fa-star', Behaviour:'fa-heart' };
+  if (editId) {
+    DB.updateAchievement(editId, { studentId: studentId, category: category, title: title, date: date, description: description, icon: iconMap[category]||'fa-award' });
+    showToast('Achievement updated!', 'success');
+  } else {
+    DB.addAchievement({ id: DB.genId('ach'), studentId: studentId, category: category, title: title, date: date, description: description, icon: iconMap[category]||'fa-award' });
+    showToast('Achievement added!', 'success');
+  }
+  window._achEditId = null;
+  renderTeacherAchievements();
+};
+
+window._deleteAchievement = function(id) {
+  confirmDialog('Delete this achievement?', function() {
+    DB.deleteAchievement(id);
+    showToast('Deleted', 'success');
+    renderTeacherAchievements();
+  });
+};
+
+// ============================================================
+// SUBADMIN — HEALTH RECORDS MANAGER
+// ============================================================
+function renderTeacherHealth() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var classId = user.assignedClass;
+  var students = DB.getStudents(classId);
+  var cls = DB.getClass(classId);
+  var today = new Date().toISOString().split('T')[0];
+
+  var filterStu = window._healthFilter || '';
+  var allRecords = [];
+  students.forEach(function(s) {
+    DB.getHealthRecords(s.id).forEach(function(r) { allRecords.push(Object.assign({}, r, { _stuName: s.name })); });
+  });
+  var records = filterStu ? allRecords.filter(function(r){return r.studentId===filterStu;}) : allRecords;
+  records.sort(function(a,b){return (b.date||b.recordedOn||'').localeCompare(a.date||a.recordedOn||'');});
+
+  var editId = window._healthEditId || null;
+  var editItem = editId ? allRecords.find(function(r){return r.id===editId;}) : null;
+
+  var typeColor = { Vaccination:'#1e40af', Allergy:'#991b1b', 'Medical Note':'#065f46', Incident:'#92400e' };
+
+  var rows = records.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No health records found.</td></tr>'
+    : records.map(function(r) {
+        var tc = typeColor[r.type] || '#475569';
+        var dateDisplay = r.date || r.recordedOn || '—';
+        var detail = r.vaccine || r.name || r.title || (r.details ? r.details.slice(0,40) : '—');
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(r._stuName||'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+tc+'22;color:'+tc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(r.type||'—')+'</span></td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_escH(detail)+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+dateDisplay+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+_escH(r.notes||r.details||'—').slice(0,50)+'</td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-sm btn-primary" onclick="window._healthEditId=\''+r.id+'\';renderTeacherHealth()"><i class="fas fa-edit"></i></button> '+
+            '<button class="btn btn-sm btn-danger" onclick="_deleteHealthRecord(\''+r.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var stuOpts = '<option value="">All Students</option>'+students.map(function(s){return '<option value="'+s.id+'"'+(filterStu===s.id?' selected':'')+'>'+_escH(s.name)+'</option>';}).join('');
+  var stuFormOpts = '<option value="">Select Student</option>'+students.map(function(s){return '<option value="'+s.id+'"'+((editItem&&editItem.studentId===s.id)?' selected':'')+'>'+_escH(s.name)+'</option>';}).join('');
+
+  var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#ef4444;margin-right:8px"></i>'+(editItem?'Edit Health Record':'Add Health Record')+'</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+      '<div><label class="form-label">Student *</label><select id="hr-student" class="form-control">'+stuFormOpts+'</select></div>'+
+      '<div><label class="form-label">Type *</label><select id="hr-type" class="form-control">'+['Vaccination','Allergy','Medical Note','Incident'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Title / Name / Vaccine</label><input id="hr-title" class="form-control" type="text" value="'+_escH(editItem?(editItem.vaccine||editItem.name||editItem.title||''):'')+'" placeholder="e.g. MMR Booster, Peanuts, Asthma"/></div>'+
+      '<div><label class="form-label">Date</label><input id="hr-date" class="form-control" type="date" value="'+(editItem?(editItem.date||editItem.recordedOn||''):today)+'"/></div>'+
+      '<div><label class="form-label">Next Due Date <span style="font-size:11px;color:#94a3b8">(for vaccinations)</span></label><input id="hr-due" class="form-control" type="date" value="'+(editItem?(editItem.dueDate||''):'')+'" /></div>'+
+      '<div><label class="form-label">Severity <span style="font-size:11px;color:#94a3b8">(for allergies)</span></label><select id="hr-severity" class="form-control"><option value="">—</option>'+['Low','Medium','High'].map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.severity===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Notes / Details</label><textarea id="hr-notes" class="form-control" rows="2" placeholder="Additional details...">'+_escH(editItem?(editItem.notes||editItem.details||''):'')||''+'</textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn btn-primary" onclick="_saveHealthRecord(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Record')+'</button>'+
+      (editItem?'<button class="btn btn-secondary" onclick="window._healthEditId=null;renderTeacherHealth()">Cancel</button>':'')+
+    '</div>'+
+  '</div>';
+
+  var content = form+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">'+
+        '<h3 style="margin:0;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-heartbeat" style="color:#ef4444;margin-right:8px"></i>Health Records — '+(cls?_escH(cls.name):'My Class')+' ('+records.length+')</h3>'+
+        '<select class="form-control" style="max-width:180px" onchange="window._healthFilter=this.value;renderTeacherHealth()">'+stuOpts+'</select>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Detail</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Notes</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('teacher-health', content, 'Health Records', cls ? cls.name : 'My Class');
+}
+
+window._saveHealthRecord = function(editId) {
+  var studentId = document.getElementById('hr-student').value;
+  var type = document.getElementById('hr-type').value;
+  var title = (document.getElementById('hr-title').value||'').trim();
+  var date = document.getElementById('hr-date').value;
+  var dueDate = document.getElementById('hr-due').value;
+  var severity = document.getElementById('hr-severity').value;
+  var notes = (document.getElementById('hr-notes').value||'').trim();
+  if (!studentId) { showToast('Please select a student', 'error'); return; }
+  var record = { studentId: studentId, type: type, date: date, dueDate: dueDate || null, notes: notes };
+  if (type === 'Vaccination') { record.vaccine = title; record.status = dueDate ? 'Completed' : 'Due Soon'; }
+  else if (type === 'Allergy') { record.name = title; record.severity = severity; }
+  else if (type === 'Medical Note') { record.title = title; record.details = notes; record.recordedOn = date; }
+  else { record.title = title; record.details = notes; record.recordedOn = date; }
+  if (editId) {
+    DB.updateHealthRecord(editId, record);
+    showToast('Record updated!', 'success');
+  } else {
+    record.id = DB.genId('hr');
+    DB.addHealthRecord(record);
+    showToast('Record added!', 'success');
+  }
+  window._healthEditId = null;
+  renderTeacherHealth();
+};
+
+window._deleteHealthRecord = function(id) {
+  confirmDialog('Delete this health record?', function() {
+    DB.deleteHealthRecord(id);
+    showToast('Deleted', 'success');
+    renderTeacherHealth();
+  });
+};
+
+// ============================================================
+// SUBADMIN — CONDUCT RECORDS MANAGER
+// ============================================================
+function renderTeacherConduct() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var classId = user.assignedClass;
+  var students = DB.getStudents(classId);
+  var cls = DB.getClass(classId);
+  var today = new Date().toISOString().split('T')[0];
+
+  var filterStu = window._conductFilter || '';
+  var allRecords = [];
+  students.forEach(function(s) {
+    DB.getConductRecords(s.id).forEach(function(r) { allRecords.push(Object.assign({}, r, { _stuName: s.name })); });
+  });
+  var records = filterStu ? allRecords.filter(function(r){return r.studentId===filterStu;}) : allRecords;
+  records.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+
+  var editId = window._conductEditId || null;
+  var editItem = editId ? allRecords.find(function(r){return r.id===editId;}) : null;
+
+  var typeColor = { Positive:'#065f46', Negative:'#991b1b', Neutral:'#1e40af' };
+
+  var rows = records.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No conduct records found.</td></tr>'
+    : records.map(function(r) {
+        var tc = typeColor[r.type] || '#475569';
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(r._stuName||'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+tc+'22;color:'+tc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(r.type||'—')+'</span></td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_escH(r.category||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(r.date||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b;font-size:12px">'+_escH((r.description||'').slice(0,60))+'</td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-sm btn-primary" onclick="window._conductEditId=\''+r.id+'\';renderTeacherConduct()"><i class="fas fa-edit"></i></button> '+
+            '<button class="btn btn-sm btn-danger" onclick="_deleteConductRecord(\''+r.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var stuOpts = '<option value="">All Students</option>'+students.map(function(s){return '<option value="'+s.id+'"'+(filterStu===s.id?' selected':'')+'>'+_escH(s.name)+'</option>';}).join('');
+  var stuFormOpts = '<option value="">Select Student</option>'+students.map(function(s){return '<option value="'+s.id+'"'+((editItem&&editItem.studentId===s.id)?' selected':'')+'>'+_escH(s.name)+'</option>';}).join('');
+
+  var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:8px"></i>'+(editItem?'Edit Conduct Record':'Add Conduct Record')+'</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+      '<div><label class="form-label">Student *</label><select id="con-student" class="form-control">'+stuFormOpts+'</select></div>'+
+      '<div><label class="form-label">Type *</label><select id="con-type" class="form-control">'+['Positive','Negative','Neutral'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Category *</label><select id="con-cat" class="form-control">'+['Discipline','Academic','Social','Helpfulness','Sports','Arts','Other'].map(function(c){return '<option value="'+c+'"'+((editItem&&editItem.category===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Date *</label><input id="con-date" class="form-control" type="date" value="'+(editItem?editItem.date:today)+'"/></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Description *</label><textarea id="con-desc" class="form-control" rows="3" placeholder="Describe the conduct incident or positive behaviour...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn btn-primary" onclick="_saveConductRecord(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Record')+'</button>'+
+      (editItem?'<button class="btn btn-secondary" onclick="window._conductEditId=null;renderTeacherConduct()">Cancel</button>':'')+
+    '</div>'+
+  '</div>';
+
+  var content = form+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">'+
+        '<h3 style="margin:0;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-star" style="color:#C4893A;margin-right:8px"></i>Conduct Records — '+(cls?_escH(cls.name):'My Class')+' ('+records.length+')</h3>'+
+        '<select class="form-control" style="max-width:180px" onchange="window._conductFilter=this.value;renderTeacherConduct()">'+stuOpts+'</select>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Description</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('teacher-conduct', content, 'Conduct Records', cls ? cls.name : 'My Class');
+}
+
+window._saveConductRecord = function(editId) {
+  var studentId = document.getElementById('con-student').value;
+  var type = document.getElementById('con-type').value;
+  var category = document.getElementById('con-cat').value;
+  var date = document.getElementById('con-date').value;
+  var description = (document.getElementById('con-desc').value||'').trim();
+  if (!studentId) { showToast('Please select a student', 'error'); return; }
+  if (!description) { showToast('Description is required', 'error'); return; }
+  if (!date) { showToast('Date is required', 'error'); return; }
+  var user = Session.current();
+  if (editId) {
+    DB.updateConductRecord(editId, { studentId: studentId, type: type, category: category, date: date, description: description, recordedBy: user.name });
+    showToast('Record updated!', 'success');
+  } else {
+    DB.addConductRecord({ id: DB.genId('con'), studentId: studentId, type: type, category: category, date: date, description: description, recordedBy: user.name });
+    showToast('Record added!', 'success');
+  }
+  window._conductEditId = null;
+  renderTeacherConduct();
+};
+
+window._deleteConductRecord = function(id) {
+  confirmDialog('Delete this conduct record?', function() {
+    DB.deleteConductRecord(id);
+    showToast('Deleted', 'success');
+    renderTeacherConduct();
+  });
+};
+
+// ============================================================
+// SUBADMIN — PTM SLOT MANAGER
+// ============================================================
+function renderTeacherPTM() {
+  var user = Session.current();
+  if (!user || user.role !== 'subadmin') { renderLogin(); return; }
+  var classId = user.assignedClass;
+  var cls = DB.getClass(classId);
+  var slots = DB.getPTMSlots(classId);
+  var today = new Date().toISOString().split('T')[0];
+  var data = DB.get();
+
+  var available = slots.filter(function(s){return s.status==='Available';});
+  var booked = slots.filter(function(s){return s.status==='Booked';});
+
+  var availRows = available.length === 0
+    ? '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8">No available slots.</td></tr>'
+    : available.map(function(s) {
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;color:#374151;font-weight:600">'+(s.date||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+(s.time||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+(s.duration||'15 min')+'</td>'+
+          '<td style="padding:10px 12px">'+
+            '<span style="background:#d1fae5;color:#065f46;padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">Available</span>'+
+            ' <button class="btn btn-sm btn-danger" onclick="_deletePTMSlot(\''+s.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var bookedRows = booked.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94a3b8">No bookings yet.</td></tr>'
+    : booked.map(function(s) {
+        var parent = s.bookedBy ? DB.getUser(s.bookedBy) : null;
+        var parentName = parent ? _escH(parent.name) : 'Unknown';
+        var parentPhone = parent ? _escH(parent.phone||'') : '';
+        var children = parent && parent.childIds ? (data.students||[]).filter(function(st){return parent.childIds.includes(st.id)&&st.classId===classId;}) : [];
+        var childNames = children.map(function(c){return _escH(c.name);}).join(', ');
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;color:#374151;font-weight:600">'+(s.date||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+(s.time||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+(s.duration||'15 min')+'</td>'+
+          '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+parentName+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(childNames||'—')+'</td>'+
+          '<td style="padding:10px 12px">'+
+            (parentPhone ? '<a href="tel:'+parentPhone+'" style="color:#1AA6CA;font-size:12px">'+parentPhone+'</a>' : '—')+
+            ' <button class="btn btn-sm btn-secondary" onclick="_cancelTeacherPTMSlot(\''+s.id+'\')"><i class="fas fa-times"></i> Cancel</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-plus" style="color:#C4893A;margin-right:8px"></i>Create PTM Slot</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'+
+      '<div><label class="form-label">Date *</label><input id="ptm-date" class="form-control" type="date" value="'+today+'"/></div>'+
+      '<div><label class="form-label">Time *</label><input id="ptm-time" class="form-control" type="time" value="09:00"/></div>'+
+      '<div><label class="form-label">Duration</label><select id="ptm-dur" class="form-control">'+['15 min','30 min','45 min'].map(function(d){return '<option value="'+d+'">'+d+'</option>';}).join('')+'</select></div>'+
+    '</div>'+
+    '<button class="btn btn-primary" onclick="_addPTMSlot()" style="margin-top:14px"><i class="fas fa-plus"></i> Add Slot</button>'+
+  '</div>';
+
+  var content = form+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
+      '<h3 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-calendar-check" style="color:#10b981;margin-right:8px"></i>Booked Slots ('+booked.length+')</h3>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Time</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Duration</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Parent</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Child</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Contact / Action</th>'+
+        '</tr></thead>'+
+        '<tbody>'+bookedRows+'</tbody>'+
+      '</table></div>'+
+    '</div>'+
+    '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'+
+      '<h3 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-clock" style="color:#C4893A;margin-right:8px"></i>Available Slots ('+available.length+')</h3>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Time</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Duration</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status / Action</th>'+
+        '</tr></thead>'+
+        '<tbody>'+availRows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('teacher-ptm', content, 'PTM Slots', cls ? cls.name : 'My Class');
+}
+
+window._addPTMSlot = function() {
+  var date = document.getElementById('ptm-date').value;
+  var time = document.getElementById('ptm-time').value;
+  var duration = document.getElementById('ptm-dur').value;
+  if (!date || !time) { showToast('Date and time are required', 'error'); return; }
+  var user = Session.current();
+  var classId = user.assignedClass;
+  // Format time as 12h
+  var t = time.split(':');
+  var h = parseInt(t[0]);
+  var m = t[1];
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  var h12 = h % 12 || 12;
+  var timeStr = h12 + ':' + m + ' ' + ampm;
+  DB.addPTMSlot({ id: DB.genId('ptm'), classId: classId, date: date, time: timeStr, teacherName: user.name, duration: duration, status: 'Available', bookedBy: null });
+  showToast('Slot added!', 'success');
+  renderTeacherPTM();
+};
+
+window._deletePTMSlot = function(id) {
+  confirmDialog('Delete this PTM slot?', function() {
+    DB.deletePTMSlot(id);
+    showToast('Slot deleted', 'success');
+    renderTeacherPTM();
+  });
+};
+
+window._cancelTeacherPTMSlot = function(id) {
+  confirmDialog('Cancel this booking? The slot will become available again.', function() {
+    DB.cancelPTMSlot(id);
+    showToast('Booking cancelled', 'success');
+    renderTeacherPTM();
+  });
+};
+
+// ==================== ROUTES ====================
+registerRoute('teacher-homework', renderTeacherHomework);
+registerRoute('teacher-achievements', renderTeacherAchievements);
+registerRoute('teacher-health', renderTeacherHealth);
+registerRoute('teacher-conduct', renderTeacherConduct);
+registerRoute('teacher-ptm', renderTeacherPTM);
+
 // ==================== ROUTE ====================
 registerRoute('teachers', renderTeachers);

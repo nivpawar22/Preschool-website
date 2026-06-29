@@ -30,6 +30,12 @@ function renderManagement() {
       { id: 'adm-reports', label: 'Reports', icon: 'fa-chart-bar' },
       { id: 'letterhead', label: 'Letter Head', icon: 'fa-file-alt' },
     ]},
+    { label: 'Student Portal', color: '#10b981', tabs: [
+      { id: 'exam-manager', label: 'Exam Schedule', icon: 'fa-clipboard-list' },
+      { id: 'meal-manager', label: 'Meal Menu', icon: 'fa-utensils' },
+      { id: 'fee-manager', label: 'Fee Management', icon: 'fa-rupee-sign' },
+      { id: 'grievance-manager', label: 'Grievances', icon: 'fa-comment-dots' },
+    ]},
     { label: 'System', color: '#1AA6CA', tabs: [
       { id: 'log', label: 'Activity Log', icon: 'fa-history' },
       { id: 'settings', label: 'School Settings', icon: 'fa-cog' },
@@ -49,6 +55,10 @@ function renderManagement() {
     receipts: renderReceiptsTab(),
     'adm-reports': renderAdmReportsTab(),
     letterhead: renderLetterheadTab(),
+    'exam-manager': renderExamManagerTab(),
+    'meal-manager': renderMealManagerTab(),
+    'fee-manager': renderFeeManagerTab(),
+    'grievance-manager': renderGrievanceManagerTab(),
     log: renderActivityLogTab(),
     settings: renderSettingsTab()
   };
@@ -2493,6 +2503,470 @@ window.deleteAdmission = function(id) {
       });
   }, 'Delete Admission', true);
 };
+
+// ============================================================
+// SUPERADMIN — EXAM SCHEDULE MANAGER
+// ============================================================
+function renderExamManagerTab() {
+  var data = DB.get();
+  var classes = data.classes || [];
+  var selClass = window._examMgrClass || (classes[0] ? classes[0].id : '');
+  var exams = DB.getExams(selClass || null);
+  var editId = window._examEditId || null;
+  var editItem = editId ? exams.find(function(e){return e.id===editId;}) : null;
+  var cls = selClass ? DB.getClass(selClass) : null;
+  var subjects = cls ? (cls.subjects || []) : [];
+
+  var clsOpts = classes.map(function(c){ return '<option value="'+c.id+'"'+(selClass===c.id?' selected':'')+'>'+_mgEsc(c.name)+'</option>'; }).join('');
+
+  var rows = exams.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No exams added for this class.</td></tr>'
+    : exams.map(function(e) {
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_mgEsc(e.examName||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_mgEsc(e.subject||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(e.date||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(e.time||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+_mgEsc(e.duration||'—')+'</td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-xs btn-primary" onclick="window._examEditId=\''+e.id+'\';mgmtTab=\'exam-manager\';renderManagement()"><i class="fas fa-edit"></i></button> '+
+            '<button class="btn btn-xs btn-danger" onclick="_delExam(\''+e.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  var subjectField = subjects.length > 0
+    ? '<select id="exam-subj" class="form-control">'+subjects.map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.subject===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select>'
+    : '<input id="exam-subj" class="form-control" type="text" value="'+_mgEsc(editItem?editItem.subject:'')+'" placeholder="Subject"/>';
+
+  return '<div class="card">'+
+    '<div class="card-header"><div class="card-title"><i class="fas fa-clipboard-list" style="color:#1AA6CA"></i> Exam Schedule Manager</div></div>'+
+    '<div style="padding:16px">'+
+      '<div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+        '<label style="font-size:13px;font-weight:700;color:#374151">Class:</label>'+
+        '<select class="form-control" style="max-width:200px" onchange="window._examMgrClass=this.value;window._examEditId=null;mgmtTab=\'exam-manager\';renderManagement()">'+clsOpts+'</select>'+
+      '</div>'+
+      '<div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #e2e8f0">'+
+        '<div style="font-size:13px;font-weight:800;color:#0F2050;margin-bottom:12px"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:6px"></i>'+(editItem?'Edit Exam':'Add Exam')+'</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'+
+          '<div><label class="form-label">Exam Name *</label><input id="exam-name" class="form-control" type="text" value="'+_mgEsc(editItem?editItem.examName:'')+'" placeholder="e.g. Mid-Term Examination"/></div>'+
+          '<div><label class="form-label">Subject *</label>'+subjectField+'</div>'+
+          '<div><label class="form-label">Date *</label><input id="exam-date" class="form-control" type="date" value="'+(editItem?editItem.date:'')+'"/></div>'+
+          '<div><label class="form-label">Time</label><input id="exam-time" class="form-control" type="text" value="'+_mgEsc(editItem?editItem.time:'')+'" placeholder="e.g. 09:00 AM"/></div>'+
+          '<div><label class="form-label">Duration</label><input id="exam-duration" class="form-control" type="text" value="'+_mgEsc(editItem?editItem.duration:'')+'" placeholder="e.g. 2 hours"/></div>'+
+          '<div><label class="form-label">Venue</label><input id="exam-venue" class="form-control" type="text" value="'+_mgEsc(editItem?editItem.venue:'')+'" placeholder="e.g. Room 101"/></div>'+
+        '</div>'+
+        '<div style="margin-top:12px;display:flex;gap:8px">'+
+          '<button class="btn btn-primary btn-sm" onclick="_saveExam(\''+_mgEsc(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Exam')+'</button>'+
+          (editItem?'<button class="btn btn-secondary btn-sm" onclick="window._examEditId=null;mgmtTab=\'exam-manager\';renderManagement()">Cancel</button>':'')+
+        '</div>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Exam Name</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Subject</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Time</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Duration</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>'+
+  '</div>';
+}
+
+function _mgEsc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+window._saveExam = function(editId) {
+  var name = (document.getElementById('exam-name').value||'').trim();
+  var subj = (document.getElementById('exam-subj').value||'').trim();
+  var date = document.getElementById('exam-date').value;
+  var time = (document.getElementById('exam-time').value||'').trim();
+  var duration = (document.getElementById('exam-duration').value||'').trim();
+  var venue = (document.getElementById('exam-venue').value||'').trim();
+  if (!name) { showToast('Exam name is required', 'error'); return; }
+  if (!subj) { showToast('Subject is required', 'error'); return; }
+  if (!date) { showToast('Date is required', 'error'); return; }
+  var classId = window._examMgrClass || '';
+  if (editId) {
+    DB.updateExam(editId, { examName: name, subject: subj, date: date, time: time, duration: duration, venue: venue });
+    showToast('Exam updated!', 'success');
+  } else {
+    DB.addExam({ id: DB.genId('ex'), classId: classId, examName: name, subject: subj, date: date, time: time, duration: duration, venue: venue });
+    showToast('Exam added!', 'success');
+  }
+  window._examEditId = null;
+  mgmtTab = 'exam-manager';
+  renderManagement();
+};
+
+window._delExam = function(id) {
+  confirmDialog('Delete this exam entry?', function() {
+    DB.deleteExam(id);
+    showToast('Exam deleted', 'success');
+    mgmtTab = 'exam-manager';
+    renderManagement();
+  });
+};
+
+// ============================================================
+// SUPERADMIN — MEAL MENU MANAGER
+// ============================================================
+function renderMealManagerTab() {
+  var days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  var meals = ['Breakfast','Lunch','Snack'];
+  var today = new Date();
+  var startOfWeek = new Date(today);
+  var dow = today.getDay();
+  startOfWeek.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  var weekKey = window._mealWeek || startOfWeek.toISOString().split('T')[0];
+  var menuData = DB.getMealMenu(weekKey) || {};
+
+  function fmtWeek(wk) {
+    var d = new Date(wk);
+    var end = new Date(d); end.setDate(d.getDate() + 4);
+    var opts = { month:'short', day:'numeric' };
+    return d.toLocaleDateString('en-IN', opts) + ' – ' + end.toLocaleDateString('en-IN', opts);
+  }
+
+  function prevWeek(wk) {
+    var d = new Date(wk); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0];
+  }
+  function nextWeek(wk) {
+    var d = new Date(wk); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0];
+  }
+
+  var tableRows = meals.map(function(meal) {
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050;background:#f8fafc;min-width:90px">'+meal+'</td>'+
+      days.map(function(day) {
+        var val = (menuData[day] && menuData[day][meal]) ? menuData[day][meal] : '';
+        return '<td style="padding:6px 8px"><input id="meal-'+day+'-'+meal+'" class="form-control" style="min-width:130px;font-size:12px" type="text" value="'+_mgEsc(val)+'" placeholder="e.g. Idli & Chutney"/></td>';
+      }).join('')+
+    '</tr>';
+  }).join('');
+
+  return '<div class="card">'+
+    '<div class="card-header"><div class="card-title"><i class="fas fa-utensils" style="color:#10b981"></i> Weekly Meal Menu</div></div>'+
+    '<div style="padding:16px">'+
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
+        '<button class="btn btn-secondary btn-sm" onclick="window._mealWeek=\''+prevWeek(weekKey)+'\';mgmtTab=\'meal-manager\';renderManagement()"><i class="fas fa-chevron-left"></i></button>'+
+        '<span style="font-weight:700;color:#0F2050;font-size:14px">Week of '+fmtWeek(weekKey)+'</span>'+
+        '<button class="btn btn-secondary btn-sm" onclick="window._mealWeek=\''+nextWeek(weekKey)+'\';mgmtTab=\'meal-manager\';renderManagement()"><i class="fas fa-chevron-right"></i></button>'+
+      '</div>'+
+      '<div style="overflow-x:auto;margin-bottom:16px">'+
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+          '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700;min-width:90px">Meal</th>'+
+            days.map(function(d){return '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700;min-width:140px">'+d+'</th>';}).join('')+
+          '</tr></thead>'+
+          '<tbody>'+tableRows+'</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<button class="btn btn-primary" onclick="_saveMealMenu(\''+weekKey+'\')"><i class="fas fa-save"></i> Save Menu for This Week</button>'+
+      '<div style="margin-top:12px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:12px;color:#1e40af">'+
+        '<i class="fas fa-info-circle" style="margin-right:6px"></i>This menu is visible to parents in the parent portal under Meal Menu.'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+window._saveMealMenu = function(weekKey) {
+  var days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  var meals = ['Breakfast','Lunch','Snack'];
+  var menuData = {};
+  days.forEach(function(day) {
+    menuData[day] = {};
+    meals.forEach(function(meal) {
+      var el = document.getElementById('meal-'+day+'-'+meal);
+      menuData[day][meal] = el ? el.value.trim() : '';
+    });
+  });
+  DB.saveMealMenu(weekKey, menuData);
+  showToast('Meal menu saved!', 'success');
+};
+
+// ============================================================
+// SUPERADMIN — FEE RECORDS MANAGER
+// ============================================================
+function renderFeeManagerTab() {
+  var data = DB.get();
+  var students = DB.getStudents(null);
+  var classes = data.classes || [];
+  var filterClass = window._feeMgrClass || '';
+  var filterStatus = window._feeMgrStatus || '';
+
+  var allFees = DB.getFeeRecords(null);
+  var filtered = allFees.filter(function(f) {
+    var stu = DB.getStudent(f.studentId);
+    if (filterClass && (!stu || stu.classId !== filterClass)) return false;
+    if (filterStatus && f.status !== filterStatus) return false;
+    return true;
+  });
+
+  var totalAmount = filtered.reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  var paidAmount = filtered.filter(function(f){return f.status==='Paid';}).reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+  var pendingAmount = filtered.filter(function(f){return f.status!=='Paid';}).reduce(function(s,f){return s+(parseFloat(f.amount)||0);},0);
+
+  var clsOpts = '<option value="">All Classes</option>'+classes.map(function(c){return '<option value="'+c.id+'"'+(filterClass===c.id?' selected':'')+'>'+_mgEsc(c.name)+'</option>';}).join('');
+  var statusOpts = '<option value="">All Status</option>'+['Pending','Paid','Overdue'].map(function(s){return '<option value="'+s+'"'+(filterStatus===s?' selected':'')+'>'+s+'</option>';}).join('');
+  var stuOpts = '<option value="">Select Student</option>'+students.map(function(s){return '<option value="'+s.id+'">'+_mgEsc(s.name)+'</option>';}).join('');
+
+  var statusColor = { Paid:'#065f46', Pending:'#92400e', Overdue:'#991b1b' };
+  var statusBg = { Paid:'#d1fae5', Pending:'#fef3c7', Overdue:'#fee2e2' };
+
+  var rows = filtered.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:#94a3b8">No fee records found.</td></tr>'
+    : filtered.map(function(f) {
+        var stu = DB.getStudent(f.studentId);
+        var cls = stu ? DB.getClass(stu.classId) : null;
+        var sc = statusColor[f.status]||'#475569';
+        var sb = statusBg[f.status]||'#f1f5f9';
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_mgEsc(stu?stu.name:'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b;font-size:11px">'+_mgEsc(cls?cls.name:'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_mgEsc(f.term||'—')+'</td>'+
+          '<td style="padding:10px 12px;font-weight:700;color:#0F2050">₹'+parseFloat(f.amount||0).toLocaleString('en-IN')+'</td>'+
+          '<td style="padding:10px 12px;color:#64748b">'+(f.dueDate||'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+sb+';color:'+sc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_mgEsc(f.status||'—')+'</span></td>'+
+          '<td style="padding:10px 12px">'+
+            (f.status !== 'Paid' ? '<button class="btn btn-xs" style="background:#d1fae5;color:#065f46" onclick="_markFeePaid(\''+f.id+'\')"><i class="fas fa-check"></i> Paid</button> ' : '')+
+            '<button class="btn btn-xs btn-danger" onclick="_deleteFeeRecord(\''+f.id+'\')"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  return '<div class="card">'+
+    '<div class="card-header"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#C4893A"></i> Fee Management</div>'+
+      '<button class="btn btn-primary btn-sm" onclick="_openAddFeeModal()"><i class="fas fa-plus"></i> Add Invoice</button>'+
+    '</div>'+
+    '<div style="padding:16px">'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">'+
+        '<div style="background:#eff6ff;border-radius:12px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:#1e40af">₹'+totalAmount.toLocaleString('en-IN')+'</div><div style="font-size:11px;color:#1e40af;font-weight:700">Total Invoiced</div></div>'+
+        '<div style="background:#d1fae5;border-radius:12px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:#065f46">₹'+paidAmount.toLocaleString('en-IN')+'</div><div style="font-size:11px;color:#065f46;font-weight:700">Collected</div></div>'+
+        '<div style="background:#fee2e2;border-radius:12px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:900;color:#991b1b">₹'+pendingAmount.toLocaleString('en-IN')+'</div><div style="font-size:11px;color:#991b1b;font-weight:700">Pending / Overdue</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'+
+        '<select class="form-control" style="max-width:180px" onchange="window._feeMgrClass=this.value;mgmtTab=\'fee-manager\';renderManagement()">'+clsOpts+'</select>'+
+        '<select class="form-control" style="max-width:150px" onchange="window._feeMgrStatus=this.value;mgmtTab=\'fee-manager\';renderManagement()">'+statusOpts+'</select>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Class</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Term</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Amount</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Due Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>'+
+  '</div>';
+}
+
+window._openAddFeeModal = function() {
+  var students = DB.getStudents(null);
+  var stuOpts = '<option value="">Select Student</option>'+students.map(function(s){return '<option value="'+s.id+'">'+_mgEsc(s.name)+'</option>';}).join('');
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'fee-add-modal';
+  overlay.innerHTML = '<div class="modal" style="max-width:500px;width:calc(100% - 24px)">'+
+    '<div class="modal-header"><h3 class="modal-title"><i class="fas fa-rupee-sign" style="color:#C4893A;margin-right:8px"></i>Add Fee Invoice</h3>'+
+      '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'fee-add-modal\').remove()"><i class="fas fa-times"></i></button></div>'+
+    '<div class="modal-body" style="padding:20px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+        '<div style="grid-column:1/-1"><label class="form-label">Student *</label><select id="fam-stu" class="form-control">'+stuOpts+'</select></div>'+
+        '<div><label class="form-label">Term *</label><select id="fam-term" class="form-control"><option>Term 1</option><option>Term 2</option><option>Term 3</option><option>Q1</option><option>Q2</option><option>Annual</option><option>Monthly</option></select></div>'+
+        '<div><label class="form-label">Amount (₹) *</label><input id="fam-amt" class="form-control" type="number" min="0" placeholder="e.g. 15000"/></div>'+
+        '<div><label class="form-label">Due Date *</label><input id="fam-due" class="form-control" type="date"/></div>'+
+        '<div><label class="form-label">Status</label><select id="fam-status" class="form-control"><option>Pending</option><option>Paid</option><option>Overdue</option></select></div>'+
+        '<div style="grid-column:1/-1"><label class="form-label">Description</label><input id="fam-desc" class="form-control" type="text" placeholder="Optional notes"/></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="modal-footer" style="padding:14px 20px;display:flex;justify-content:flex-end;gap:8px">'+
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'fee-add-modal\').remove()">Cancel</button>'+
+      '<button class="btn btn-primary" onclick="_submitAddFee()"><i class="fas fa-save"></i> Add Invoice</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){if(e.target===overlay)overlay.remove();});
+};
+
+window._submitAddFee = function() {
+  var studentId = document.getElementById('fam-stu').value;
+  var term = document.getElementById('fam-term').value;
+  var amount = parseFloat(document.getElementById('fam-amt').value)||0;
+  var dueDate = document.getElementById('fam-due').value;
+  var status = document.getElementById('fam-status').value;
+  var desc = (document.getElementById('fam-desc').value||'').trim();
+  if (!studentId) { showToast('Please select a student', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('Amount is required', 'error'); return; }
+  if (!dueDate) { showToast('Due date is required', 'error'); return; }
+  var now = new Date().toISOString().split('T')[0];
+  DB.addFeeRecord({ id: DB.genId('fee'), studentId: studentId, invoiceNo: 'INV-'+Date.now(), term: term, amount: amount, dueDate: dueDate, paidDate: status==='Paid'?now:null, status: status, description: desc, createdAt: now });
+  showToast('Fee invoice added!', 'success');
+  document.getElementById('fee-add-modal').remove();
+  mgmtTab = 'fee-manager';
+  renderManagement();
+};
+
+window._markFeePaid = function(id) {
+  var today = new Date().toISOString().split('T')[0];
+  DB.updateFeeRecord(id, { status: 'Paid', paidDate: today });
+  showToast('Marked as Paid!', 'success');
+  mgmtTab = 'fee-manager';
+  renderManagement();
+};
+
+window._deleteFeeRecord = function(id) {
+  confirmDialog('Delete this fee record?', function() {
+    // deleteAssignment reuses pattern — we inline delete here
+    var data = DB.get();
+    data.feeRecords = (data.feeRecords||[]).filter(function(r){return r.id!==id;});
+    DB.commit();
+    showToast('Deleted', 'success');
+    mgmtTab = 'fee-manager';
+    renderManagement();
+  });
+};
+
+// ============================================================
+// SUPERADMIN — GRIEVANCE MANAGER
+// ============================================================
+function renderGrievanceManagerTab() {
+  var filterStatus = window._grievFilter || '';
+  var allGrievances = DB.getGrievances(null);
+  var filtered = filterStatus ? allGrievances.filter(function(g){return g.status===filterStatus;}) : allGrievances;
+
+  var statusColor = { Open:'#ef4444', 'In Review':'#f59e0b', Resolved:'#10b981' };
+  var statusBg = { Open:'#fee2e2', 'In Review':'#fef3c7', Resolved:'#d1fae5' };
+  var prioColor = { High:'#ef4444', Medium:'#f59e0b', Low:'#10b981' };
+
+  var openCount = allGrievances.filter(function(g){return g.status==='Open';}).length;
+  var inReviewCount = allGrievances.filter(function(g){return g.status==='In Review';}).length;
+  var resolvedCount = allGrievances.filter(function(g){return g.status==='Resolved';}).length;
+
+  var rows = filtered.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:#94a3b8">No grievances found.</td></tr>'
+    : filtered.map(function(g) {
+        var parent = g.parentId ? DB.getUser(g.parentId) : null;
+        var parentName = parent ? _mgEsc(parent.name) : 'Unknown';
+        var sc = statusColor[g.status]||'#475569';
+        var sb = statusBg[g.status]||'#f1f5f9';
+        var pc = prioColor[g.priority]||'#475569';
+        return '<tr style="border-bottom:1px solid #f1f5f9">'+
+          '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+parentName+'</td>'+
+          '<td style="padding:10px 12px;color:#475569">'+_mgEsc(g.category||'—')+'</td>'+
+          '<td style="padding:10px 12px;color:#374151;max-width:200px;font-size:12px">'+_mgEsc((g.subject||'').slice(0,50))+'</td>'+
+          '<td style="padding:10px 12px"><span style="color:'+pc+';font-weight:700;font-size:12px">'+_mgEsc(g.priority||'—')+'</span></td>'+
+          '<td style="padding:10px 12px;color:#64748b;font-size:11px">'+(g.submittedDate||'—')+'</td>'+
+          '<td style="padding:10px 12px"><span style="background:'+sb+';color:'+sc+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_mgEsc(g.status||'Open')+'</span></td>'+
+          '<td style="padding:10px 12px">'+
+            '<button class="btn btn-xs btn-primary" onclick="_openGrievanceDetail(\''+g.id+'\')"><i class="fas fa-eye"></i> View</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+
+  return '<div class="card">'+
+    '<div class="card-header"><div class="card-title"><i class="fas fa-comment-dots" style="color:#ef4444"></i> Grievance Manager</div></div>'+
+    '<div style="padding:16px">'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">'+
+        '<div style="background:#fee2e2;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#991b1b">'+openCount+'</div><div style="font-size:11px;color:#991b1b;font-weight:700">Open</div></div>'+
+        '<div style="background:#fef3c7;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#92400e">'+inReviewCount+'</div><div style="font-size:11px;color:#92400e;font-weight:700">In Review</div></div>'+
+        '<div style="background:#d1fae5;border-radius:12px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#065f46">'+resolvedCount+'</div><div style="font-size:11px;color:#065f46;font-weight:700">Resolved</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">'+
+        ['','Open','In Review','Resolved'].map(function(s){return '<button class="btn btn-sm '+(filterStatus===s?'btn-primary':'btn-secondary')+'" onclick="window._grievFilter=\''+s+'\';mgmtTab=\'grievance-manager\';renderManagement()">'+(s||'All')+'</button>';}).join('')+
+      '</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Parent</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Subject</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Priority</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Submitted</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Status</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Action</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table></div>'+
+    '</div>'+
+  '</div>';
+}
+
+window._openGrievanceDetail = function(id) {
+  var allGrievances = DB.getGrievances(null);
+  var g = allGrievances.find(function(x){return x.id===id;});
+  if (!g) return;
+  var parent = g.parentId ? DB.getUser(g.parentId) : null;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'grievance-detail-modal';
+  overlay.innerHTML = '<div class="modal" style="max-width:600px;width:calc(100% - 24px)">'+
+    '<div class="modal-header"><h3 class="modal-title"><i class="fas fa-comment-dots" style="color:#ef4444;margin-right:8px"></i>Grievance Details</h3>'+
+      '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'grievance-detail-modal\').remove()"><i class="fas fa-times"></i></button></div>'+
+    '<div style="padding:20px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px">'+
+        '<div><span style="color:#64748b;font-weight:600">Parent:</span> <strong>'+_mgEsc(parent?parent.name:'Unknown')+'</strong></div>'+
+        '<div><span style="color:#64748b;font-weight:600">Category:</span> '+_mgEsc(g.category||'—')+'</div>'+
+        '<div><span style="color:#64748b;font-weight:600">Priority:</span> <strong style="color:'+(g.priority==='High'?'#ef4444':g.priority==='Medium'?'#f59e0b':'#10b981')+'">'+_mgEsc(g.priority||'—')+'</strong></div>'+
+        '<div><span style="color:#64748b;font-weight:600">Submitted:</span> '+(g.submittedDate||'—')+'</div>'+
+      '</div>'+
+      '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px">Subject</div><div style="font-size:13px;color:#374151">'+_mgEsc(g.subject||'—')+'</div></div>'+
+      '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:4px">Description</div><div style="font-size:13px;color:#374151;background:#f8fafc;padding:10px;border-radius:8px">'+_mgEsc(g.description||'—')+'</div></div>'+
+      (g.resolutionNote ? '<div style="margin-bottom:12px;padding:12px;background:#d1fae5;border-radius:8px"><div style="font-size:11px;font-weight:700;color:#065f46;margin-bottom:4px">RESOLUTION NOTE</div><div style="font-size:13px;color:#065f46">'+_mgEsc(g.resolutionNote)+'</div></div>' : '')+
+      '<div style="margin-bottom:8px"><label class="form-label">Resolution Note</label><textarea id="griev-note" class="form-control" rows="3" placeholder="Add resolution note...">'+_mgEsc(g.resolutionNote||'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="modal-footer" style="padding:14px 20px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'grievance-detail-modal\').remove()">Close</button>'+
+      (g.status!=='In Review'?'<button class="btn btn-warning" onclick="_updateGrievanceStatus(\''+id+'\',\'In Review\')"><i class="fas fa-search"></i> Mark In Review</button>':'')+
+      (g.status!=='Resolved'?'<button class="btn btn-success" onclick="_updateGrievanceStatus(\''+id+'\',\'Resolved\')"><i class="fas fa-check"></i> Mark Resolved</button>':'')+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){if(e.target===overlay)overlay.remove();});
+};
+
+window._updateGrievanceStatus = function(id, status) {
+  var note = (document.getElementById('griev-note')||{}).value || '';
+  DB.updateGrievance(id, { status: status, resolutionNote: note, resolvedDate: status==='Resolved'?new Date().toISOString().split('T')[0]:undefined });
+  showToast('Grievance updated to ' + status, 'success');
+  var m = document.getElementById('grievance-detail-modal');
+  if (m) m.remove();
+  mgmtTab = 'grievance-manager';
+  renderManagement();
+};
+
+// ============================================================
+// SUPERADMIN — ROUTES for new standalone pages
+// ============================================================
+registerRoute('exam-schedule', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  mgmtTab = 'exam-manager';
+  renderManagement();
+});
+registerRoute('meal-menu', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  mgmtTab = 'meal-manager';
+  renderManagement();
+});
+registerRoute('fee-management', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  mgmtTab = 'fee-manager';
+  renderManagement();
+});
+registerRoute('grievances', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  mgmtTab = 'grievance-manager';
+  renderManagement();
+});
 
 registerRoute('management', renderManagement);
 registerRoute('my-profile', renderMyProfile);

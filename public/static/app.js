@@ -209,6 +209,11 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       // Update leaves badge to include staff leave count
       const leavesNavItem = navItems.find(n => n.id === 'leaves');
       if (leavesNavItem) leavesNavItem.badge = (data.leaves.filter(l => l.status === 'pending').length + pendingStaffLeaves) || 0;
+      const pendingGrievances = (DB.getGrievances ? DB.getGrievances(null) : []).filter(g => g.status === 'Open').length;
+      navItems.push({ id: 'exam-schedule', icon: 'fa-clipboard-list', label: 'Exam Schedule', divider: true, dividerLabel: 'Student Portal' });
+      navItems.push({ id: 'meal-menu', icon: 'fa-utensils', label: 'Meal Menu' });
+      navItems.push({ id: 'fee-management', icon: 'fa-rupee-sign', label: 'Fee Management' });
+      navItems.push({ id: 'grievances', icon: 'fa-comment-dots', label: 'Grievances', badge: pendingGrievances });
       navItems.push({ id: 'teachers', icon: 'fa-chalkboard-teacher', label: 'Teachers', divider: true, dividerLabel: 'HR' });
       navItems.push({ id: 'management', icon: 'fa-cogs', label: 'Management' });
       navItems.push({ id: 'my-profile', icon: 'fa-user-circle', label: 'My Profile', divider: true, dividerLabel: 'Admin' });
@@ -223,6 +228,12 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
         if (permMap[n.id] !== undefined) return perms[permMap[n.id]];
         return true; // dashboard, classes, messages always allowed
       });
+      // Class management tools — always visible to teachers
+      navItems.push({ id: 'teacher-homework', icon: 'fa-book-open', label: 'Homework', divider: true, dividerLabel: 'Class Tools' });
+      navItems.push({ id: 'teacher-achievements', icon: 'fa-trophy', label: 'Achievements' });
+      navItems.push({ id: 'teacher-health', icon: 'fa-heartbeat', label: 'Health Records' });
+      navItems.push({ id: 'teacher-conduct', icon: 'fa-star', label: 'Conduct' });
+      navItems.push({ id: 'teacher-ptm', icon: 'fa-handshake', label: 'PTM Slots' });
       // Self-account section — always visible to teachers
       const pendingOwnLeaves = (DB.getStaffLeaves(user.id) || []).filter(l => l.status === 'Pending').length;
       const pendingDocReqs = (DB.getHRDocumentRequests(user.id) || []).filter(r => r.status === 'Fulfilled').length;
@@ -260,6 +271,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'parent-gallery', icon: 'fa-images', label: 'Gallery', badge: pGalBadge },
       { id: 'parent-holidays', icon: 'fa-calendar-alt', label: 'Holidays', divider: true, dividerLabel: 'More' },
       { id: 'parent-fees', icon: 'fa-rupee-sign', label: 'Fees' },
+      { id: 'parent-meals', icon: 'fa-utensils', label: 'Meal Menu' },
       { id: 'parent-homework', icon: 'fa-book-open', label: 'Homework' },
       { id: 'parent-achievements', icon: 'fa-trophy', label: 'Achievements' },
       { id: 'parent-exams', icon: 'fa-clipboard-list', label: 'Exam Schedule' },

@@ -242,6 +242,73 @@ const DB = (() => {
       { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: '2024-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: '2024-04-12T14:00:00' },
       { id: 'gal3', title: 'Science Lab Day', description: 'Students explored chemistry and physics experiments', imageData: '', date: '2024-04-15', classId: 'cls2', studentIds: ['s3'], uploadedBy: 'u3', createdAt: '2024-04-15T11:00:00' },
       { id: 'gal4', title: 'School Field Trip', description: 'A fun day out visiting the nature museum', imageData: '', date: '2024-04-18', classId: 'cls1', studentIds: ['s1', 's2', 's4'], uploadedBy: 'u2', createdAt: '2024-04-18T08:30:00' }
+    ],
+    feeRecords: [
+      { id: 'fee1', studentId: 's1', invoiceNo: 'INV-2024-001', term: 'Term 1', amount: 15000, dueDate: '2024-02-15', paidDate: '2024-02-12', status: 'Paid', createdAt: '2024-01-20' },
+      { id: 'fee2', studentId: 's1', invoiceNo: 'INV-2024-002', term: 'Term 2', amount: 15000, dueDate: '2024-05-15', paidDate: null, status: 'Pending', createdAt: '2024-04-01' },
+      { id: 'fee3', studentId: 's2', invoiceNo: 'INV-2024-003', term: 'Term 1', amount: 15000, dueDate: '2024-02-15', paidDate: '2024-02-14', status: 'Paid', createdAt: '2024-01-20' },
+      { id: 'fee4', studentId: 's2', invoiceNo: 'INV-2024-004', term: 'Term 2', amount: 15000, dueDate: '2024-04-01', paidDate: null, status: 'Overdue', createdAt: '2024-03-01' },
+      { id: 'fee5', studentId: 's3', invoiceNo: 'INV-2024-005', term: 'Term 1', amount: 18000, dueDate: '2024-02-15', paidDate: '2024-02-10', status: 'Paid', createdAt: '2024-01-20' },
+      { id: 'fee6', studentId: 's4', invoiceNo: 'INV-2024-006', term: 'Term 1', amount: 15000, dueDate: '2024-02-20', paidDate: '2024-02-18', status: 'Paid', createdAt: '2024-01-25' },
+      { id: 'fee7', studentId: 's5', invoiceNo: 'INV-2024-007', term: 'Term 1', amount: 12000, dueDate: '2024-02-20', paidDate: null, status: 'Overdue', createdAt: '2024-01-25' }
+    ],
+    assignments: [
+      { id: 'asgn1', classId: 'cls1', subject: 'Mathematics', title: 'Fractions Worksheet', description: 'Complete exercises 1-20 from Chapter 3 on fractions and decimals.', dueDate: '2024-04-25', status: 'Pending', createdAt: '2024-04-18' },
+      { id: 'asgn2', classId: 'cls1', subject: 'English', title: 'Creative Writing Essay', description: 'Write a 300-word essay on "My Favourite Season". Use descriptive language.', dueDate: '2024-04-22', status: 'Submitted', createdAt: '2024-04-15' },
+      { id: 'asgn3', classId: 'cls1', subject: 'Science', title: 'Plant Growth Observation', description: 'Observe and record your plant growth diary for 5 days with drawings.', dueDate: '2024-04-10', status: 'Overdue', createdAt: '2024-04-01' },
+      { id: 'asgn4', classId: 'cls2', subject: 'Mathematics', title: 'Algebra Problem Set', description: 'Solve all problems from Chapter 7: Linear Equations exercises A and B.', dueDate: '2024-04-28', status: 'Pending', createdAt: '2024-04-20' },
+      { id: 'asgn5', classId: 'cls2', subject: 'Science', title: 'Lab Report: Density', description: 'Write lab report for density experiment conducted in class. Include observations and conclusions.', dueDate: '2024-04-20', status: 'Submitted', createdAt: '2024-04-12' },
+      { id: 'asgn6', classId: 'cls3', subject: 'Art', title: 'Landscape Painting', description: 'Create a landscape painting using watercolours. Theme: Nature in Monsoon.', dueDate: '2024-04-30', status: 'Pending', createdAt: '2024-04-22' }
+    ],
+    achievements: [
+      { id: 'ach1', studentId: 's1', title: 'Mathematics Topper', description: 'Scored highest marks in the Mathematics unit test with 98/100.', date: '2024-03-20', category: 'Academic', icon: 'fa-trophy' },
+      { id: 'ach2', studentId: 's1', title: 'Best Athlete', description: 'Won gold medal in 100m sprint at Annual Sports Day.', date: '2024-05-10', category: 'Sports', icon: 'fa-medal' },
+      { id: 'ach3', studentId: 's1', title: 'Cultural Performance Star', description: 'Outstanding solo dance performance at the Annual Cultural Festival.', date: '2024-06-01', category: 'Cultural', icon: 'fa-star' },
+      { id: 'ach4', studentId: 's2', title: 'Most Improved Student', description: 'Showed remarkable improvement in English and Mathematics this semester.', date: '2024-04-01', category: 'Academic', icon: 'fa-chart-line' },
+      { id: 'ach5', studentId: 's3', title: 'Science Olympiad Winner', description: 'First place in the Inter-school Science Olympiad.', date: '2024-03-15', category: 'Academic', icon: 'fa-flask' },
+      { id: 'ach6', studentId: 's4', title: 'Helpful Classmate Award', description: 'Recognised by teachers for always helping classmates and maintaining positive attitude.', date: '2024-04-05', category: 'Behaviour', icon: 'fa-heart' },
+      { id: 'ach7', studentId: 's5', title: 'Art Exhibition Winner', description: 'First prize in school-level painting competition.', date: '2024-04-12', category: 'Cultural', icon: 'fa-palette' }
+    ],
+    exams: [
+      { id: 'ex1', classId: 'cls1', examName: 'Mid-Term Examination', subject: 'Mathematics', date: '2026-07-10', time: '09:00 AM', duration: '2 hours', venue: 'Room 101' },
+      { id: 'ex2', classId: 'cls1', examName: 'Mid-Term Examination', subject: 'English', date: '2026-07-11', time: '09:00 AM', duration: '2 hours', venue: 'Room 101' },
+      { id: 'ex3', classId: 'cls1', examName: 'Mid-Term Examination', subject: 'Science', date: '2026-07-12', time: '09:00 AM', duration: '2 hours', venue: 'Room 102' },
+      { id: 'ex4', classId: 'cls1', examName: 'Mid-Term Examination', subject: 'Social Studies', date: '2026-07-14', time: '09:00 AM', duration: '1.5 hours', venue: 'Room 101' },
+      { id: 'ex5', classId: 'cls2', examName: 'Mid-Term Examination', subject: 'Mathematics', date: '2026-07-10', time: '11:00 AM', duration: '2 hours', venue: 'Room 201' },
+      { id: 'ex6', classId: 'cls2', examName: 'Mid-Term Examination', subject: 'Science', date: '2026-07-12', time: '11:00 AM', duration: '2 hours', venue: 'Room 202' },
+      { id: 'ex7', classId: 'cls3', examName: 'Mid-Term Examination', subject: 'Mathematics', date: '2026-07-11', time: '09:00 AM', duration: '1.5 hours', venue: 'Room 301' }
+    ],
+    healthRecords: [
+      { id: 'hr1', studentId: 's1', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-06-15', dueDate: null, status: 'Completed', notes: 'No adverse reactions.' },
+      { id: 'hr2', studentId: 's1', type: 'vaccination', vaccine: 'Typhoid', date: '2024-01-10', dueDate: '2025-01-10', status: 'Completed', notes: '' },
+      { id: 'hr3', studentId: 's1', type: 'vaccination', vaccine: 'Hepatitis A', date: null, dueDate: '2024-08-01', status: 'Due Soon', notes: '' },
+      { id: 'hr4', studentId: 's1', type: 'allergy', name: 'Peanuts', severity: 'High', notes: 'Carries EpiPen. Inform canteen staff.' },
+      { id: 'hr5', studentId: 's1', type: 'allergy', name: 'Dust', severity: 'Low', notes: 'Mild allergic rhinitis.' },
+      { id: 'hr6', studentId: 's1', type: 'note', title: 'Asthma', details: 'Mild asthma. Has inhaler in school bag. Avoid excessive running in cold weather.', recordedOn: '2024-01-15' },
+      { id: 'hr7', studentId: 's2', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-06-15', dueDate: null, status: 'Completed', notes: '' },
+      { id: 'hr8', studentId: 's3', type: 'vaccination', vaccine: 'Typhoid', date: '2023-12-01', dueDate: '2024-12-01', status: 'Completed', notes: '' },
+      { id: 'hr9', studentId: 's3', type: 'allergy', name: 'Shellfish', severity: 'Medium', notes: 'Avoid all shellfish in school meals.' },
+      { id: 'hr10', studentId: 's4', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-08-20', dueDate: null, status: 'Completed', notes: '' },
+      { id: 'hr11', studentId: 's5', type: 'vaccination', vaccine: 'Typhoid', date: '2024-02-14', dueDate: '2025-02-14', status: 'Completed', notes: '' }
+    ],
+    ptmSlots: [
+      { id: 'ptm1', classId: 'cls1', date: '2026-07-20', time: '09:00 AM', teacherName: 'Mr. James Carter', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm2', classId: 'cls1', date: '2026-07-20', time: '09:15 AM', teacherName: 'Mr. James Carter', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm3', classId: 'cls1', date: '2026-07-20', time: '09:30 AM', teacherName: 'Mr. James Carter', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm4', classId: 'cls1', date: '2026-07-20', time: '09:45 AM', teacherName: 'Mr. James Carter', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm5', classId: 'cls2', date: '2026-07-21', time: '10:00 AM', teacherName: 'Ms. Emily Rodriguez', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm6', classId: 'cls2', date: '2026-07-21', time: '10:15 AM', teacherName: 'Ms. Emily Rodriguez', duration: '15 min', status: 'Available', bookedBy: null },
+      { id: 'ptm7', classId: 'cls3', date: '2026-07-22', time: '11:00 AM', teacherName: 'Mr. David Kim', duration: '15 min', status: 'Available', bookedBy: null }
+    ],
+    grievances: [],
+    conductRecords: [
+      { id: 'con1', studentId: 's1', date: '2024-04-02', type: 'Positive', category: 'Helpfulness', description: 'Helped a new classmate settle in on their first day. Very welcoming.', recordedBy: 'Mr. James Carter' },
+      { id: 'con2', studentId: 's1', date: '2024-04-05', type: 'Positive', category: 'Academic', description: 'Voluntarily helped slower students during group assignment.', recordedBy: 'Mr. James Carter' },
+      { id: 'con3', studentId: 's1', date: '2024-04-10', type: 'Negative', category: 'Discipline', description: 'Was talking during exam preparation period. Warning issued.', recordedBy: 'Mr. James Carter' },
+      { id: 'con4', studentId: 's2', date: '2024-04-03', type: 'Positive', category: 'Sports', description: 'Showed great sportsmanship during football practice.', recordedBy: 'Mr. James Carter' },
+      { id: 'con5', studentId: 's3', date: '2024-04-04', type: 'Positive', category: 'Academic', description: 'Submitted an exemplary science project ahead of deadline.', recordedBy: 'Ms. Emily Rodriguez' },
+      { id: 'con6', studentId: 's4', date: '2024-04-06', type: 'Neutral', category: 'General', description: 'Attended counsellor session for time management skills.', recordedBy: 'Mr. James Carter' },
+      { id: 'con7', studentId: 's5', date: '2024-04-08', type: 'Positive', category: 'Arts', description: 'Won first prize in school painting competition.', recordedBy: 'Ms. Emily Rodriguez' }
     ]
   };
 
@@ -304,6 +371,14 @@ const DB = (() => {
       if (!_data.hrDocumentRequests) { _data.hrDocumentRequests = []; mergeChanged = true; }
       if (!_data.resignationRecords) { _data.resignationRecords = []; mergeChanged = true; }
       if (!_data.leaveTypeConfig) { _data.leaveTypeConfig = JSON.parse(JSON.stringify(defaults.leaveTypeConfig)); mergeChanged = true; }
+      if (!_data.feeRecords) { _data.feeRecords = JSON.parse(JSON.stringify(defaults.feeRecords)); mergeChanged = true; }
+      if (!_data.assignments) { _data.assignments = JSON.parse(JSON.stringify(defaults.assignments)); mergeChanged = true; }
+      if (!_data.achievements) { _data.achievements = JSON.parse(JSON.stringify(defaults.achievements)); mergeChanged = true; }
+      if (!_data.exams) { _data.exams = JSON.parse(JSON.stringify(defaults.exams)); mergeChanged = true; }
+      if (!_data.healthRecords) { _data.healthRecords = JSON.parse(JSON.stringify(defaults.healthRecords)); mergeChanged = true; }
+      if (!_data.ptmSlots) { _data.ptmSlots = JSON.parse(JSON.stringify(defaults.ptmSlots)); mergeChanged = true; }
+      if (!_data.grievances) { _data.grievances = []; mergeChanged = true; }
+      if (!_data.conductRecords) { _data.conductRecords = JSON.parse(JSON.stringify(defaults.conductRecords)); mergeChanged = true; }
       // Migrate old single-line address to 3-line format
       if (_data.meta && _data.meta.schoolAddress && _data.meta.schoolAddress.indexOf('\n') === -1 && _data.meta.schoolAddress.indexOf('Plot') !== -1) {
         _data.meta.schoolAddress = 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
@@ -778,6 +853,63 @@ const DB = (() => {
   function addResignationRecord(r) { if(!_data.resignationRecords)_data.resignationRecords=[]; _data.resignationRecords.unshift(r); commit(); }
   function updateResignationRecord(id,updates) { var r=(_data.resignationRecords||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
 
+  // ---- Fee Records ----
+  function getFeeRecords(studentId) {
+    return (_data.feeRecords || []).filter(function(r) { return !studentId || r.studentId === studentId; }).sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  }
+  function addFeeRecord(record) { if(!_data.feeRecords)_data.feeRecords=[]; _data.feeRecords.unshift(record); commit(); }
+  function updateFeeRecord(id, updates) { var r=(_data.feeRecords||[]).find(function(x){return x.id===id;}); if(r){Object.assign(r,updates);commit();} }
+
+  // ---- Assignments ----
+  function getAssignments(classId) {
+    return (_data.assignments || []).filter(function(a) { return !classId || a.classId === classId; }).sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');});
+  }
+  function addAssignment(a) { if(!_data.assignments)_data.assignments=[]; _data.assignments.unshift(a); commit(); }
+
+  // ---- Achievements ----
+  function getAchievements(studentId) {
+    return (_data.achievements || []).filter(function(a) { return !studentId || a.studentId === studentId; }).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  }
+  function addAchievement(a) { if(!_data.achievements)_data.achievements=[]; _data.achievements.unshift(a); commit(); }
+
+  // ---- Exams ----
+  function getExams(classId) {
+    return (_data.exams || []).filter(function(e) { return !classId || e.classId === classId; }).sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  }
+  function addExam(e) { if(!_data.exams)_data.exams=[]; _data.exams.unshift(e); commit(); }
+
+  // ---- Health Records ----
+  function getHealthRecords(studentId) {
+    return (_data.healthRecords || []).filter(function(r) { return !studentId || r.studentId === studentId; });
+  }
+  function addHealthRecord(r) { if(!_data.healthRecords)_data.healthRecords=[]; _data.healthRecords.unshift(r); commit(); }
+
+  // ---- PTM Slots ----
+  function getPTMSlots(classId) {
+    return (_data.ptmSlots || []).filter(function(s) { return !classId || s.classId === classId; }).sort(function(a,b){return ((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''));});
+  }
+  function bookPTMSlot(slotId, parentId) {
+    var s=(_data.ptmSlots||[]).find(function(x){return x.id===slotId;});
+    if(s&&s.status==='Available'){s.status='Booked';s.bookedBy=parentId;commit();}
+  }
+  function cancelPTMSlot(slotId) {
+    var s=(_data.ptmSlots||[]).find(function(x){return x.id===slotId;});
+    if(s){s.status='Available';s.bookedBy=null;commit();}
+  }
+  function addPTMSlot(s) { if(!_data.ptmSlots)_data.ptmSlots=[]; _data.ptmSlots.push(s); commit(); }
+
+  // ---- Grievances ----
+  function getGrievances(parentId) {
+    return (_data.grievances || []).filter(function(g) { return !parentId || g.parentId === parentId; }).sort(function(a,b){return (b.submittedDate||'').localeCompare(a.submittedDate||'');});
+  }
+  function addGrievance(g) { if(!_data.grievances)_data.grievances=[]; _data.grievances.unshift(g); commit(); }
+
+  // ---- Conduct Records ----
+  function getConductRecords(studentId) {
+    return (_data.conductRecords || []).filter(function(r) { return !studentId || r.studentId === studentId; }).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  }
+  function addConductRecord(r) { if(!_data.conductRecords)_data.conductRecords=[]; _data.conductRecords.unshift(r); commit(); }
+
   // ---- Activity log ----
   function log(userId, action, details) {
     _data.activityLog.unshift({ id: genId('log'), userId, action, details, time: new Date().toISOString() });
@@ -853,7 +985,15 @@ const DB = (() => {
     calcGrade, calcBMI,
     getMeta, updateMeta,
     defaults,
-    initFromServer, R2_BASE
+    initFromServer, R2_BASE,
+    getFeeRecords, addFeeRecord, updateFeeRecord,
+    getAssignments, addAssignment,
+    getAchievements, addAchievement,
+    getExams, addExam,
+    getHealthRecords, addHealthRecord,
+    getPTMSlots, bookPTMSlot, cancelPTMSlot, addPTMSlot,
+    getGrievances, addGrievance,
+    getConductRecords, addConductRecord
   };
 })();
 

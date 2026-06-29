@@ -715,63 +715,6 @@ function expandParentAnnouncement(id) {
 // ---- Messages (Parent → Teacher) ----
 let parentMsgTeacherId = null;
 
-function renderParentMessages() {
-  currentParentTab = 'parent-messages';
-  const user = Session.current();
-  const children = getParentChildren();
-  const data = DB.get();
-
-  // Get all teachers of my children's classes
-  const teachers = [];
-  children.forEach(child => {
-    const teacher = child.classId ? DB.getClassTeacher(child.classId) : null;
-    if (teacher && !teachers.find(t => t.id === teacher.id)) teachers.push(teacher);
-  });
-
-  const myMsgs = data.messages.filter(m => m.from === user.id || m.to === user.id);
-
-  const content = `
-    <div class="grid-2" style="height:600px">
-      <!-- Teacher list -->
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:16px;border-bottom:1px solid #DCE1EF;font-weight:700">Your Teachers</div>
-        <div style="overflow-y:auto;height:calc(100% - 56px)">
-          ${teachers.map(t => {
-            const tMsgs = myMsgs.filter(m => m.from === t.id || m.to === t.id);
-            const lastMsg = tMsgs[tMsgs.length - 1];
-            const tClass = t.assignedClass ? DB.getClass(t.assignedClass) : null;
-            return `
-            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${parentMsgTeacherId===t.id?'background:#E8EDF5':''}" onclick="parentMsgTeacherId='${t.id}';renderParentMessages()">
-              ${avatarHtml(t.name, t.avatar)}
-              <div style="flex:1;overflow:hidden">
-                <div style="font-weight:600;font-size:14px">${t.name}</div>
-                <div class="text-muted" style="font-size:12px">${tClass ? tClass.name : 'Teacher'}</div>
-                <div class="text-muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                  ${lastMsg ? lastMsg.text.slice(0,40)+'...' : 'Start a conversation'}
-                </div>
-              </div>
-              <button class="btn btn-whatsapp btn-xs" onclick="event.stopPropagation();wa('${t.phone}','Hello ${t.name}, I am ${user.name}, parent of my child. I wanted to discuss their progress.')">
-                <i class="fab fa-whatsapp"></i>
-              </button>
-            </div>`;
-          }).join('')}
-          ${!teachers.length ? '<div class="empty-state" style="padding:30px"><i class="fas fa-chalkboard-teacher"></i><h3>No teachers found</h3><p>Your children\'s class teachers will appear here</p></div>' : ''}
-        </div>
-      </div>
-
-      <!-- Chat window -->
-      <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column" id="parent-chat-window">
-        ${parentMsgTeacherId ? renderParentChatWindow(parentMsgTeacherId) : `
-        <div class="flex-center" style="height:100%;flex-direction:column;color:#6B7A9D">
-          <i class="fas fa-comment-dots" style="font-size:48px;margin-bottom:16px;opacity:0.4"></i>
-          <p>Select a teacher to start chatting</p>
-        </div>`}
-      </div>
-    </div>`;
-
-  renderLayout('parent-messages', content, 'Messages', 'Chat with Teachers');
-}
-
 function renderParentChatWindow(teacherId) {
   const user = Session.current();
   const data = DB.get();
@@ -1466,6 +1409,1269 @@ function submitParentReview() {
   });
 }
 
+// ---- Selected child indicator pill ----
+function renderChildPill(child) {
+  if (!child) return '';
+  const cls = DB.getClass(child.classId);
+  return `<div style="display:inline-flex;align-items:center;gap:8px;background:#E8EDF5;border:1.5px solid #DCE1EF;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;color:#0F2050;margin-bottom:16px">
+    <i class="fas fa-child" style="color:#1AA6CA"></i>
+    Currently viewing: <strong>${child.name}</strong>${cls ? ' &middot; ' + cls.name : ''}
+  </div>`;
+}
+
+// ---- Holidays ----
+function renderParentHolidays() {
+  currentParentTab = 'parent-holidays';
+  const user = Session.current();
+  const child = getSelectedChild();
+  const holidays = DB.getHolidays();
+  const today = new Date().toISOString().split('T')[0];
+  const events = DB.getEvents(child ? child.classId : null);
+
+  // Group holidays by month
+  const byMonth = {};
+  holidays.forEach(function(h) {
+    const m = h.date.slice(0, 7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push({ ...h, _type: 'holiday' });
+  });
+  events.forEach(function(ev) {
+    const m = ev.date.slice(0, 7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push({ ...ev, _type: 'event' });
+  });
+
+  const months = Object.keys(byMonth).sort();
+  const typeColors = { National: '#ef4444', Festival: '#C4893A', Optional: '#6B7A9D' };
+  const evColors = { sports: '#10b981', academic: '#1AA6CA', cultural: '#C4893A', holiday: '#ef4444', meeting: '#E8B020' };
+
+  const upcoming = holidays.filter(function(h) { return h.date >= today; });
+
+  const content = `
+    ${child ? renderChildPill(child) : ''}
+    ${renderChildSelector(child)}
+
+    ${upcoming.length ? `
+    <div class="card" style="background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:#90C4E0;margin-bottom:10px"><i class="fas fa-clock" style="margin-right:6px"></i>Next Holiday</div>
+      <div style="font-size:20px;font-weight:900">${upcoming[0].name}</div>
+      <div style="font-size:14px;color:#90C4E0;margin-top:4px">${formatDate(upcoming[0].date)}</div>
+      <span style="display:inline-block;margin-top:8px;background:rgba(255,255,255,0.15);border-radius:10px;padding:3px 12px;font-size:12px;font-weight:700">${upcoming[0].type}</span>
+    </div>` : ''}
+
+    ${months.map(function(m) {
+      const dt = new Date(m + '-01');
+      const monthLabel = dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const items = byMonth[m].sort(function(a, b) { return (a.date||'').localeCompare(b.date||''); });
+      return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:14px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> ${monthLabel}</div>
+        ${items.map(function(item) {
+          const isPast = (item.date || '') < today;
+          const d = new Date(item.date);
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+          if (item._type === 'holiday') {
+            const color = typeColors[item.type] || '#6B7A9D';
+            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9;opacity:${isPast?0.5:1}">
+              <div style="text-align:center;min-width:48px;background:${color}15;border-radius:10px;padding:6px">
+                <div style="font-size:18px;font-weight:900;color:${color}">${d.getDate()}</div>
+                <div style="font-size:10px;color:#6B7A9D;font-weight:600">${dayName}</div>
+              </div>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:14px">${item.name}</div>
+                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${color}20;color:${color}">${item.type}</span>
+              </div>
+              ${!isPast ? '<span class="badge badge-green">Upcoming</span>' : ''}
+            </div>`;
+          } else {
+            const color = evColors[item.type] || '#1AA6CA';
+            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9;opacity:${isPast?0.5:1}">
+              <div style="text-align:center;min-width:48px;background:${color}15;border-radius:10px;padding:6px">
+                <div style="font-size:18px;font-weight:900;color:${color}">${d.getDate()}</div>
+                <div style="font-size:10px;color:#6B7A9D;font-weight:600">${dayName}</div>
+              </div>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:14px">${item.title}</div>
+                <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${color}20;color:${color};text-transform:capitalize">${item.type} Event</span>
+              </div>
+              ${!isPast ? '<span class="badge badge-blue">Event</span>' : ''}
+            </div>`;
+          }
+        }).join('')}
+      </div>`;
+    }).join('')}
+    ${!months.length ? '<div class="empty-state"><i class="fas fa-calendar-alt"></i><h3>No holidays or events found</h3></div>' : ''}`;
+
+  renderLayout('parent-holidays', content, 'Holidays & School Calendar', 'School Calendar');
+}
+
+// ---- Profile ----
+function renderParentProfile() {
+  currentParentTab = 'parent-profile';
+  const user = Session.current();
+  const fullUser = DB.getUser(user.id) || user;
+
+  const content = `
+    <div class="grid-2">
+      <!-- Profile Info -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:18px"><i class="fas fa-user-circle" style="color:#1AA6CA"></i> My Profile</div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
+          ${avatarHtml(fullUser.name, fullUser.avatar || '#0F2050', 'avatar-xl')}
+          <div>
+            <div style="font-size:20px;font-weight:900;color:#0F1E3D">${fullUser.name}</div>
+            <div style="font-size:13px;color:#6B7A9D">${fullUser.email}</div>
+            <div style="font-size:12px;color:#6B7A9D">${fullUser.role === 'parent' ? 'Parent / Guardian' : fullUser.role}</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-control" id="prof-name" type="text" value="${fullUser.name || ''}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email (read-only)</label>
+          <input class="form-control" type="text" value="${fullUser.email || ''}" disabled style="opacity:0.6"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-control" id="prof-phone" type="text" value="${fullUser.phone || ''}" placeholder="+91-XXXXXXXXXX"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <textarea class="form-control" id="prof-address" rows="3" placeholder="Home address...">${fullUser.address || ''}</textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveParentProfile()"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+
+      <div>
+        <!-- Change Password -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:16px"><i class="fas fa-lock" style="color:#C4893A"></i> Change Password</div>
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input class="form-control" id="prof-cur-pass" type="password" placeholder="Current password"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input class="form-control" id="prof-new-pass" type="password" placeholder="New password (min 6 chars)"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input class="form-control" id="prof-confirm-pass" type="password" placeholder="Confirm new password"/>
+          </div>
+          <button class="btn btn-warning" onclick="changeParentPassword()"><i class="fas fa-key"></i> Update Password</button>
+        </div>
+
+        <!-- Linked Children -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px"><i class="fas fa-child" style="color:#10b981"></i> Linked Children</div>
+          ${DB.getStudentsByParent(user.id).map(function(child) {
+            const cls = DB.getClass(child.classId);
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9">
+              ${avatarHtml(child.name, '#0F2050')}
+              <div>
+                <div style="font-weight:700">${child.name}</div>
+                <div style="font-size:12px;color:#6B7A9D">${cls ? cls.name : ''} &middot; Roll: ${child.rollNo}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  renderLayout('parent-profile', content, 'My Profile', user.name);
+}
+
+window.saveParentProfile = function() {
+  const user = Session.current();
+  const name = (document.getElementById('prof-name').value || '').trim();
+  const phone = (document.getElementById('prof-phone').value || '').trim();
+  const address = (document.getElementById('prof-address').value || '').trim();
+  if (!name) { showToast('Name cannot be empty', 'error'); return; }
+  DB.updateUser(user.id, { name, phone, address });
+  Session.updateCurrent({ name, phone, address });
+  showToast('Profile updated successfully!', 'success');
+};
+
+window.changeParentPassword = function() {
+  const user = Session.current();
+  const fullUser = DB.getUser(user.id);
+  const cur = (document.getElementById('prof-cur-pass').value || '').trim();
+  const np = (document.getElementById('prof-new-pass').value || '').trim();
+  const cp = (document.getElementById('prof-confirm-pass').value || '').trim();
+  if (!cur || !np || !cp) { showToast('Please fill all password fields', 'error'); return; }
+  if (fullUser && fullUser.password !== cur) { showToast('Current password is incorrect', 'error'); return; }
+  if (np.length < 6) { showToast('New password must be at least 6 characters', 'error'); return; }
+  if (np !== cp) { showToast('Passwords do not match', 'error'); return; }
+  DB.updateUser(user.id, { password: np });
+  showToast('Password changed successfully!', 'success');
+  document.getElementById('prof-cur-pass').value = '';
+  document.getElementById('prof-new-pass').value = '';
+  document.getElementById('prof-confirm-pass').value = '';
+};
+
+// ---- Fees ----
+function renderParentFees() {
+  currentParentTab = 'parent-fees';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const fees = DB.getFeeRecords(child.id);
+  const totalDue = fees.reduce(function(s, f) { return s + (f.amount || 0); }, 0);
+  const totalPaid = fees.filter(function(f) { return f.status === 'Paid'; }).reduce(function(s, f) { return s + (f.amount || 0); }, 0);
+  const balance = totalDue - totalPaid;
+
+  const statusColors = { Paid: '#10b981', Pending: '#E8B020', Overdue: '#ef4444' };
+  const statusBg = { Paid: 'badge-green', Pending: 'badge-yellow', Overdue: 'badge-red' };
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-rupee-sign" style="color:#1AA6CA"></i></div>
+        <div style="font-size:26px;font-weight:900;color:#1AA6CA">&#8377;${totalDue.toLocaleString('en-IN')}</div>
+        <div class="text-muted">Total Invoiced</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#d1fae5"><i class="fas fa-check-circle" style="color:#10b981"></i></div>
+        <div style="font-size:26px;font-weight:900;color:#10b981">&#8377;${totalPaid.toLocaleString('en-IN')}</div>
+        <div class="text-muted">Total Paid</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:${balance > 0 ? '#fee2e2' : '#d1fae5'}"><i class="fas fa-balance-scale" style="color:${balance > 0 ? '#ef4444' : '#10b981'}"></i></div>
+        <div style="font-size:26px;font-weight:900;color:${balance > 0 ? '#ef4444' : '#10b981'}">&#8377;${balance.toLocaleString('en-IN')}</div>
+        <div class="text-muted">${balance > 0 ? 'Balance Due' : 'Fully Paid'}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px"><i class="fas fa-file-invoice" style="color:#1AA6CA"></i> Fee Invoices – ${child.name}</div>
+      ${fees.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Invoice No</th><th>Term</th><th>Amount</th><th>Due Date</th><th>Paid Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            ${fees.map(function(f) {
+              return `<tr>
+                <td><strong>${f.invoiceNo}</strong></td>
+                <td>${f.term}</td>
+                <td style="font-weight:700">&#8377;${(f.amount||0).toLocaleString('en-IN')}</td>
+                <td>${formatDate(f.dueDate)}</td>
+                <td>${f.paidDate ? formatDate(f.paidDate) : '<span class="text-muted">-</span>'}</td>
+                <td><span class="badge ${statusBg[f.status] || 'badge-gray'}">${f.status}</span></td>
+                <td>${f.status === 'Paid' ? `<button class="btn btn-sm btn-secondary" onclick="printFeeReceipt('${f.id}')"><i class="fas fa-download"></i> Receipt</button>` : '<span class="text-muted" style="font-size:12px">-</span>'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div class="empty-state"><i class="fas fa-rupee-sign"></i><h3>No fee records found</h3></div>'}
+    </div>`;
+
+  renderLayout('parent-fees', content, 'Fees & Payments', child.name);
+}
+
+window.printFeeReceipt = function(feeId) {
+  const fee = (DB.getFeeRecords() || []).find(function(f) { return f.id === feeId; });
+  if (!fee) return;
+  const student = DB.getStudent(fee.studentId);
+  const meta = DB.getMeta();
+  const cls = student ? DB.getClass(student.classId) : null;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Fee Receipt</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
+  .hdr{background:#0F2050;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:16px}
+  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
+  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:11px;color:#90C4E0}
+  .gold-bar{height:4px;background:#E8B020;margin-bottom:20px}
+  .title{text-align:center;font-size:16px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;padding:10px;background:#E8B020;color:#0F1E3D;border-radius:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+  .field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em}
+  .field .val{font-size:13px;font-weight:700}
+  .amount-box{background:#d1fae5;border:2px solid #10b981;border-radius:10px;padding:18px;text-align:center;margin-bottom:20px}
+  .amount-box .amt{font-size:36px;font-weight:900;color:#10b981}
+  .footer{font-size:11px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:14px;margin-top:20px}
+  .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}
+  .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+  .sig-label{font-size:12px;font-weight:700;text-align:center}
+  @media print{body{padding:10px}.no-print{display:none}}</style></head><body>
+  <div class="hdr">
+    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
+    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
+  </div>
+  <div class="gold-bar"></div>
+  <div class="title">Fee Payment Receipt</div>
+  <div class="grid">
+    <div class="field"><label>Invoice No.</label><div class="val">${fee.invoiceNo}</div></div>
+    <div class="field"><label>Date of Payment</label><div class="val">${formatDate(fee.paidDate)}</div></div>
+    <div class="field"><label>Student Name</label><div class="val">${student ? student.name : '-'}</div></div>
+    <div class="field"><label>Roll No.</label><div class="val">${student ? student.rollNo : '-'}</div></div>
+    <div class="field"><label>Class</label><div class="val">${cls ? cls.name : '-'}</div></div>
+    <div class="field"><label>Term</label><div class="val">${fee.term}</div></div>
+    <div class="field"><label>Due Date</label><div class="val">${formatDate(fee.dueDate)}</div></div>
+    <div class="field"><label>Status</label><div class="val" style="color:#10b981">PAID</div></div>
+  </div>
+  <div class="amount-box">
+    <div style="font-size:12px;color:#065f46;margin-bottom:6px">Amount Paid</div>
+    <div class="amt">&#8377;${(fee.amount||0).toLocaleString('en-IN')}</div>
+  </div>
+  <div class="sig-row">
+    <div><div class="sig-line"></div><div class="sig-label">Parent / Guardian</div></div>
+    <div><div class="sig-line"></div><div class="sig-label">School Authorised Signatory</div></div>
+  </div>
+  <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''} &bull; ${meta.schoolWebsite || ''}<br>This is a computer-generated receipt. No signature required.</div>
+  <script>window.onload=function(){window.print();};<\/script></body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print receipt', 'warning');
+};
+
+// ---- Homework ----
+function renderParentHomework() {
+  currentParentTab = 'parent-homework';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const assignments = DB.getAssignments(child.classId);
+  const today = new Date().toISOString().split('T')[0];
+
+  const groups = { Pending: [], Submitted: [], Overdue: [] };
+  assignments.forEach(function(a) {
+    const s = a.status === 'Submitted' ? 'Submitted' : (a.dueDate < today && a.status !== 'Submitted') ? 'Overdue' : 'Pending';
+    groups[s].push(a);
+  });
+
+  const groupColors = { Pending: '#E8B020', Submitted: '#10b981', Overdue: '#ef4444' };
+  const groupIcons = { Pending: 'fa-clock', Submitted: 'fa-check-circle', Overdue: 'fa-exclamation-circle' };
+  const groupBg = { Pending: '#FEF7E0', Submitted: '#d1fae5', Overdue: '#fee2e2' };
+
+  const assignCard = function(a) {
+    const isOverdue = a.dueDate < today && a.status !== 'Submitted';
+    const dueDateColor = isOverdue ? '#ef4444' : (a.dueDate === today ? '#E8B020' : '#6B7A9D');
+    return `<div style="border:2px solid #DCE1EF;border-radius:12px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:700;color:#1AA6CA;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${a.subject}</div>
+          <div style="font-size:15px;font-weight:800;color:#0F1E3D;margin-bottom:6px">${a.title}</div>
+          <div style="font-size:13px;color:#6B7A9D;line-height:1.5">${a.description || ''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;font-weight:700;color:${dueDateColor}"><i class="fas fa-calendar-day" style="margin-right:4px"></i>Due: ${formatDate(a.dueDate)}</div>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    <div class="grid-3" style="margin-bottom:20px">
+      ${['Pending','Submitted','Overdue'].map(function(g) {
+        return `<div class="stat-card">
+          <div class="stat-icon" style="background:${groupBg[g]}"><i class="fas ${groupIcons[g]}" style="color:${groupColors[g]}"></i></div>
+          <div style="font-size:28px;font-weight:900;color:${groupColors[g]}">${groups[g].length}</div>
+          <div class="text-muted">${g}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${['Pending','Overdue','Submitted'].map(function(g) {
+      if (!groups[g].length) return '';
+      return `<div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:14px;color:${groupColors[g]}"><i class="fas ${groupIcons[g]}"></i> ${g} Assignments (${groups[g].length})</div>
+        ${groups[g].map(assignCard).join('')}
+      </div>`;
+    }).join('')}
+    ${!assignments.length ? '<div class="empty-state"><i class="fas fa-book-open"></i><h3>No assignments found for this class</h3></div>' : ''}`;
+
+  renderLayout('parent-homework', content, 'Homework & Assignments', child.name);
+}
+
+// ---- Achievements ----
+function renderParentAchievements() {
+  currentParentTab = 'parent-achievements';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const achievements = DB.getAchievements(child.id);
+  const catColors = { Academic: '#1AA6CA', Sports: '#10b981', Cultural: '#C4893A', Behaviour: '#E8B020' };
+  const catBg = { Academic: '#E8EDF5', Sports: '#d1fae5', Cultural: '#FEF2E8', Behaviour: '#FEF7E0' };
+
+  const counts = {};
+  achievements.forEach(function(a) { counts[a.category] = (counts[a.category] || 0) + 1; });
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    ${achievements.length ? `
+    <div class="grid-4" style="margin-bottom:20px">
+      ${['Academic','Sports','Cultural','Behaviour'].map(function(cat) {
+        const color = catColors[cat] || '#1AA6CA';
+        return `<div class="stat-card" style="text-align:center">
+          <div class="stat-icon" style="background:${catBg[cat]};margin:0 auto 8px"><i class="fas fa-trophy" style="color:${color}"></i></div>
+          <div style="font-size:28px;font-weight:900;color:${color}">${counts[cat] || 0}</div>
+          <div class="text-muted">${cat}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      ${achievements.map(function(a) {
+        const color = catColors[a.category] || '#1AA6CA';
+        const bg = catBg[a.category] || '#E8EDF5';
+        return `<div style="border:2px solid ${color}30;border-radius:16px;padding:20px;background:#fff;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-14px;right:-14px;width:60px;height:60px;border-radius:50%;background:${color}12"></div>
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:48px;height:48px;border-radius:14px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas ${a.icon || 'fa-trophy'}" style="color:${color};font-size:22px"></i>
+            </div>
+            <div style="flex:1">
+              <span style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.04em">${a.category}</span>
+              <div style="font-size:15px;font-weight:800;color:#0F1E3D;margin:4px 0">${a.title}</div>
+              <div style="font-size:13px;color:#6B7A9D;line-height:1.5">${a.description}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:8px"><i class="fas fa-calendar" style="margin-right:4px"></i>${formatDate(a.date)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '<div class="empty-state"><i class="fas fa-trophy"></i><h3>No achievements recorded yet</h3><p>Achievements will appear here when recorded by teachers</p></div>'}`;
+
+  renderLayout('parent-achievements', content, 'Achievements', child.name);
+}
+
+// ---- Exam Schedule ----
+function renderParentExams() {
+  currentParentTab = 'parent-exams';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const exams = DB.getExams(child.classId);
+  const today = new Date().toISOString().split('T')[0];
+  const in7days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    <div class="card">
+      <div class="card-header" style="margin-bottom:16px">
+        <div class="card-title"><i class="fas fa-clipboard-list" style="color:#1AA6CA"></i> Exam Schedule</div>
+        ${exams.length ? `<span class="badge badge-blue">${exams.filter(function(e){return e.date >= today;}).length} upcoming</span>` : ''}
+      </div>
+      ${exams.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Exam</th><th>Subject</th><th>Date</th><th>Day</th><th>Time</th><th>Duration</th><th>Venue</th><th></th></tr></thead>
+          <tbody>
+            ${exams.map(function(e) {
+              const d = new Date(e.date);
+              const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+              const isUpcoming = e.date >= today && e.date <= in7days;
+              const isPast = e.date < today;
+              return `<tr style="${isPast ? 'opacity:0.5' : ''}">
+                <td><strong>${e.examName}</strong></td>
+                <td>${e.subject}</td>
+                <td style="font-weight:700;color:${e.date < today ? '#6B7A9D' : '#0F1E3D'}">${formatDate(e.date)}</td>
+                <td style="color:#6B7A9D">${dayName}</td>
+                <td>${e.time}</td>
+                <td>${e.duration}</td>
+                <td>${e.venue}</td>
+                <td>${isUpcoming ? '<span class="badge badge-yellow"><i class="fas fa-bell"></i> Soon</span>' : (e.date >= today ? '' : '<span class="badge badge-gray">Done</span>')}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:#6B7A9D"><i class="fas fa-info-circle" style="margin-right:4px"></i>"Soon" badge shown for exams in the next 7 days.</div>` :
+      '<div class="empty-state"><i class="fas fa-clipboard-list"></i><h3>No exam schedule available</h3><p>Exam timetable will be shared by your school here</p></div>'}
+    </div>`;
+
+  renderLayout('parent-exams', content, 'Exam Schedule', child.name);
+}
+
+// ---- Health Records ----
+function renderParentHealth() {
+  currentParentTab = 'parent-health';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const records = DB.getHealthRecords(child.id);
+  const vaccinations = records.filter(function(r) { return r.type === 'vaccination'; });
+  const allergies = records.filter(function(r) { return r.type === 'allergy'; });
+  const notes = records.filter(function(r) { return r.type === 'note'; });
+  const growth = DB.getGrowth(child.id);
+  const lastGrowth = growth.length ? growth[growth.length - 1] : null;
+
+  const vacStatusColors = { Completed: '#10b981', 'Due Soon': '#E8B020', Overdue: '#ef4444', Upcoming: '#1AA6CA' };
+  const vacStatusBg = { Completed: 'badge-green', 'Due Soon': 'badge-yellow', Overdue: 'badge-red', Upcoming: 'badge-blue' };
+  const sevColors = { High: '#ef4444', Medium: '#E8B020', Low: '#10b981' };
+  const sevBg = { High: 'badge-red', Medium: 'badge-yellow', Low: 'badge-green' };
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+
+    ${lastGrowth ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-heartbeat" style="color:#ef4444"></i> Current Health Stats</div>
+      <div class="grid-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#d1fae5"><i class="fas fa-ruler-vertical" style="color:#10b981"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#10b981">${lastGrowth.height} cm</div>
+          <div class="text-muted">Height</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-weight" style="color:#1AA6CA"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#1AA6CA">${lastGrowth.weight} kg</div>
+          <div class="text-muted">Weight</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF7E0"><i class="fas fa-heart" style="color:${lastGrowth.bmi < 18.5 ? '#E8B020' : lastGrowth.bmi < 25 ? '#10b981' : '#ef4444'}"></i></div>
+          <div style="font-size:26px;font-weight:900;color:${lastGrowth.bmi < 18.5 ? '#E8B020' : lastGrowth.bmi < 25 ? '#10b981' : '#ef4444'}">${lastGrowth.bmi}</div>
+          <div class="text-muted">BMI – ${lastGrowth.bmi < 18.5 ? 'Underweight' : lastGrowth.bmi < 25 ? 'Normal' : 'Overweight'}</div>
+        </div>
+      </div>
+    </div>` : ''}
+
+    <!-- Vaccinations -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-syringe" style="color:#1AA6CA"></i> Vaccination Records</div>
+      ${vaccinations.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vaccine</th><th>Date Given</th><th>Next Due</th><th>Status</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${vaccinations.map(function(v) {
+              return `<tr>
+                <td><strong>${v.vaccine}</strong></td>
+                <td>${v.date ? formatDate(v.date) : '<span class="text-muted">-</span>'}</td>
+                <td>${v.dueDate ? formatDate(v.dueDate) : '<span class="text-muted">-</span>'}</td>
+                <td><span class="badge ${vacStatusBg[v.status] || 'badge-gray'}">${v.status}</span></td>
+                <td style="font-size:12px;color:#6B7A9D">${v.notes || '-'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '<p class="text-muted">No vaccination records found.</p>'}
+    </div>
+
+    <!-- Allergies -->
+    ${allergies.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-exclamation-triangle" style="color:#E8B020"></i> Allergies</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${allergies.map(function(a) {
+          const color = sevColors[a.severity] || '#6B7A9D';
+          return `<div style="border:2px solid ${color}30;border-radius:12px;padding:12px 16px;min-width:200px">
+            <div style="font-weight:700;font-size:14px">${a.name}</div>
+            <span class="badge ${sevBg[a.severity] || 'badge-gray'}" style="margin-top:4px">Severity: ${a.severity}</span>
+            ${a.notes ? `<div style="font-size:12px;color:#6B7A9D;margin-top:6px">${a.notes}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Medical Notes -->
+    ${notes.length ? `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-notes-medical" style="color:#C4893A"></i> Medical Notes</div>
+      ${notes.map(function(n) {
+        return `<div style="border-left:4px solid #C4893A;padding:12px 16px;margin-bottom:10px;background:#FEF2E8;border-radius:0 10px 10px 0">
+          <div style="font-weight:700;margin-bottom:4px">${n.title}</div>
+          <div style="font-size:13px;color:#6B7A9D">${n.details}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:6px">Recorded: ${formatDate(n.recordedOn)}</div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    ${!vaccinations.length && !allergies.length && !notes.length && !lastGrowth ? '<div class="empty-state"><i class="fas fa-heartbeat"></i><h3>No health records found</h3></div>' : ''}`;
+
+  renderLayout('parent-health', content, 'Health Records', child.name);
+}
+
+// ---- Emergency Contacts ----
+function renderParentContacts() {
+  currentParentTab = 'parent-contacts';
+  const user = Session.current();
+  const fullUser = DB.getUser(user.id) || user;
+  const contacts = fullUser.emergencyContacts || [];
+
+  const content = `
+    <div class="grid-2">
+      <!-- Contacts List -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-phone-alt" style="color:#10b981"></i> Emergency Contacts</div>
+        ${contacts.length ? contacts.map(function(c, i) {
+          return `<div style="border:2px solid ${c.primary ? '#1AA6CA' : '#DCE1EF'};border-radius:12px;padding:16px;margin-bottom:12px;position:relative">
+            ${c.primary ? '<span class="badge badge-blue" style="position:absolute;top:10px;right:10px">Primary</span>' : ''}
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              ${avatarHtml(c.name, '#0F2050')}
+              <div>
+                <div style="font-weight:700;font-size:15px">${c.name}</div>
+                <div style="font-size:12px;color:#6B7A9D">${c.relation}</div>
+              </div>
+            </div>
+            <div style="font-size:13px;color:#2A3B60;margin-bottom:4px"><i class="fas fa-phone" style="color:#10b981;margin-right:6px"></i>${c.phone}</div>
+            ${c.email ? `<div style="font-size:13px;color:#2A3B60;margin-bottom:8px"><i class="fas fa-envelope" style="color:#1AA6CA;margin-right:6px"></i>${c.email}</div>` : ''}
+            <button class="btn btn-sm btn-danger" onclick="deleteEmergencyContact(${i})"><i class="fas fa-trash"></i> Remove</button>
+          </div>`;
+        }).join('') : '<div class="empty-state" style="padding:30px"><i class="fas fa-phone-alt"></i><h3>No emergency contacts yet</h3></div>'}
+      </div>
+
+      <!-- Add Contact Form -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-plus-circle" style="color:#1AA6CA"></i> Add Emergency Contact</div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-control" id="ec-name" type="text" placeholder="Contact's full name"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Relation *</label>
+          <select class="form-control" id="ec-relation">
+            <option value="">Select relation</option>
+            <option>Father</option><option>Mother</option><option>Grandparent</option>
+            <option>Uncle</option><option>Aunt</option><option>Guardian</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone *</label>
+          <input class="form-control" id="ec-phone" type="tel" placeholder="+91-XXXXXXXXXX"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email (optional)</label>
+          <input class="form-control" id="ec-email" type="email" placeholder="email@example.com"/>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" id="ec-primary" style="width:18px;height:18px;accent-color:#1AA6CA"/>
+          <label for="ec-primary" style="font-size:13px;font-weight:600;cursor:pointer">Set as Primary Contact</label>
+        </div>
+        <button class="btn btn-primary" onclick="addEmergencyContact()"><i class="fas fa-plus"></i> Add Contact</button>
+      </div>
+    </div>`;
+
+  renderLayout('parent-contacts', content, 'Emergency Contacts', user.name);
+}
+
+window.addEmergencyContact = function() {
+  const user = Session.current();
+  const name = (document.getElementById('ec-name').value || '').trim();
+  const relation = (document.getElementById('ec-relation').value || '').trim();
+  const phone = (document.getElementById('ec-phone').value || '').trim();
+  const email = (document.getElementById('ec-email').value || '').trim();
+  const primary = document.getElementById('ec-primary').checked;
+  if (!name || !relation || !phone) { showToast('Please fill all required fields', 'error'); return; }
+  const fullUser = DB.getUser(user.id) || user;
+  const contacts = fullUser.emergencyContacts ? [...fullUser.emergencyContacts] : [];
+  if (primary) contacts.forEach(function(c) { c.primary = false; });
+  contacts.push({ name, relation, phone, email, primary });
+  DB.updateUser(user.id, { emergencyContacts: contacts });
+  showToast('Emergency contact added!', 'success');
+  renderParentContacts();
+};
+
+window.deleteEmergencyContact = function(idx) {
+  const user = Session.current();
+  const fullUser = DB.getUser(user.id) || user;
+  const contacts = fullUser.emergencyContacts ? [...fullUser.emergencyContacts] : [];
+  contacts.splice(idx, 1);
+  DB.updateUser(user.id, { emergencyContacts: contacts });
+  showToast('Contact removed', 'success');
+  renderParentContacts();
+};
+
+// ---- PTM ----
+function renderParentPTM() {
+  currentParentTab = 'parent-ptm';
+  const user = Session.current();
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const slots = DB.getPTMSlots(child.classId);
+  const myBookings = slots.filter(function(s) { return s.bookedBy === user.id; });
+  const available = slots.filter(function(s) { return s.status === 'Available'; });
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+
+    <!-- My Bookings -->
+    ${myBookings.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-calendar-check" style="color:#10b981"></i> My Bookings</div>
+      ${myBookings.map(function(s) {
+        return `<div style="border:2px solid #10b981;border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="background:#d1fae5;border-radius:10px;padding:10px 16px;text-align:center;min-width:80px">
+            <div style="font-weight:900;color:#10b981;font-size:18px">${new Date(s.date).getDate()}</div>
+            <div style="font-size:10px;color:#6B7A9D;font-weight:700">${new Date(s.date).toLocaleDateString('en-US',{month:'short'})}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700">${s.teacherName}</div>
+            <div style="color:#6B7A9D;font-size:13px"><i class="fas fa-clock" style="margin-right:4px"></i>${s.time} &bull; ${s.duration}</div>
+            <div style="color:#6B7A9D;font-size:13px">${formatDate(s.date)}</div>
+          </div>
+          <span class="badge badge-green">Booked</span>
+          <button class="btn btn-sm btn-danger" onclick="cancelPTMBooking('${s.id}')"><i class="fas fa-times"></i> Cancel</button>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <!-- Available Slots -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-handshake" style="color:#1AA6CA"></i> Available PTM Slots</div>
+      ${available.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Teacher</th><th>Duration</th><th>Action</th></tr></thead>
+          <tbody>
+            ${available.map(function(s) {
+              return `<tr>
+                <td>${formatDate(s.date)}</td>
+                <td>${s.time}</td>
+                <td><strong>${s.teacherName}</strong></td>
+                <td>${s.duration}</td>
+                <td><button class="btn btn-sm btn-primary" onclick="bookPTMSlot('${s.id}')"><i class="fas fa-calendar-plus"></i> Book</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : `<div class="empty-state" style="padding:30px"><i class="fas fa-handshake"></i><h3>${slots.length ? 'All slots are booked' : 'No PTM slots available yet'}</h3></div>`}
+    </div>`;
+
+  renderLayout('parent-ptm', content, 'Parent-Teacher Meeting', child.name);
+}
+
+window.bookPTMSlot = function(slotId) {
+  const user = Session.current();
+  DB.bookPTMSlot(slotId, user.id);
+  showToast('Slot booked successfully!', 'success');
+  renderParentPTM();
+};
+
+window.cancelPTMBooking = function(slotId) {
+  confirmDialog('Cancel this PTM appointment?', function() {
+    DB.cancelPTMSlot(slotId);
+    showToast('Booking cancelled', 'success');
+    renderParentPTM();
+  }, 'Cancel Booking', false);
+};
+
+// ---- Grievance ----
+function renderParentGrievance() {
+  currentParentTab = 'parent-grievance';
+  const user = Session.current();
+  const grievances = DB.getGrievances(user.id);
+
+  const statusColors = { Open: '#E8B020', 'In Review': '#1AA6CA', Resolved: '#10b981' };
+  const statusBg = { Open: 'badge-yellow', 'In Review': 'badge-blue', Resolved: 'badge-green' };
+
+  const content = `
+    <div class="grid-2">
+      <!-- Submit Form -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-comment-dots" style="color:#C4893A"></i> Submit a Grievance</div>
+        <div class="form-group">
+          <label class="form-label">Category *</label>
+          <select class="form-control" id="grv-cat">
+            <option value="">Select category</option>
+            <option>Academic</option><option>Safety</option><option>Facility</option><option>Staff</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject *</label>
+          <input class="form-control" id="grv-subject" type="text" placeholder="Brief subject of the grievance"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <textarea class="form-control" id="grv-desc" rows="5" placeholder="Please describe the issue in detail..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-control" id="grv-priority">
+            <option value="Low">Low</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="submitGrievance()"><i class="fas fa-paper-plane"></i> Submit Grievance</button>
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-history" style="color:#6B7A9D"></i> My Grievances</div>
+        ${grievances.length ? grievances.map(function(g) {
+          const color = statusColors[g.status] || '#6B7A9D';
+          return `<div style="border:2px solid ${color}30;border-radius:12px;padding:14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+              <div>
+                <span style="font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase">${g.category}</span>
+                <div style="font-weight:700;font-size:14px;margin-top:2px">${g.subject}</div>
+              </div>
+              <span class="badge ${statusBg[g.status] || 'badge-gray'}">${g.status}</span>
+            </div>
+            <div style="font-size:13px;color:#6B7A9D;margin-bottom:8px">${(g.description || '').slice(0, 100)}${g.description && g.description.length > 100 ? '...' : ''}</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#6B7A9D">
+              <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(g.submittedDate)}</span>
+              <span><i class="fas fa-flag" style="margin-right:3px"></i>${g.priority} Priority</span>
+              <span>Ref: #${g.id.slice(-6).toUpperCase()}</span>
+            </div>
+            ${g.resolutionNote ? `<div style="margin-top:8px;padding:8px;background:#d1fae5;border-radius:6px;font-size:12px;color:#065f46"><i class="fas fa-check-circle" style="margin-right:4px"></i>${g.resolutionNote}</div>` : ''}
+          </div>`;
+        }).join('') : '<div class="empty-state" style="padding:30px"><i class="fas fa-comment-dots"></i><h3>No grievances submitted</h3></div>'}
+      </div>
+    </div>`;
+
+  renderLayout('parent-grievance', content, 'Grievance Portal', 'Submit & Track');
+}
+
+window.submitGrievance = function() {
+  const user = Session.current();
+  const cat = (document.getElementById('grv-cat').value || '').trim();
+  const subject = (document.getElementById('grv-subject').value || '').trim();
+  const desc = (document.getElementById('grv-desc').value || '').trim();
+  const priority = (document.getElementById('grv-priority').value || 'Medium').trim();
+  if (!cat || !subject || !desc) { showToast('Please fill all required fields', 'error'); return; }
+  DB.addGrievance({
+    id: DB.genId('grv'), parentId: user.id, category: cat, subject, description: desc,
+    priority, status: 'Open', submittedDate: new Date().toISOString().split('T')[0], resolutionNote: ''
+  });
+  showToast('Grievance submitted successfully!', 'success');
+  renderParentGrievance();
+};
+
+// ---- Conduct ----
+function renderParentConduct() {
+  currentParentTab = 'parent-conduct';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+
+  const records = DB.getConductRecords(child.id);
+  const positive = records.filter(function(r) { return r.type === 'Positive'; });
+  const negative = records.filter(function(r) { return r.type === 'Negative'; });
+  const neutral = records.filter(function(r) { return r.type === 'Neutral'; });
+
+  const typeColors = { Positive: '#10b981', Negative: '#ef4444', Neutral: '#6B7A9D' };
+  const typeBg = { Positive: '#d1fae5', Negative: '#fee2e2', Neutral: '#F1F5F9' };
+  const typeBadge = { Positive: 'badge-green', Negative: 'badge-red', Neutral: 'badge-gray' };
+
+  // Overall rating: based on positive vs negative ratio
+  const total = records.length;
+  const score = total ? Math.round(((positive.length - negative.length * 2) / total + 1) * 2.5) : 3;
+  const clamped = Math.min(5, Math.max(1, score));
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+
+    <!-- Summary -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div>
+          <div class="card-title"><i class="fas fa-star" style="color:#E8B020"></i> Conduct Summary – ${child.name}</div>
+          <div style="display:flex;gap:4px;margin-top:6px">
+            ${[1,2,3,4,5].map(function(i){ return `<i class="fas fa-star" style="font-size:18px;color:${i <= clamped ? '#E8B020' : '#DCE1EF'}"></i>`; }).join('')}
+            <span style="margin-left:8px;font-size:13px;color:#6B7A9D">(${clamped}/5)</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:14px">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#d1fae5"><i class="fas fa-thumbs-up" style="color:#10b981"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#10b981">${positive.length}</div>
+          <div class="text-muted">Positive Incidents</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2"><i class="fas fa-thumbs-down" style="color:#ef4444"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#ef4444">${negative.length}</div>
+          <div class="text-muted">Negative Incidents</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F1F5F9"><i class="fas fa-circle" style="color:#6B7A9D"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#6B7A9D">${neutral.length}</div>
+          <div class="text-muted">Neutral Notes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Records Table -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px"><i class="fas fa-list" style="color:#6B7A9D"></i> Conduct Records</div>
+      ${records.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Recorded By</th></tr></thead>
+          <tbody>
+            ${records.map(function(r) {
+              return `<tr style="background:${typeBg[r.type] || '#fff'}30">
+                <td>${formatDate(r.date)}</td>
+                <td><span class="badge ${typeBadge[r.type] || 'badge-gray'}">${r.type}</span></td>
+                <td><strong>${r.category}</strong></td>
+                <td style="font-size:13px">${r.description}</td>
+                <td style="font-size:12px;color:#6B7A9D">${r.recordedBy}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div class="empty-state"><i class="fas fa-star"></i><h3>No conduct records</h3></div>'}
+    </div>`;
+
+  renderLayout('parent-conduct', content, 'Behaviour & Conduct', child.name);
+}
+
+// ---- Documents ----
+function renderParentDocuments() {
+  currentParentTab = 'parent-documents';
+  const child = getSelectedChild();
+  if (!child) { renderParentHome(); return; }
+  const meta = DB.getMeta();
+  const cls = DB.getClass(child.classId);
+
+  const docs = [
+    {
+      id: 'admit-card',
+      title: 'Admit Card',
+      icon: 'fa-id-card',
+      color: '#1AA6CA',
+      desc: 'Official admit card with student details and exam schedule for upcoming examinations.',
+      fn: 'printAdmitCard'
+    },
+    {
+      id: 'bonafide',
+      title: 'Bonafide Certificate',
+      icon: 'fa-certificate',
+      color: '#10b981',
+      desc: 'Official certificate confirming student is currently enrolled in this school.',
+      fn: 'printBonafide'
+    },
+    {
+      id: 'character',
+      title: 'Character Certificate',
+      icon: 'fa-award',
+      color: '#C4893A',
+      desc: 'Certificate of good conduct and character issued by the school.',
+      fn: 'printCharacterCert'
+    }
+  ];
+
+  const content = `
+    ${renderChildPill(child)}
+    ${renderChildSelector(child)}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      ${docs.map(function(doc) {
+        return `<div style="border:2px solid ${doc.color}30;border-radius:16px;padding:24px;background:#fff;text-align:center">
+          <div style="width:56px;height:56px;border-radius:16px;background:${doc.color}15;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <i class="fas ${doc.icon}" style="color:${doc.color};font-size:24px"></i>
+          </div>
+          <div style="font-size:17px;font-weight:800;color:#0F1E3D;margin-bottom:8px">${doc.title}</div>
+          <div style="font-size:13px;color:#6B7A9D;margin-bottom:18px;line-height:1.5">${doc.desc}</div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="${doc.fn}('${child.id}')">
+            <i class="fas fa-print" style="margin-right:6px"></i> Download / Print
+          </button>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  renderLayout('parent-documents', content, 'Documents', child.name);
+}
+
+window.printAdmitCard = function(childId) {
+  const child = DB.getStudent(childId);
+  if (!child) return;
+  const meta = DB.getMeta();
+  const cls = DB.getClass(child.classId);
+  const exams = DB.getExams(child.classId);
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Admit Card – ${child.name}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:24px;color:#0F1E3D;background:#fff}
+  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px;margin-bottom:0}
+  .logo{width:56px;height:56px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
+  .school-name{font-size:19px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
+  .gold-bar{height:4px;background:#E8B020;margin-bottom:0}
+  .doc-title{background:#E8B020;color:#0F1E3D;text-align:center;padding:9px;font-size:14px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;border:1px solid #DCE1EF;border-radius:8px;padding:14px;background:#F8F9FB}
+  .field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em}
+  .field .val{font-size:13px;font-weight:700;margin-top:3px}
+  .photo-box{width:80px;height:96px;border:2px dashed #DCE1EF;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;text-align:center;margin-left:auto}
+  table{width:100%;border-collapse:collapse;border:1px solid #DCE1EF;border-radius:8px;overflow:hidden;margin-bottom:14px}
+  th{background:#0F2050;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:left}
+  td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12px}
+  .notice{background:#FEF7E0;border:1px solid #E8B020;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px}
+  .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  .sig-line{height:44px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+  .sig-label{font-size:11px;font-weight:700;text-align:center}
+  .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:14px}
+  @media print{body{padding:6px}.no-print{display:none}}</style></head><body>
+  <div class="hdr">
+    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
+    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
+    <div class="photo-box" style="margin-left:auto">Photo<br>Here</div>
+  </div>
+  <div class="gold-bar"></div>
+  <div class="doc-title">Admit Card – ${getAcademicYear ? getAcademicYear() : '2025-26'}</div>
+  <div class="info-grid">
+    <div class="field"><label>Student Name</label><div class="val">${child.name}</div></div>
+    <div class="field"><label>Roll No.</label><div class="val">${child.rollNo}</div></div>
+    <div class="field"><label>Class</label><div class="val">${cls ? cls.name : '-'}</div></div>
+    <div class="field"><label>Date of Birth</label><div class="val">${new Date(child.dob).toLocaleDateString('en-IN')}</div></div>
+    <div class="field"><label>Gender</label><div class="val">${child.gender}</div></div>
+    <div class="field"><label>Blood Group</label><div class="val">${child.bloodGroup || '-'}</div></div>
+  </div>
+  ${exams.length ? `
+  <table>
+    <thead><tr><th>Subject</th><th>Exam</th><th>Date</th><th>Day</th><th>Time</th><th>Duration</th><th>Venue</th></tr></thead>
+    <tbody>${exams.map(function(e){ const d=new Date(e.date); return `<tr><td><strong>${e.subject}</strong></td><td>${e.examName}</td><td>${d.toLocaleDateString('en-IN')}</td><td>${d.toLocaleDateString('en-US',{weekday:'short'})}</td><td>${e.time}</td><td>${e.duration}</td><td>${e.venue}</td></tr>`; }).join('')}</tbody>
+  </table>` : '<p style="color:#6B7A9D;text-align:center;margin-bottom:14px">No exam schedule available.</p>'}
+  <div class="notice"><strong>Instructions:</strong> Bring this admit card on all examination days. No candidate will be allowed without the admit card. Mobile phones are strictly prohibited in exam halls.</div>
+  <div class="sig-row">
+    <div><div class="sig-line"></div><div class="sig-label">Student's Signature</div></div>
+    <div><div class="sig-line"></div><div class="sig-label">Principal's Signature</div></div>
+  </div>
+  <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated admit card.</div>
+  <script>window.onload=function(){window.print();};<\/script></body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print', 'warning');
+};
+
+window.printBonafide = function(childId) {
+  const child = DB.getStudent(childId);
+  if (!child) return;
+  const meta = DB.getMeta();
+  const cls = DB.getClass(child.classId);
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Bonafide Certificate</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
+  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px;margin-bottom:0}
+  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
+  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
+  .gold-bar{height:4px;background:#E8B020;margin-bottom:20px}
+  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #0F2050;padding-bottom:10px}
+  .body{font-size:14px;line-height:2;color:#0F1E3D;margin-bottom:20px}
+  .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+  .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+  .sig-label{font-size:12px;font-weight:700;text-align:center}
+  .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:20px}
+  .seal{width:90px;height:90px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}
+  @media print{body{padding:10px}}</style></head><body>
+  <div class="hdr">
+    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
+    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
+  </div>
+  <div class="gold-bar"></div>
+  <div class="doc-title">Bonafide Certificate</div>
+  <p class="body">
+    This is to certify that <strong>${child.name}</strong>, son/daughter of (Parent/Guardian), bearing Roll No. <strong>${child.rollNo}</strong>,
+    Date of Birth <strong>${new Date(child.dob).toLocaleDateString('en-IN')}</strong>, is a <em>bonafide student</em> of
+    <strong>${meta.schoolName}</strong>, currently enrolled in <strong>${cls ? cls.name : '—'}</strong> for the academic year
+    <strong>${getAcademicYear ? getAcademicYear() : '2025-26'}</strong>.<br/><br/>
+    The student has been studying in this institution since <strong>${formatDate(child.joinDate)}</strong> and bears a
+    good academic and conduct record as per the school's records.<br/><br/>
+    This certificate is issued on the request of the student/parent for <em>general purposes</em>.
+  </p>
+  <p>Date: <strong>${today}</strong></p>
+  <div class="sig-row">
+    <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div>
+    <div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div>
+  </div>
+  <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated certificate.</div>
+  <script>window.onload=function(){window.print();};<\/script></body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print', 'warning');
+};
+
+window.printCharacterCert = function(childId) {
+  const child = DB.getStudent(childId);
+  if (!child) return;
+  const meta = DB.getMeta();
+  const cls = DB.getClass(child.classId);
+  const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Character Certificate</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
+  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px}
+  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
+  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
+  .gold-bar{height:4px;background:#C4893A;margin-bottom:20px}
+  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #C4893A;padding-bottom:10px;color:#C4893A}
+  .body{font-size:14px;line-height:2;color:#0F1E3D;margin-bottom:20px}
+  .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+  .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
+  .sig-label{font-size:12px;font-weight:700;text-align:center}
+  .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:20px}
+  .seal{width:90px;height:90px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}
+  @media print{body{padding:10px}}</style></head><body>
+  <div class="hdr">
+    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
+    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
+  </div>
+  <div class="gold-bar"></div>
+  <div class="doc-title">Character Certificate</div>
+  <p class="body">
+    This is to certify that <strong>${child.name}</strong>, Roll No. <strong>${child.rollNo}</strong>, studied in
+    <strong>${cls ? cls.name : '—'}</strong> at <strong>${meta.schoolName}</strong> during the academic year
+    <strong>${getAcademicYear ? getAcademicYear() : '2025-26'}</strong>.<br/><br/>
+    To the best of our knowledge, the character and conduct of the student has been <strong>satisfactory</strong>.
+    He/She has been a sincere, disciplined, and well-behaved student throughout their association with this institution.
+    We wish him/her all the best in future endeavours.<br/><br/>
+    This certificate is issued at the request of the parent/student for <em>bonafide purposes</em>.
+  </p>
+  <p>Date: <strong>${today}</strong></p>
+  <div class="sig-row">
+    <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div>
+    <div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div>
+  </div>
+  <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated certificate.</div>
+  <script>window.onload=function(){window.print();};<\/script></body></html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print', 'warning');
+};
+
+// ---- Notifications ----
+function renderParentNotifications() {
+  currentParentTab = 'parent-notifications';
+  const user = Session.current();
+  const fullUser = DB.getUser(user.id) || user;
+  const prefs = fullUser.notifPrefs || {};
+
+  const notifTypes = [
+    { key: 'announcements', label: 'Announcements', desc: 'School-wide and class announcements', icon: 'fa-bullhorn', color: '#E8B020' },
+    { key: 'leaveUpdates', label: 'Leave Updates', desc: 'Status updates on leave applications', icon: 'fa-calendar-times', color: '#1AA6CA' },
+    { key: 'gradeReports', label: 'Grade Reports', desc: 'New grades and report cards', icon: 'fa-star', color: '#C4893A' },
+    { key: 'events', label: 'School Events', desc: 'Upcoming events and reminders', icon: 'fa-calendar-alt', color: '#10b981' },
+    { key: 'messages', label: 'Messages', desc: 'New messages from teachers', icon: 'fa-comment-dots', color: '#0F2050' },
+    { key: 'feeReminders', label: 'Fee Reminders', desc: 'Fee due dates and payment reminders', icon: 'fa-rupee-sign', color: '#ef4444' },
+  ];
+
+  const content = `
+    <div style="max-width:600px;margin:0 auto">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:6px"><i class="fas fa-bell" style="color:#E8B020"></i> Notification Preferences</div>
+        <p style="color:#6B7A9D;font-size:13px;margin-bottom:20px">Choose which notifications you want to receive from the school.</p>
+        ${notifTypes.map(function(n) {
+          const isOn = prefs[n.key] !== false;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f1f5f9">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:40px;height:40px;border-radius:12px;background:${n.color}15;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fas ${n.icon}" style="color:${n.color}"></i>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:14px">${n.label}</div>
+                <div style="font-size:12px;color:#6B7A9D">${n.desc}</div>
+              </div>
+            </div>
+            <label style="position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;cursor:pointer">
+              <input type="checkbox" id="notif-${n.key}" ${isOn ? 'checked' : ''} style="opacity:0;width:0;height:0;position:absolute"/>
+              <span onclick="toggleNotifPref('${n.key}')" style="position:absolute;inset:0;border-radius:13px;background:${isOn ? '#1AA6CA' : '#DCE1EF'};transition:background 0.2s;cursor:pointer" id="notif-slider-${n.key}">
+                <span style="position:absolute;top:3px;left:${isOn ? '23px' : '3px'};width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left 0.2s" id="notif-knob-${n.key}"></span>
+              </span>
+            </label>
+          </div>`;
+        }).join('')}
+        <div style="margin-top:20px">
+          <button class="btn btn-primary" onclick="saveNotifPrefs()"><i class="fas fa-save"></i> Save Preferences</button>
+        </div>
+      </div>
+    </div>`;
+
+  renderLayout('parent-notifications', content, 'Notification Preferences', user.name);
+}
+
+window.toggleNotifPref = function(key) {
+  const cb = document.getElementById('notif-' + key);
+  const slider = document.getElementById('notif-slider-' + key);
+  const knob = document.getElementById('notif-knob-' + key);
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  if (slider) slider.style.background = cb.checked ? '#1AA6CA' : '#DCE1EF';
+  if (knob) knob.style.left = cb.checked ? '23px' : '3px';
+};
+
+window.saveNotifPrefs = function() {
+  const user = Session.current();
+  const keys = ['announcements','leaveUpdates','gradeReports','events','messages','feeReminders'];
+  const prefs = {};
+  keys.forEach(function(k) {
+    const cb = document.getElementById('notif-' + k);
+    prefs[k] = cb ? cb.checked : true;
+  });
+  DB.updateUser(user.id, { notifPrefs: prefs });
+  showToast('Notification preferences saved!', 'success');
+};
+
+// ---- Fix: Message unread badges & mark read ----
+// Override renderParentMessages to show unread badges and mark messages as read on open
+function renderParentMessages() {
+  currentParentTab = 'parent-messages';
+  const user = Session.current();
+  const children = getParentChildren();
+  const data = DB.get();
+
+  // Mark messages as read when chat is open
+  if (parentMsgTeacherId) {
+    var changed = false;
+    data.messages.forEach(function(m) {
+      if (m.from === parentMsgTeacherId && m.to === user.id && !m.read) {
+        m.read = true;
+        changed = true;
+      }
+    });
+    if (changed) DB.commit();
+  }
+
+  const teachers = [];
+  children.forEach(function(child) {
+    const teacher = child.classId ? DB.getClassTeacher(child.classId) : null;
+    if (teacher && !teachers.find(function(t) { return t.id === teacher.id; })) teachers.push(teacher);
+  });
+
+  const myMsgs = data.messages.filter(function(m) { return m.from === user.id || m.to === user.id; });
+
+  const content = `
+    <div class="grid-2" style="height:600px">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px;border-bottom:1px solid #DCE1EF;font-weight:700">Your Teachers</div>
+        <div style="overflow-y:auto;height:calc(100% - 56px)">
+          ${teachers.map(function(t) {
+            const tMsgs = myMsgs.filter(function(m) { return m.from === t.id || m.to === t.id; });
+            const lastMsg = tMsgs[tMsgs.length - 1];
+            const unread = tMsgs.filter(function(m) { return m.from === t.id && m.to === user.id && !m.read; }).length;
+            const tClass = t.assignedClass ? DB.getClass(t.assignedClass) : null;
+            return `
+            <div class="flex gap-3" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9;align-items:center;${parentMsgTeacherId===t.id?'background:#E8EDF5':''}" onclick="parentMsgTeacherId='${t.id}';renderParentMessages()">
+              ${avatarHtml(t.name, t.avatar)}
+              <div style="flex:1;overflow:hidden">
+                <div style="font-weight:600;font-size:14px">${t.name}</div>
+                <div class="text-muted" style="font-size:12px">${tClass ? tClass.name : 'Teacher'}</div>
+                <div class="text-muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  ${lastMsg ? lastMsg.text.slice(0,40)+'...' : 'Start a conversation'}
+                </div>
+              </div>
+              ${unread ? `<span class="badge badge-red" style="flex-shrink:0">${unread}</span>` : ''}
+              <button class="btn btn-whatsapp btn-xs" onclick="event.stopPropagation();wa('${t.phone}','Hello ${t.name}, I am ${user.name}, parent of my child. I wanted to discuss their progress.')">
+                <i class="fab fa-whatsapp"></i>
+              </button>
+            </div>`;
+          }).join('')}
+          ${!teachers.length ? '<div class="empty-state" style="padding:30px"><i class="fas fa-chalkboard-teacher"></i><h3>No teachers found</h3><p>Your children\'s class teachers will appear here</p></div>' : ''}
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column" id="parent-chat-window">
+        ${parentMsgTeacherId ? renderParentChatWindow(parentMsgTeacherId) : `
+        <div class="flex-center" style="height:100%;flex-direction:column;color:#6B7A9D">
+          <i class="fas fa-comment-dots" style="font-size:48px;margin-bottom:16px;opacity:0.4"></i>
+          <p>Select a teacher to start chatting</p>
+        </div>`}
+      </div>
+    </div>`;
+
+  renderLayout('parent-messages', content, 'Messages', 'Chat with Teachers');
+}
+
 // ---- Register parent routes ----
 registerRoute('parent-home', renderParentHome);
 registerRoute('parent-reports', renderParentReports);
@@ -1479,3 +2685,16 @@ registerRoute('parent-events', renderParentEvents);
 registerRoute('parent-messages', renderParentMessages);
 registerRoute('parent-gallery', renderParentGallery);
 registerRoute('parent-review', renderParentReview);
+registerRoute('parent-holidays', renderParentHolidays);
+registerRoute('parent-profile', renderParentProfile);
+registerRoute('parent-fees', renderParentFees);
+registerRoute('parent-homework', renderParentHomework);
+registerRoute('parent-achievements', renderParentAchievements);
+registerRoute('parent-exams', renderParentExams);
+registerRoute('parent-health', renderParentHealth);
+registerRoute('parent-contacts', renderParentContacts);
+registerRoute('parent-ptm', renderParentPTM);
+registerRoute('parent-grievance', renderParentGrievance);
+registerRoute('parent-conduct', renderParentConduct);
+registerRoute('parent-documents', renderParentDocuments);
+registerRoute('parent-notifications', renderParentNotifications);

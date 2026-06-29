@@ -74,7 +74,7 @@ function renderParentHome() {
   const grades = DB.getGrades(child.id, 'Semester 1', '2024');
   const avgScore = grades.length ? Math.round(grades.reduce((s, g) => s + (g.score / g.maxScore * 100), 0) / grades.length) : null;
   const growth = DB.getGrowth(child.id);
-  const lastGrowth = growth[growth.length - 1];
+  const lastGrowth = growth.length ? growth[growth.length - 1] : null;
   const leaves = DB.getLeaves(child.id);
   const pendingLeaves = leaves.filter(l => l.status === 'pending').length;
   const anns = DB.getAnnouncements(child.classId, 'parent');
@@ -999,7 +999,7 @@ function renderParentFinalResult(child) {
   const overallGrade = DB.calcGrade(overallAvg, 100);
   const att = DB.getAttendanceSummary(child.id);
   const growth = DB.getGrowth(child.id);
-  const lastGrowth = growth[growth.length - 1];
+  const lastGrowth = growth.length ? growth[growth.length - 1] : null;
   const schoolMeta = DB.getMeta();
   const terms = ['Semester 1', 'Semester 2', 'Final Result'];
 

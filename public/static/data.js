@@ -819,7 +819,7 @@ const DB = (() => {
   function updateMeta(fields) {
     const d = get();
     d.meta = { ...getMeta(), ...fields };
-    commit(d);
+    commit();
   }
 
   return {

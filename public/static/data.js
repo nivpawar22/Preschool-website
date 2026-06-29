@@ -219,15 +219,41 @@ const DB = (() => {
     salaryStructures: [],
     hrLetters: [],
     staffExitRecords: [],
-    holidays: [
-      { id: 'hol1', name: 'Republic Day', date: '2025-01-26', type: 'National', optional: false },
-      { id: 'hol2', name: 'Holi', date: '2025-03-14', type: 'Festival', optional: false },
-      { id: 'hol3', name: 'Good Friday', date: '2025-04-18', type: 'Festival', optional: false },
-      { id: 'hol4', name: 'Independence Day', date: '2025-08-15', type: 'National', optional: false },
-      { id: 'hol5', name: 'Gandhi Jayanti', date: '2025-10-02', type: 'National', optional: false },
-      { id: 'hol6', name: 'Diwali', date: '2025-10-20', type: 'Festival', optional: false },
-      { id: 'hol7', name: 'Christmas', date: '2025-12-25', type: 'Festival', optional: false }
-    ],
+    holidays: (function() {
+      var y = new Date().getFullYear();
+      return [
+        // National Holidays
+        { id: 'hol1',  name: 'New Year\'s Day',          date: y+'-01-01', type: 'National',      optional: false },
+        { id: 'hol2',  name: 'Republic Day',              date: y+'-01-26', type: 'National',      optional: false },
+        { id: 'hol3',  name: 'Independence Day',          date: y+'-08-15', type: 'National',      optional: false },
+        { id: 'hol4',  name: 'Gandhi Jayanti',            date: y+'-10-02', type: 'National',      optional: false },
+        // Maharashtrian Holidays
+        { id: 'hol5',  name: 'Chhatrapati Shivaji Maharaj Jayanti', date: y+'-02-19', type: 'Maharashtra', optional: false },
+        { id: 'hol6',  name: 'Gudi Padwa',               date: y+'-03-30', type: 'Maharashtra',   optional: false },
+        { id: 'hol7',  name: 'Dr. Babasaheb Ambedkar Jayanti', date: y+'-04-14', type: 'Maharashtra', optional: false },
+        { id: 'hol8',  name: 'Maharashtra Day',           date: y+'-05-01', type: 'Maharashtra',   optional: false },
+        { id: 'hol9',  name: 'Dussehra (Vijayadashami)', date: y+'-10-02', type: 'Festival',      optional: false },
+        // National Festivals
+        { id: 'hol10', name: 'Holi',                     date: y+'-03-14', type: 'Festival',      optional: false },
+        { id: 'hol11', name: 'Good Friday',              date: y+'-04-18', type: 'Festival',      optional: false },
+        { id: 'hol12', name: 'Ram Navami',               date: y+'-04-06', type: 'Festival',      optional: false },
+        { id: 'hol13', name: 'Eid ul-Fitr',              date: y+'-03-31', type: 'Festival',      optional: false },
+        { id: 'hol14', name: 'Eid ul-Adha',              date: y+'-06-07', type: 'Festival',      optional: false },
+        { id: 'hol15', name: 'Janmashtami',              date: y+'-08-16', type: 'Festival',      optional: false },
+        { id: 'hol16', name: 'Ganesh Chaturthi',         date: y+'-08-27', type: 'Festival',      optional: false },
+        { id: 'hol17', name: 'Navratri Begins',          date: y+'-09-22', type: 'Festival',      optional: true  },
+        { id: 'hol18', name: 'Diwali (Lakshmi Pujan)',   date: y+'-10-20', type: 'Festival',      optional: false },
+        { id: 'hol19', name: 'Diwali (Bali Pratipada)',  date: y+'-10-21', type: 'Festival',      optional: false },
+        { id: 'hol20', name: 'Bhai Dooj',                date: y+'-10-23', type: 'Festival',      optional: true  },
+        { id: 'hol21', name: 'Guru Nanak Jayanti',       date: y+'-11-05', type: 'Festival',      optional: false },
+        { id: 'hol22', name: 'Christmas',                date: y+'-12-25', type: 'Festival',      optional: false },
+        // School Specific
+        { id: 'hol23', name: 'Summer Vacation Begins',   date: y+'-04-28', type: 'School',        optional: false },
+        { id: 'hol24', name: 'School Reopens',           date: y+'-06-16', type: 'School',        optional: false },
+        { id: 'hol25', name: 'Diwali Vacation',          date: y+'-10-19', type: 'School',        optional: false },
+        { id: 'hol26', name: 'Winter Break Begins',      date: y+'-12-22', type: 'School',        optional: false },
+      ];
+    })(),
     profileChangeRequests: [],
     attendanceCorrectionRequests: [],
     hrDocumentRequests: [],

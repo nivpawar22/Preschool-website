@@ -1442,7 +1442,7 @@ function renderParentHolidays() {
   });
 
   const months = Object.keys(byMonth).sort();
-  const typeColors = { National: '#ef4444', Festival: '#C4893A', Optional: '#6B7A9D' };
+  const typeColors = { National: '#ef4444', Festival: '#C4893A', Maharashtra: '#8b5cf6', School: '#10b981', Optional: '#6B7A9D' };
   const evColors = { sports: '#10b981', academic: '#1AA6CA', cultural: '#C4893A', holiday: '#ef4444', meeting: '#E8B020' };
 
   const upcoming = holidays.filter(function(h) { return h.date >= today; });

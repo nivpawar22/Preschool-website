@@ -2335,19 +2335,24 @@ function renderTeacherHomework() {
       }).join('');
 
   var form = '<div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">'+
-    '<h3 style="margin:0 0 16px;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:8px"></i>'+(editItem?'Edit Assignment':'Add Assignment')+'</h3>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
-      '<div><label class="form-label">Title *</label><input id="hw-title" class="form-control" type="text" value="'+_escH(editItem?editItem.title:'')+'" placeholder="Assignment title"/></div>'+
-      '<div><label class="form-label">Subject *</label><select id="hw-subject" class="form-control">'+subjects.map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.subject===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
-      '<div><label class="form-label">Type</label><select id="hw-type" class="form-control">'+['Homework','Project','Classwork','Test Prep'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
-      '<div><label class="form-label">Due Date *</label><input id="hw-due" class="form-control" type="date" value="'+(editItem?editItem.dueDate:today)+'"/></div>'+
-      '<div><label class="form-label">Status</label><select id="hw-status" class="form-control">'+['Pending','Submitted','Overdue'].map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.status===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
-      '<div></div>'+
-      '<div style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="hw-desc" class="form-control" rows="3" placeholder="Details, instructions, page numbers...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'+
+      '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px 16px;display:flex;align-items:center;gap:8px">'+
+        '<i class="fas fa-chalkboard-teacher" style="color:#1e40af;font-size:14px"></i>'+
+        '<span style="font-size:13px;font-weight:700;color:#1e40af">Class: '+(cls?_escH(cls.name):'My Class')+'</span>'+
+      '</div>'+
+      '<h3 style="margin:0;font-size:15px;font-weight:800;color:#0F2050"><i class="fas fa-'+(editItem?'edit':'plus')+'" style="color:#C4893A;margin-right:8px"></i>'+(editItem?'Edit Assignment':'New Assignment')+'</h3>'+
     '</div>'+
-    '<div style="display:flex;gap:8px;margin-top:14px">'+
-      '<button class="btn btn-primary" onclick="_saveHomework(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Assignment')+'</button>'+
-      (editItem?'<button class="btn btn-secondary" onclick="window._hwEditId=null;renderTeacherHomework()">Cancel</button>':'')+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'+
+      '<div style="grid-column:1/3"><label class="form-label">Assignment Title *</label><input id="hw-title" class="form-control" type="text" value="'+_escH(editItem?editItem.title:'')+'" placeholder="e.g. Chapter 3 Questions, Math Worksheet"/></div>'+
+      '<div><label class="form-label">Due Date *</label><input id="hw-due" class="form-control" type="date" value="'+(editItem?editItem.dueDate:today)+'"/></div>'+
+      '<div><label class="form-label">Subject *</label><select id="hw-subject" class="form-control">'+subjects.map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.subject===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Type</label><select id="hw-type" class="form-control">'+['Homework','Project','Classwork','Test Prep','Reading','Practice'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
+      '<div><label class="form-label">Status</label><select id="hw-status" class="form-control">'+['Pending','Submitted','Overdue'].map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.status===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Instructions / Description</label><textarea id="hw-desc" class="form-control" rows="3" placeholder="Provide details, page numbers, or any special instructions for parents and students...">'+(_escH(editItem?editItem.description:'')||'')+'</textarea></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9">'+
+      '<button class="btn btn-primary" onclick="_saveHomework(\''+_escH(editId||'')+'\')"><i class="fas fa-save" style="margin-right:6px"></i>'+(editItem?'Update Assignment':'Save Assignment')+'</button>'+
+      (editItem?'<button class="btn btn-secondary" onclick="window._hwEditId=null;renderTeacherHomework()"><i class="fas fa-times" style="margin-right:6px"></i>Cancel</button>':'')+
     '</div>'+
   '</div>';
 
@@ -2444,7 +2449,7 @@ function renderTeacherAchievements() {
       '<div><label class="form-label">Category *</label><select id="ach-cat" class="form-control">'+['Academic','Sports','Cultural','Behaviour'].map(function(c){return '<option value="'+c+'"'+((editItem&&editItem.category===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'+
       '<div><label class="form-label">Title *</label><input id="ach-title" class="form-control" type="text" value="'+_escH(editItem?editItem.title:'')+'" placeholder="Achievement title"/></div>'+
       '<div><label class="form-label">Date *</label><input id="ach-date" class="form-control" type="date" value="'+(editItem?editItem.date:today)+'"/></div>'+
-      '<div style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="ach-desc" class="form-control" rows="2" placeholder="Details about the achievement...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Description</label><textarea id="ach-desc" class="form-control" rows="2" placeholder="Details about the achievement...">'+(_escH(editItem?editItem.description:'')||'')+'</textarea></div>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
       '<button class="btn btn-primary" onclick="_saveAchievement(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Achievement')+'</button>'+
@@ -2554,7 +2559,7 @@ function renderTeacherHealth() {
       '<div><label class="form-label">Date</label><input id="hr-date" class="form-control" type="date" value="'+(editItem?(editItem.date||editItem.recordedOn||''):today)+'"/></div>'+
       '<div><label class="form-label">Next Due Date <span style="font-size:11px;color:#94a3b8">(for vaccinations)</span></label><input id="hr-due" class="form-control" type="date" value="'+(editItem?(editItem.dueDate||''):'')+'" /></div>'+
       '<div><label class="form-label">Severity <span style="font-size:11px;color:#94a3b8">(for allergies)</span></label><select id="hr-severity" class="form-control"><option value="">—</option>'+['Low','Medium','High'].map(function(s){return '<option value="'+s+'"'+((editItem&&editItem.severity===s)?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
-      '<div style="grid-column:1/-1"><label class="form-label">Notes / Details</label><textarea id="hr-notes" class="form-control" rows="2" placeholder="Additional details...">'+_escH(editItem?(editItem.notes||editItem.details||''):'')||''+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Notes / Details</label><textarea id="hr-notes" class="form-control" rows="2" placeholder="Additional details...">'+(_escH(editItem?(editItem.notes||editItem.details||''):'')||'')+'</textarea></div>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
       '<button class="btn btn-primary" onclick="_saveHealthRecord(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Record')+'</button>'+
@@ -2669,7 +2674,7 @@ function renderTeacherConduct() {
       '<div><label class="form-label">Type *</label><select id="con-type" class="form-control">'+['Positive','Negative','Neutral'].map(function(t){return '<option value="'+t+'"'+((editItem&&editItem.type===t)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'+
       '<div><label class="form-label">Category *</label><select id="con-cat" class="form-control">'+['Discipline','Academic','Social','Helpfulness','Sports','Arts','Other'].map(function(c){return '<option value="'+c+'"'+((editItem&&editItem.category===c)?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'+
       '<div><label class="form-label">Date *</label><input id="con-date" class="form-control" type="date" value="'+(editItem?editItem.date:today)+'"/></div>'+
-      '<div style="grid-column:1/-1"><label class="form-label">Description *</label><textarea id="con-desc" class="form-control" rows="3" placeholder="Describe the conduct incident or positive behaviour...">'+_escH(editItem?editItem.description:'')||''+'</textarea></div>'+
+      '<div style="grid-column:1/-1"><label class="form-label">Description *</label><textarea id="con-desc" class="form-control" rows="3" placeholder="Describe the conduct incident or positive behaviour...">'+(_escH(editItem?editItem.description:'')||'')+'</textarea></div>'+
     '</div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
       '<button class="btn btn-primary" onclick="_saveConductRecord(\''+_escH(editId||'')+'\')"><i class="fas fa-save"></i> '+(editItem?'Update':'Add Record')+'</button>'+

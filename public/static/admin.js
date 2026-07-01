@@ -1224,6 +1224,8 @@ function saveGrowth(sid) {
   const h = parseFloat(document.getElementById('gr-height').value);
   const w = parseFloat(document.getElementById('gr-weight').value);
   if (!h || !w) { showToast('Height and weight required', 'error'); return; }
+  if (h < 30 || h > 250) { showToast('Height must be between 30 and 250 cm', 'error'); return; }
+  if (w < 5 || w > 200) { showToast('Weight must be between 5 and 200 kg', 'error'); return; }
   const bmi = DB.calcBMI(h, w);
   data.growth.push({
     id: DB.genId('gr'), studentId: sid,

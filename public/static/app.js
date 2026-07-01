@@ -196,7 +196,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'growth', icon: 'fa-chart-line', label: 'Growth' },
       { id: 'activities', icon: 'fa-running', label: 'Activities' },
       { id: 'syllabus', icon: 'fa-book-open', label: 'Syllabus' },
-      { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: data.leaves.filter(l => l.status === 'pending').length || 0 },
+      { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: (user.role === 'subadmin' && user.assignedClass ? DB.getLeaves(null, null, user.assignedClass).filter(l => l.status === 'pending').length : data.leaves.filter(l => l.status === 'pending').length) || 0 },
       { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: annBadge },
       { id: 'events', icon: 'fa-calendar-alt', label: 'Events', badge: evtBadge },
       { id: 'messages', icon: 'fa-comment-dots', label: 'Messages', badge: msgBadge },

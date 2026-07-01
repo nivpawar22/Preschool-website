@@ -632,6 +632,9 @@ function applyLeave(childId) {
   if (!fromDate || !toDate || !reason) { showToast('Please fill all required fields', 'error'); return; }
   if (fromDate > toDate) { showToast('From date cannot be after to date', 'error'); return; }
 
+  const child = DB.getStudent(childId);
+  if (!child || child.parentId !== user.id) { showToast('Unauthorized', 'error'); return; }
+
   const data = DB.get();
   data.leaves.push({
     id: DB.genId('l'), studentId: childId, parentId: user.id,

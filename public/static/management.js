@@ -931,15 +931,49 @@ function deleteParent(pid) {
 }
 
 // ---- Activity Log Tab ----
+window._actLogLimit = window._actLogLimit || 50;
+
+function exportActivityLogCSV() {
+  const data = DB.get();
+  const logs = data.activityLog;
+  if (!logs.length) { showToast('No logs to export', 'warning'); return; }
+  const rows = [['Time', 'User', 'Action', 'Details']];
+  logs.forEach(function(l) {
+    const u = DB.getUser(l.userId);
+    rows.push([
+      new Date(l.time).toLocaleString('en-US'),
+      u ? u.name : (l.userId || ''),
+      l.action || '',
+      (l.details || '').replace(/"/g, '""')
+    ]);
+  });
+  const csv = rows.map(function(r) { return r.map(function(c) { return '"' + c + '"'; }).join(','); }).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'activity-log-' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  showToast('Log exported', 'success');
+}
+
 function renderActivityLogTab() {
   const data = DB.get();
-  const logs = data.activityLog.slice(0, 100);
+  const allLogs = data.activityLog;
+  const limit = window._actLogLimit;
+  const logs = limit === 0 ? allLogs : allLogs.slice(0, limit);
 
   return `
     <div class="card">
-      <div class="card-header">
-        <div class="card-title"><i class="fas fa-history" style="color:#1AA6CA"></i> Activity Log (Last ${logs.length})</div>
-        <button class="btn btn-secondary btn-sm" onclick="clearActivityLog()"><i class="fas fa-trash"></i> Clear Log</button>
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <div class="card-title"><i class="fas fa-history" style="color:#1AA6CA"></i> Activity Log (${allLogs.length} total)</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:12px;color:#6B7A9D;font-weight:600">Show:</span>
+          ${[50, 100, 0].map(function(n) {
+            return '<button onclick="window._actLogLimit=' + n + ';renderManagement()" class="btn btn-sm ' + (limit === n ? 'btn-primary' : 'btn-secondary') + '" style="font-size:11px">' + (n === 0 ? 'All' : 'Last ' + n) + '</button>';
+          }).join('')}
+          <button class="btn btn-secondary btn-sm" onclick="exportActivityLogCSV()" title="Export CSV"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearActivityLog()"><i class="fas fa-trash"></i> Clear Log</button>
+        </div>
       </div>
       ${logs.length ? `<div class="table-wrap"><table>
         <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>

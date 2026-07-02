@@ -2698,9 +2698,14 @@ function renderMealManagerTab() {
           '<tbody>'+tableRows+'</tbody>'+
         '</table>'+
       '</div>'+
+      '<div style="margin-bottom:16px">'+
+        '<label style="font-size:13px;font-weight:700;color:#0F2050;display:block;margin-bottom:6px"><i class="fas fa-sticky-note" style="color:#C4893A;margin-right:6px"></i>Special Instructions to Parents</label>'+
+        '<textarea id="meal-special-instructions" class="form-control" rows="3" placeholder="e.g. Please send a water bottle. No nuts this week. Children should bring their tiffin box on Wednesday...">'+_mgEsc(menuData._instructions||'')+'</textarea>'+
+        '<div style="font-size:11px;color:#94a3b8;margin-top:4px">This note will appear prominently on the parent meal menu page for this week.</div>'+
+      '</div>'+
       '<button class="btn btn-primary" onclick="_saveMealMenu(\''+weekKey+'\')"><i class="fas fa-save"></i> Save Menu for This Week</button>'+
       '<div style="margin-top:12px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:12px;color:#1e40af">'+
-        '<i class="fas fa-info-circle" style="margin-right:6px"></i>This menu is visible to parents in the parent portal under Meal Menu.'+
+        '<i class="fas fa-info-circle" style="margin-right:6px"></i>This menu and special instructions are visible to parents in the parent portal under Meal Menu.'+
       '</div>'+
     '</div>'+
   '</div>';
@@ -2717,6 +2722,8 @@ window._saveMealMenu = function(weekKey) {
       menuData[day][meal] = el ? el.value.trim() : '';
     });
   });
+  var instrEl = document.getElementById('meal-special-instructions');
+  menuData._instructions = instrEl ? instrEl.value.trim() : '';
   DB.saveMealMenu(weekKey, menuData);
   showToast('Meal menu saved!', 'success');
 };

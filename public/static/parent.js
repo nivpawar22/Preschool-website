@@ -2743,7 +2743,17 @@ function renderParentMeals() {
         <button class="btn btn-secondary btn-sm" onclick="window._parentMealWeek='${nextWeek(weekKey)}';renderParentMeals()">Next <i class="fas fa-chevron-right"></i></button>
       </div>
     </div>
-    ${Object.keys(menuData).length === 0
+    ${menuData._instructions ? `
+    <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #f59e0b44;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start">
+      <div style="width:36px;height:36px;background:#f59e0b22;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fas fa-sticky-note" style="color:#d97706;font-size:16px"></i>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Special Instructions from School</div>
+        <div style="font-size:13px;color:#78350f;line-height:1.6">${menuData._instructions.replace(/\n/g,'<br>')}</div>
+      </div>
+    </div>` : ''}
+    ${Object.keys(menuData).filter(k => k !== '_instructions').length === 0
       ? '<div class="empty-state"><i class="fas fa-utensils"></i><h3>No meal menu available for this week</h3><p>Please check back later or contact the school.</p></div>'
       : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">${dayCards}</div>`
     }`;

@@ -1156,6 +1156,12 @@ function renderSettingsTab() {
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:16px;border:2px solid #C4893A22">
+          <div class="card-title" style="margin-bottom:4px"><i class="fas fa-calendar-check" style="color:#C4893A"></i> Year-End Rollover</div>
+          <p style="font-size:12px;color:#6B7A9D;margin-bottom:16px">Promote students to their next class, archive this year's records, and start fresh for the new academic year.</p>
+          <button class="btn btn-sm" style="background:#C4893A;color:#fff;border:none;font-weight:700" onclick="openRolloverWizard()"><i class="fas fa-arrow-circle-right"></i> Start Year-End Rollover</button>
+        </div>
+
         <div style="padding:14px;background:#fee2e2;border-radius:10px;margin-bottom:16px">
           <div style="font-weight:700;color:#991b1b;margin-bottom:8px"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
           <div style="font-size:13px;color:#7f1d1d;margin-bottom:12px">Resetting data will permanently clear all students, grades, attendance and other records. This cannot be undone.</div>
@@ -1368,6 +1374,265 @@ window.restoreBackup = function(input) {
     }
   };
   reader.readAsText(file);
+};
+
+// ============================================================
+// YEAR-END ROLLOVER WIZARD
+// ============================================================
+window.openRolloverWizard = function() {
+  var d = DB.get();
+  var classes = (d.classes || []).filter(function(c){ return !c.deleted; });
+  var currentAY = d.meta.academicYear || '';
+  var cy = new Date().getFullYear();
+  var nextAY = (cy) + '-' + String(cy + 1).slice(2);
+  if (currentAY) {
+    var parts = currentAY.split('-');
+    if (parts.length === 2) {
+      var nextY = parseInt(parts[0]) + 1;
+      nextAY = nextY + '-' + String(nextY + 1).slice(2);
+    }
+  }
+
+  // Build class mapping rows
+  var classOptions = '<option value="graduate">🎓 Graduate / Alumni</option><option value="leave">❌ Mark as Left / Inactive</option>';
+  classes.forEach(function(c) {
+    classOptions += '<option value="' + c.id + '">' + _mgEsc(c.name) + '</option>';
+  });
+
+  var classRows = classes.map(function(cls) {
+    var students = (d.students || []).filter(function(s){ return s.classId === cls.id && !s.deleted; });
+    // Guess next class by order/name
+    var guessNext = _guessNextClass(cls, classes);
+    var options = classes.map(function(c) {
+      var sel = c.id === guessNext ? ' selected' : '';
+      return '<option value="' + c.id + '"' + sel + '>' + _mgEsc(c.name) + '</option>';
+    }).join('');
+    return '<tr style="border-bottom:1px solid #f1f5f9">' +
+      '<td style="padding:10px 12px;font-weight:700;color:#0F2050">' + _mgEsc(cls.name) + '</td>' +
+      '<td style="padding:10px 12px;color:#6B7A9D;font-size:12px">' + students.length + ' students</td>' +
+      '<td style="padding:10px 12px"><i class="fas fa-arrow-right" style="color:#C4893A;margin-right:8px"></i></td>' +
+      '<td style="padding:10px 12px">' +
+        '<select class="form-control" id="rollover-cls-' + cls.id + '" style="font-size:12px">' +
+          options +
+          '<option value="graduate">🎓 Graduate / Alumni</option>' +
+          '<option value="leave">❌ Mark as Left / Inactive</option>' +
+        '</select>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Archive options
+  var archiveChecks = [
+    { key: 'attendance',     label: 'Attendance Records' },
+    { key: 'feeRecords',     label: 'Fee Records' },
+    { key: 'assignments',    label: 'Homework / Assignments' },
+    { key: 'achievements',   label: 'Achievements' },
+    { key: 'exams',          label: 'Exam Schedules' },
+    { key: 'healthRecords',  label: 'Health Records' },
+    { key: 'ptmSlots',       label: 'PTM Slots' },
+    { key: 'grievances',     label: 'Grievances' },
+    { key: 'conductRecords', label: 'Conduct Records' },
+    { key: 'grades',         label: 'Grade Records' },
+    { key: 'leaveRequests',  label: 'Leave Requests' },
+    { key: 'mealMenu',       label: 'Meal Menu' },
+  ].map(function(item) {
+    return '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px">' +
+      '<input type="checkbox" id="arc-' + item.key + '" checked style="accent-color:#0F2050;width:15px;height:15px"/> ' + item.label +
+    '</label>';
+  }).join('');
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'rollover-overlay';
+  overlay.innerHTML = '<div class="modal" style="max-width:680px;max-height:90vh;overflow-y:auto">' +
+    '<div class="modal-header" style="background:linear-gradient(135deg,#0F2050,#1a3a7a);color:#fff;border-radius:12px 12px 0 0;padding:20px 24px">' +
+      '<div>' +
+        '<h2 style="margin:0;font-size:18px;color:#fff"><i class="fas fa-calendar-check" style="color:#C4893A;margin-right:10px"></i>Year-End Rollover Wizard</h2>' +
+        '<div style="font-size:12px;color:#b0bec5;margin-top:4px">' + (currentAY || 'Current Year') + ' → ' + nextAY + '</div>' +
+      '</div>' +
+      '<button class="close-btn" style="color:#fff;background:none;border:none;font-size:20px;cursor:pointer" onclick="document.getElementById(\'rollover-overlay\').remove()">✕</button>' +
+    '</div>' +
+    '<div class="modal-body" style="padding:24px">' +
+
+      // Step 1: New year
+      '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:20px">' +
+        '<div style="font-weight:700;color:#0369a1;margin-bottom:10px;font-size:13px"><span style="background:#0F2050;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:8px">1</span> New Academic Year</div>' +
+        '<div class="form-row" style="margin:0">' +
+          '<div class="form-group" style="margin-bottom:0">' +
+            '<label class="form-label" style="font-size:11px">New Academic Year</label>' +
+            '<input class="form-control" id="rollover-new-ay" value="' + nextAY + '" placeholder="e.g. 2026-27"/>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Step 2: Class promotions
+      '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px;margin-bottom:20px">' +
+        '<div style="font-weight:700;color:#92400e;margin-bottom:12px;font-size:13px"><span style="background:#C4893A;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:8px">2</span> Promote Students to Next Class</div>' +
+        (classes.length ? '<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6B7A9D;font-weight:700">Current Class</th><th style="padding:8px 12px;font-size:11px;color:#6B7A9D;font-weight:700">Students</th><th style="padding:8px 12px"></th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6B7A9D;font-weight:700">Promote To</th></tr></thead><tbody>' + classRows + '</tbody></table>'
+        : '<div style="color:#6B7A9D;font-size:13px;text-align:center;padding:10px">No classes found.</div>') +
+      '</div>' +
+
+      // Step 3: Archive
+      '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;margin-bottom:20px">' +
+        '<div style="font-weight:700;color:#15803d;margin-bottom:10px;font-size:13px"><span style="background:#16a34a;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;margin-right:8px">3</span> Archive &amp; Clear Year-Specific Records</div>' +
+        '<p style="font-size:11px;color:#166534;margin-bottom:12px">These records will be backed up then cleared so the new year starts fresh. Uncheck to keep them.</p>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px">' + archiveChecks + '</div>' +
+      '</div>' +
+
+      // Warning
+      '<div style="background:#fef3c7;border:1px solid #f59e0b44;border-radius:10px;padding:12px;font-size:12px;color:#92400e">' +
+        '<i class="fas fa-shield-alt" style="margin-right:6px;color:#d97706"></i>' +
+        '<strong>A full backup of the current year will be downloaded automatically before any changes are made.</strong>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-footer" style="padding:16px 24px;background:#f8fafc;border-top:1px solid #DCE1EF;display:flex;gap:10px;justify-content:flex-end">' +
+      '<button class="btn btn-secondary" onclick="document.getElementById(\'rollover-overlay\').remove()">Cancel</button>' +
+      '<button class="btn btn-primary" style="background:#C4893A;border-color:#C4893A;font-weight:700" onclick="executeRollover()"><i class="fas fa-rocket"></i> Execute Rollover</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+};
+
+// Guess next class by common preschool order
+function _guessNextClass(cls, allClasses) {
+  var order = ['playgroup','play group','nursery','lkg','jr.kg','jr. kg','junior kg','ukg','sr.kg','sr. kg','senior kg','grade 1','class 1','std 1'];
+  var name = (cls.name || '').toLowerCase().trim();
+  var idx = order.findIndex(function(o){ return name.includes(o); });
+  if (idx === -1 || idx >= order.length - 1) return 'graduate';
+  // Find class whose name matches the next order item
+  var nextLabel = order[idx + 1];
+  var next = allClasses.find(function(c){ return (c.name||'').toLowerCase().includes(nextLabel) && c.id !== cls.id; });
+  return next ? next.id : 'graduate';
+}
+
+window.executeRollover = function() {
+  var newAY = (document.getElementById('rollover-new-ay') || {}).value || '';
+  if (!newAY) { showToast('Please enter the new academic year', 'error'); return; }
+
+  var d = DB.get();
+  var classes = (d.classes || []).filter(function(c){ return !c.deleted; });
+
+  // Build promotion map
+  var promotionMap = {};
+  classes.forEach(function(cls) {
+    var sel = document.getElementById('rollover-cls-' + cls.id);
+    promotionMap[cls.id] = sel ? sel.value : 'graduate';
+  });
+
+  // Keys to archive/clear
+  var archiveKeys = ['attendance','feeRecords','assignments','achievements','exams','healthRecords','ptmSlots','grievances','conductRecords','grades','leaveRequests','mealMenu'];
+  var toArchive = archiveKeys.filter(function(k){ var el = document.getElementById('arc-' + k); return el && el.checked; });
+
+  confirmDialog(
+    'This will:\n• Download a full backup\n• Promote students as configured\n• Clear selected records\n• Set academic year to ' + newAY + '\n\nThis cannot be undone. Continue?',
+    function() {
+      // Step 1: Auto-download backup first
+      var currentAY = d.meta.academicYear || 'current';
+      var backupData = {
+        _version: 1,
+        _exportedAt: new Date().toISOString(),
+        _academicYear: currentAY,
+        _type: 'year-end-rollover-backup',
+        meta: d.meta,
+        students: d.students || [],
+        classes: d.classes || [],
+        users: d.users || [],
+        attendance: d.attendance || [],
+        feeRecords: d.feeRecords || [],
+        assignments: d.assignments || [],
+        achievements: d.achievements || [],
+        exams: d.exams || [],
+        healthRecords: d.healthRecords || [],
+        ptmSlots: d.ptmSlots || [],
+        grievances: d.grievances || [],
+        conductRecords: d.conductRecords || [],
+        grades: d.grades || [],
+        leaveRequests: d.leaveRequests || [],
+        hrLetters: d.hrLetters || [],
+        salaryRecords: d.salaryRecords || [],
+        activityLog: d.activityLog || [],
+        mealMenu: d.mealMenu || {},
+        holidays: d.holidays || [],
+      };
+      var json = JSON.stringify(backupData, null, 2);
+      var blob = new Blob([json], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var slug = (d.meta.schoolName || 'school').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+      a.href = url;
+      a.download = slug + '-ROLLOVER-BACKUP-' + currentAY.replace(/\//g,'-') + '-' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Step 2: Promote students
+      var promotedCount = 0, graduatedCount = 0, leftCount = 0;
+      d.students = (d.students || []).map(function(s) {
+        if (s.deleted) return s;
+        var dest = promotionMap[s.classId];
+        if (!dest) return s;
+        var updated = Object.assign({}, s, { prevClassId: s.classId, prevAY: d.meta.academicYear });
+        if (dest === 'graduate') {
+          updated.status = 'alumni';
+          updated.graduatedAY = d.meta.academicYear;
+          updated.classId = s.classId; // keep last class for records
+          graduatedCount++;
+        } else if (dest === 'leave') {
+          updated.status = 'inactive';
+          leftCount++;
+        } else {
+          updated.classId = dest;
+          updated.status = 'active';
+          promotedCount++;
+        }
+        return updated;
+      });
+
+      // Step 3: Archive (clear) selected records
+      toArchive.forEach(function(key) {
+        if (key === 'mealMenu') { d.mealMenu = {}; }
+        else { d[key] = []; }
+      });
+
+      // Step 4: Update academic year + log
+      d.meta.academicYear = newAY;
+      var user = Session.current();
+      d.activityLog = d.activityLog || [];
+      d.activityLog.push({
+        id: 'log_' + Date.now(),
+        ts: new Date().toISOString(),
+        action: 'Year-End Rollover',
+        detail: 'Rolled over to ' + newAY + '. Promoted: ' + promotedCount + ', Graduated: ' + graduatedCount + ', Left: ' + leftCount + '. Cleared: ' + toArchive.join(', '),
+        userId: user ? user.id : '',
+        userName: user ? user.name : 'System',
+      });
+
+      DB.commit();
+
+      // Record in backup history
+      try {
+        var hist = JSON.parse(localStorage.getItem('superkids_backup_history') || '[]');
+        hist.push({ year: currentAY + ' (Rollover)', records: Object.values(backupData).filter(Array.isArray).reduce(function(s,a){ return s+a.length; },0), date: new Date().toLocaleDateString('en-IN') });
+        if (hist.length > 20) hist = hist.slice(-20);
+        localStorage.setItem('superkids_backup_history', JSON.stringify(hist));
+      } catch(e) {}
+
+      document.getElementById('rollover-overlay').remove();
+
+      showToast(
+        'Rollover complete! ' + promotedCount + ' promoted, ' + graduatedCount + ' graduated, ' + leftCount + ' marked left. New year: ' + newAY,
+        'success'
+      );
+
+      // Re-render settings to reflect new academic year
+      setTimeout(function(){ navigate('settings'); }, 1200);
+    },
+    'Execute Rollover',
+    true
+  );
 };
 
 // ---- My Profile (Super Admin) ----

@@ -3130,24 +3130,19 @@ function buildDocLetterhead(meta) {
   if (website) contactParts.push(website);
   var contactLine = contactParts.join('  |  ');
 
-  return '<div style="background:#0F2050;padding:0;margin:0">' +
-    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#0F2050">' +
-      '<tr>' +
-        '<td width="100" style="padding:16px 10px 16px 20px;vertical-align:middle;text-align:center">' +
-          '<div style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block;text-align:center;line-height:70px">' +
-            '<img src="' + logo + '" width="70" height="70" style="border-radius:50%;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>' +
-          '</div>' +
-        '</td>' +
-        '<td style="padding:16px 20px;text-align:center;vertical-align:middle">' +
-          '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:1px;line-height:1.2">' + sName + '</div>' +
-          (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:5px;letter-spacing:0.3px">' + addr + '</div>' : '') +
-          (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
-        '</td>' +
-      '</tr>' +
-    '</table>' +
-    '<div style="height:4px;background:#C4893A;margin:0"></div>' +
-    '<div style="height:2px;background:#ffffff;margin:0;opacity:0.15"></div>' +
-  '</div>';
+  return '<div style="background:#0F2050;padding:18px 24px 16px 24px;margin:0;display:table;width:100%;box-sizing:border-box">' +
+    '<div style="display:table-cell;width:90px;vertical-align:middle;text-align:center;padding-right:18px">' +
+      '<div style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block">' +
+        '<img src="' + logo + '" width="70" height="70" style="border-radius:50%;object-fit:cover;display:block;margin:0 auto" onerror="this.style.display=\'none\'"/>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:table-cell;vertical-align:middle;text-align:center">' +
+      '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2">' + sName + '</div>' +
+      (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px;letter-spacing:0.2px">' + addr + '</div>' : '') +
+      (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
+    '</div>' +
+  '</div>' +
+  '<div style="height:4px;background:#C4893A;margin:0"></div>';
 }
 
 // ---- Student doc modal ----
@@ -3237,8 +3232,8 @@ window._printStudentDocDirect = function(studentId, docKey) {
     '.sig-label{font-size:11px;font-weight:700;text-align:center}' +
     '.seal{width:80px;height:80px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}' +
     '.footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
-    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0;border-radius:0}' +
-    '.content-area{padding:16px 24px 24px}';
+    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}' +
+    '.content-area{padding:20px 28px 28px}';
 
   var bodyHtml = '';
   if (docKey === 'admit') {

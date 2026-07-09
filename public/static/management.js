@@ -1050,12 +1050,12 @@ function renderSettingsTab() {
             <label class="form-label"><i class="fas fa-stamp"></i> School Stamp / Seal</label>
             <div style="display:flex;align-items:center;gap:14px;padding:12px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:10px;margin-top:6px">
               <div id="stamp-preview" style="width:80px;height:80px;border:2px dashed #DCE1EF;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0">
-                ${meta.schoolStamp ? `<img src="${meta.schoolStamp}" style="width:76px;height:76px;object-fit:contain;border-radius:50%"/>` : '<i class="fas fa-stamp" style="font-size:28px;color:#DCE1EF"></i>'}
+                ${getDocStamp() ? `<img src="${getDocStamp()}" style="width:76px;height:76px;object-fit:contain;border-radius:50%"/>` : '<i class="fas fa-stamp" style="font-size:28px;color:#DCE1EF"></i>'}
               </div>
               <div style="flex:1">
                 <input type="file" id="stamp-upload" accept="image/*" style="display:none" onchange="previewDocImage(this,'stamp-preview','set-stamp-data')"/>
                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('stamp-upload').click()"><i class="fas fa-upload"></i> Upload Stamp</button>
-                ${meta.schoolStamp ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('stamp-preview','set-stamp-data','schoolStamp')"><i class="fas fa-trash"></i> Remove</button>` : ''}
+                ${getDocStamp() ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('stamp-preview','set-stamp-data','schoolStamp')"><i class="fas fa-trash"></i> Remove</button>` : ''}
                 <div style="font-size:11px;color:#6B7A9D;margin-top:6px">Recommended: Round stamp image, 200×200px, PNG with transparent bg</div>
                 <input type="hidden" id="set-stamp-data" value=""/>
               </div>
@@ -1072,12 +1072,12 @@ function renderSettingsTab() {
             <label class="form-label"><i class="fas fa-signature"></i> Principal / Authorised Signature</label>
             <div style="display:flex;align-items:center;gap:14px;padding:12px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:10px;margin-top:6px">
               <div id="sign-preview" style="width:120px;height:60px;border:2px dashed #DCE1EF;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0">
-                ${meta.principalSignature ? `<img src="${meta.principalSignature}" style="max-width:116px;max-height:56px;object-fit:contain"/>` : '<i class="fas fa-signature" style="font-size:24px;color:#DCE1EF"></i>'}
+                ${getDocSign() ? `<img src="${getDocSign()}" style="max-width:116px;max-height:56px;object-fit:contain"/>` : '<i class="fas fa-signature" style="font-size:24px;color:#DCE1EF"></i>'}
               </div>
               <div style="flex:1">
                 <input type="file" id="sign-upload" accept="image/*" style="display:none" onchange="previewDocImage(this,'sign-preview','set-sign-data')"/>
                 <button class="btn btn-secondary btn-sm" onclick="document.getElementById('sign-upload').click()"><i class="fas fa-upload"></i> Upload Signature</button>
-                ${meta.principalSignature ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('sign-preview','set-sign-data','principalSignature')"><i class="fas fa-trash"></i> Remove</button>` : ''}
+                ${getDocSign() ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('sign-preview','set-sign-data','principalSignature')"><i class="fas fa-trash"></i> Remove</button>` : ''}
                 <div style="font-size:11px;color:#6B7A9D;margin-top:6px">Recommended: PNG with white/transparent background, 300×100px</div>
                 <input type="hidden" id="set-sign-data" value=""/>
               </div>
@@ -1134,10 +1134,9 @@ window.previewDocImage = function(input, previewId, hiddenId) {
   reader.readAsDataURL(file);
 };
 
-window.clearDocImage = function(previewId, hiddenId, metaKey) {
-  var data = DB.get();
-  delete data.meta[metaKey];
-  DB.commit();
+window.clearDocImage = function(previewId, hiddenId, lsKey) {
+  var lsKeyMap = { schoolStamp: DOC_STAMP_KEY, principalSignature: DOC_SIGN_KEY };
+  localStorage.removeItem(lsKeyMap[lsKey] || lsKey);
   document.getElementById(hiddenId).value = '';
   var preview = document.getElementById(previewId);
   if (preview) {
@@ -1149,17 +1148,26 @@ window.clearDocImage = function(previewId, hiddenId, metaKey) {
   showToast('Removed successfully', 'success');
 };
 
+// Images stored in localStorage only to avoid SQLITE_TOOBIG on server sync
+var DOC_STAMP_KEY = 'superkids_school_stamp';
+var DOC_SIGN_KEY  = 'superkids_principal_sign';
+
+function getDocStamp()  { return localStorage.getItem(DOC_STAMP_KEY) || ''; }
+function getDocSign()   { return localStorage.getItem(DOC_SIGN_KEY)  || ''; }
+
 window.saveDocAssets = function() {
   var data = DB.get();
+  // Save images to localStorage only (too large for D1 SQLite)
   var stampData = (document.getElementById('set-stamp-data') || {}).value;
-  if (stampData) data.meta.schoolStamp = stampData;
+  if (stampData) localStorage.setItem(DOC_STAMP_KEY, stampData);
   var signData = (document.getElementById('set-sign-data') || {}).value;
-  if (signData) data.meta.principalSignature = signData;
-  data.meta.stampSize   = parseInt((document.getElementById('set-stamp-size') || {}).value || '80', 10);
+  if (signData) localStorage.setItem(DOC_SIGN_KEY, signData);
+  // Save small settings to DB meta (these are safe to sync)
+  data.meta.stampSize   = parseInt((document.getElementById('set-stamp-size') || {}).value || '90', 10);
   data.meta.stampHAlign = (document.getElementById('set-stamp-halign') || {}).value || 'right';
   data.meta.stampVAlign = (document.getElementById('set-stamp-valign') || {}).value || 'above';
-  data.meta.signWidth   = parseInt((document.getElementById('set-sign-width') || {}).value || '140', 10);
-  data.meta.signHeight  = parseInt((document.getElementById('set-sign-height') || {}).value || '55', 10);
+  data.meta.signWidth   = parseInt((document.getElementById('set-sign-width') || {}).value || '150', 10);
+  data.meta.signHeight  = parseInt((document.getElementById('set-sign-height') || {}).value || '60', 10);
   data.meta.signHAlign  = (document.getElementById('set-sign-halign') || {}).value || 'right';
   DB.commit();
   showToast('Stamp & Signature saved!', 'success');
@@ -3228,15 +3236,19 @@ function buildDocSignatureArea(meta, opts) {
   var signWidth  = parseInt(meta.signWidth  || 150, 10);
   var signHeight = parseInt(meta.signHeight || 60, 10);
 
+  // Read images from localStorage (not meta — too large for DB sync)
+  var stampImg = getDocStamp();
+  var signImg  = getDocSign();
+
   // Signature block (center of right column)
-  var signBlock = meta.principalSignature
-    ? '<img src="' + meta.principalSignature + '" style="display:block;width:' + signWidth + 'px;height:' + signHeight + 'px;object-fit:contain;margin:0 auto 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+  var signBlock = signImg
+    ? '<img src="' + signImg + '" style="display:block;width:' + signWidth + 'px;height:' + signHeight + 'px;object-fit:contain;margin:0 auto 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
     : '<div style="height:' + signHeight + 'px"></div>';
 
   // Stamp block (circular, on the opposite side)
-  var stampBlock = meta.schoolStamp
-    ? '<img src="' + meta.schoolStamp + '" style="display:block;width:' + stampSize + 'px;height:' + stampSize + 'px;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
-    : '<div style="width:' + stampSize + 'px;height:' + stampSize + 'px;border-radius:50%;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;text-align:center">SCHOOL<br>SEAL</div>';
+  var stampBlock = stampImg
+    ? '<img src="' + stampImg + '" style="display:block;width:' + stampSize + 'px;height:' + stampSize + 'px;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+    : '<div style="width:' + stampSize + 'px;height:' + stampSize + 'px;border-radius:50%;border:2px dashed #ccc;display:inline-block;font-size:9px;color:#aaa;text-align:center;line-height:' + stampSize + 'px">SEAL</div>';
 
   var sigTd = 'border:none;border-top:none;border-bottom:none';
 

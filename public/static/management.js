@@ -3224,58 +3224,42 @@ function buildDocSignatureArea(meta, opts) {
   var rightLabel = opts.rightLabel || (meta.principalName || 'Principal');
   var showLeft   = opts.showLeft !== false;
 
-  var stampSize  = parseInt(meta.stampSize  || 80,  10);
-  var signWidth  = parseInt(meta.signWidth  || 140, 10);
-  var signHeight = parseInt(meta.signHeight || 55,  10);
-  var stampHA    = meta.stampHAlign  || 'right';
-  var stampVA    = meta.stampVAlign  || 'above';
-  var signHA     = meta.signHAlign   || 'right';
+  var stampSize  = parseInt(meta.stampSize  || 90, 10);
+  var signWidth  = parseInt(meta.signWidth  || 150, 10);
+  var signHeight = parseInt(meta.signHeight || 60, 10);
 
-  // Stamp HTML
-  var stampHtml = '';
-  if (meta.schoolStamp) {
-    var stampAlign = stampHA === 'left' ? 'margin-right:auto' : stampHA === 'center' ? 'margin:0 auto' : 'margin-left:auto';
-    stampHtml = '<div style="' + stampAlign + ';display:block;width:' + stampSize + 'px;margin-bottom:4px">' +
-      '<img src="' + meta.schoolStamp + '" width="' + stampSize + '" height="' + stampSize + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
-    '</div>';
-  }
+  // Signature block (center of right column)
+  var signBlock = meta.principalSignature
+    ? '<img src="' + meta.principalSignature + '" style="display:block;width:' + signWidth + 'px;height:' + signHeight + 'px;object-fit:contain;margin:0 auto 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+    : '<div style="height:' + signHeight + 'px"></div>';
 
-  // Signature HTML
-  var signHtml = '';
-  if (meta.principalSignature) {
-    var sigAlign = signHA === 'left' ? 'margin-right:auto' : signHA === 'center' ? 'margin:0 auto' : 'margin-left:auto';
-    signHtml = '<div style="' + sigAlign + ';display:block;width:' + signWidth + 'px;margin-bottom:2px">' +
-      '<img src="' + meta.principalSignature + '" width="' + signWidth + '" height="' + signHeight + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
-    '</div>';
-  }
+  // Stamp block (circular, on the opposite side)
+  var stampBlock = meta.schoolStamp
+    ? '<img src="' + meta.schoolStamp + '" style="display:block;width:' + stampSize + 'px;height:' + stampSize + 'px;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+    : '<div style="width:' + stampSize + 'px;height:' + stampSize + 'px;border-radius:50%;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;text-align:center">SCHOOL<br>SEAL</div>';
 
-  // Right side: stamp above or overlapping sig
-  var rightContent = '';
-  if (stampVA === 'above') {
-    rightContent = (meta.schoolStamp ? stampHtml : '') + signHtml +
-      '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div>' +
-      '<div style="font-size:11px;font-weight:700;text-align:' + signHA + '">' + _mgEsc(rightLabel) + '</div>';
-  } else {
-    // overlap: position stamp over the line
-    rightContent = '<div style="position:relative">' +
-      signHtml +
-      (meta.schoolStamp ? '<div style="position:absolute;bottom:0;' + (stampHA === 'left' ? 'left' : stampHA === 'center' ? 'left:50%;transform:translateX(-50%)' : 'right') + ':0;opacity:0.75">' +
-        '<img src="' + meta.schoolStamp + '" width="' + stampSize + '" height="' + stampSize + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
-      '</div>' : '') +
-      '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div>' +
-      '<div style="font-size:11px;font-weight:700;text-align:' + signHA + '">' + _mgEsc(rightLabel) + '</div>' +
-    '</div>';
-  }
+  // Left column: stamp (opposite to signature)
+  var leftCol = showLeft
+    ? '<td width="33%" style="vertical-align:bottom;padding-right:16px">' +
+        '<div style="height:60px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>' +
+        '<div style="font-size:11px;font-weight:700;color:#0F2050">' + _mgEsc(leftLabel) + '</div>' +
+      '</td>' +
+      '<td width="34%" style="vertical-align:bottom;text-align:center;padding:0 12px">' +
+        stampBlock +
+      '</td>'
+    : '<td width="67%" style="vertical-align:bottom;padding-right:16px">' +
+        stampBlock +
+      '</td>';
 
-  var leftContent = showLeft
-    ? '<div><div style="height:60px;border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div><div style="font-size:11px;font-weight:700">' + _mgEsc(leftLabel) + '</div></div>'
-    : '<div></div>';
+  // Right column: signature + name
+  var rightCol = '<td width="33%" style="vertical-align:bottom;text-align:center">' +
+    signBlock +
+    '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>' +
+    '<div style="font-size:11px;font-weight:700;color:#0F2050">' + _mgEsc(rightLabel) + '</div>' +
+  '</td>';
 
-  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:40px;border-collapse:collapse">' +
-    '<tr>' +
-      '<td style="vertical-align:bottom;padding-right:20px">' + leftContent + '</td>' +
-      '<td style="vertical-align:bottom;text-align:right">' + rightContent + '</td>' +
-    '</tr>' +
+  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:44px;border-collapse:collapse">' +
+    '<tr>' + leftCol + rightCol + '</tr>' +
   '</table>';
 }
 

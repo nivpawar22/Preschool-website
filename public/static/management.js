@@ -1015,7 +1015,7 @@ function renderSettingsTab() {
   const meta = data.meta;
 
   return `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px">
       <div>
         <div class="card" style="margin-bottom:16px">
           <div class="card-title" style="margin-bottom:20px"><i class="fas fa-school" style="color:#1AA6CA"></i> School Identity</div>
@@ -1041,6 +1041,57 @@ function renderSettingsTab() {
         </div>
       </div>
       <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:16px"><i class="fas fa-stamp" style="color:#C4893A"></i> Document Stamp &amp; Signature</div>
+          <p style="font-size:12px;color:#6B7A9D;margin-bottom:16px">These will appear on all printed documents (Admit Cards, Certificates, HR Letters). Upload PNG/JPG with transparent background for best results.</p>
+
+          <!-- School Stamp -->
+          <div style="margin-bottom:20px">
+            <label class="form-label"><i class="fas fa-stamp"></i> School Stamp / Seal</label>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:10px;margin-top:6px">
+              <div id="stamp-preview" style="width:80px;height:80px;border:2px dashed #DCE1EF;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0">
+                ${meta.schoolStamp ? `<img src="${meta.schoolStamp}" style="width:76px;height:76px;object-fit:contain;border-radius:50%"/>` : '<i class="fas fa-stamp" style="font-size:28px;color:#DCE1EF"></i>'}
+              </div>
+              <div style="flex:1">
+                <input type="file" id="stamp-upload" accept="image/*" style="display:none" onchange="previewDocImage(this,'stamp-preview','set-stamp-data')"/>
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('stamp-upload').click()"><i class="fas fa-upload"></i> Upload Stamp</button>
+                ${meta.schoolStamp ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('stamp-preview','set-stamp-data','schoolStamp')"><i class="fas fa-trash"></i> Remove</button>` : ''}
+                <div style="font-size:11px;color:#6B7A9D;margin-top:6px">Recommended: Round stamp image, 200×200px, PNG with transparent bg</div>
+                <input type="hidden" id="set-stamp-data" value=""/>
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:10px">
+              <div class="form-group"><label class="form-label" style="font-size:11px">Stamp Size (px)</label><input class="form-control" id="set-stamp-size" type="number" min="40" max="200" value="${meta.stampSize || 80}"/></div>
+              <div class="form-group"><label class="form-label" style="font-size:11px">Horizontal Align</label><select class="form-control" id="set-stamp-halign"><option value="left"${(meta.stampHAlign||'right')==='left'?' selected':''}>Left</option><option value="center"${(meta.stampHAlign||'right')==='center'?' selected':''}>Center</option><option value="right"${(meta.stampHAlign||'right')==='right'?' selected':''}>Right</option></select></div>
+              <div class="form-group"><label class="form-label" style="font-size:11px">Vertical Position</label><select class="form-control" id="set-stamp-valign"><option value="above"${(meta.stampVAlign||'above')==='above'?' selected':''}>Above signature</option><option value="overlap"${(meta.stampVAlign||'above')==='overlap'?' selected':''}>Overlap signature</option></select></div>
+            </div>
+          </div>
+
+          <!-- Principal Signature -->
+          <div>
+            <label class="form-label"><i class="fas fa-signature"></i> Principal / Authorised Signature</label>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:10px;margin-top:6px">
+              <div id="sign-preview" style="width:120px;height:60px;border:2px dashed #DCE1EF;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0">
+                ${meta.principalSignature ? `<img src="${meta.principalSignature}" style="max-width:116px;max-height:56px;object-fit:contain"/>` : '<i class="fas fa-signature" style="font-size:24px;color:#DCE1EF"></i>'}
+              </div>
+              <div style="flex:1">
+                <input type="file" id="sign-upload" accept="image/*" style="display:none" onchange="previewDocImage(this,'sign-preview','set-sign-data')"/>
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('sign-upload').click()"><i class="fas fa-upload"></i> Upload Signature</button>
+                ${meta.principalSignature ? `<button class="btn btn-sm" style="margin-left:8px;background:#fee2e2;color:#dc2626;border:none" onclick="clearDocImage('sign-preview','set-sign-data','principalSignature')"><i class="fas fa-trash"></i> Remove</button>` : ''}
+                <div style="font-size:11px;color:#6B7A9D;margin-top:6px">Recommended: PNG with white/transparent background, 300×100px</div>
+                <input type="hidden" id="set-sign-data" value=""/>
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:10px">
+              <div class="form-group"><label class="form-label" style="font-size:11px">Signature Width (px)</label><input class="form-control" id="set-sign-width" type="number" min="60" max="300" value="${meta.signWidth || 140}"/></div>
+              <div class="form-group"><label class="form-label" style="font-size:11px">Signature Height (px)</label><input class="form-control" id="set-sign-height" type="number" min="30" max="150" value="${meta.signHeight || 55}"/></div>
+              <div class="form-group"><label class="form-label" style="font-size:11px">Horizontal Align</label><select class="form-control" id="set-sign-halign"><option value="left"${(meta.signHAlign||'right')==='left'?' selected':''}>Left</option><option value="center"${(meta.signHAlign||'right')==='center'?' selected':''}>Center</option><option value="right"${(meta.signHAlign||'right')==='right'?' selected':''}>Right</option></select></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:8px" onclick="saveDocAssets()"><i class="fas fa-save"></i> Save Stamp &amp; Signature</button>
+        </div>
+
         <div style="padding:14px;background:#fee2e2;border-radius:10px;margin-bottom:16px">
           <div style="font-weight:700;color:#991b1b;margin-bottom:8px"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
           <div style="font-size:13px;color:#7f1d1d;margin-bottom:12px">Resetting data will permanently clear all students, grades, attendance and other records. This cannot be undone.</div>
@@ -1063,6 +1114,56 @@ function saveSettings() {
   DB.commit();
   showToast('Settings saved!', 'success');
 }
+
+// Convert uploaded file to base64 and show preview
+window.previewDocImage = function(input, previewId, hiddenId) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    document.getElementById(hiddenId).value = dataUrl;
+    var preview = document.getElementById(previewId);
+    if (preview) {
+      var isStamp = previewId === 'stamp-preview';
+      preview.innerHTML = isStamp
+        ? '<img src="' + dataUrl + '" style="width:76px;height:76px;object-fit:contain;border-radius:50%"/>'
+        : '<img src="' + dataUrl + '" style="max-width:116px;max-height:56px;object-fit:contain"/>';
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+window.clearDocImage = function(previewId, hiddenId, metaKey) {
+  var data = DB.get();
+  delete data.meta[metaKey];
+  DB.commit();
+  document.getElementById(hiddenId).value = '';
+  var preview = document.getElementById(previewId);
+  if (preview) {
+    var isStamp = previewId === 'stamp-preview';
+    preview.innerHTML = isStamp
+      ? '<i class="fas fa-stamp" style="font-size:28px;color:#DCE1EF"></i>'
+      : '<i class="fas fa-signature" style="font-size:24px;color:#DCE1EF"></i>';
+  }
+  showToast('Removed successfully', 'success');
+};
+
+window.saveDocAssets = function() {
+  var data = DB.get();
+  var stampData = (document.getElementById('set-stamp-data') || {}).value;
+  if (stampData) data.meta.schoolStamp = stampData;
+  var signData = (document.getElementById('set-sign-data') || {}).value;
+  if (signData) data.meta.principalSignature = signData;
+  data.meta.stampSize   = parseInt((document.getElementById('set-stamp-size') || {}).value || '80', 10);
+  data.meta.stampHAlign = (document.getElementById('set-stamp-halign') || {}).value || 'right';
+  data.meta.stampVAlign = (document.getElementById('set-stamp-valign') || {}).value || 'above';
+  data.meta.signWidth   = parseInt((document.getElementById('set-sign-width') || {}).value || '140', 10);
+  data.meta.signHeight  = parseInt((document.getElementById('set-sign-height') || {}).value || '55', 10);
+  data.meta.signHAlign  = (document.getElementById('set-sign-halign') || {}).value || 'right';
+  DB.commit();
+  showToast('Stamp & Signature saved!', 'success');
+};
 
 function resetAllData() {
   confirmDialog('This will DELETE ALL data and reset to defaults. Are you absolutely sure?', () => {
@@ -3116,6 +3217,68 @@ function _renderTeacherDocsSubTab() {
   return filterRow + cardsHtml;
 }
 
+// ---- Shared signature + stamp area builder ----
+function buildDocSignatureArea(meta, opts) {
+  opts = opts || {};
+  var leftLabel  = opts.leftLabel  || 'Class Teacher';
+  var rightLabel = opts.rightLabel || (meta.principalName || 'Principal');
+  var showLeft   = opts.showLeft !== false;
+
+  var stampSize  = parseInt(meta.stampSize  || 80,  10);
+  var signWidth  = parseInt(meta.signWidth  || 140, 10);
+  var signHeight = parseInt(meta.signHeight || 55,  10);
+  var stampHA    = meta.stampHAlign  || 'right';
+  var stampVA    = meta.stampVAlign  || 'above';
+  var signHA     = meta.signHAlign   || 'right';
+
+  // Stamp HTML
+  var stampHtml = '';
+  if (meta.schoolStamp) {
+    var stampAlign = stampHA === 'left' ? 'margin-right:auto' : stampHA === 'center' ? 'margin:0 auto' : 'margin-left:auto';
+    stampHtml = '<div style="' + stampAlign + ';display:block;width:' + stampSize + 'px;margin-bottom:4px">' +
+      '<img src="' + meta.schoolStamp + '" width="' + stampSize + '" height="' + stampSize + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
+    '</div>';
+  }
+
+  // Signature HTML
+  var signHtml = '';
+  if (meta.principalSignature) {
+    var sigAlign = signHA === 'left' ? 'margin-right:auto' : signHA === 'center' ? 'margin:0 auto' : 'margin-left:auto';
+    signHtml = '<div style="' + sigAlign + ';display:block;width:' + signWidth + 'px;margin-bottom:2px">' +
+      '<img src="' + meta.principalSignature + '" width="' + signWidth + '" height="' + signHeight + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
+    '</div>';
+  }
+
+  // Right side: stamp above or overlapping sig
+  var rightContent = '';
+  if (stampVA === 'above') {
+    rightContent = (meta.schoolStamp ? stampHtml : '') + signHtml +
+      '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div>' +
+      '<div style="font-size:11px;font-weight:700;text-align:' + signHA + '">' + _mgEsc(rightLabel) + '</div>';
+  } else {
+    // overlap: position stamp over the line
+    rightContent = '<div style="position:relative">' +
+      signHtml +
+      (meta.schoolStamp ? '<div style="position:absolute;bottom:0;' + (stampHA === 'left' ? 'left' : stampHA === 'center' ? 'left:50%;transform:translateX(-50%)' : 'right') + ':0;opacity:0.75">' +
+        '<img src="' + meta.schoolStamp + '" width="' + stampSize + '" height="' + stampSize + '" style="display:block;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>' +
+      '</div>' : '') +
+      '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div>' +
+      '<div style="font-size:11px;font-weight:700;text-align:' + signHA + '">' + _mgEsc(rightLabel) + '</div>' +
+    '</div>';
+  }
+
+  var leftContent = showLeft
+    ? '<div><div style="height:60px;border-bottom:1.5px solid #0F1E3D;margin-bottom:5px"></div><div style="font-size:11px;font-weight:700">' + _mgEsc(leftLabel) + '</div></div>'
+    : '<div></div>';
+
+  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:40px;border-collapse:collapse">' +
+    '<tr>' +
+      '<td style="vertical-align:bottom;padding-right:20px">' + leftContent + '</td>' +
+      '<td style="vertical-align:bottom;text-align:right">' + rightContent + '</td>' +
+    '</tr>' +
+  '</table>';
+}
+
 // ---- Shared letterhead builder ----
 function buildDocLetterhead(meta) {
   var logo = meta.schoolLogo || '/static/school-logo.png';
@@ -3263,7 +3426,7 @@ window._printStudentDocDirect = function(studentId, docKey) {
       '</tbody></table>' : '<p style="color:#6B7A9D;text-align:center;margin-bottom:14px">No exam schedule available.</p>') +
       customNote +
       '<div class="notice"><strong>Instructions:</strong> ' + _mgEsc(instructions) + '</div>' +
-      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Student\'s Signature</div></div><div><div class="sig-line"></div><div class="sig-label">Principal\'s Signature</div></div></div>';
+      buildDocSignatureArea(meta, { leftLabel: "Student's Signature", rightLabel: meta.principalName || 'Principal' });
   } else if (docKey === 'bonafide') {
     var purpose = cust.bonafidePurpose || 'for general purposes';
     if (purpose === 'custom') purpose = cust.bonafideCustomPurpose || 'for general purposes';
@@ -3274,7 +3437,7 @@ window._printStudentDocDirect = function(studentId, docKey) {
       extraBody +
       'This certificate is issued on the request of the student/parent <em>' + _mgEsc(purpose) + '</em>.</p>' +
       '<p>Date: <strong>' + today + '</strong></p>' +
-      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div><div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div></div>';
+      buildDocSignatureArea(meta, { leftLabel: 'Class Teacher' });
   } else if (docKey === 'character') {
     var conduct = cust.characterConduct || 'satisfactory';
     var charPurpose = cust.characterPurpose || 'bonafide purposes';
@@ -3283,7 +3446,7 @@ window._printStudentDocDirect = function(studentId, docKey) {
       'To the best of our knowledge, the character and conduct of the student has been <strong>' + _mgEsc(conduct) + '</strong>. He/She has been a sincere, disciplined, and well-behaved student throughout their association with this institution. We wish him/her all the best in future endeavours.<br><br>' +
       'This certificate is issued at the request of the parent/student for <em>' + _mgEsc(charPurpose) + '</em>.</p>' +
       '<p>Date: <strong>' + today + '</strong></p>' +
-      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div><div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div></div>';
+      buildDocSignatureArea(meta, { leftLabel: 'Class Teacher' });
   }
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + (docKey === 'admit' ? 'Admit Card' : docKey === 'bonafide' ? 'Bonafide Certificate' : 'Character Certificate') + ' — ' + _mgEsc(student.name) + '</title><style>' + baseCSS + '</style></head><body>' +
@@ -3526,12 +3689,8 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '<div class="doc-title">' + _mgEsc(title) + '</div>' +
       '<div class="ref-box"><strong>To:</strong> ' + _mgEsc(teacher.name) + ' &nbsp;|&nbsp; <strong>Designation:</strong> ' + _mgEsc(designation) + ' &nbsp;|&nbsp; <strong>Emp ID:</strong> ' + _mgEsc(teacher.employeeId || 'N/A') + '&nbsp;&nbsp;&nbsp;<strong>Date:</strong> ' + today + '</div>' +
       bodyHtml +
-      '<div class="sig-area">' +
-        '<p style="font-size:13px">Yours sincerely,</p><br>' +
-        '<p style="font-weight:700">______________________________</p>' +
-        '<p style="font-weight:700">' + _mgEsc(principal.name || 'Principal / HR Manager') + '</p>' +
-        '<p style="color:#666">' + _mgEsc(sName) + '</p>' +
-      '</div>' +
+      '<p style="font-size:13px;margin-top:20px">Yours sincerely,</p>' +
+      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principal.name || 'Principal / HR Manager' }) +
       '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
     '</div>' +
     '</div>' +

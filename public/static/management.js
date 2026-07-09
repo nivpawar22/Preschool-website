@@ -3238,28 +3238,42 @@ function buildDocSignatureArea(meta, opts) {
     ? '<img src="' + meta.schoolStamp + '" style="display:block;width:' + stampSize + 'px;height:' + stampSize + 'px;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
     : '<div style="width:' + stampSize + 'px;height:' + stampSize + 'px;border-radius:50%;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;text-align:center">SCHOOL<br>SEAL</div>';
 
-  // Left column: stamp (opposite to signature)
-  var leftCol = showLeft
-    ? '<td width="33%" style="vertical-align:bottom;padding-right:16px">' +
-        '<div style="height:60px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>' +
-        '<div style="font-size:11px;font-weight:700;color:#0F2050">' + _mgEsc(leftLabel) + '</div>' +
-      '</td>' +
-      '<td width="34%" style="vertical-align:bottom;text-align:center;padding:0 12px">' +
-        stampBlock +
-      '</td>'
-    : '<td width="67%" style="vertical-align:bottom;padding-right:16px">' +
-        stampBlock +
-      '</td>';
+  var sigTd = 'border:none;border-top:none;border-bottom:none';
 
-  // Right column: signature + name
-  var rightCol = '<td width="33%" style="vertical-align:bottom;text-align:center">' +
+  // Vertical divider between stamp and signature
+  var dividerCol = '<td width="1" style="' + sigTd + ';padding:0 18px;vertical-align:middle">' +
+    '<div style="width:1px;height:80px;background:#DCE1EF;margin:0 auto"></div>' +
+  '</td>';
+
+  // Left column: teacher line OR stamp
+  var leftCol, middleCol;
+  if (showLeft) {
+    leftCol = '<td width="30%" style="' + sigTd + ';vertical-align:bottom;padding-right:8px">' +
+      '<div style="height:' + signHeight + 'px"></div>' +
+      '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>' +
+      '<div style="font-size:11px;font-weight:700;color:#0F2050">' + _mgEsc(leftLabel) + '</div>' +
+    '</td>';
+    middleCol = dividerCol +
+      '<td width="28%" style="' + sigTd + ';vertical-align:bottom;text-align:center;padding:0 8px">' +
+        '<div style="margin:0 auto;display:inline-block">' + stampBlock + '</div>' +
+      '</td>' +
+      dividerCol;
+  } else {
+    leftCol = '<td style="' + sigTd + ';vertical-align:bottom;text-align:left">' +
+      '<div style="display:inline-block">' + stampBlock + '</div>' +
+    '</td>';
+    middleCol = dividerCol;
+  }
+
+  // Right column: signature image + line + name
+  var rightCol = '<td width="30%" style="' + sigTd + ';vertical-align:bottom;text-align:center;padding-left:8px">' +
     signBlock +
     '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>' +
     '<div style="font-size:11px;font-weight:700;color:#0F2050">' + _mgEsc(rightLabel) + '</div>' +
   '</td>';
 
-  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:44px;border-collapse:collapse">' +
-    '<tr>' + leftCol + rightCol + '</tr>' +
+  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:44px;border-collapse:collapse;border:none">' +
+    '<tr>' + leftCol + middleCol + rightCol + '</tr>' +
   '</table>';
 }
 
@@ -3277,23 +3291,22 @@ function buildDocLetterhead(meta) {
   if (website) contactParts.push(website);
   var contactLine = contactParts.join('  |  ');
 
+  var tdBase = 'border:none;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact';
   return '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
     '<tr>' +
-      '<td width="108" style="padding:16px 0 16px 20px;vertical-align:middle;text-align:center;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
-        '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 auto">' +
-          '<tr><td style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#ffffff;text-align:center;vertical-align:middle;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
-            '<img src="' + logo + '" width="70" height="70" style="display:block;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"/>' +
-          '</td></tr>' +
-        '</table>' +
+      '<td width="108" style="' + tdBase + ';padding:16px 8px 16px 18px;vertical-align:middle;text-align:center">' +
+        '<div style="width:78px;height:78px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block;line-height:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
+          '<img src="' + logo + '" width="72" height="72" style="display:block;border-radius:50%;object-fit:cover;-webkit-print-color-adjust:exact;print-color-adjust:exact" onerror="this.style.display=\'none\'"/>' +
+        '</div>' +
       '</td>' +
-      '<td style="padding:16px 24px;text-align:center;vertical-align:middle;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
-        '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + sName + '</div>' +
-        (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + addr + '</div>' : '') +
-        (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + contactLine + '</div>' : '') +
+      '<td style="' + tdBase + ';padding:16px 20px;text-align:center;vertical-align:middle">' +
+        '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2">' + sName + '</div>' +
+        (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px">' + addr + '</div>' : '') +
+        (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
       '</td>' +
     '</tr>' +
     '<tr>' +
-      '<td colspan="2" style="height:4px;background:#C4893A;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">&nbsp;</td>' +
+      '<td colspan="2" style="border:none;height:5px;background:#C4893A;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact"></td>' +
     '</tr>' +
   '</table>';
 }
@@ -3377,13 +3390,9 @@ window._printStudentDocDirect = function(studentId, docKey) {
     '.field .val{font-size:13px;font-weight:700;margin-top:2px}' +
     'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
     'th{background:#0F2050;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;text-align:left}' +
-    'td{padding:8px 10px;border-bottom:1px solid #f1f5f9}tr:nth-child(even) td{background:#f8fafc}' +
+    '.content-area td{padding:8px 10px;border-bottom:1px solid #f1f5f9}.content-area tr:nth-child(even) td{background:#f8fafc}' +
     '.notice{background:#FEF7E0;border:1px solid #C4893A;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px;line-height:1.6}' +
     '.body-text{font-size:13px;line-height:1.9;margin-bottom:14px}' +
-    '.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}' +
-    '.sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}' +
-    '.sig-label{font-size:11px;font-weight:700;text-align:center}' +
-    '.seal{width:80px;height:80px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}' +
     '.footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
     '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}' +
     '.content-area{padding:20px 28px 28px}';
@@ -3658,13 +3667,12 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
     '@page{size:A4;margin:15mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}' +
     '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
     '.ref-box{background:#f9f6f0;border-left:3px solid #C4893A;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}' +
-    'table{width:100%;border-collapse:collapse;margin:12px 0}' +
-    'td,th{padding:7px 12px;border:1px solid #DCE1EF}th{background:#0F2050;color:#fff}' +
+    '.content-area table{width:100%;border-collapse:collapse;margin:12px 0}' +
+    '.content-area td,.content-area th{padding:7px 12px;border:1px solid #DCE1EF}.content-area th{background:#0F2050;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     'p{margin-bottom:12px;line-height:1.8}' +
-    '.sig-area{margin-top:50px}' +
     '.footer-note{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
     '.content-area{padding:16px 24px 24px}' +
-    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0;border-radius:0}';
+    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}';
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + _mgEsc(title) + ' — ' + _mgEsc(teacher.name) + '</title><style>' + baseCSS + '</style></head><body>' +
     '<div class="page-wrap">' +

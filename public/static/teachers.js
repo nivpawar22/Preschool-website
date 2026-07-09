@@ -2225,8 +2225,10 @@ window._submitResignationReview = function(reqId, action) {
 
 // ==================== HOLIDAY MANAGEMENT ====================
 window.openHolidayManagement = function() {
+  var today = new Date().toISOString().slice(0, 10);
   var holidays = DB.getHolidays ? DB.getHolidays() : [];
-  holidays = holidays.slice().sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  holidays = holidays.filter(function(h){ return (h.date||'') >= today; })
+    .sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
 
   var typeColors = { National: '#fee2e2:#991b1b', Festival: '#fef3c7:#92400e', School: '#e0e7ff:#3730a3', Optional: '#d1fae5:#065f46' };
 
@@ -2239,7 +2241,7 @@ window.openHolidayManagement = function() {
       '<td style="padding:10px 12px;text-align:center"><span style="color:'+(h.optional?'#f59e0b':'#10b981')+';font-weight:700;font-size:12px">'+(h.optional?'Optional':'Mandatory')+'</span></td>'+
       '<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm btn-danger" onclick="_deleteHoliday(\''+h.id+'\')"><i class="fas fa-trash"></i></button></td>'+
     '</tr>';
-  }).join('') || '<tr><td colspan="5" style="padding:32px;text-align:center;color:#94a3b8">No holidays added yet</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="padding:32px;text-align:center;color:#94a3b8">No upcoming holidays</td></tr>';
 
   var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';

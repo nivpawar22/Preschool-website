@@ -58,57 +58,58 @@ const DB = (() => {
     }
   }
 
+  var _dy = new Date().getFullYear(); // current academic year for seed data
   const defaults = {
     meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: 'https://superkidsindia.com', schoolAddress: 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
     users: [
       {
         id: 'u1', role: 'superadmin', name: 'Dr. Sarah Mitchell', email: 'admin@school.edu',
         username: 'superadmin', password: '', phone: '+1-555-0100',
-        avatar: '#6366f1', active: true, deleted: false, createdAt: '2024-01-01'
+        avatar: '#6366f1', active: true, deleted: false, createdAt: _dy+'-01-01'
       },
       {
         id: 'u2', role: 'subadmin', name: 'Mr. James Carter', email: 'jcarter@school.edu',
         username: 'subadmin1', password: '', phone: '+1-555-0201',
-        avatar: '#10b981', active: true, deleted: false, createdAt: '2024-01-10',
+        avatar: '#10b981', active: true, deleted: false, createdAt: _dy+'-01-10',
         assignedClass: 'cls1',
         permissions: { students: true, attendance: true, grades: true, growth: true, activities: true, syllabus: true, announcements: true, leaves: true }
       },
       {
         id: 'u3', role: 'subadmin', name: 'Ms. Emily Rodriguez', email: 'erodriguez@school.edu',
         username: 'subadmin2', password: '', phone: '+1-555-0202',
-        avatar: '#f59e0b', active: true, deleted: false, createdAt: '2024-01-12',
+        avatar: '#f59e0b', active: true, deleted: false, createdAt: _dy+'-01-12',
         assignedClass: 'cls2',
         permissions: { students: true, attendance: true, grades: true, growth: true, activities: true, syllabus: true, announcements: true, leaves: true }
       },
       {
         id: 'u4', role: 'subadmin', name: 'Mr. David Kim', email: 'dkim@school.edu',
         username: 'subadmin3', password: '', phone: '+1-555-0203',
-        avatar: '#ef4444', active: false, deleted: false, createdAt: '2024-02-01',
+        avatar: '#ef4444', active: false, deleted: false, createdAt: _dy+'-02-01',
         assignedClass: 'cls3',
         permissions: { students: true, attendance: true, grades: false, growth: true, activities: true, syllabus: false, announcements: false, leaves: true }
       },
       {
         id: 'p1', role: 'parent', name: 'Robert Johnson', email: 'rjohnson@email.com',
         username: 'parent1', password: '', phone: '+1-555-0301',
-        avatar: '#8b5cf6', active: true, deleted: false, createdAt: '2024-01-15',
+        avatar: '#8b5cf6', active: true, deleted: false, createdAt: _dy+'-01-15',
         childIds: ['s1', 's2']
       },
       {
         id: 'p2', role: 'parent', name: 'Maria Williams', email: 'mwilliams@email.com',
         username: 'parent2', password: '', phone: '+1-555-0302',
-        avatar: '#06b6d4', active: true, deleted: false, createdAt: '2024-01-16',
+        avatar: '#06b6d4', active: true, deleted: false, createdAt: _dy+'-01-16',
         childIds: ['s3']
       },
       {
         id: 'p3', role: 'parent', name: 'Thomas Brown', email: 'tbrown@email.com',
         username: 'parent3', password: '', phone: '+1-555-0303',
-        avatar: '#84cc16', active: true, deleted: false, createdAt: '2024-02-05',
+        avatar: '#84cc16', active: true, deleted: false, createdAt: _dy+'-02-05',
         childIds: ['s4', 's5']
       },
       {
         id: 'acc1', role: 'accounting', name: 'Accounts Manager', email: 'accounts@superkidsindia.com',
         username: 'accounting', password: '', phone: '',
-        avatar: '#8b5cf6', active: true, deleted: false, createdAt: '2024-01-01'
+        avatar: '#8b5cf6', active: true, deleted: false, createdAt: _dy+'-01-01'
       }
     ],
     classes: [
@@ -117,45 +118,45 @@ const DB = (() => {
       { id: 'cls3', name: 'Grade 4-C', grade: '4', section: 'C', teacherId: 'u4', capacity: 25, subjects: ['Mathematics', 'English', 'Science', 'Social Studies', 'Art', 'Music'] },
     ],
     students: [
-      { id: 's1', name: 'Emma Johnson', rollNo: 'G5A-001', classId: 'cls1', dob: '2013-04-15', gender: 'Female', parentId: 'p1', photo: null, address: '123 Main St', bloodGroup: 'A+', deleted: false, joinDate: '2024-01-10' },
-      { id: 's2', name: 'Ethan Johnson', rollNo: 'G5A-002', classId: 'cls1', dob: '2015-08-22', gender: 'Male', parentId: 'p1', photo: null, address: '123 Main St', bloodGroup: 'O+', deleted: false, joinDate: '2024-01-10' },
-      { id: 's3', name: 'Sofia Williams', rollNo: 'G6B-001', classId: 'cls2', dob: '2012-11-30', gender: 'Female', parentId: 'p2', photo: null, address: '456 Oak Ave', bloodGroup: 'B+', deleted: false, joinDate: '2024-01-10' },
-      { id: 's4', name: 'Liam Brown', rollNo: 'G5A-003', classId: 'cls1', dob: '2013-06-18', gender: 'Male', parentId: 'p3', photo: null, address: '789 Pine Rd', bloodGroup: 'AB+', deleted: false, joinDate: '2024-01-15' },
-      { id: 's5', name: 'Olivia Brown', rollNo: 'G4C-001', classId: 'cls3', dob: '2014-09-05', gender: 'Female', parentId: 'p3', photo: null, address: '789 Pine Rd', bloodGroup: 'A-', deleted: false, joinDate: '2024-01-15' },
+      { id: 's1', name: 'Emma Johnson', rollNo: 'G5A-001', classId: 'cls1', dob: '2013-04-15', gender: 'Female', parentId: 'p1', photo: null, address: '123 Main St', bloodGroup: 'A+', deleted: false, joinDate: _dy+'-01-10' },
+      { id: 's2', name: 'Ethan Johnson', rollNo: 'G5A-002', classId: 'cls1', dob: '2015-08-22', gender: 'Male', parentId: 'p1', photo: null, address: '123 Main St', bloodGroup: 'O+', deleted: false, joinDate: _dy+'-01-10' },
+      { id: 's3', name: 'Sofia Williams', rollNo: 'G6B-001', classId: 'cls2', dob: '2012-11-30', gender: 'Female', parentId: 'p2', photo: null, address: '456 Oak Ave', bloodGroup: 'B+', deleted: false, joinDate: _dy+'-01-10' },
+      { id: 's4', name: 'Liam Brown', rollNo: 'G5A-003', classId: 'cls1', dob: '2013-06-18', gender: 'Male', parentId: 'p3', photo: null, address: '789 Pine Rd', bloodGroup: 'AB+', deleted: false, joinDate: _dy+'-01-15' },
+      { id: 's5', name: 'Olivia Brown', rollNo: 'G4C-001', classId: 'cls3', dob: '2014-09-05', gender: 'Female', parentId: 'p3', photo: null, address: '789 Pine Rd', bloodGroup: 'A-', deleted: false, joinDate: _dy+'-01-15' },
     ],
     grades: [
-      { id: 'g1', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Mathematics', score: 92, maxScore: 100, grade: 'A', teacherComment: 'Excellent problem solver', date: '2024-03-15' },
-      { id: 'g2', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'English', score: 88, maxScore: 100, grade: 'B+', teacherComment: 'Great reader, improve writing', date: '2024-03-15' },
-      { id: 'g3', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Science', score: 95, maxScore: 100, grade: 'A+', teacherComment: 'Outstanding curiosity', date: '2024-03-15' },
-      { id: 'g4', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Social Studies', score: 78, maxScore: 100, grade: 'B', teacherComment: 'Good participation', date: '2024-03-15' },
-      { id: 'g5', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Art', score: 85, maxScore: 100, grade: 'B+', teacherComment: 'Creative talent', date: '2024-03-15' },
-      { id: 'g6', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Physical Education', score: 90, maxScore: 100, grade: 'A', teacherComment: 'Active and sporty', date: '2024-03-15' },
-      { id: 'g7', studentId: 's2', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Mathematics', score: 75, maxScore: 100, grade: 'B', teacherComment: 'Needs practice on fractions', date: '2024-03-15' },
-      { id: 'g8', studentId: 's2', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'English', score: 80, maxScore: 100, grade: 'B+', teacherComment: 'Good storytelling skills', date: '2024-03-15' },
-      { id: 'g9', studentId: 's3', classId: 'cls2', term: 'Semester 1', year: '2024', subject: 'Mathematics', score: 98, maxScore: 100, grade: 'A+', teacherComment: 'Top of the class!', date: '2024-03-15' },
-      { id: 'g10', studentId: 's3', classId: 'cls2', term: 'Semester 1', year: '2024', subject: 'Science', score: 94, maxScore: 100, grade: 'A', teacherComment: 'Very analytical', date: '2024-03-15' },
-      { id: 'g11', studentId: 's4', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Mathematics', score: 70, maxScore: 100, grade: 'B-', teacherComment: 'Shows improvement', date: '2024-03-15' },
-      { id: 'g12', studentId: 's5', classId: 'cls3', term: 'Semester 1', year: '2024', subject: 'Art', score: 96, maxScore: 100, grade: 'A+', teacherComment: 'Exceptional artistic talent', date: '2024-03-15' },
+      { id: 'g1', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics', score: 92, maxScore: 100, grade: 'A', teacherComment: 'Excellent problem solver', date: _dy+'-03-15' },
+      { id: 'g2', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'English', score: 88, maxScore: 100, grade: 'B+', teacherComment: 'Great reader, improve writing', date: _dy+'-03-15' },
+      { id: 'g3', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Science', score: 95, maxScore: 100, grade: 'A+', teacherComment: 'Outstanding curiosity', date: _dy+'-03-15' },
+      { id: 'g4', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Social Studies', score: 78, maxScore: 100, grade: 'B', teacherComment: 'Good participation', date: _dy+'-03-15' },
+      { id: 'g5', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Art', score: 85, maxScore: 100, grade: 'B+', teacherComment: 'Creative talent', date: _dy+'-03-15' },
+      { id: 'g6', studentId: 's1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Physical Education', score: 90, maxScore: 100, grade: 'A', teacherComment: 'Active and sporty', date: _dy+'-03-15' },
+      { id: 'g7', studentId: 's2', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics', score: 75, maxScore: 100, grade: 'B', teacherComment: 'Needs practice on fractions', date: _dy+'-03-15' },
+      { id: 'g8', studentId: 's2', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'English', score: 80, maxScore: 100, grade: 'B+', teacherComment: 'Good storytelling skills', date: _dy+'-03-15' },
+      { id: 'g9', studentId: 's3', classId: 'cls2', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics', score: 98, maxScore: 100, grade: 'A+', teacherComment: 'Top of the class!', date: _dy+'-03-15' },
+      { id: 'g10', studentId: 's3', classId: 'cls2', term: 'Semester 1', year: ''+_dy+'', subject: 'Science', score: 94, maxScore: 100, grade: 'A', teacherComment: 'Very analytical', date: _dy+'-03-15' },
+      { id: 'g11', studentId: 's4', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics', score: 70, maxScore: 100, grade: 'B-', teacherComment: 'Shows improvement', date: _dy+'-03-15' },
+      { id: 'g12', studentId: 's5', classId: 'cls3', term: 'Semester 1', year: ''+_dy+'', subject: 'Art', score: 96, maxScore: 100, grade: 'A+', teacherComment: 'Exceptional artistic talent', date: _dy+'-03-15' },
     ],
     attendance: [
-      { id: 'a1', studentId: 's1', classId: 'cls1', date: '2024-04-01', status: 'present', markedBy: 'u2' },
-      { id: 'a2', studentId: 's1', classId: 'cls1', date: '2024-04-02', status: 'present', markedBy: 'u2' },
-      { id: 'a3', studentId: 's1', classId: 'cls1', date: '2024-04-03', status: 'absent', markedBy: 'u2' },
-      { id: 'a4', studentId: 's1', classId: 'cls1', date: '2024-04-04', status: 'present', markedBy: 'u2' },
-      { id: 'a5', studentId: 's1', classId: 'cls1', date: '2024-04-05', status: 'late', markedBy: 'u2' },
-      { id: 'a6', studentId: 's2', classId: 'cls1', date: '2024-04-01', status: 'present', markedBy: 'u2' },
-      { id: 'a7', studentId: 's2', classId: 'cls1', date: '2024-04-02', status: 'absent', markedBy: 'u2' },
-      { id: 'a8', studentId: 's3', classId: 'cls2', date: '2024-04-01', status: 'present', markedBy: 'u3' },
-      { id: 'a9', studentId: 's4', classId: 'cls1', date: '2024-04-01', status: 'present', markedBy: 'u2' },
-      { id: 'a10', studentId: 's5', classId: 'cls3', date: '2024-04-01', status: 'present', markedBy: 'u4' },
+      { id: 'a1', studentId: 's1', classId: 'cls1', date: _dy+'-04-01', status: 'present', markedBy: 'u2' },
+      { id: 'a2', studentId: 's1', classId: 'cls1', date: _dy+'-04-02', status: 'present', markedBy: 'u2' },
+      { id: 'a3', studentId: 's1', classId: 'cls1', date: _dy+'-04-03', status: 'absent', markedBy: 'u2' },
+      { id: 'a4', studentId: 's1', classId: 'cls1', date: _dy+'-04-04', status: 'present', markedBy: 'u2' },
+      { id: 'a5', studentId: 's1', classId: 'cls1', date: _dy+'-04-05', status: 'late', markedBy: 'u2' },
+      { id: 'a6', studentId: 's2', classId: 'cls1', date: _dy+'-04-01', status: 'present', markedBy: 'u2' },
+      { id: 'a7', studentId: 's2', classId: 'cls1', date: _dy+'-04-02', status: 'absent', markedBy: 'u2' },
+      { id: 'a8', studentId: 's3', classId: 'cls2', date: _dy+'-04-01', status: 'present', markedBy: 'u3' },
+      { id: 'a9', studentId: 's4', classId: 'cls1', date: _dy+'-04-01', status: 'present', markedBy: 'u2' },
+      { id: 'a10', studentId: 's5', classId: 'cls3', date: _dy+'-04-01', status: 'present', markedBy: 'u4' },
     ],
     growth: [
-      { id: 'gr1', studentId: 's1', date: '2024-01-10', height: 142, weight: 36, bmi: 17.9, recordedBy: 'u2' },
-      { id: 'gr2', studentId: 's1', date: '2024-04-10', height: 143, weight: 37, bmi: 18.1, recordedBy: 'u2' },
-      { id: 'gr3', studentId: 's2', date: '2024-01-10', height: 115, weight: 22, bmi: 16.6, recordedBy: 'u2' },
-      { id: 'gr4', studentId: 's3', date: '2024-01-10', height: 155, weight: 45, bmi: 18.7, recordedBy: 'u3' },
-      { id: 'gr5', studentId: 's4', date: '2024-01-15', height: 138, weight: 34, bmi: 17.8, recordedBy: 'u2' },
-      { id: 'gr6', studentId: 's5', date: '2024-01-15', height: 126, weight: 27, bmi: 17.0, recordedBy: 'u4' },
+      { id: 'gr1', studentId: 's1', date: _dy+'-01-10', height: 142, weight: 36, bmi: 17.9, recordedBy: 'u2' },
+      { id: 'gr2', studentId: 's1', date: _dy+'-04-10', height: 143, weight: 37, bmi: 18.1, recordedBy: 'u2' },
+      { id: 'gr3', studentId: 's2', date: _dy+'-01-10', height: 115, weight: 22, bmi: 16.6, recordedBy: 'u2' },
+      { id: 'gr4', studentId: 's3', date: _dy+'-01-10', height: 155, weight: 45, bmi: 18.7, recordedBy: 'u3' },
+      { id: 'gr5', studentId: 's4', date: _dy+'-01-15', height: 138, weight: 34, bmi: 17.8, recordedBy: 'u2' },
+      { id: 'gr6', studentId: 's5', date: _dy+'-01-15', height: 126, weight: 27, bmi: 17.0, recordedBy: 'u4' },
     ],
     activities: [
       { id: 'act1', name: 'Football Team', classId: 'cls1', day: 'Monday', time: '3:00 PM', studentIds: ['s1', 's4'], instructor: 'Coach Wilson' },
@@ -165,7 +166,7 @@ const DB = (() => {
     ],
     syllabus: [
       {
-        id: 'syl1', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'Mathematics',
+        id: 'syl1', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics',
         topics: [
           { id: 't1', title: 'Fractions & Decimals', weeks: '1-3', status: 'completed', description: 'Understanding fractions, decimals and their operations' },
           { id: 't2', title: 'Geometry Basics', weeks: '4-6', status: 'completed', description: 'Shapes, angles, perimeter and area' },
@@ -174,7 +175,7 @@ const DB = (() => {
         ]
       },
       {
-        id: 'syl2', classId: 'cls1', term: 'Semester 1', year: '2024', subject: 'English',
+        id: 'syl2', classId: 'cls1', term: 'Semester 1', year: ''+_dy+'', subject: 'English',
         topics: [
           { id: 't5', title: 'Reading Comprehension', weeks: '1-4', status: 'completed', description: 'Passages, inference and vocabulary' },
           { id: 't6', title: 'Creative Writing', weeks: '5-8', status: 'in_progress', description: 'Story writing, descriptive writing and poetry' },
@@ -182,7 +183,7 @@ const DB = (() => {
         ]
       },
       {
-        id: 'syl3', classId: 'cls2', term: 'Semester 1', year: '2024', subject: 'Mathematics',
+        id: 'syl3', classId: 'cls2', term: 'Semester 1', year: ''+_dy+'', subject: 'Mathematics',
         topics: [
           { id: 't8', title: 'Ratios & Proportions', weeks: '1-3', status: 'completed', description: 'Ratios, rates and proportional reasoning' },
           { id: 't9', title: 'Linear Equations', weeks: '4-7', status: 'completed', description: 'Solving one and two-variable equations' },
@@ -191,24 +192,24 @@ const DB = (() => {
       }
     ],
     leaves: [
-      { id: 'l1', studentId: 's1', parentId: 'p1', fromDate: '2024-04-10', toDate: '2024-04-11', reason: 'Medical appointment - follow-up visit', status: 'approved', appliedOn: '2024-04-08', reviewedBy: 'u2', reviewNote: 'Approved. Get well soon!' },
-      { id: 'l2', studentId: 's3', parentId: 'p2', fromDate: '2024-04-15', toDate: '2024-04-15', reason: 'Family wedding ceremony', status: 'pending', appliedOn: '2024-04-12', reviewedBy: null, reviewNote: '' },
-      { id: 'l3', studentId: 's4', parentId: 'p3', fromDate: '2024-03-20', toDate: '2024-03-22', reason: 'Fever and cold', status: 'approved', appliedOn: '2024-03-19', reviewedBy: 'u2', reviewNote: 'Approved. Rest well.' },
+      { id: 'l1', studentId: 's1', parentId: 'p1', fromDate: _dy+'-04-10', toDate: _dy+'-04-11', reason: 'Medical appointment - follow-up visit', status: 'approved', appliedOn: _dy+'-04-08', reviewedBy: 'u2', reviewNote: 'Approved. Get well soon!' },
+      { id: 'l2', studentId: 's3', parentId: 'p2', fromDate: _dy+'-04-15', toDate: _dy+'-04-15', reason: 'Family wedding ceremony', status: 'pending', appliedOn: _dy+'-04-12', reviewedBy: null, reviewNote: '' },
+      { id: 'l3', studentId: 's4', parentId: 'p3', fromDate: _dy+'-03-20', toDate: _dy+'-03-22', reason: 'Fever and cold', status: 'approved', appliedOn: _dy+'-03-19', reviewedBy: 'u2', reviewNote: 'Approved. Rest well.' },
     ],
     announcements: [
-      { id: 'ann1', title: 'Parent-Teacher Meeting', body: 'The PTM is scheduled for April 20th, 2024 from 9 AM to 1 PM. All parents are requested to attend.', postedBy: 'u1', targetRole: 'all', date: '2024-04-05', classId: null },
-      { id: 'ann2', title: 'Sports Day Registration Open', body: 'Annual Sports Day is on May 5th. Register your child by April 25th with their class teacher.', postedBy: 'u2', targetRole: 'parent', date: '2024-04-10', classId: 'cls1' },
-      { id: 'ann3', title: 'Semester 2 Exam Schedule', body: 'Semester 2 examinations will begin from May 15th. Detailed schedule attached to your email.', postedBy: 'u1', targetRole: 'all', date: '2024-04-12', classId: null },
+      { id: 'ann1', title: 'Parent-Teacher Meeting', body: 'The PTM is scheduled for April 20th, 2024 from 9 AM to 1 PM. All parents are requested to attend.', postedBy: 'u1', targetRole: 'all', date: _dy+'-04-05', classId: null },
+      { id: 'ann2', title: 'Sports Day Registration Open', body: 'Annual Sports Day is on May 5th. Register your child by April 25th with their class teacher.', postedBy: 'u2', targetRole: 'parent', date: _dy+'-04-10', classId: 'cls1' },
+      { id: 'ann3', title: 'Semester 2 Exam Schedule', body: 'Semester 2 examinations will begin from May 15th. Detailed schedule attached to your email.', postedBy: 'u1', targetRole: 'all', date: _dy+'-04-12', classId: null },
     ],
     messages: [
-      { id: 'm1', from: 'p1', to: 'u2', studentId: 's1', text: 'Hello Mr. Carter, Emma was feeling unwell today. Will she miss the test tomorrow?', time: '2024-04-08 10:30', read: true, type: 'inapp' },
-      { id: 'm2', from: 'u2', to: 'p1', studentId: 's1', text: 'Dear Mr. Johnson, no worries. Emma can take the makeup test on Friday. Please ensure she rests well.', time: '2024-04-08 11:15', read: true, type: 'inapp' },
+      { id: 'm1', from: 'p1', to: 'u2', studentId: 's1', text: 'Hello Mr. Carter, Emma was feeling unwell today. Will she miss the test tomorrow?', time: _dy+'-04-08 10:30', read: true, type: 'inapp' },
+      { id: 'm2', from: 'u2', to: 'p1', studentId: 's1', text: 'Dear Mr. Johnson, no worries. Emma can take the makeup test on Friday. Please ensure she rests well.', time: _dy+'-04-08 11:15', read: true, type: 'inapp' },
     ],
     events: [
-      { id: 'ev1', title: 'Annual Sports Day', description: 'All students participate in sports activities and friendly competitions', date: '2024-05-10', time: '9:00 AM', classId: null, type: 'sports', createdBy: 'u1', createdAt: '2024-04-20T10:00:00' },
-      { id: 'ev2', title: 'Parent-Teacher Meeting', description: 'Discuss student progress and address parent queries', date: '2024-05-20', time: '9:00 AM', classId: null, type: 'meeting', createdBy: 'u1', createdAt: '2024-04-22T10:00:00' },
-      { id: 'ev3', title: 'Mathematics Olympiad', description: 'Annual math competition – Grade 5-A students only', date: '2024-05-15', time: '10:00 AM', classId: 'cls1', type: 'academic', createdBy: 'u2', createdAt: '2024-04-25T10:00:00' },
-      { id: 'ev4', title: 'Cultural Festival', description: 'Annual cultural event with performances and exhibitions by students', date: '2024-06-01', time: '3:00 PM', classId: null, type: 'cultural', createdBy: 'u1', createdAt: '2024-04-28T10:00:00' },
+      { id: 'ev1', title: 'Annual Sports Day', description: 'All students participate in sports activities and friendly competitions', date: _dy+'-05-10', time: '9:00 AM', classId: null, type: 'sports', createdBy: 'u1', createdAt: _dy+'-04-20T10:00:00' },
+      { id: 'ev2', title: 'Parent-Teacher Meeting', description: 'Discuss student progress and address parent queries', date: _dy+'-05-20', time: '9:00 AM', classId: null, type: 'meeting', createdBy: 'u1', createdAt: _dy+'-04-22T10:00:00' },
+      { id: 'ev3', title: 'Mathematics Olympiad', description: 'Annual math competition – Grade 5-A students only', date: _dy+'-05-15', time: '10:00 AM', classId: 'cls1', type: 'academic', createdBy: 'u2', createdAt: _dy+'-04-25T10:00:00' },
+      { id: 'ev4', title: 'Cultural Festival', description: 'Annual cultural event with performances and exhibitions by students', date: _dy+'-06-01', time: '3:00 PM', classId: null, type: 'cultural', createdBy: 'u1', createdAt: _dy+'-04-28T10:00:00' },
     ],
     activityLog: [],
     purchaseOrders: [],
@@ -264,36 +265,36 @@ const DB = (() => {
       { id: 'ltc_earned', name: 'Earned Leave', code: 'EL', totalDays: 15, carryForward: true, paid: true, active: true }
     ],
     gallery: [
-      { id: 'gal1', title: 'Sports Day 2024', description: 'Annual sports day activities with fun races and games', imageData: '', date: '2024-04-10', classId: 'cls1', studentIds: ['s1', 's4'], uploadedBy: 'u2', createdAt: '2024-04-10T09:00:00' },
-      { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: '2024-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: '2024-04-12T14:00:00' },
-      { id: 'gal3', title: 'Science Lab Day', description: 'Students explored chemistry and physics experiments', imageData: '', date: '2024-04-15', classId: 'cls2', studentIds: ['s3'], uploadedBy: 'u3', createdAt: '2024-04-15T11:00:00' },
-      { id: 'gal4', title: 'School Field Trip', description: 'A fun day out visiting the nature museum', imageData: '', date: '2024-04-18', classId: 'cls1', studentIds: ['s1', 's2', 's4'], uploadedBy: 'u2', createdAt: '2024-04-18T08:30:00' }
+      { id: 'gal1', title: 'Sports Day '+_dy+'', description: 'Annual sports day activities with fun races and games', imageData: '', date: _dy+'-04-10', classId: 'cls1', studentIds: ['s1', 's4'], uploadedBy: 'u2', createdAt: _dy+'-04-10T09:00:00' },
+      { id: 'gal2', title: 'Art Club Exhibition', description: 'Beautiful artwork made by our talented students', imageData: '', date: _dy+'-04-12', classId: null, studentIds: ['s1', 's5'], uploadedBy: 'u1', createdAt: _dy+'-04-12T14:00:00' },
+      { id: 'gal3', title: 'Science Lab Day', description: 'Students explored chemistry and physics experiments', imageData: '', date: _dy+'-04-15', classId: 'cls2', studentIds: ['s3'], uploadedBy: 'u3', createdAt: _dy+'-04-15T11:00:00' },
+      { id: 'gal4', title: 'School Field Trip', description: 'A fun day out visiting the nature museum', imageData: '', date: _dy+'-04-18', classId: 'cls1', studentIds: ['s1', 's2', 's4'], uploadedBy: 'u2', createdAt: _dy+'-04-18T08:30:00' }
     ],
     feeRecords: [
-      { id: 'fee1', studentId: 's1', invoiceNo: 'INV-2024-001', term: 'Term 1', amount: 15000, dueDate: '2024-02-15', paidDate: '2024-02-12', status: 'Paid', createdAt: '2024-01-20' },
-      { id: 'fee2', studentId: 's1', invoiceNo: 'INV-2024-002', term: 'Term 2', amount: 15000, dueDate: '2024-05-15', paidDate: null, status: 'Pending', createdAt: '2024-04-01' },
-      { id: 'fee3', studentId: 's2', invoiceNo: 'INV-2024-003', term: 'Term 1', amount: 15000, dueDate: '2024-02-15', paidDate: '2024-02-14', status: 'Paid', createdAt: '2024-01-20' },
-      { id: 'fee4', studentId: 's2', invoiceNo: 'INV-2024-004', term: 'Term 2', amount: 15000, dueDate: '2024-04-01', paidDate: null, status: 'Overdue', createdAt: '2024-03-01' },
-      { id: 'fee5', studentId: 's3', invoiceNo: 'INV-2024-005', term: 'Term 1', amount: 18000, dueDate: '2024-02-15', paidDate: '2024-02-10', status: 'Paid', createdAt: '2024-01-20' },
-      { id: 'fee6', studentId: 's4', invoiceNo: 'INV-2024-006', term: 'Term 1', amount: 15000, dueDate: '2024-02-20', paidDate: '2024-02-18', status: 'Paid', createdAt: '2024-01-25' },
-      { id: 'fee7', studentId: 's5', invoiceNo: 'INV-2024-007', term: 'Term 1', amount: 12000, dueDate: '2024-02-20', paidDate: null, status: 'Overdue', createdAt: '2024-01-25' }
+      { id: 'fee1', studentId: 's1', invoiceNo: 'INV-'+_dy+'-001', term: 'Term 1', amount: 15000, dueDate: _dy+'-02-15', paidDate: _dy+'-02-12', status: 'Paid', createdAt: _dy+'-01-20' },
+      { id: 'fee2', studentId: 's1', invoiceNo: 'INV-'+_dy+'-002', term: 'Term 2', amount: 15000, dueDate: _dy+'-05-15', paidDate: null, status: 'Pending', createdAt: _dy+'-04-01' },
+      { id: 'fee3', studentId: 's2', invoiceNo: 'INV-'+_dy+'-003', term: 'Term 1', amount: 15000, dueDate: _dy+'-02-15', paidDate: _dy+'-02-14', status: 'Paid', createdAt: _dy+'-01-20' },
+      { id: 'fee4', studentId: 's2', invoiceNo: 'INV-'+_dy+'-004', term: 'Term 2', amount: 15000, dueDate: _dy+'-04-01', paidDate: null, status: 'Overdue', createdAt: _dy+'-03-01' },
+      { id: 'fee5', studentId: 's3', invoiceNo: 'INV-'+_dy+'-005', term: 'Term 1', amount: 18000, dueDate: _dy+'-02-15', paidDate: _dy+'-02-10', status: 'Paid', createdAt: _dy+'-01-20' },
+      { id: 'fee6', studentId: 's4', invoiceNo: 'INV-'+_dy+'-006', term: 'Term 1', amount: 15000, dueDate: _dy+'-02-20', paidDate: _dy+'-02-18', status: 'Paid', createdAt: _dy+'-01-25' },
+      { id: 'fee7', studentId: 's5', invoiceNo: 'INV-'+_dy+'-007', term: 'Term 1', amount: 12000, dueDate: _dy+'-02-20', paidDate: null, status: 'Overdue', createdAt: _dy+'-01-25' }
     ],
     assignments: [
-      { id: 'asgn1', classId: 'cls1', subject: 'Mathematics', title: 'Fractions Worksheet', description: 'Complete exercises 1-20 from Chapter 3 on fractions and decimals.', dueDate: '2024-04-25', status: 'Pending', createdAt: '2024-04-18' },
-      { id: 'asgn2', classId: 'cls1', subject: 'English', title: 'Creative Writing Essay', description: 'Write a 300-word essay on "My Favourite Season". Use descriptive language.', dueDate: '2024-04-22', status: 'Submitted', createdAt: '2024-04-15' },
-      { id: 'asgn3', classId: 'cls1', subject: 'Science', title: 'Plant Growth Observation', description: 'Observe and record your plant growth diary for 5 days with drawings.', dueDate: '2024-04-10', status: 'Overdue', createdAt: '2024-04-01' },
-      { id: 'asgn4', classId: 'cls2', subject: 'Mathematics', title: 'Algebra Problem Set', description: 'Solve all problems from Chapter 7: Linear Equations exercises A and B.', dueDate: '2024-04-28', status: 'Pending', createdAt: '2024-04-20' },
-      { id: 'asgn5', classId: 'cls2', subject: 'Science', title: 'Lab Report: Density', description: 'Write lab report for density experiment conducted in class. Include observations and conclusions.', dueDate: '2024-04-20', status: 'Submitted', createdAt: '2024-04-12' },
-      { id: 'asgn6', classId: 'cls3', subject: 'Art', title: 'Landscape Painting', description: 'Create a landscape painting using watercolours. Theme: Nature in Monsoon.', dueDate: '2024-04-30', status: 'Pending', createdAt: '2024-04-22' }
+      { id: 'asgn1', classId: 'cls1', subject: 'Mathematics', title: 'Fractions Worksheet', description: 'Complete exercises 1-20 from Chapter 3 on fractions and decimals.', dueDate: _dy+'-04-25', status: 'Pending', createdAt: _dy+'-04-18' },
+      { id: 'asgn2', classId: 'cls1', subject: 'English', title: 'Creative Writing Essay', description: 'Write a 300-word essay on "My Favourite Season". Use descriptive language.', dueDate: _dy+'-04-22', status: 'Submitted', createdAt: _dy+'-04-15' },
+      { id: 'asgn3', classId: 'cls1', subject: 'Science', title: 'Plant Growth Observation', description: 'Observe and record your plant growth diary for 5 days with drawings.', dueDate: _dy+'-04-10', status: 'Overdue', createdAt: _dy+'-04-01' },
+      { id: 'asgn4', classId: 'cls2', subject: 'Mathematics', title: 'Algebra Problem Set', description: 'Solve all problems from Chapter 7: Linear Equations exercises A and B.', dueDate: _dy+'-04-28', status: 'Pending', createdAt: _dy+'-04-20' },
+      { id: 'asgn5', classId: 'cls2', subject: 'Science', title: 'Lab Report: Density', description: 'Write lab report for density experiment conducted in class. Include observations and conclusions.', dueDate: _dy+'-04-20', status: 'Submitted', createdAt: _dy+'-04-12' },
+      { id: 'asgn6', classId: 'cls3', subject: 'Art', title: 'Landscape Painting', description: 'Create a landscape painting using watercolours. Theme: Nature in Monsoon.', dueDate: _dy+'-04-30', status: 'Pending', createdAt: _dy+'-04-22' }
     ],
     achievements: [
-      { id: 'ach1', studentId: 's1', title: 'Mathematics Topper', description: 'Scored highest marks in the Mathematics unit test with 98/100.', date: '2024-03-20', category: 'Academic', icon: 'fa-trophy' },
-      { id: 'ach2', studentId: 's1', title: 'Best Athlete', description: 'Won gold medal in 100m sprint at Annual Sports Day.', date: '2024-05-10', category: 'Sports', icon: 'fa-medal' },
-      { id: 'ach3', studentId: 's1', title: 'Cultural Performance Star', description: 'Outstanding solo dance performance at the Annual Cultural Festival.', date: '2024-06-01', category: 'Cultural', icon: 'fa-star' },
-      { id: 'ach4', studentId: 's2', title: 'Most Improved Student', description: 'Showed remarkable improvement in English and Mathematics this semester.', date: '2024-04-01', category: 'Academic', icon: 'fa-chart-line' },
-      { id: 'ach5', studentId: 's3', title: 'Science Olympiad Winner', description: 'First place in the Inter-school Science Olympiad.', date: '2024-03-15', category: 'Academic', icon: 'fa-flask' },
-      { id: 'ach6', studentId: 's4', title: 'Helpful Classmate Award', description: 'Recognised by teachers for always helping classmates and maintaining positive attitude.', date: '2024-04-05', category: 'Behaviour', icon: 'fa-heart' },
-      { id: 'ach7', studentId: 's5', title: 'Art Exhibition Winner', description: 'First prize in school-level painting competition.', date: '2024-04-12', category: 'Cultural', icon: 'fa-palette' }
+      { id: 'ach1', studentId: 's1', title: 'Mathematics Topper', description: 'Scored highest marks in the Mathematics unit test with 98/100.', date: _dy+'-03-20', category: 'Academic', icon: 'fa-trophy' },
+      { id: 'ach2', studentId: 's1', title: 'Best Athlete', description: 'Won gold medal in 100m sprint at Annual Sports Day.', date: _dy+'-05-10', category: 'Sports', icon: 'fa-medal' },
+      { id: 'ach3', studentId: 's1', title: 'Cultural Performance Star', description: 'Outstanding solo dance performance at the Annual Cultural Festival.', date: _dy+'-06-01', category: 'Cultural', icon: 'fa-star' },
+      { id: 'ach4', studentId: 's2', title: 'Most Improved Student', description: 'Showed remarkable improvement in English and Mathematics this semester.', date: _dy+'-04-01', category: 'Academic', icon: 'fa-chart-line' },
+      { id: 'ach5', studentId: 's3', title: 'Science Olympiad Winner', description: 'First place in the Inter-school Science Olympiad.', date: _dy+'-03-15', category: 'Academic', icon: 'fa-flask' },
+      { id: 'ach6', studentId: 's4', title: 'Helpful Classmate Award', description: 'Recognised by teachers for always helping classmates and maintaining positive attitude.', date: _dy+'-04-05', category: 'Behaviour', icon: 'fa-heart' },
+      { id: 'ach7', studentId: 's5', title: 'Art Exhibition Winner', description: 'First prize in school-level painting competition.', date: _dy+'-04-12', category: 'Cultural', icon: 'fa-palette' }
     ],
     exams: [
       { id: 'ex1', classId: 'cls1', examName: 'Mid-Term Examination', subject: 'Mathematics', date: '2026-07-10', time: '09:00 AM', duration: '2 hours', venue: 'Room 101' },
@@ -306,16 +307,16 @@ const DB = (() => {
     ],
     healthRecords: [
       { id: 'hr1', studentId: 's1', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-06-15', dueDate: null, status: 'Completed', notes: 'No adverse reactions.' },
-      { id: 'hr2', studentId: 's1', type: 'vaccination', vaccine: 'Typhoid', date: '2024-01-10', dueDate: '2025-01-10', status: 'Completed', notes: '' },
-      { id: 'hr3', studentId: 's1', type: 'vaccination', vaccine: 'Hepatitis A', date: null, dueDate: '2024-08-01', status: 'Due Soon', notes: '' },
+      { id: 'hr2', studentId: 's1', type: 'vaccination', vaccine: 'Typhoid', date: _dy+'-01-10', dueDate: '2025-01-10', status: 'Completed', notes: '' },
+      { id: 'hr3', studentId: 's1', type: 'vaccination', vaccine: 'Hepatitis A', date: null, dueDate: _dy+'-08-01', status: 'Due Soon', notes: '' },
       { id: 'hr4', studentId: 's1', type: 'allergy', name: 'Peanuts', severity: 'High', notes: 'Carries EpiPen. Inform canteen staff.' },
       { id: 'hr5', studentId: 's1', type: 'allergy', name: 'Dust', severity: 'Low', notes: 'Mild allergic rhinitis.' },
-      { id: 'hr6', studentId: 's1', type: 'note', title: 'Asthma', details: 'Mild asthma. Has inhaler in school bag. Avoid excessive running in cold weather.', recordedOn: '2024-01-15' },
+      { id: 'hr6', studentId: 's1', type: 'note', title: 'Asthma', details: 'Mild asthma. Has inhaler in school bag. Avoid excessive running in cold weather.', recordedOn: _dy+'-01-15' },
       { id: 'hr7', studentId: 's2', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-06-15', dueDate: null, status: 'Completed', notes: '' },
-      { id: 'hr8', studentId: 's3', type: 'vaccination', vaccine: 'Typhoid', date: '2023-12-01', dueDate: '2024-12-01', status: 'Completed', notes: '' },
+      { id: 'hr8', studentId: 's3', type: 'vaccination', vaccine: 'Typhoid', date: '2023-12-01', dueDate: _dy+'-12-01', status: 'Completed', notes: '' },
       { id: 'hr9', studentId: 's3', type: 'allergy', name: 'Shellfish', severity: 'Medium', notes: 'Avoid all shellfish in school meals.' },
       { id: 'hr10', studentId: 's4', type: 'vaccination', vaccine: 'MMR Booster', date: '2023-08-20', dueDate: null, status: 'Completed', notes: '' },
-      { id: 'hr11', studentId: 's5', type: 'vaccination', vaccine: 'Typhoid', date: '2024-02-14', dueDate: '2025-02-14', status: 'Completed', notes: '' }
+      { id: 'hr11', studentId: 's5', type: 'vaccination', vaccine: 'Typhoid', date: _dy+'-02-14', dueDate: '2025-02-14', status: 'Completed', notes: '' }
     ],
     ptmSlots: [
       { id: 'ptm1', classId: 'cls1', date: '2026-07-20', time: '09:00 AM', teacherName: 'Mr. James Carter', duration: '15 min', status: 'Available', bookedBy: null },
@@ -328,13 +329,13 @@ const DB = (() => {
     ],
     grievances: [],
     conductRecords: [
-      { id: 'con1', studentId: 's1', date: '2024-04-02', type: 'Positive', category: 'Helpfulness', description: 'Helped a new classmate settle in on their first day. Very welcoming.', recordedBy: 'Mr. James Carter' },
-      { id: 'con2', studentId: 's1', date: '2024-04-05', type: 'Positive', category: 'Academic', description: 'Voluntarily helped slower students during group assignment.', recordedBy: 'Mr. James Carter' },
-      { id: 'con3', studentId: 's1', date: '2024-04-10', type: 'Negative', category: 'Discipline', description: 'Was talking during exam preparation period. Warning issued.', recordedBy: 'Mr. James Carter' },
-      { id: 'con4', studentId: 's2', date: '2024-04-03', type: 'Positive', category: 'Sports', description: 'Showed great sportsmanship during football practice.', recordedBy: 'Mr. James Carter' },
-      { id: 'con5', studentId: 's3', date: '2024-04-04', type: 'Positive', category: 'Academic', description: 'Submitted an exemplary science project ahead of deadline.', recordedBy: 'Ms. Emily Rodriguez' },
-      { id: 'con6', studentId: 's4', date: '2024-04-06', type: 'Neutral', category: 'General', description: 'Attended counsellor session for time management skills.', recordedBy: 'Mr. James Carter' },
-      { id: 'con7', studentId: 's5', date: '2024-04-08', type: 'Positive', category: 'Arts', description: 'Won first prize in school painting competition.', recordedBy: 'Ms. Emily Rodriguez' }
+      { id: 'con1', studentId: 's1', date: _dy+'-04-02', type: 'Positive', category: 'Helpfulness', description: 'Helped a new classmate settle in on their first day. Very welcoming.', recordedBy: 'Mr. James Carter' },
+      { id: 'con2', studentId: 's1', date: _dy+'-04-05', type: 'Positive', category: 'Academic', description: 'Voluntarily helped slower students during group assignment.', recordedBy: 'Mr. James Carter' },
+      { id: 'con3', studentId: 's1', date: _dy+'-04-10', type: 'Negative', category: 'Discipline', description: 'Was talking during exam preparation period. Warning issued.', recordedBy: 'Mr. James Carter' },
+      { id: 'con4', studentId: 's2', date: _dy+'-04-03', type: 'Positive', category: 'Sports', description: 'Showed great sportsmanship during football practice.', recordedBy: 'Mr. James Carter' },
+      { id: 'con5', studentId: 's3', date: _dy+'-04-04', type: 'Positive', category: 'Academic', description: 'Submitted an exemplary science project ahead of deadline.', recordedBy: 'Ms. Emily Rodriguez' },
+      { id: 'con6', studentId: 's4', date: _dy+'-04-06', type: 'Neutral', category: 'General', description: 'Attended counsellor session for time management skills.', recordedBy: 'Mr. James Carter' },
+      { id: 'con7', studentId: 's5', date: _dy+'-04-08', type: 'Positive', category: 'Arts', description: 'Won first prize in school painting competition.', recordedBy: 'Ms. Emily Rodriguez' }
     ]
   };
 

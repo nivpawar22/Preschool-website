@@ -1431,14 +1431,14 @@ function renderParentHolidays() {
   const today = new Date().toISOString().split('T')[0];
   const events = DB.getEvents(child ? child.classId : null);
 
-  // Group holidays by month
+  // Only show today's and upcoming holidays/events — no past items
   const byMonth = {};
-  holidays.forEach(function(h) {
+  holidays.filter(function(h){ return (h.date||'') >= today; }).forEach(function(h) {
     const m = h.date.slice(0, 7);
     if (!byMonth[m]) byMonth[m] = [];
     byMonth[m].push({ ...h, _type: 'holiday' });
   });
-  events.forEach(function(ev) {
+  events.filter(function(ev){ return (ev.date||'') >= today; }).forEach(function(ev) {
     const m = ev.date.slice(0, 7);
     if (!byMonth[m]) byMonth[m] = [];
     byMonth[m].push({ ...ev, _type: 'event' });
@@ -1470,12 +1470,12 @@ function renderParentHolidays() {
       <div class="card" style="margin-bottom:16px">
         <div class="card-title" style="margin-bottom:14px"><i class="fas fa-calendar" style="color:#1AA6CA"></i> ${monthLabel}</div>
         ${items.map(function(item) {
-          const isPast = (item.date || '') < today;
+          const isToday = (item.date || '') === today;
           const d = new Date(item.date);
           const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
           if (item._type === 'holiday') {
             const color = typeColors[item.type] || '#6B7A9D';
-            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9;opacity:${isPast?0.5:1}">
+            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9">
               <div style="text-align:center;min-width:48px;background:${color}15;border-radius:10px;padding:6px">
                 <div style="font-size:18px;font-weight:900;color:${color}">${d.getDate()}</div>
                 <div style="font-size:10px;color:#6B7A9D;font-weight:600">${dayName}</div>
@@ -1484,11 +1484,11 @@ function renderParentHolidays() {
                 <div style="font-weight:700;font-size:14px">${item.name}</div>
                 <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${color}20;color:${color}">${item.type}</span>
               </div>
-              ${!isPast ? '<span class="badge badge-green">Upcoming</span>' : ''}
+              ${isToday ? '<span class="badge badge-yellow">Today</span>' : '<span class="badge badge-green">Upcoming</span>'}
             </div>`;
           } else {
             const color = evColors[item.type] || '#1AA6CA';
-            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9;opacity:${isPast?0.5:1}">
+            return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9">
               <div style="text-align:center;min-width:48px;background:${color}15;border-radius:10px;padding:6px">
                 <div style="font-size:18px;font-weight:900;color:${color}">${d.getDate()}</div>
                 <div style="font-size:10px;color:#6B7A9D;font-weight:600">${dayName}</div>
@@ -1497,7 +1497,7 @@ function renderParentHolidays() {
                 <div style="font-weight:700;font-size:14px">${item.title}</div>
                 <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${color}20;color:${color};text-transform:capitalize">${item.type} Event</span>
               </div>
-              ${!isPast ? '<span class="badge badge-blue">Event</span>' : ''}
+              ${isToday ? '<span class="badge badge-yellow">Today</span>' : '<span class="badge badge-blue">Upcoming</span>'}
             </div>`;
           }
         }).join('')}
@@ -1848,9 +1848,11 @@ function renderParentExams() {
   const child = getSelectedChild();
   if (!child) { renderParentHome(); return; }
 
-  const exams = DB.getExams(child.classId);
+  const allExams = DB.getExams(child.classId);
   const today = new Date().toISOString().split('T')[0];
   const in7days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  // Only show upcoming and today's exams
+  const exams = allExams.filter(function(e){ return (e.date||'') >= today; });
 
   const content = `
     ${renderChildPill(child)}
@@ -1868,17 +1870,17 @@ function renderParentExams() {
             ${exams.map(function(e) {
               const d = new Date(e.date);
               const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
-              const isUpcoming = e.date >= today && e.date <= in7days;
-              const isPast = e.date < today;
-              return `<tr style="${isPast ? 'opacity:0.5' : ''}">
+              const isSoon = e.date <= in7days;
+              const isToday = e.date === today;
+              return `<tr>
                 <td><strong>${e.examName}</strong></td>
                 <td>${e.subject}</td>
-                <td style="font-weight:700;color:${e.date < today ? '#6B7A9D' : '#0F1E3D'}">${formatDate(e.date)}</td>
+                <td style="font-weight:700;color:#0F1E3D">${formatDate(e.date)}</td>
                 <td style="color:#6B7A9D">${dayName}</td>
                 <td>${e.time}</td>
                 <td>${e.duration}</td>
                 <td>${e.venue}</td>
-                <td>${isUpcoming ? '<span class="badge badge-yellow"><i class="fas fa-bell"></i> Soon</span>' : (e.date >= today ? '' : '<span class="badge badge-gray">Done</span>')}</td>
+                <td>${isToday ? '<span class="badge badge-green">Today</span>' : isSoon ? '<span class="badge badge-yellow"><i class="fas fa-bell"></i> Soon</span>' : ''}</td>
               </tr>`;
             }).join('')}
           </tbody>

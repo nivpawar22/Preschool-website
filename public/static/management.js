@@ -29,6 +29,7 @@ function renderManagement() {
       { id: 'receipts', label: 'Receipts', icon: 'fa-receipt' },
       { id: 'adm-reports', label: 'Reports', icon: 'fa-chart-bar' },
       { id: 'letterhead', label: 'Letter Head', icon: 'fa-file-alt' },
+      { id: 'documents', label: 'Documents', icon: 'fa-file-alt' },
     ]},
     { label: 'Student Portal', color: '#10b981', tabs: [
       { id: 'exam-manager', label: 'Exam Schedule', icon: 'fa-clipboard-list' },
@@ -55,6 +56,7 @@ function renderManagement() {
     receipts: renderReceiptsTab(),
     'adm-reports': renderAdmReportsTab(),
     letterhead: renderLetterheadTab(),
+    documents: renderDocumentsTab(),
     'exam-manager': renderExamManagerTab(),
     'meal-manager': renderMealManagerTab(),
     'fee-manager': renderFeeManagerTab(),
@@ -88,6 +90,7 @@ function renderManagement() {
   if (mgmtTab === 'feeconfig') setTimeout(loadFeeConfig, 50);
   if (mgmtTab === 'adm-reports') setTimeout(loadAdmReports, 50);
   if (mgmtTab === 'letterhead') setTimeout(loadLetterheadConfig, 50);
+  if (mgmtTab === 'documents') setTimeout(loadDocumentsTab, 50);
   if (mgmtTab === 'adm-mgmt') setTimeout(loadAdmissionsManagement, 50);
   if (mgmtTab === 'receipts') setTimeout(loadReceiptsManagement, 50);
 }
@@ -2982,6 +2985,547 @@ window._updateGrievanceStatus = function(id, status) {
 };
 
 // ============================================================
+// DOCUMENTS TAB
+// ============================================================
+
+if (typeof window._docSubTab === 'undefined') window._docSubTab = 'students';
+if (typeof window._docClassId === 'undefined') window._docClassId = '';
+if (typeof window._docStudentId === 'undefined') window._docStudentId = '';
+if (typeof window._docTeacherId === 'undefined') window._docTeacherId = '';
+
+function renderDocumentsTab() {
+  return '<div id="documents-wrap"><div style="text-align:center;padding:32px;color:#6B7A9D"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>';
+}
+
+function loadDocumentsTab() {
+  var wrap = document.getElementById('documents-wrap');
+  if (!wrap) return;
+  var subTab = window._docSubTab || 'students';
+
+  var subTabBar = '<div style="display:flex;gap:8px;margin-bottom:20px">' +
+    ['students','teachers'].map(function(st) {
+      var labels = { students: '<i class="fas fa-user-graduate"></i> Student Documents', teachers: '<i class="fas fa-chalkboard-teacher"></i> Teacher Documents' };
+      var active = subTab === st;
+      return '<button class="btn' + (active ? ' btn-primary' : ' btn-secondary') + '" onclick="window._docSubTab=\'' + st + '\';loadDocumentsTab()">' + labels[st] + '</button>';
+    }).join('') +
+  '</div>';
+
+  var body = '';
+  if (subTab === 'students') {
+    body = _renderStudentDocsSubTab();
+  } else {
+    body = _renderTeacherDocsSubTab();
+  }
+
+  wrap.innerHTML = '<div class="card"><div class="card-header"><div class="card-title"><i class="fas fa-file-alt" style="color:#C4893A"></i> Documents</div></div><div style="padding:16px">' + subTabBar + body + '</div></div>';
+}
+
+function _renderStudentDocsSubTab() {
+  var classes = DB.get().classes || [];
+  var selClass = window._docClassId || '';
+  var selStudent = window._docStudentId || '';
+  var students = selClass ? DB.getStudents(selClass) : [];
+  var student = selStudent ? DB.getStudent(selStudent) : null;
+  var customization = student ? DB.getDocCustomization(selStudent) : {};
+
+  var clsOpts = '<option value="">-- Select Class --</option>' + classes.map(function(c) {
+    return '<option value="' + c.id + '"' + (selClass === c.id ? ' selected' : '') + '>' + _mgEsc(c.name) + '</option>';
+  }).join('');
+
+  var stuOpts = '<option value="">-- Select Student --</option>' + students.map(function(s) {
+    return '<option value="' + s.id + '"' + (selStudent === s.id ? ' selected' : '') + '>' + _mgEsc(s.name) + ' (' + _mgEsc(s.rollNo) + ')</option>';
+  }).join('');
+
+  var filterRow = '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;padding:14px;background:#F8F9FB;border-radius:12px;border:1px solid #EDF0F7">' +
+    '<div><label class="form-label">Class</label><select class="form-control" onchange="window._docClassId=this.value;window._docStudentId=\'\';loadDocumentsTab()">' + clsOpts + '</select></div>' +
+    (selClass ? '<div><label class="form-label">Student</label><select class="form-control" onchange="window._docStudentId=this.value;loadDocumentsTab()">' + stuOpts + '</select></div>' : '') +
+  '</div>';
+
+  var cardsHtml = '';
+  if (student) {
+    var cls = DB.getClass(student.classId);
+    var docTypes = [
+      { key: 'admit', title: 'Admit Card', icon: 'fa-id-card', desc: 'Exam admit card with schedule and student details.' },
+      { key: 'bonafide', title: 'Bonafide Certificate', icon: 'fa-certificate', desc: 'Certifies that the student is enrolled in this institution.' },
+      { key: 'character', title: 'Character Certificate', icon: 'fa-award', desc: 'Certifies good character and conduct of the student.' },
+    ];
+    cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">' +
+      docTypes.map(function(dt) {
+        return '<div style="border:1.5px solid #DCE1EF;border-radius:14px;padding:18px;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.04)">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
+            '<div style="width:44px;height:44px;border-radius:12px;background:#0F205015;display:flex;align-items:center;justify-content:center">' +
+              '<i class="fas ' + dt.icon + '" style="color:#0F2050;font-size:20px"></i>' +
+            '</div>' +
+            '<div><div style="font-weight:700;color:#0F2050;font-size:15px">' + dt.title + '</div><div style="font-size:11px;color:#6B7A9D;margin-top:2px">' + dt.desc + '</div></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="btn btn-secondary btn-sm" onclick="_openStudentDocModal(\'' + selStudent + '\',\'' + dt.key + '\')"><i class="fas fa-edit"></i> Edit &amp; Preview</button>' +
+            '<button class="btn btn-primary btn-sm" onclick="_printStudentDocDirect(\'' + selStudent + '\',\'' + dt.key + '\')"><i class="fas fa-print"></i> Print / Export PDF</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  return filterRow + cardsHtml;
+}
+
+function _renderTeacherDocsSubTab() {
+  var teachers = DB.getSubAdmins();
+  var selTeacher = window._docTeacherId || '';
+  var teacher = selTeacher ? DB.getUser(selTeacher) : null;
+
+  var tchOpts = '<option value="">-- Select Teacher --</option>' + teachers.map(function(t) {
+    return '<option value="' + t.id + '"' + (selTeacher === t.id ? ' selected' : '') + '>' + _mgEsc(t.name) + '</option>';
+  }).join('');
+
+  var filterRow = '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;padding:14px;background:#F8F9FB;border-radius:12px;border:1px solid #EDF0F7">' +
+    '<div><label class="form-label">Teacher</label><select class="form-control" onchange="window._docTeacherId=this.value;loadDocumentsTab()">' + tchOpts + '</select></div>' +
+  '</div>';
+
+  var cardsHtml = '';
+  if (teacher) {
+    var docTypes = [
+      { key: 'joining', title: 'Joining / Appointment Letter', icon: 'fa-user-check', desc: 'Formal appointment confirmation letter.' },
+      { key: 'offer', title: 'Offer Letter', icon: 'fa-envelope-open-text', desc: 'Pre-joining offer with CTC and terms.' },
+      { key: 'experience', title: 'Experience Letter', icon: 'fa-certificate', desc: 'Certifies tenure and experience.' },
+      { key: 'increment', title: 'Increment Letter', icon: 'fa-chart-line', desc: 'Salary revision / increment notification.' },
+      { key: 'promotion', title: 'Promotion Letter', icon: 'fa-arrow-up', desc: 'Promotion to new designation.' },
+      { key: 'relieving', title: 'Relieving Letter', icon: 'fa-sign-out-alt', desc: 'Relieving from duties on last working day.' },
+      { key: 'salary-cert', title: 'Salary Certificate', icon: 'fa-rupee-sign', desc: 'Monthly salary certificate for bank/visa.' },
+      { key: 'noc', title: 'NOC (No Objection Certificate)', icon: 'fa-check-square', desc: 'No objection for travel, education, or other purposes.' },
+    ];
+    cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">' +
+      docTypes.map(function(dt) {
+        return '<div style="border:1.5px solid #DCE1EF;border-radius:14px;padding:18px;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.04)">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
+            '<div style="width:44px;height:44px;border-radius:12px;background:#C4893A15;display:flex;align-items:center;justify-content:center">' +
+              '<i class="fas ' + dt.icon + '" style="color:#C4893A;font-size:20px"></i>' +
+            '</div>' +
+            '<div><div style="font-weight:700;color:#0F2050;font-size:14px">' + dt.title + '</div><div style="font-size:11px;color:#6B7A9D;margin-top:2px">' + dt.desc + '</div></div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="btn btn-secondary btn-sm" onclick="_openTeacherDocModal(\'' + selTeacher + '\',\'' + dt.key + '\')"><i class="fas fa-edit"></i> Customize &amp; Generate</button>' +
+            '<button class="btn btn-primary btn-sm" onclick="_printTeacherDocDirect(\'' + selTeacher + '\',\'' + dt.key + '\')"><i class="fas fa-print"></i> Print / Export PDF</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+
+  return filterRow + cardsHtml;
+}
+
+// ---- Shared letterhead builder ----
+function buildDocLetterhead(meta) {
+  var logo = meta.schoolLogo || '/static/school-logo.png';
+  var name = meta.schoolName || 'SuperKids India Preschool';
+  var addr = (meta.schoolAddress || '').replace(/\n/g, ' | ');
+  var phone = meta.schoolPhone || '';
+  var email = meta.schoolEmail || '';
+  var website = meta.schoolWebsite || '';
+  var contact = [phone, email, website].filter(Boolean).join(' | ');
+  return '<div style="border:2px solid #0F2050;margin:8px;padding:0">' +
+    '<div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:#fff">' +
+      '<img src="' + logo + '" style="width:70px;height:70px;object-fit:contain;border:2px solid #C4893A;border-radius:50%;flex-shrink:0" onerror="this.style.background=\'#0F2050\'"/>' +
+      '<div style="flex:1;text-align:center">' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050;letter-spacing:0.5px">' + name + '</div>' +
+        (addr ? '<div style="font-size:11px;color:#475569;margin-top:3px">' + addr + '</div>' : '') +
+        (contact ? '<div style="font-size:10px;color:#6B7A9D;margin-top:2px">' + contact + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="height:3px;background:#C4893A"></div>' +
+    '<div style="height:1px;background:#0F2050"></div>' +
+  '</div>';
+}
+
+// ---- Student doc modal ----
+window._openStudentDocModal = function(studentId, docKey) {
+  var student = DB.getStudent(studentId);
+  if (!student) return;
+  var cust = DB.getDocCustomization(studentId);
+  var titles = { admit: 'Admit Card', bonafide: 'Bonafide Certificate', character: 'Character Certificate' };
+
+  var fields = '';
+  if (docKey === 'admit') {
+    fields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Academic Year</label><input class="form-control" id="dcust-year" value="' + _mgEsc(cust.admitYear || (getAcademicYear ? getAcademicYear() : '2025-26')) + '"/></div>' +
+      '<div class="form-group"><label class="form-label">Custom Note</label><input class="form-control" id="dcust-note" value="' + _mgEsc(cust.admitNote || '') + '" placeholder="Optional note"/></div>' +
+    '</div>' +
+    '<div class="form-group"><label class="form-label">Instructions Text</label><textarea class="form-control" id="dcust-instructions" rows="3">' + _mgEsc(cust.admitInstructions || 'Bring this admit card on all examination days. No candidate will be allowed without the admit card. Mobile phones are strictly prohibited in exam halls.') + '</textarea></div>';
+  } else if (docKey === 'bonafide') {
+    fields = '<div class="form-group"><label class="form-label">Purpose</label><select class="form-control" id="dcust-purpose" onchange="document.getElementById(\'dcust-custpurpose\').style.display=this.value===\'custom\'?\'block\':\'none\'">' +
+      ['for general purposes','for bank account opening','for visa application','custom'].map(function(p) {
+        return '<option value="' + p + '"' + ((cust.bonafidePurpose||'for general purposes')===p?' selected':'') + '>' + p + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="form-group" id="dcust-custpurpose" style="display:' + ((cust.bonafidePurpose||'for general purposes')==='custom'?'block':'none') + '"><label class="form-label">Custom Purpose</label><input class="form-control" id="dcust-custpurposeval" value="' + _mgEsc(cust.bonafideCustomPurpose||'') + '"/></div>' +
+    '<div class="form-group"><label class="form-label">Custom Body Paragraph (optional)</label><textarea class="form-control" id="dcust-body" rows="4">' + _mgEsc(cust.bonafideBody||'') + '</textarea></div>';
+  } else if (docKey === 'character') {
+    fields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Conduct Description</label><input class="form-control" id="dcust-conduct" value="' + _mgEsc(cust.characterConduct||'satisfactory') + '"/></div>' +
+      '<div class="form-group"><label class="form-label">Purpose</label><input class="form-control" id="dcust-charpurpose" value="' + _mgEsc(cust.characterPurpose||'bonafide purposes') + '"/></div>' +
+    '</div>';
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal modal-lg">' +
+    '<div class="modal-header"><h2 class="modal-title"><i class="fas fa-edit" style="color:#C4893A;margin-right:8px"></i>Edit ' + titles[docKey] + ' — ' + _mgEsc(student.name) + '</h2><button class="close-btn" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>' +
+    '<div class="modal-body">' + fields + '</div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
+      '<button class="btn btn-primary" onclick="_saveAndPrintStudentDoc(\'' + studentId + '\',\'' + docKey + '\');this.closest(\'.modal-overlay\').remove()"><i class="fas fa-print"></i> Save &amp; Print</button>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+};
+
+window._saveAndPrintStudentDoc = function(studentId, docKey) {
+  var cust = {};
+  if (docKey === 'admit') {
+    cust.admitYear = (document.getElementById('dcust-year')||{}).value || '';
+    cust.admitInstructions = (document.getElementById('dcust-instructions')||{}).value || '';
+    cust.admitNote = (document.getElementById('dcust-note')||{}).value || '';
+  } else if (docKey === 'bonafide') {
+    cust.bonafidePurpose = (document.getElementById('dcust-purpose')||{}).value || 'for general purposes';
+    cust.bonafideCustomPurpose = (document.getElementById('dcust-custpurposeval')||{}).value || '';
+    cust.bonafideBody = (document.getElementById('dcust-body')||{}).value || '';
+  } else if (docKey === 'character') {
+    cust.characterConduct = (document.getElementById('dcust-conduct')||{}).value || 'satisfactory';
+    cust.characterPurpose = (document.getElementById('dcust-charpurpose')||{}).value || 'bonafide purposes';
+  }
+  DB.saveDocCustomization(studentId, cust);
+  _printStudentDocDirect(studentId, docKey);
+};
+
+window._printStudentDocDirect = function(studentId, docKey) {
+  var student = DB.getStudent(studentId);
+  if (!student) return;
+  var meta = DB.getMeta();
+  var cls = DB.getClass(student.classId);
+  var cust = DB.getDocCustomization(studentId);
+  var today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  var ayear = cust.admitYear || (typeof getAcademicYear === 'function' ? getAcademicYear() : '2025-26');
+
+  var lhHtml = buildDocLetterhead(meta);
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px}' +
+    '@page{size:A4;margin:15mm}@media print{body{padding:0}.no-print{display:none}}' +
+    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
+    '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}' +
+    '.field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em;display:block}' +
+    '.field .val{font-size:13px;font-weight:700;margin-top:2px}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
+    'th{background:#0F2050;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;text-align:left}' +
+    'td{padding:8px 10px;border-bottom:1px solid #f1f5f9}tr:nth-child(even) td{background:#f8fafc}' +
+    '.notice{background:#FEF7E0;border:1px solid #C4893A;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px;line-height:1.6}' +
+    '.body-text{font-size:13px;line-height:1.9;margin-bottom:14px}' +
+    '.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}' +
+    '.sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}' +
+    '.sig-label{font-size:11px;font-weight:700;text-align:center}' +
+    '.seal{width:80px;height:80px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}' +
+    '.footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
+    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}' +
+    '.content-area{padding:0 20px 20px}';
+
+  var bodyHtml = '';
+  if (docKey === 'admit') {
+    var exams = DB.getExams(student.classId);
+    var instructions = cust.admitInstructions || 'Bring this admit card on all examination days. No candidate will be allowed without the admit card. Mobile phones are strictly prohibited in exam halls.';
+    var customNote = cust.admitNote ? '<div class="notice"><strong>Note:</strong> ' + _mgEsc(cust.admitNote) + '</div>' : '';
+    bodyHtml = '<div class="doc-title">Admit Card — ' + ayear + '</div>' +
+      '<div class="info-grid" style="position:relative">' +
+        '<div class="field"><label>Student Name</label><div class="val">' + _mgEsc(student.name) + '</div></div>' +
+        '<div class="field"><label>Roll No.</label><div class="val">' + _mgEsc(student.rollNo) + '</div></div>' +
+        '<div class="field"><label>Class</label><div class="val">' + _mgEsc(cls ? cls.name : '—') + '</div></div>' +
+        '<div class="field"><label>Date of Birth</label><div class="val">' + new Date(student.dob).toLocaleDateString('en-IN') + '</div></div>' +
+        '<div class="field"><label>Gender</label><div class="val">' + _mgEsc(student.gender) + '</div></div>' +
+        '<div class="field"><label>Blood Group</label><div class="val">' + _mgEsc(student.bloodGroup || '—') + '</div></div>' +
+      '</div>' +
+      (exams.length ? '<table><thead><tr><th>Subject</th><th>Exam</th><th>Date</th><th>Day</th><th>Time</th><th>Duration</th><th>Venue</th></tr></thead><tbody>' +
+        exams.map(function(e) {
+          var d = new Date(e.date);
+          return '<tr><td><strong>' + _mgEsc(e.subject) + '</strong></td><td>' + _mgEsc(e.examName) + '</td><td>' + d.toLocaleDateString('en-IN') + '</td><td>' + d.toLocaleDateString('en-US',{weekday:'short'}) + '</td><td>' + _mgEsc(e.time) + '</td><td>' + _mgEsc(e.duration) + '</td><td>' + _mgEsc(e.venue) + '</td></tr>';
+        }).join('') +
+      '</tbody></table>' : '<p style="color:#6B7A9D;text-align:center;margin-bottom:14px">No exam schedule available.</p>') +
+      customNote +
+      '<div class="notice"><strong>Instructions:</strong> ' + _mgEsc(instructions) + '</div>' +
+      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Student\'s Signature</div></div><div><div class="sig-line"></div><div class="sig-label">Principal\'s Signature</div></div></div>';
+  } else if (docKey === 'bonafide') {
+    var purpose = cust.bonafidePurpose || 'for general purposes';
+    if (purpose === 'custom') purpose = cust.bonafideCustomPurpose || 'for general purposes';
+    var extraBody = cust.bonafideBody ? '<p>' + _mgEsc(cust.bonafideBody) + '</p><br>' : '';
+    bodyHtml = '<div class="doc-title">Bonafide Certificate</div>' +
+      '<p class="body-text">This is to certify that <strong>' + _mgEsc(student.name) + '</strong>, son/daughter of (Parent/Guardian), bearing Roll No. <strong>' + _mgEsc(student.rollNo) + '</strong>, Date of Birth <strong>' + new Date(student.dob).toLocaleDateString('en-IN') + '</strong>, is a <em>bonafide student</em> of <strong>' + _mgEsc(meta.schoolName) + '</strong>, currently enrolled in <strong>' + _mgEsc(cls ? cls.name : '—') + '</strong> for the academic year <strong>' + _mgEsc(ayear) + '</strong>.<br><br>' +
+      'The student has been studying in this institution since <strong>' + (typeof formatDate === 'function' ? formatDate(student.joinDate) : student.joinDate) + '</strong> and bears a good academic and conduct record as per the school\'s records.<br><br>' +
+      extraBody +
+      'This certificate is issued on the request of the student/parent <em>' + _mgEsc(purpose) + '</em>.</p>' +
+      '<p>Date: <strong>' + today + '</strong></p>' +
+      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div><div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div></div>';
+  } else if (docKey === 'character') {
+    var conduct = cust.characterConduct || 'satisfactory';
+    var charPurpose = cust.characterPurpose || 'bonafide purposes';
+    bodyHtml = '<div class="doc-title">Character Certificate</div>' +
+      '<p class="body-text">This is to certify that <strong>' + _mgEsc(student.name) + '</strong>, Roll No. <strong>' + _mgEsc(student.rollNo) + '</strong>, studied in <strong>' + _mgEsc(cls ? cls.name : '—') + '</strong> at <strong>' + _mgEsc(meta.schoolName) + '</strong> during the academic year <strong>' + _mgEsc(ayear) + '</strong>.<br><br>' +
+      'To the best of our knowledge, the character and conduct of the student has been <strong>' + _mgEsc(conduct) + '</strong>. He/She has been a sincere, disciplined, and well-behaved student throughout their association with this institution. We wish him/her all the best in future endeavours.<br><br>' +
+      'This certificate is issued at the request of the parent/student for <em>' + _mgEsc(charPurpose) + '</em>.</p>' +
+      '<p>Date: <strong>' + today + '</strong></p>' +
+      '<div class="sig-row"><div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div><div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div></div>';
+  }
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + (docKey === 'admit' ? 'Admit Card' : docKey === 'bonafide' ? 'Bonafide Certificate' : 'Character Certificate') + ' — ' + _mgEsc(student.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+    lhHtml +
+    '<div class="content-area">' + bodyHtml + '<div class="footer">' + _mgEsc(meta.schoolName) + ' &bull; ' + _mgEsc((meta.schoolAddress||'').replace(/\n/g,' | ')) + '<br>This is a computer-generated document.</div></div>' +
+    '<script>window.onload=function(){window.print();};<\/script></body></html>';
+
+  var win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print', 'warning');
+};
+
+// ---- Teacher doc modal ----
+window._openTeacherDocModal = function(teacherId, docKey) {
+  var teacher = DB.getUser(teacherId);
+  if (!teacher) return;
+  var structs = DB.getSalaryStructures(teacherId);
+  var struct = structs[0] || {};
+  var salary = parseFloat(teacher.baseSalary || struct.grossSalary || 0).toLocaleString('en-IN');
+  var titles = {
+    joining: 'Joining / Appointment Letter', offer: 'Offer Letter', experience: 'Experience Letter',
+    increment: 'Increment Letter', promotion: 'Promotion Letter', relieving: 'Relieving Letter',
+    'salary-cert': 'Salary Certificate', noc: 'NOC (No Objection Certificate)'
+  };
+
+  var commonFields = '<div class="form-row">' +
+    '<div class="form-group"><label class="form-label">Designation</label><input class="form-control" id="tdoc-designation" value="' + _mgEsc(teacher.designation || 'Class Teacher') + '"/></div>' +
+    '<div class="form-group"><label class="form-label">Department</label><input class="form-control" id="tdoc-department" value="' + _mgEsc(teacher.department || 'Teaching') + '"/></div>' +
+  '</div>' +
+  '<div class="form-row">' +
+    '<div class="form-group"><label class="form-label">Joining Date</label><input class="form-control" type="date" id="tdoc-joiningdate" value="' + _mgEsc(teacher.joiningDate || '') + '"/></div>' +
+    '<div class="form-group"><label class="form-label">Gross Monthly Salary (₹)</label><input class="form-control" id="tdoc-salary" value="' + _mgEsc(String(teacher.baseSalary || struct.grossSalary || '')) + '"/></div>' +
+  '</div>';
+
+  var specificFields = '';
+  if (docKey === 'joining' || docKey === 'offer') {
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Probation Period (months)</label><input class="form-control" id="tdoc-probation" value="' + _mgEsc(String(teacher.probationPeriod || '6')) + '"/></div>' +
+      '<div class="form-group"><label class="form-label">Employment Type</label><select class="form-control" id="tdoc-emptype"><option value="Full-Time"' + (teacher.employmentType === 'Full-Time' ? ' selected' : '') + '>Full-Time</option><option value="Part-Time"' + (teacher.employmentType === 'Part-Time' ? ' selected' : '') + '>Part-Time</option><option value="Contract"' + (teacher.employmentType === 'Contract' ? ' selected' : '') + '>Contract</option></select></div>' +
+    '</div>' +
+    '<div class="form-group"><label class="form-label">CTC (Annual, ₹)</label><input class="form-control" id="tdoc-ctc" value="' + _mgEsc(String(teacher.ctc || '')) + '" placeholder="e.g. 360000"/></div>';
+  } else if (docKey === 'experience' || docKey === 'relieving') {
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Last Working Day</label><input class="form-control" type="date" id="tdoc-lwd" value=""/></div>' +
+      '<div class="form-group"><label class="form-label">Reason for Leaving</label><input class="form-control" id="tdoc-reason" value="" placeholder="e.g. Resignation"/></div>' +
+    '</div>';
+  } else if (docKey === 'increment') {
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Old Salary (₹)</label><input class="form-control" id="tdoc-oldsalary" value="' + _mgEsc(String(teacher.baseSalary || '')) + '"/></div>' +
+      '<div class="form-group"><label class="form-label">New Salary (₹)</label><input class="form-control" id="tdoc-newsalary" value=""/></div>' +
+    '</div>' +
+    '<div class="form-group"><label class="form-label">Effective Date</label><input class="form-control" type="date" id="tdoc-effdate" value=""/></div>';
+  } else if (docKey === 'promotion') {
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Old Designation</label><input class="form-control" id="tdoc-olddesig" value="' + _mgEsc(teacher.designation || '') + '"/></div>' +
+      '<div class="form-group"><label class="form-label">New Designation</label><input class="form-control" id="tdoc-newdesig" value=""/></div>' +
+    '</div>' +
+    '<div class="form-group"><label class="form-label">Effective Date</label><input class="form-control" type="date" id="tdoc-effdate" value=""/></div>';
+  } else if (docKey === 'salary-cert') {
+    var nowDate = new Date();
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Month</label><select class="form-control" id="tdoc-month">' +
+        ['January','February','March','April','May','June','July','August','September','October','November','December'].map(function(m, i) {
+          return '<option value="' + m + '"' + (i === nowDate.getMonth() ? ' selected' : '') + '>' + m + '</option>';
+        }).join('') +
+      '</select></div>' +
+      '<div class="form-group"><label class="form-label">Year</label><input class="form-control" id="tdoc-year" value="' + nowDate.getFullYear() + '"/></div>' +
+    '</div>';
+  } else if (docKey === 'noc') {
+    specificFields = '<div class="form-row">' +
+      '<div class="form-group"><label class="form-label">Purpose of NOC</label><input class="form-control" id="tdoc-nocpurpose" value="" placeholder="e.g. Higher Education"/></div>' +
+      '<div class="form-group"><label class="form-label">Destination / Country</label><input class="form-control" id="tdoc-nocdest" value="" placeholder="e.g. United Kingdom"/></div>' +
+    '</div>';
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal modal-lg">' +
+    '<div class="modal-header"><h2 class="modal-title"><i class="fas fa-file-alt" style="color:#C4893A;margin-right:8px"></i>' + _mgEsc(titles[docKey] || docKey) + ' — ' + _mgEsc(teacher.name) + '</h2><button class="close-btn" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>' +
+    '<div class="modal-body">' + commonFields + specificFields + '<div class="form-group" style="margin-top:12px"><label class="form-label">Custom Note / Additional Paragraph</label><textarea class="form-control" id="tdoc-customnote" rows="3" placeholder="Any additional content to include in this letter..."></textarea></div></div>' +
+    '<div class="modal-footer">' +
+      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-overlay\').remove()">Cancel</button>' +
+      '<button class="btn btn-primary" onclick="_collectAndPrintTeacherDoc(\'' + teacherId + '\',\'' + docKey + '\');this.closest(\'.modal-overlay\').remove()"><i class="fas fa-print"></i> Generate &amp; Print</button>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+};
+
+function _gV(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+
+window._collectAndPrintTeacherDoc = function(teacherId, docKey) {
+  var opts = {
+    designation: _gV('tdoc-designation'),
+    department: _gV('tdoc-department'),
+    joiningDate: _gV('tdoc-joiningdate'),
+    salary: _gV('tdoc-salary'),
+    customNote: _gV('tdoc-customnote'),
+    probation: _gV('tdoc-probation'),
+    emptype: _gV('tdoc-emptype'),
+    ctc: _gV('tdoc-ctc'),
+    lwd: _gV('tdoc-lwd'),
+    reason: _gV('tdoc-reason'),
+    oldsalary: _gV('tdoc-oldsalary'),
+    newsalary: _gV('tdoc-newsalary'),
+    effdate: _gV('tdoc-effdate'),
+    olddesig: _gV('tdoc-olddesig'),
+    newdesig: _gV('tdoc-newdesig'),
+    month: _gV('tdoc-month'),
+    year: _gV('tdoc-year'),
+    nocpurpose: _gV('tdoc-nocpurpose'),
+    nocdest: _gV('tdoc-nocdest'),
+  };
+  _printTeacherDocWithOpts(teacherId, docKey, opts);
+};
+
+window._printTeacherDocDirect = function(teacherId, docKey) {
+  _printTeacherDocWithOpts(teacherId, docKey, {});
+};
+
+window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
+  var teacher = DB.getUser(teacherId);
+  if (!teacher) return;
+  var meta = DB.getMeta();
+  var structs = DB.getSalaryStructures(teacherId);
+  var struct = structs[0] || {};
+  var principal = (DB.get().users || []).find(function(u) { return u.role === 'superadmin'; }) || {};
+  var today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+  var sName = meta.schoolName || 'SuperKids India Preschool';
+
+  var designation = opts.designation || teacher.designation || 'Class Teacher';
+  var department = opts.department || teacher.department || 'Teaching';
+  var joiningDate = opts.joiningDate || teacher.joiningDate || '';
+  var joiningDateStr = joiningDate ? new Date(joiningDate).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : '—';
+  var salary = parseFloat(opts.salary || teacher.baseSalary || struct.grossSalary || 0).toLocaleString('en-IN');
+  var customNote = opts.customNote || '';
+
+  var titles = {
+    joining: 'Joining / Appointment Letter', offer: 'Offer Letter', experience: 'Experience Letter',
+    increment: 'Increment Letter', promotion: 'Promotion Letter', relieving: 'Relieving Letter',
+    'salary-cert': 'Salary Certificate', noc: 'No Objection Certificate'
+  };
+  var title = titles[docKey] || docKey;
+
+  var bodyHtml = '';
+  if (docKey === 'joining') {
+    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
+      '<p>This is to formally confirm your appointment as <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> Department at <strong>' + _mgEsc(sName) + '</strong> with effect from <strong>' + joiningDateStr + '</strong>.</p>' +
+      '<p>Your terms and conditions of employment are as set forth in the offer letter issued to you. You will be required to follow all rules, regulations, and policies of the institution.</p>' +
+      '<p>We warmly welcome you to our team and look forward to your valuable contribution to the school community.</p>';
+  } else if (docKey === 'offer') {
+    var probation = opts.probation || teacher.probationPeriod || 6;
+    var emptype = opts.emptype || teacher.employmentType || 'Full-Time';
+    var ctc = opts.ctc ? '₹' + parseFloat(opts.ctc).toLocaleString('en-IN') + ' per annum' : '—';
+    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
+      '<p>We are pleased to offer you the position of <strong>' + _mgEsc(designation) + '</strong> at <strong>' + _mgEsc(sName) + '</strong>. Please find the terms of your employment below:</p>' +
+      '<table style="width:100%;border-collapse:collapse;margin:12px 0"><tbody>' +
+        [['Designation', designation], ['Department', department], ['Joining Date', joiningDateStr], ['Employment Type', emptype], ['Probation Period', probation + ' months'], ['Gross Monthly Salary', '₹' + salary], ['Annual CTC', ctc]].map(function(r) {
+          return '<tr><td style="padding:7px 12px;border:1px solid #DCE1EF;width:40%;background:#f8fafc;font-weight:600;color:#0F2050">' + r[0] + '</td><td style="padding:7px 12px;border:1px solid #DCE1EF">' + _mgEsc(String(r[1])) + '</td></tr>';
+        }).join('') +
+      '</tbody></table>' +
+      '<p>Kindly sign and return a copy of this letter as your acceptance of the offer.</p>';
+  } else if (docKey === 'experience') {
+    var lwd = opts.lwd ? new Date(opts.lwd).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : today;
+    var leaveReason = opts.reason || 'personal reasons';
+    bodyHtml = '<p>To Whom It May Concern,</p>' +
+      '<p>This is to certify that <strong>' + _mgEsc(teacher.name) + '</strong> (Employee ID: ' + _mgEsc(teacher.employeeId || 'N/A') + ') was employed with <strong>' + _mgEsc(sName) + '</strong> as <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> department from <strong>' + joiningDateStr + '</strong> to <strong>' + lwd + '</strong>.</p>' +
+      '<p>During the tenure, ' + _mgEsc(teacher.name) + ' has demonstrated excellent professional skills, dedication, and commitment. We wish them the very best in their future endeavours.</p>' +
+      '<p>This letter is issued at the request of the individual for ' + _mgEsc(leaveReason) + '.</p>';
+  } else if (docKey === 'increment') {
+    var oldSal = opts.oldsalary ? '₹' + parseFloat(opts.oldsalary).toLocaleString('en-IN') : '(previous salary)';
+    var newSal = opts.newsalary ? '₹' + parseFloat(opts.newsalary).toLocaleString('en-IN') : '₹' + salary;
+    var effDate = opts.effdate ? new Date(opts.effdate).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : today;
+    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
+      '<p>We are pleased to inform you that in recognition of your performance, dedication, and contribution to <strong>' + _mgEsc(sName) + '</strong>, your salary has been revised as follows:</p>' +
+      '<table style="width:100%;border-collapse:collapse;margin:12px 0"><tbody>' +
+        [['Previous Salary', oldSal], ['Revised Salary', newSal], ['Effective Date', effDate]].map(function(r) {
+          return '<tr><td style="padding:7px 12px;border:1px solid #DCE1EF;width:40%;background:#f8fafc;font-weight:600;color:#0F2050">' + r[0] + '</td><td style="padding:7px 12px;border:1px solid #DCE1EF;font-weight:700">' + r[1] + '</td></tr>';
+        }).join('') +
+      '</tbody></table>' +
+      '<p>The revised salary will be reflected in your payslip from the next payroll cycle. We appreciate your continued dedication and look forward to your continued contribution.</p>';
+  } else if (docKey === 'promotion') {
+    var oldD = opts.olddesig || designation;
+    var newD = opts.newdesig || designation;
+    var promEffDate = opts.effdate ? new Date(opts.effdate).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : today;
+    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
+      '<p>We are pleased to announce your promotion from <strong>' + _mgEsc(oldD) + '</strong> to <strong>' + _mgEsc(newD) + '</strong> effective <strong>' + promEffDate + '</strong>. This promotion is a recognition of your exceptional performance, dedication, and commitment.</p>' +
+      '<p>We look forward to your continued contributions in your new role. Congratulations on this well-deserved achievement!</p>';
+  } else if (docKey === 'relieving') {
+    var relLwd = opts.lwd ? new Date(opts.lwd).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : today;
+    var relReason = opts.reason || 'personal reasons';
+    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
+      '<p>This is to confirm that you have been relieved from the position of <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> Department at <strong>' + _mgEsc(sName) + '</strong> with effect from <strong>' + relLwd + '</strong>.</p>' +
+      '<p>All pending dues, handovers, and formalities have been duly completed. We wish you success in your future career.</p>';
+  } else if (docKey === 'salary-cert') {
+    var certMonth = opts.month || new Date().toLocaleDateString('en-US', {month:'long'});
+    var certYear = opts.year || new Date().getFullYear();
+    bodyHtml = '<p>To Whom It May Concern,</p>' +
+      '<p>This is to certify that <strong>' + _mgEsc(teacher.name) + '</strong>, employed as <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> Department at <strong>' + _mgEsc(sName) + '</strong>, was paid a gross monthly salary of <strong>₹' + salary + '</strong> for the month of <strong>' + _mgEsc(certMonth) + ' ' + _mgEsc(String(certYear)) + '</strong>.</p>' +
+      '<p>This certificate is issued at the request of the individual for banking/official purposes.</p>';
+  } else if (docKey === 'noc') {
+    var nocPurpose = opts.nocpurpose || 'higher education';
+    var nocDest = opts.nocdest || '';
+    bodyHtml = '<p>To Whom It May Concern,</p>' +
+      '<p>This is to certify that <strong>' + _mgEsc(teacher.name) + '</strong>, designated as <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> Department at <strong>' + _mgEsc(sName) + '</strong>, has been granted <strong>No Objection</strong> to pursue <strong>' + _mgEsc(nocPurpose) + '</strong>' + (nocDest ? ' in <strong>' + _mgEsc(nocDest) + '</strong>' : '') + '.</p>' +
+      '<p>The management has no objection to the above and wishes the individual all the best in their endeavours.</p>';
+  }
+
+  if (customNote) {
+    bodyHtml += '<p style="margin-top:12px">' + _mgEsc(customNote) + '</p>';
+  }
+
+  DB.addHRLetter({
+    id: 'ltr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+    teacherId: teacherId,
+    type: title,
+    createdBy: Session.current() ? Session.current().id : '',
+    createdAt: new Date().toISOString()
+  });
+
+  var lhHtml = buildDocLetterhead(meta);
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px}' +
+    '@page{size:A4;margin:15mm}@media print{body{padding:0}.no-print{display:none}}' +
+    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
+    '.ref-box{background:#f9f6f0;border-left:3px solid #C4893A;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}' +
+    'table{width:100%;border-collapse:collapse;margin:12px 0}' +
+    'td,th{padding:7px 12px;border:1px solid #DCE1EF}th{background:#0F2050;color:#fff}' +
+    'p{margin-bottom:12px;line-height:1.8}' +
+    '.sig-area{margin-top:50px}' +
+    '.footer-note{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
+    '.content-area{padding:0 20px 20px}';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + _mgEsc(title) + ' — ' + _mgEsc(teacher.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+    lhHtml +
+    '<div class="content-area">' +
+      '<div class="doc-title">' + _mgEsc(title) + '</div>' +
+      '<div class="ref-box"><strong>To:</strong> ' + _mgEsc(teacher.name) + ' &nbsp;|&nbsp; <strong>Designation:</strong> ' + _mgEsc(designation) + ' &nbsp;|&nbsp; <strong>Emp ID:</strong> ' + _mgEsc(teacher.employeeId || 'N/A') + '&nbsp;&nbsp;&nbsp;<strong>Date:</strong> ' + today + '</div>' +
+      bodyHtml +
+      '<div class="sig-area">' +
+        '<p style="font-size:13px">Yours sincerely,</p><br>' +
+        '<p style="font-weight:700">______________________________</p>' +
+        '<p style="font-weight:700">' + _mgEsc(principal.name || 'Principal / HR Manager') + '</p>' +
+        '<p style="color:#666">' + _mgEsc(sName) + '</p>' +
+      '</div>' +
+      '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
+    '</div>' +
+    '<script>window.onload=function(){window.print();};<\/script></body></html>';
+
+  var win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else showToast('Please allow popups to print', 'warning');
+};
+
+// ============================================================
 // SUPERADMIN — ROUTES for new standalone pages
 // ============================================================
 registerRoute('exam-schedule', function() {
@@ -3006,6 +3550,13 @@ registerRoute('grievances', function() {
   var user = Session.current();
   if (!user || user.role !== 'superadmin') { renderLogin(); return; }
   mgmtTab = 'grievance-manager';
+  renderManagement();
+});
+
+registerRoute('documents', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  mgmtTab = 'documents';
   renderManagement();
 });
 

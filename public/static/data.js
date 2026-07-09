@@ -1009,6 +1009,18 @@ const DB = (() => {
     commit();
   }
 
+  function getDocCustomization(studentId) {
+    var d = get();
+    if (!d.docCustomizations) d.docCustomizations = {};
+    return d.docCustomizations[studentId] || {};
+  }
+  function saveDocCustomization(studentId, data) {
+    var d = get();
+    if (!d.docCustomizations) d.docCustomizations = {};
+    d.docCustomizations[studentId] = Object.assign({}, d.docCustomizations[studentId] || {}, data);
+    commit();
+  }
+
   return {
     get, commit, reset, genId, log,
     findUser, findUserByCredentials, getUser, getSubAdmins, getParents,
@@ -1039,6 +1051,7 @@ const DB = (() => {
     getResignationRecords, addResignationRecord, updateResignationRecord,
     calcGrade, calcBMI,
     getMeta, updateMeta,
+    getDocCustomization, saveDocCustomization,
     defaults,
     initFromServer, R2_BASE,
     getFeeRecords, addFeeRecord, updateFeeRecord,

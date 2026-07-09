@@ -3124,33 +3124,29 @@ function buildDocLetterhead(meta) {
   var phone = meta.schoolPhone || '';
   var email = meta.schoolEmail || '';
   var website = meta.schoolWebsite || '';
+  var contactParts = [];
+  if (phone) contactParts.push('Tel: ' + phone);
+  if (email) contactParts.push('Email: ' + email);
+  if (website) contactParts.push(website);
+  var contactLine = contactParts.join('  |  ');
 
-  return '<div style="background:#0F2050;padding:4px 0 0 0">' +
-    '<table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-collapse:collapse">' +
+  return '<div style="background:#0F2050;padding:0;margin:0">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#0F2050">' +
       '<tr>' +
-        '<td width="90" style="padding:14px 12px 14px 16px;vertical-align:middle;text-align:center">' +
-          '<div style="width:72px;height:72px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#0F2050;display:inline-block;text-align:center;line-height:72px">' +
-            '<img src="' + logo + '" width="66" height="66" style="border-radius:50%;object-fit:cover;vertical-align:middle" onerror="this.parentNode.innerHTML=\'<span style=&quot;color:#C4893A;font-size:22px;font-weight:900&quot;>S</span>\'"/>' +
+        '<td width="100" style="padding:16px 10px 16px 20px;vertical-align:middle;text-align:center">' +
+          '<div style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block;text-align:center;line-height:70px">' +
+            '<img src="' + logo + '" width="70" height="70" style="border-radius:50%;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>' +
           '</div>' +
         '</td>' +
-        '<td style="padding:14px 16px 14px 4px;text-align:center;vertical-align:middle">' +
-          '<div style="font-family:Georgia,serif;font-size:24px;font-weight:900;color:#0F2050;letter-spacing:1px;line-height:1.2">' + sName + '</div>' +
-          (addr ? '<div style="font-size:11px;color:#475569;margin-top:4px">' + addr + '</div>' : '') +
-          '<div style="font-size:10px;color:#6B7A9D;margin-top:3px">' +
-            (phone ? '<span>&#9990; ' + phone + '</span>' : '') +
-            (phone && email ? '&nbsp;&nbsp;|&nbsp;&nbsp;' : '') +
-            (email ? '<span>&#9993; ' + email + '</span>' : '') +
-            (website && (phone || email) ? '&nbsp;&nbsp;|&nbsp;&nbsp;' : '') +
-            (website ? '<span>&#127760; ' + website + '</span>' : '') +
-          '</div>' +
-        '</td>' +
-        '<td width="90" style="padding:14px 16px 14px 4px;text-align:center;vertical-align:middle">' +
-          '<div style="font-size:9px;color:#C4893A;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1.5">Est.<br><span style="font-size:16px;color:#0F2050">' + (meta.schoolEstYear || '2009') + '</span></div>' +
+        '<td style="padding:16px 20px;text-align:center;vertical-align:middle">' +
+          '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:1px;line-height:1.2">' + sName + '</div>' +
+          (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:5px;letter-spacing:0.3px">' + addr + '</div>' : '') +
+          (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
         '</td>' +
       '</tr>' +
     '</table>' +
-    '<div style="height:4px;background:#C4893A"></div>' +
-    '<div style="height:2px;background:#0F2050"></div>' +
+    '<div style="height:4px;background:#C4893A;margin:0"></div>' +
+    '<div style="height:2px;background:#ffffff;margin:0;opacity:0.15"></div>' +
   '</div>';
 }
 

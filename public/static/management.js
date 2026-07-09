@@ -3125,8 +3125,7 @@ function buildDocLetterhead(meta) {
   var email = meta.schoolEmail || '';
   var website = meta.schoolWebsite || '';
   var contact = [phone, email, website].filter(Boolean).join(' | ');
-  return '<div style="border:2px solid #0F2050;margin:8px;padding:0">' +
-    '<div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:#fff">' +
+  return '<div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:#fff">' +
       '<img src="' + logo + '" style="width:70px;height:70px;object-fit:contain;border:2px solid #C4893A;border-radius:50%;flex-shrink:0" onerror="this.style.background=\'#0F2050\'"/>' +
       '<div style="flex:1;text-align:center">' +
         '<div style="font-size:22px;font-weight:900;color:#0F2050;letter-spacing:0.5px">' + name + '</div>' +
@@ -3135,8 +3134,7 @@ function buildDocLetterhead(meta) {
       '</div>' +
     '</div>' +
     '<div style="height:3px;background:#C4893A"></div>' +
-    '<div style="height:1px;background:#0F2050"></div>' +
-  '</div>';
+    '<div style="height:1px;background:#0F2050"></div>';
 }
 
 // ---- Student doc modal ----
@@ -3275,8 +3273,10 @@ window._printStudentDocDirect = function(studentId, docKey) {
   }
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + (docKey === 'admit' ? 'Admit Card' : docKey === 'bonafide' ? 'Bonafide Certificate' : 'Character Certificate') + ' — ' + _mgEsc(student.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+    '<div class="page-wrap">' +
     lhHtml +
     '<div class="content-area">' + bodyHtml + '<div class="footer">' + _mgEsc(meta.schoolName) + ' &bull; ' + _mgEsc((meta.schoolAddress||'').replace(/\n/g,' | ')) + '<br>This is a computer-generated document.</div></div>' +
+    '</div>' +
     '<script>window.onload=function(){window.print();};<\/script></body></html>';
 
   var win = window.open('', '_blank');
@@ -3502,9 +3502,11 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
     'p{margin-bottom:12px;line-height:1.8}' +
     '.sig-area{margin-top:50px}' +
     '.footer-note{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
-    '.content-area{padding:0 20px 20px}';
+    '.content-area{padding:0 20px 20px}' +
+    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}';
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + _mgEsc(title) + ' — ' + _mgEsc(teacher.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+    '<div class="page-wrap">' +
     lhHtml +
     '<div class="content-area">' +
       '<div class="doc-title">' + _mgEsc(title) + '</div>' +
@@ -3517,6 +3519,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
         '<p style="color:#666">' + _mgEsc(sName) + '</p>' +
       '</div>' +
       '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
+    '</div>' +
     '</div>' +
     '<script>window.onload=function(){window.print();};<\/script></body></html>';
 

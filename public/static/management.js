@@ -3130,19 +3130,25 @@ function buildDocLetterhead(meta) {
   if (website) contactParts.push(website);
   var contactLine = contactParts.join('  |  ');
 
-  return '<div style="background:#0F2050;padding:18px 24px 16px 24px;margin:0;display:table;width:100%;box-sizing:border-box">' +
-    '<div style="display:table-cell;width:90px;vertical-align:middle;text-align:center;padding-right:18px">' +
-      '<div style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block">' +
-        '<img src="' + logo + '" width="70" height="70" style="border-radius:50%;object-fit:cover;display:block;margin:0 auto" onerror="this.style.display=\'none\'"/>' +
-      '</div>' +
-    '</div>' +
-    '<div style="display:table-cell;vertical-align:middle;text-align:center">' +
-      '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2">' + sName + '</div>' +
-      (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px;letter-spacing:0.2px">' + addr + '</div>' : '') +
-      (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
-    '</div>' +
-  '</div>' +
-  '<div style="height:4px;background:#C4893A;margin:0"></div>';
+  return '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
+    '<tr>' +
+      '<td width="108" style="padding:16px 0 16px 20px;vertical-align:middle;text-align:center;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
+        '<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 auto">' +
+          '<tr><td style="width:76px;height:76px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#ffffff;text-align:center;vertical-align:middle;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
+            '<img src="' + logo + '" width="70" height="70" style="display:block;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'"/>' +
+          '</td></tr>' +
+        '</table>' +
+      '</td>' +
+      '<td style="padding:16px 24px;text-align:center;vertical-align:middle;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
+        '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + sName + '</div>' +
+        (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + addr + '</div>' : '') +
+        (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact">' + contactLine + '</div>' : '') +
+      '</td>' +
+    '</tr>' +
+    '<tr>' +
+      '<td colspan="2" style="height:4px;background:#C4893A;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">&nbsp;</td>' +
+    '</tr>' +
+  '</table>';
 }
 
 // ---- Student doc modal ----
@@ -3216,8 +3222,8 @@ window._printStudentDocDirect = function(studentId, docKey) {
   var ayear = cust.admitYear || (typeof getAcademicYear === 'function' ? getAcademicYear() : '2025-26');
 
   var lhHtml = buildDocLetterhead(meta);
-  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px}' +
-    '@page{size:A4;margin:15mm}@media print{body{padding:0}.no-print{display:none}}' +
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '@page{size:A4;margin:15mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}' +
     '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
     '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}' +
     '.field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em;display:block}' +
@@ -3501,8 +3507,8 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
   });
 
   var lhHtml = buildDocLetterhead(meta);
-  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px}' +
-    '@page{size:A4;margin:15mm}@media print{body{padding:0}.no-print{display:none}}' +
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '@page{size:A4;margin:15mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}' +
     '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
     '.ref-box{background:#f9f6f0;border-left:3px solid #C4893A;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}' +
     'table{width:100%;border-collapse:collapse;margin:12px 0}' +

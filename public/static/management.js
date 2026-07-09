@@ -1092,6 +1092,70 @@ function renderSettingsTab() {
           <button class="btn btn-primary" style="margin-top:8px" onclick="saveDocAssets()"><i class="fas fa-save"></i> Save Stamp &amp; Signature</button>
         </div>
 
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:16px"><i class="fas fa-database" style="color:#1AA6CA"></i> Backup &amp; Restore</div>
+          <p style="font-size:12px;color:#6B7A9D;margin-bottom:16px">Export a full backup of all school data by academic year. Backups are downloaded as JSON files and can be restored later.</p>
+
+          <!-- Export -->
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:14px">
+            <div style="font-weight:700;color:#0369a1;margin-bottom:10px;font-size:13px"><i class="fas fa-download"></i> Export Backup</div>
+            <div class="form-row" style="margin-bottom:10px">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label" style="font-size:11px">Academic Year</label>
+                <select class="form-control" id="backup-year" style="font-size:13px">
+                  ${(function() {
+                    var d = DB.get();
+                    var years = new Set();
+                    var cy = new Date().getFullYear();
+                    // Add years from students join dates, fee records, exams etc
+                    (d.students||[]).forEach(function(s){ if(s.joinDate) years.add(s.joinDate.slice(0,4)); });
+                    (d.feeRecords||[]).forEach(function(f){ if(f.year) years.add(f.year.slice(0,4)); });
+                    (d.exams||[]).forEach(function(e){ if(e.date) years.add(e.date.slice(0,4)); });
+                    // Always include current and last 5 years
+                    for(var i=0;i<=5;i++) years.add(String(cy-i));
+                    return Array.from(years).sort().reverse().map(function(y) {
+                      var ay = y + '-' + String(parseInt(y)+1).slice(2);
+                      return '<option value="' + y + '">' + ay + '</option>';
+                    }).join('');
+                  })()}
+                  <option value="all">All Years (Full Backup)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="exportBackup()"><i class="fas fa-download"></i> Download Backup</button>
+          </div>
+
+          <!-- Import -->
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px">
+            <div style="font-weight:700;color:#15803d;margin-bottom:8px;font-size:13px"><i class="fas fa-upload"></i> Restore Backup</div>
+            <p style="font-size:11px;color:#166534;margin-bottom:10px">Upload a previously exported JSON backup file. Existing data will be <strong>merged</strong> — existing records are kept, backup records are added.</p>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreBackup(this)"/>
+              <button class="btn btn-sm" style="background:#16a34a;color:#fff;border:none" onclick="document.getElementById('restore-file').click()"><i class="fas fa-upload"></i> Choose Backup File</button>
+              <span id="restore-filename" style="font-size:11px;color:#6B7A9D">No file chosen</span>
+            </div>
+          </div>
+
+          <!-- Backup history -->
+          <div id="backup-history-wrap">
+            ${(function() {
+              try {
+                var hist = JSON.parse(localStorage.getItem('superkids_backup_history') || '[]');
+                if (!hist.length) return '<div style="font-size:11px;color:#6B7A9D;text-align:center;padding:8px">No backups recorded yet</div>';
+                return '<div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:8px">Recent Backups</div>' +
+                  '<div style="max-height:140px;overflow-y:auto">' +
+                  hist.slice().reverse().map(function(h) {
+                    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f8fafc;border-radius:6px;margin-bottom:4px;font-size:11px">' +
+                      '<div><i class="fas fa-file-archive" style="color:#1AA6CA;margin-right:6px"></i><strong>' + h.year + '</strong> &nbsp; ' + h.records + ' records</div>' +
+                      '<div style="color:#6B7A9D">' + h.date + '</div>' +
+                    '</div>';
+                  }).join('') +
+                  '</div>';
+              } catch(e) { return ''; }
+            })()}
+          </div>
+        </div>
+
         <div style="padding:14px;background:#fee2e2;border-radius:10px;margin-bottom:16px">
           <div style="font-weight:700;color:#991b1b;margin-bottom:8px"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
           <div style="font-size:13px;color:#7f1d1d;margin-bottom:12px">Resetting data will permanently clear all students, grades, attendance and other records. This cannot be undone.</div>
@@ -1180,6 +1244,131 @@ function resetAllData() {
     setTimeout(() => { Session.logout(); renderLogin(); }, 1500);
   }, 'Reset Everything', true);
 }
+
+window.exportBackup = function() {
+  var yearFilter = (document.getElementById('backup-year') || {}).value || 'all';
+  var d = DB.get();
+  var meta = d.meta || {};
+  var ay = yearFilter === 'all' ? 'All Years' : (yearFilter + '-' + String(parseInt(yearFilter)+1).slice(2));
+
+  var filterByYear = function(arr, dateField) {
+    if (yearFilter === 'all') return arr || [];
+    return (arr || []).filter(function(item) {
+      var v = item[dateField] || item.date || item.createdAt || item.joinDate || '';
+      return v.startsWith(yearFilter);
+    });
+  };
+
+  var backup = {
+    _version: 1,
+    _exportedAt: new Date().toISOString(),
+    _academicYear: ay,
+    _yearFilter: yearFilter,
+    meta: meta,
+    students:      yearFilter === 'all' ? (d.students||[])      : (d.students||[]).filter(function(s){ return (s.joinDate||'').startsWith(yearFilter); }),
+    classes:       d.classes || [],
+    users:         (d.users||[]).filter(function(u){ return u.role !== 'superadmin'; }),
+    attendance:    filterByYear(d.attendance,    'date'),
+    feeRecords:    filterByYear(d.feeRecords,    'date'),
+    assignments:   filterByYear(d.assignments,   'dueDate'),
+    achievements:  filterByYear(d.achievements,  'date'),
+    exams:         filterByYear(d.exams,         'date'),
+    healthRecords: filterByYear(d.healthRecords, 'date'),
+    ptmSlots:      filterByYear(d.ptmSlots,      'date'),
+    grievances:    filterByYear(d.grievances,    'createdAt'),
+    conductRecords:filterByYear(d.conductRecords,'date'),
+    holidays:      d.holidays || [],
+    leaveRequests: filterByYear(d.leaveRequests, 'createdAt'),
+    hrLetters:     filterByYear(d.hrLetters,     'createdAt'),
+    salaryRecords: filterByYear(d.salaryRecords, 'month'),
+    activityLog:   filterByYear(d.activityLog,   'ts'),
+    mealMenu:      d.mealMenu || {},
+    examSchedules: filterByYear(d.examSchedules, 'date'),
+  };
+
+  var totalRecords = Object.keys(backup).filter(function(k){ return Array.isArray(backup[k]); })
+    .reduce(function(sum, k){ return sum + backup[k].length; }, 0);
+
+  var json = JSON.stringify(backup, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var schoolSlug = (meta.schoolName || 'school').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  a.href = url;
+  a.download = schoolSlug + '-backup-' + ay.replace(/\//g,'-') + '-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Record in history
+  try {
+    var hist = JSON.parse(localStorage.getItem('superkids_backup_history') || '[]');
+    hist.push({ year: ay, records: totalRecords, date: new Date().toLocaleDateString('en-IN') });
+    if (hist.length > 20) hist = hist.slice(-20);
+    localStorage.setItem('superkids_backup_history', JSON.stringify(hist));
+  } catch(e) {}
+
+  showToast('Backup downloaded: ' + ay + ' (' + totalRecords + ' records)', 'success');
+};
+
+window.restoreBackup = function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var nameEl = document.getElementById('restore-filename');
+  if (nameEl) nameEl.textContent = file.name;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var backup = JSON.parse(e.target.result);
+      if (!backup._version || !backup.meta) { showToast('Invalid backup file', 'error'); return; }
+
+      confirmDialog(
+        'Restore backup from ' + (backup._academicYear || 'unknown year') + '?\n\nExisting records will be KEPT. Backup records will be merged in. This cannot be undone.',
+        function() {
+          var d = DB.get();
+          var mergeArray = function(existing, incoming, idField) {
+            idField = idField || 'id';
+            var ids = new Set((existing||[]).map(function(x){ return x[idField]; }));
+            var merged = (existing||[]).slice();
+            (incoming||[]).forEach(function(item) {
+              if (!ids.has(item[idField])) { merged.push(item); ids.add(item[idField]); }
+            });
+            return merged;
+          };
+
+          d.students       = mergeArray(d.students,       backup.students,       'id');
+          d.classes        = mergeArray(d.classes,        backup.classes,        'id');
+          d.users          = mergeArray(d.users,          backup.users,          'id');
+          d.attendance     = mergeArray(d.attendance,     backup.attendance,     'id');
+          d.feeRecords     = mergeArray(d.feeRecords,     backup.feeRecords,     'id');
+          d.assignments    = mergeArray(d.assignments,    backup.assignments,    'id');
+          d.achievements   = mergeArray(d.achievements,   backup.achievements,   'id');
+          d.exams          = mergeArray(d.exams,          backup.exams,          'id');
+          d.healthRecords  = mergeArray(d.healthRecords,  backup.healthRecords,  'id');
+          d.ptmSlots       = mergeArray(d.ptmSlots,       backup.ptmSlots,       'id');
+          d.grievances     = mergeArray(d.grievances,     backup.grievances,     'id');
+          d.conductRecords = mergeArray(d.conductRecords, backup.conductRecords, 'id');
+          d.holidays       = mergeArray(d.holidays,       backup.holidays,       'id');
+          d.leaveRequests  = mergeArray(d.leaveRequests,  backup.leaveRequests,  'id');
+          d.hrLetters      = mergeArray(d.hrLetters,      backup.hrLetters,      'id');
+          d.salaryRecords  = mergeArray(d.salaryRecords,  backup.salaryRecords,  'id');
+          d.activityLog    = mergeArray(d.activityLog,    backup.activityLog,    'id');
+
+          DB.commit();
+          showToast('Backup restored successfully!', 'success');
+          input.value = '';
+          if (nameEl) nameEl.textContent = 'No file chosen';
+        },
+        'Restore Backup'
+      );
+    } catch(err) {
+      showToast('Failed to read backup file: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+};
 
 // ---- My Profile (Super Admin) ----
 function renderMyProfile() {

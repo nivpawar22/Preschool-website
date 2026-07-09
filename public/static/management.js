@@ -1612,6 +1612,17 @@ window.executeRollover = function() {
 
       DB.commit();
 
+      // Save archive snapshot to localStorage for historical viewer
+      try {
+        var archiveIndex = JSON.parse(localStorage.getItem('superkids_archives_index') || '[]');
+        var archiveKey = 'superkids_archive_' + currentAY.replace(/[^a-z0-9]/gi,'_');
+        localStorage.setItem(archiveKey, JSON.stringify(backupData));
+        if (!archiveIndex.find(function(a){ return a.key === archiveKey; })) {
+          archiveIndex.push({ key: archiveKey, year: currentAY, rolledAt: new Date().toISOString() });
+          localStorage.setItem('superkids_archives_index', JSON.stringify(archiveIndex));
+        }
+      } catch(e) { /* localStorage full — user still has the downloaded backup file */ }
+
       // Record in backup history
       try {
         var hist = JSON.parse(localStorage.getItem('superkids_backup_history') || '[]');
@@ -1634,6 +1645,377 @@ window.executeRollover = function() {
     true
   );
 };
+
+// ============================================================
+// HISTORICAL RECORDS VIEWER
+// ============================================================
+function getArchiveIndex() {
+  try { return JSON.parse(localStorage.getItem('superkids_archives_index') || '[]'); } catch(e) { return []; }
+}
+function loadArchive(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
+}
+
+window.renderHistoricalRecords = function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { showToast('Access denied','error'); return; }
+
+  var archiveIndex = getArchiveIndex();
+  var selectedKey = window._histSelectedKey || (archiveIndex.length ? archiveIndex[archiveIndex.length-1].key : null);
+  var activeTab = window._histActiveTab || 'overview';
+  var archive = selectedKey ? loadArchive(selectedKey) : null;
+
+  var yearOptions = archiveIndex.length
+    ? archiveIndex.slice().reverse().map(function(a) {
+        return '<option value="' + a.key + '"' + (a.key === selectedKey ? ' selected' : '') + '>' + a.year + '</option>';
+      }).join('')
+    : '<option value="">No archives yet</option>';
+
+  var tabs = [
+    { id:'overview',    label:'Overview',    icon:'fa-chart-pie' },
+    { id:'students',    label:'Students',    icon:'fa-user-graduate' },
+    { id:'teachers',    label:'Teachers',    icon:'fa-chalkboard-teacher' },
+    { id:'attendance',  label:'Attendance',  icon:'fa-calendar-check' },
+    { id:'fees',        label:'Fees',        icon:'fa-rupee-sign' },
+    { id:'exams',       label:'Exams',       icon:'fa-file-alt' },
+    { id:'homework',    label:'Homework',    icon:'fa-book-open' },
+    { id:'achievements',label:'Achievements',icon:'fa-trophy' },
+    { id:'health',      label:'Health',      icon:'fa-heartbeat' },
+    { id:'grievances',  label:'Grievances',  icon:'fa-comments' },
+    { id:'activity',    label:'Activity Log', icon:'fa-history' },
+  ];
+
+  var tabBar = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">' +
+    tabs.map(function(t) {
+      var active = t.id === activeTab;
+      return '<button onclick="window._histActiveTab=\'' + t.id + '\';renderHistoricalRecords()" style="padding:7px 14px;border-radius:20px;border:1.5px solid ' + (active?'#0F2050':'#DCE1EF') + ';background:' + (active?'#0F2050':'#fff') + ';color:' + (active?'#fff':'#374151') + ';font-size:12px;font-weight:' + (active?'700':'500') + ';cursor:pointer">' +
+        '<i class="fas ' + t.icon + '" style="margin-right:5px"></i>' + t.label + '</button>';
+    }).join('') +
+  '</div>';
+
+  var content = '';
+  if (!archive) {
+    content = '<div style="text-align:center;padding:60px 20px;color:#6B7A9D">' +
+      '<i class="fas fa-archive" style="font-size:48px;margin-bottom:16px;display:block;color:#DCE1EF"></i>' +
+      '<div style="font-size:16px;font-weight:700;margin-bottom:8px">No Historical Archives Found</div>' +
+      '<p style="font-size:13px;max-width:400px;margin:0 auto">Archives are created automatically during Year-End Rollover. You can also import a backup JSON file below.</p>' +
+      '<div style="margin-top:20px">' +
+        '<input type="file" id="hist-import-file" accept=".json" style="display:none" onchange="importHistoricalBackup(this)"/>' +
+        '<button class="btn btn-primary" onclick="document.getElementById(\'hist-import-file\').click()"><i class="fas fa-upload"></i> Import Backup JSON to View</button>' +
+      '</div>' +
+    '</div>';
+  } else {
+    content = tabBar + _renderHistTab(archive, activeTab);
+  }
+
+  var html = '<div style="max-width:1100px">' +
+    // Header
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">' +
+      '<div>' +
+        '<h2 style="margin:0;font-size:20px;color:#0F2050"><i class="fas fa-history" style="color:#C4893A;margin-right:10px"></i>Historical Records</h2>' +
+        '<div style="font-size:12px;color:#6B7A9D;margin-top:3px">View complete school data from previous academic years</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        (archiveIndex.length ? '<select class="form-control" style="width:160px;font-size:13px" onchange="window._histSelectedKey=this.value;window._histActiveTab=\'overview\';renderHistoricalRecords()">' + yearOptions + '</select>' : '') +
+        '<input type="file" id="hist-import-file" accept=".json" style="display:none" onchange="importHistoricalBackup(this)"/>' +
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'hist-import-file\').click()"><i class="fas fa-upload"></i> Import JSON</button>' +
+        (archive ? '<button class="btn btn-secondary btn-sm" onclick="redownloadArchive(\'' + selectedKey + '\')"><i class="fas fa-download"></i> Download</button>' : '') +
+        (archive ? '<button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none" onclick="deleteArchive(\'' + selectedKey + '\')"><i class="fas fa-trash"></i></button>' : '') +
+      '</div>' +
+    '</div>' +
+    content +
+  '</div>';
+
+  renderLayout(html, 'Historical Records');
+};
+
+function _renderHistTab(archive, tab) {
+  var classes = archive.classes || [];
+  var students = (archive.students || []).filter(function(s){ return !s.deleted; });
+  var teachers = (archive.users || []).filter(function(u){ return u.role === 'subadmin'; });
+
+  var cls = function(id) { return (classes.find(function(c){ return c.id===id; })||{}).name || '—'; };
+
+  var statCard = function(icon, label, value, color) {
+    return '<div style="background:#fff;border:1.5px solid #DCE1EF;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px">' +
+      '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        '<i class="fas ' + icon + '" style="color:' + color + ';font-size:20px"></i>' +
+      '</div>' +
+      '<div><div style="font-size:22px;font-weight:900;color:#0F2050">' + value + '</div><div style="font-size:12px;color:#6B7A9D">' + label + '</div></div>' +
+    '</div>';
+  };
+
+  var tableWrap = function(html) {
+    return '<div style="overflow-x:auto;border:1px solid #DCE1EF;border-radius:10px">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' + html + '</table></div>';
+  };
+
+  var th = function(label) { return '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;background:#0F2050;color:#fff;white-space:nowrap">' + label + '</th>'; };
+  var td = function(val, style) { return '<td style="padding:9px 14px;border-bottom:1px solid #f1f5f9;' + (style||'') + '">' + (val||'—') + '</td>'; };
+  var trEven = 'background:#f8fafc';
+
+  if (tab === 'overview') {
+    var totalAtt = (archive.attendance||[]).length;
+    var totalFees = (archive.feeRecords||[]).reduce(function(s,f){ return s+(parseFloat(f.amount||f.paid||0)); },0);
+    var graduated = students.filter(function(s){ return s.status==='alumni'; }).length;
+    return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px">' +
+      statCard('fa-user-graduate','Total Students',students.length,'#0F2050') +
+      statCard('fa-chalkboard-teacher','Teachers',teachers.length,'#1AA6CA') +
+      statCard('fa-school','Classes',classes.length,'#C4893A') +
+      statCard('fa-graduation-cap','Graduated',graduated,'#10b981') +
+      statCard('fa-calendar-check','Attendance Records',totalAtt,'#8b5cf6') +
+      statCard('fa-rupee-sign','Fees Collected','₹'+totalFees.toLocaleString('en-IN'),'#f59e0b') +
+      statCard('fa-file-alt','Exams',(archive.exams||[]).length,'#ef4444') +
+      statCard('fa-book-open','Assignments',(archive.assignments||[]).length,'#06b6d4') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div class="card"><div class="card-title" style="margin-bottom:12px"><i class="fas fa-school" style="color:#1AA6CA"></i> Classes</div>' +
+        tableWrap('<tr>' + th('Class') + th('Teacher') + th('Students') + '</tr>' +
+          classes.map(function(c,i) {
+            var t = (archive.users||[]).find(function(u){ return u.id===c.teacherId; });
+            var sc = students.filter(function(s){ return s.classId===c.id; }).length;
+            return '<tr style="' + (i%2?trEven:'') + '">' + td(c.name,'font-weight:700') + td(t?t.name:'—') + td(sc) + '</tr>';
+          }).join('')) +
+      '</div>' +
+      '<div class="card"><div class="card-title" style="margin-bottom:12px"><i class="fas fa-info-circle" style="color:#C4893A"></i> Archive Info</div>' +
+        '<div style="font-size:13px;line-height:2">' +
+          '<div><span style="color:#6B7A9D">Academic Year:</span> <strong>' + (archive._academicYear||'—') + '</strong></div>' +
+          '<div><span style="color:#6B7A9D">Exported At:</span> <strong>' + (archive._exportedAt ? new Date(archive._exportedAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : '—') + '</strong></div>' +
+          '<div><span style="color:#6B7A9D">School:</span> <strong>' + ((archive.meta||{}).schoolName||'—') + '</strong></div>' +
+          '<div><span style="color:#6B7A9D">Principal:</span> <strong>' + ((archive.meta||{}).principalName||'—') + '</strong></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if (tab === 'students') {
+    var active = students.filter(function(s){ return s.status!=='alumni'&&s.status!=='inactive'; });
+    var alumni = students.filter(function(s){ return s.status==='alumni'; });
+    var inactive = students.filter(function(s){ return s.status==='inactive'; });
+    var renderStudentTable = function(list, title) {
+      if (!list.length) return '';
+      return '<div style="margin-bottom:20px"><div style="font-weight:700;color:#0F2050;margin-bottom:8px;font-size:13px">' + title + ' (' + list.length + ')</div>' +
+        tableWrap('<tr>' + th('Name') + th('Roll No') + th('Class') + th('DOB') + th('Gender') + th('Blood Grp') + th('Parent') + th('Status') + '</tr>' +
+          list.map(function(s,i) {
+            var parent = (archive.users||[]).find(function(u){ return u.id===s.parentId; });
+            var statusColor = s.status==='alumni'?'#10b981':s.status==='inactive'?'#ef4444':'#1AA6CA';
+            return '<tr style="' + (i%2?trEven:'') + '">' +
+              td('<strong>' + _mgEsc(s.name) + '</strong>') +
+              td(s.rollNo) + td(cls(s.classId)) +
+              td(s.dob ? new Date(s.dob).toLocaleDateString('en-IN') : '—') +
+              td(s.gender) + td(s.bloodGroup) +
+              td(parent ? parent.name : '—') +
+              td('<span style="background:' + statusColor + '22;color:' + statusColor + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">' + (s.status||'active') + '</span>') +
+            '</tr>';
+          }).join('')) +
+      '</div>';
+    };
+    return renderStudentTable(active,'Active Students') + renderStudentTable(alumni,'Graduated / Alumni') + renderStudentTable(inactive,'Inactive / Left');
+  }
+
+  if (tab === 'teachers') {
+    return tableWrap('<tr>' + th('Name') + th('Employee ID') + th('Designation') + th('Class Assigned') + th('Email') + th('Phone') + th('Joining Date') + '</tr>' +
+      teachers.map(function(t,i) {
+        var assignedCls = classes.find(function(c){ return c.teacherId===t.id; });
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(t.name) + '</strong>') +
+          td(t.employeeId) + td(t.designation||'Teacher') +
+          td(assignedCls ? assignedCls.name : '—') +
+          td(t.email) + td(t.phone) +
+          td(t.joiningDate ? new Date(t.joiningDate).toLocaleDateString('en-IN') : '—') +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'attendance') {
+    var attMap = {};
+    (archive.attendance||[]).forEach(function(a){ attMap[a.studentId] = (attMap[a.studentId]||{present:0,absent:0,late:0}); attMap[a.studentId][a.status]=(attMap[a.studentId][a.status]||0)+1; });
+    return tableWrap('<tr>' + th('Student') + th('Class') + th('Present') + th('Absent') + th('Late') + th('Total') + th('% Present') + '</tr>' +
+      students.map(function(s,i) {
+        var r = attMap[s.id]||{present:0,absent:0,late:0};
+        var total = r.present+r.absent+r.late;
+        var pct = total ? Math.round(r.present/total*100) : 0;
+        var pctColor = pct>=85?'#10b981':pct>=70?'#f59e0b':'#ef4444';
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(s.name) + '</strong>') + td(cls(s.classId)) +
+          td('<span style="color:#10b981;font-weight:700">' + r.present + '</span>') +
+          td('<span style="color:#ef4444;font-weight:700">' + r.absent + '</span>') +
+          td('<span style="color:#f59e0b;font-weight:700">' + r.late + '</span>') +
+          td(total) +
+          td('<span style="font-weight:700;color:' + pctColor + '">' + pct + '%</span>') +
+        '</tr>';
+      }).filter(Boolean).join(''));
+  }
+
+  if (tab === 'fees') {
+    var feeMap = {};
+    (archive.feeRecords||[]).forEach(function(f){ var sid=f.studentId; feeMap[sid]=feeMap[sid]||{paid:0,pending:0,count:0}; if(f.status==='paid'||f.status==='Paid') feeMap[sid].paid+=parseFloat(f.amount||0); else feeMap[sid].pending+=parseFloat(f.amount||0); feeMap[sid].count++; });
+    var totalCollected = Object.values(feeMap).reduce(function(s,v){ return s+v.paid; },0);
+    return '<div style="background:linear-gradient(135deg,#0F2050,#1a3a7a);border-radius:12px;padding:16px 24px;margin-bottom:16px;display:flex;gap:30px;flex-wrap:wrap">' +
+      '<div style="color:#fff"><div style="font-size:11px;color:#b0bec5;margin-bottom:2px">Total Collected</div><div style="font-size:22px;font-weight:900;color:#C4893A">₹' + totalCollected.toLocaleString('en-IN') + '</div></div>' +
+      '<div style="color:#fff"><div style="font-size:11px;color:#b0bec5;margin-bottom:2px">Total Records</div><div style="font-size:22px;font-weight:900">' + (archive.feeRecords||[]).length + '</div></div>' +
+    '</div>' +
+    tableWrap('<tr>' + th('Student') + th('Class') + th('Total Paid') + th('Pending') + th('Records') + '</tr>' +
+      students.map(function(s,i) {
+        var r = feeMap[s.id]||{paid:0,pending:0,count:0};
+        if (!r.count) return '';
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(s.name) + '</strong>') + td(cls(s.classId)) +
+          td('<span style="color:#10b981;font-weight:700">₹' + r.paid.toLocaleString('en-IN') + '</span>') +
+          td('<span style="color:' + (r.pending>0?'#ef4444':'#10b981') + ';font-weight:700">₹' + r.pending.toLocaleString('en-IN') + '</span>') +
+          td(r.count) +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'exams') {
+    return tableWrap('<tr>' + th('Subject') + th('Exam Name') + th('Class') + th('Date') + th('Time') + th('Duration') + th('Venue') + '</tr>' +
+      (archive.exams||[]).map(function(e,i) {
+        var c = classes.find(function(c){ return c.id===e.classId; });
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(e.subject) + '</strong>') + td(e.examName) +
+          td(c?c.name:'—') +
+          td(e.date ? new Date(e.date).toLocaleDateString('en-IN') : '—') +
+          td(e.time) + td(e.duration) + td(e.venue) +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'homework') {
+    return tableWrap('<tr>' + th('Title') + th('Subject') + th('Class') + th('Due Date') + th('Description') + '</tr>' +
+      (archive.assignments||[]).map(function(a,i) {
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(a.title) + '</strong>') + td(a.subject) +
+          td(cls(a.classId)) +
+          td(a.dueDate ? new Date(a.dueDate).toLocaleDateString('en-IN') : '—') +
+          td('<span style="color:#6B7A9D;font-size:12px">' + _mgEsc((a.description||'').slice(0,80)) + (a.description&&a.description.length>80?'…':'') + '</span>') +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'achievements') {
+    return tableWrap('<tr>' + th('Student') + th('Class') + th('Title') + th('Category') + th('Date') + th('Description') + '</tr>' +
+      (archive.achievements||[]).map(function(a,i) {
+        var s = students.find(function(s){ return s.id===a.studentId; });
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td(s?'<strong>'+_mgEsc(s.name)+'</strong>':'—') +
+          td(s?cls(s.classId):'—') +
+          td('<strong>' + _mgEsc(a.title) + '</strong>') +
+          td('<span style="background:#C4893A22;color:#C4893A;padding:2px 8px;border-radius:10px;font-size:11px">' + _mgEsc(a.category||a.type||'—') + '</span>') +
+          td(a.date ? new Date(a.date).toLocaleDateString('en-IN') : '—') +
+          td('<span style="color:#6B7A9D;font-size:12px">' + _mgEsc((a.description||'').slice(0,60)) + '</span>') +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'health') {
+    return tableWrap('<tr>' + th('Student') + th('Class') + th('Date') + th('Height') + th('Weight') + th('BMI') + th('Remarks') + '</tr>' +
+      (archive.healthRecords||[]).map(function(h,i) {
+        var s = students.find(function(s){ return s.id===h.studentId; });
+        var bmi = (h.height&&h.weight) ? (h.weight/Math.pow(h.height/100,2)).toFixed(1) : '—';
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td(s?'<strong>'+_mgEsc(s.name)+'</strong>':'—') +
+          td(s?cls(s.classId):'—') +
+          td(h.date ? new Date(h.date).toLocaleDateString('en-IN') : '—') +
+          td(h.height?h.height+' cm':'—') + td(h.weight?h.weight+' kg':'—') + td(bmi) +
+          td('<span style="color:#6B7A9D;font-size:12px">' + _mgEsc(h.remarks||'—') + '</span>') +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'grievances') {
+    return tableWrap('<tr>' + th('Subject') + th('Submitted By') + th('Category') + th('Date') + th('Status') + th('Description') + '</tr>' +
+      (archive.grievances||[]).map(function(g,i) {
+        var u = (archive.users||[]).find(function(u){ return u.id===g.submittedBy||u.id===g.parentId; });
+        var sc = g.status==='resolved'?'#10b981':g.status==='inprogress'?'#f59e0b':'#ef4444';
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<strong>' + _mgEsc(g.subject||g.title) + '</strong>') +
+          td(u?u.name:g.submittedByName||'—') +
+          td(g.category||'—') +
+          td(g.createdAt ? new Date(g.createdAt).toLocaleDateString('en-IN') : '—') +
+          td('<span style="background:' + sc + '22;color:' + sc + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">' + (g.status||'open') + '</span>') +
+          td('<span style="color:#6B7A9D;font-size:12px">' + _mgEsc((g.description||g.message||'').slice(0,80)) + '</span>') +
+        '</tr>';
+      }).join(''));
+  }
+
+  if (tab === 'activity') {
+    return tableWrap('<tr>' + th('Date & Time') + th('User') + th('Action') + th('Details') + '</tr>' +
+      (archive.activityLog||[]).slice().reverse().map(function(l,i) {
+        return '<tr style="' + (i%2?trEven:'') + '">' +
+          td('<span style="font-size:11px;color:#6B7A9D">' + (l.ts ? new Date(l.ts).toLocaleString('en-IN') : '—') + '</span>') +
+          td(l.userName||'System') +
+          td('<strong>' + _mgEsc(l.action) + '</strong>') +
+          td('<span style="color:#6B7A9D;font-size:12px">' + _mgEsc((l.detail||'').slice(0,100)) + '</span>') +
+        '</tr>';
+      }).join(''));
+  }
+
+  return '<div style="color:#6B7A9D;text-align:center;padding:40px">No data available for this view.</div>';
+}
+
+window.importHistoricalBackup = function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (!data._version && !data.students) { showToast('Invalid backup file','error'); return; }
+      var ay = data._academicYear || data.meta && data.meta.academicYear || file.name.replace(/\.json$/,'');
+      var key = 'superkids_archive_imported_' + ay.replace(/[^a-z0-9]/gi,'_') + '_' + Date.now();
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+        var idx = getArchiveIndex();
+        idx.push({ key: key, year: ay + ' (imported)', rolledAt: new Date().toISOString() });
+        localStorage.setItem('superkids_archives_index', JSON.stringify(idx));
+        window._histSelectedKey = key;
+        window._histActiveTab = 'overview';
+        showToast('Backup imported: ' + ay,'success');
+        renderHistoricalRecords();
+      } catch(storageErr) {
+        showToast('Not enough storage to save archive in browser. Showing data temporarily.','warning');
+        // Show inline without saving
+        window._tempArchive = data;
+        window._histSelectedKey = key;
+        window._histActiveTab = 'overview';
+        renderHistoricalRecords();
+      }
+    } catch(err) { showToast('Failed to read file: ' + err.message,'error'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+};
+
+window.redownloadArchive = function(key) {
+  var data = loadArchive(key);
+  if (!data) { showToast('Archive not found','error'); return; }
+  var json = JSON.stringify(data, null, 2);
+  var blob = new Blob([json], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'archive-' + (data._academicYear||key).replace(/[^a-z0-9]/gi,'-') + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+window.deleteArchive = function(key) {
+  confirmDialog('Delete this archive from browser storage? You cannot undo this. Download it first if you need it.', function() {
+    localStorage.removeItem(key);
+    var idx = getArchiveIndex().filter(function(a){ return a.key !== key; });
+    localStorage.setItem('superkids_archives_index', JSON.stringify(idx));
+    window._histSelectedKey = null;
+    renderHistoricalRecords();
+    showToast('Archive deleted','success');
+  });
+};
+
+registerRoute('historical-records', function() {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { renderLogin(); return; }
+  renderHistoricalRecords();
+});
 
 // ---- My Profile (Super Admin) ----
 function renderMyProfile() {

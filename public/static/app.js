@@ -218,6 +218,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       navItems.push({ id: 'management', icon: 'fa-cogs', label: 'Management' });
       navItems.push({ id: 'my-profile', icon: 'fa-user-circle', label: 'My Profile', divider: true, dividerLabel: 'Admin' });
       navItems.push({ id: 'school-settings', icon: 'fa-school', label: 'School Settings' });
+      navItems.push({ id: 'historical-records', icon: 'fa-history', label: 'Historical Records' });
     }
 
     // Filter based on subadmin permissions

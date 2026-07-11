@@ -570,7 +570,7 @@ window.openTeacherOnboarding = function(teacherId) {
 
     '<div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;border-top:1px solid #e2e8f0">'+
       '<button class="btn btn-secondary" onclick="document.getElementById(\'tch-onboard-modal\').remove()">Cancel</button>'+
-      '<button class="btn btn-success" onclick="_saveTeacherOnboarding(\''+teacherId+'\')"><i class="fas fa-save"></i> '+(isEdit?'Save Changes':'Complete Onboarding')+'</button>'+
+      '<button class="btn btn-success" onclick="_saveTeacherOnboarding('+(teacherId?'\''+teacherId+'\'':'null')+')"><i class="fas fa-save"></i> '+(isEdit?'Save Changes':'Complete Onboarding')+'</button>'+
     '</div>'+
   '</div>';
 
@@ -593,6 +593,7 @@ window._tobSameAddr = function() {
 };
 
 window._saveTeacherOnboarding = function(teacherId) {
+  if (teacherId === 'null' || teacherId === 'undefined') teacherId = null;
   var isEdit = !!teacherId;
   var name = (document.getElementById('tob-name').value||'').trim();
   var mobile = (document.getElementById('tob-mobile').value||'').trim();

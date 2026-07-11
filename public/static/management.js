@@ -4434,24 +4434,182 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
   };
   var title = titles[docKey] || docKey;
 
+  var gender = (teacher.gender || '').toLowerCase() === 'female' ? 'Ms.' : 'Mr.';
+  var grossSal = struct.grossSalary ? '₹' + parseFloat(struct.grossSalary).toLocaleString('en-IN') : (teacher.baseSalary ? '₹' + parseFloat(teacher.baseSalary).toLocaleString('en-IN') : '₹____________');
+  var principalName = _mgEsc(meta.principalName || (principal.name || 'Nivrutti Pawar'));
+  var sAddrPlain = (meta.schoolAddress || '').replace(/\n/g, ', ');
+
+  var _li = function(txt) { return '<li style="margin-bottom:4px">' + txt + '</li>'; };
+  var _h3 = function(n, txt) { return '<h3 style="font-size:13px;font-weight:800;color:#0D1B4A;margin:18px 0 6px">' + (n ? n + '. ' : '') + txt + '</h3>'; };
+  var _p  = function(txt) { return '<p style="margin:6px 0;line-height:1.8;text-align:justify">' + txt + '</p>'; };
+
   var bodyHtml = '';
   if (docKey === 'joining') {
-    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
-      '<p>This is to formally confirm your appointment as <strong>' + _mgEsc(designation) + '</strong> in the <strong>' + _mgEsc(department) + '</strong> Department at <strong>' + _mgEsc(sName) + '</strong> with effect from <strong>' + joiningDateStr + '</strong>.</p>' +
-      '<p>Your terms and conditions of employment are as set forth in the offer letter issued to you. You will be required to follow all rules, regulations, and policies of the institution.</p>' +
-      '<p>We warmly welcome you to our team and look forward to your valuable contribution to the school community.</p>';
+    bodyHtml =
+      _p('Dear ' + gender + ' <strong>' + _mgEsc(teacher.name) + '</strong>,') +
+      _p('We are pleased to offer you employment with <strong>' + _mgEsc(sName) + '</strong> as <strong>' + _mgEsc(designation) + '</strong>. We are delighted to welcome you to our team and look forward to your contribution in providing quality early childhood education and care.') +
+      _p('Your appointment is subject to the following terms and conditions:') +
+
+      _h3('1','Designation') +
+      _p('You are appointed as <strong>' + _mgEsc(designation) + '</strong>.') +
+
+      _h3('2','Date of Joining') +
+      _p('Your employment will commence on <strong>' + joiningDateStr + '</strong>.') +
+
+      _h3('3','Place of Posting') +
+      _p('Your initial place of posting will be:') +
+      '<p style="margin:8px 0 8px 20px"><strong>' + _mgEsc(sName) + '</strong><br>Address: ' + (sAddrPlain ? _mgEsc(sAddrPlain) : '___________________________________________') + '</p>' +
+      _p('The management may transfer you to another branch or work location, if required.') +
+
+      _h3('4','Working Hours') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Working Days: <strong>Monday to Saturday</strong>') +
+        _li('Office Hours: ____________ to ____________') +
+        _li('Weekly Off: Sunday and other holidays as declared by the school.') +
+      '</ul>' +
+      _p('You are expected to report to work punctually and maintain regular attendance.') +
+
+      _h3('5','Salary &amp; Benefits') +
+      _p('Your Gross Monthly Salary will be <strong>' + grossSal + '</strong>.') +
+      _p('Salary will be paid on or before the 7th day of the following month after statutory deductions, if applicable.') +
+      _p('Any additional benefits or incentives will be governed by the policies of ' + _mgEsc(sName) + '.') +
+
+      _h3('6','Probation') +
+      _p('You will be on probation for <strong>six (6) months</strong> from your date of joining. During this period, your performance, conduct, attendance, and suitability for the role will be assessed.') +
+      _p('Upon successful completion of probation, your employment may be confirmed in writing.') +
+
+      _h3('7','Duties &amp; Responsibilities') +
+      _p('You shall:') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Perform your assigned duties sincerely and efficiently.') +
+        _li('Maintain a safe, caring, and child-friendly learning environment.') +
+        _li('Follow the curriculum, teaching plans, and school guidelines.') +
+        _li('Attend staff meetings, training sessions, parent meetings, and school events.') +
+        _li('Maintain confidentiality regarding students, parents, staff, and school information.') +
+        _li('Uphold the values and reputation of ' + _mgEsc(sName) + '.') +
+      '</ul>' +
+
+      _h3('8','Code of Conduct') +
+      _p('You are expected to:') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Maintain professionalism, honesty, and integrity.') +
+        _li('Treat children, parents, colleagues, and visitors with dignity and respect.') +
+        _li('Follow all child safety, safeguarding, and hygiene protocols.') +
+        _li('Maintain appropriate dress and grooming standards.') +
+        _li('Refrain from any behavior that could negatively impact the preschool\'s reputation.') +
+      '</ul>' +
+
+      _h3('9','Leave') +
+      _p('Leave entitlement shall be governed by the Leave Policy of ' + _mgEsc(sName) + '. All leave requests must be approved by the Principal or Management in advance, except in emergencies.') +
+
+      _h3('10','Confidentiality') +
+      _p('You shall maintain strict confidentiality regarding all information related to the preschool, including student records, parent information, financial data, teaching materials, policies, and business operations, during and after your employment.') +
+
+      _h3('11','Notice Period') +
+      _p('Either party may terminate this employment by giving <strong>30 days\'</strong> written notice or salary in lieu of notice, subject to applicable laws and school policy.') +
+      _p('The management reserves the right to terminate employment without notice in cases of gross misconduct, child safety violations, fraud, theft, breach of confidentiality, or any serious violation of school policies.') +
+
+      _h3('12','Documents Required') +
+      _p('Please submit self-attested copies of the following documents before or on your joining date:') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Aadhaar Card') + _li('PAN Card') + _li('Educational Certificates') +
+        _li('Experience Certificates (if applicable)') + _li('Address Proof') +
+        _li('Passport-size Photographs') + _li('Bank Account Details (Cancelled Cheque/Passbook)') +
+      '</ul>' +
+
+      _h3('13','Acceptance of Appointment') +
+      _p('Please sign and return a copy of this letter as your acceptance of the appointment and the terms and conditions stated herein.') +
+
+      _p('We warmly welcome you to the ' + _mgEsc(sName) + ' family. We are confident that your dedication, enthusiasm, and commitment will contribute to the growth and success of our students and institution.') +
+      _p('We wish you a rewarding and successful career with us.') +
+
+      '<p style="margin:20px 0 4px"><strong>Yours sincerely,</strong></p>' +
+      '<p style="margin:0 0 4px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
+      '<p style="margin:0 0 32px;font-size:12px;color:#555">' + principalName + '<br>Owner &amp; Principal</p>' +
+
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
+        '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Employee Acceptance</div>' +
+        _p('I, ' + gender + ' __________________________________________, accept the appointment as <strong>' + _mgEsc(designation) + '</strong> at ' + _mgEsc(sName) + ' and agree to abide by all the terms and conditions mentioned in this Appointment &amp; Joining Letter.') +
+        '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>' +
+          '<tr><td style="padding:10px 0;border:none;width:50%">Employee Signature: _______________________</td><td style="padding:10px 0;border:none">Date: ____________________________________</td></tr>' +
+          '<tr><td style="padding:6px 0;border:none">Employee Name: ___________________________</td><td style="padding:6px 0;border:none">Place: ___________________________________</td></tr>' +
+        '</tbody></table>' +
+      '</div>';
+
   } else if (docKey === 'offer') {
     var probation = opts.probation || teacher.probationPeriod || 6;
     var emptype = opts.emptype || teacher.employmentType || 'Full-Time';
-    var ctc = opts.ctc ? '₹' + parseFloat(opts.ctc).toLocaleString('en-IN') + ' per annum' : '—';
-    bodyHtml = '<p>Dear <strong>' + _mgEsc(teacher.name) + '</strong>,</p>' +
-      '<p>We are pleased to offer you the position of <strong>' + _mgEsc(designation) + '</strong> at <strong>' + _mgEsc(sName) + '</strong>. Please find the terms of your employment below:</p>' +
-      '<table style="width:100%;border-collapse:collapse;margin:12px 0"><tbody>' +
-        [['Designation', designation], ['Department', department], ['Joining Date', joiningDateStr], ['Employment Type', emptype], ['Probation Period', probation + ' months'], ['Gross Monthly Salary', '₹' + salary], ['Annual CTC', ctc]].map(function(r) {
-          return '<tr><td style="padding:7px 12px;border:1px solid #DCE1EF;width:40%;background:#f8fafc;font-weight:600;color:#0F2050">' + r[0] + '</td><td style="padding:7px 12px;border:1px solid #DCE1EF">' + _mgEsc(String(r[1])) + '</td></tr>';
+    bodyHtml =
+      _p('Dear ' + gender + ' <strong>' + _mgEsc(teacher.name) + '</strong>,') +
+      _p('We are pleased to offer you the position of <strong>' + _mgEsc(designation) + '</strong> at <strong>' + _mgEsc(sName) + '</strong>. Based on your qualifications, experience, and interactions during the selection process, we believe you will be a valuable addition to our team.') +
+      _p('At ' + _mgEsc(sName) + ', we are committed to providing a safe, nurturing, and engaging learning environment where every child can learn, grow, and thrive. We are delighted to invite you to join us in our mission of shaping young minds and building a strong educational foundation for our students.') +
+      _p('The key terms of this employment offer are as follows:') +
+
+      _h3('', 'Employment Details') +
+      '<table style="width:100%;border-collapse:collapse;margin:0 0 12px;font-size:13px"><tbody>' +
+        [
+          ['Designation', _mgEsc(designation)],
+          ['Department', _mgEsc(department)],
+          ['Reporting To', 'Owner &amp; Principal'],
+          ['Proposed Date of Joining', joiningDateStr],
+          ['Place of Posting', _mgEsc(sName) + (sAddrPlain ? ', ' + _mgEsc(sAddrPlain) : '')],
+          ['Employment Type', _mgEsc(emptype)]
+        ].map(function(r) {
+          return '<tr><td style="padding:6px 12px;border:1px solid #DCE1EF;width:42%;background:#f8fafc;font-weight:600;color:#0F2050">' + r[0] + '</td><td style="padding:6px 12px;border:1px solid #DCE1EF">' + r[1] + '</td></tr>';
         }).join('') +
       '</tbody></table>' +
-      '<p>Kindly sign and return a copy of this letter as your acceptance of the offer.</p>';
+
+      _h3('', 'Compensation') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Gross Monthly Salary: <strong>' + grossSal + '</strong>') +
+        _li('Salary will be paid monthly after applicable statutory deductions.') +
+        _li('Detailed salary breakup will be provided during the joining process.') +
+      '</ul>' +
+
+      _h3('', 'Probation') +
+      _p('Your employment will initially be on probation for <strong>' + probation + ' months</strong>. During this period, your performance and suitability for the role will be evaluated. Upon successful completion of probation, your employment may be confirmed in writing.') +
+
+      _h3('', 'Working Hours') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Working Days: <strong>Monday to Saturday</strong>') +
+        _li('Working Hours: ____________ to ____________') +
+        _li('Weekly holidays and public holidays shall be as per the school calendar.') +
+      '</ul>' +
+
+      _h3('', 'Documents Required at Joining') +
+      _p('Please submit self-attested copies of the following documents at the time of joining:') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Aadhaar Card') + _li('PAN Card') + _li('Educational Qualification Certificates') +
+        _li('Experience Certificates (if applicable)') + _li('Address Proof') +
+        _li('Passport-size Photographs') + _li('Bank Account Details') +
+      '</ul>' +
+
+      _h3('', 'Acceptance of Offer') +
+      _p('This offer is valid until ___________. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.') +
+      _p('Upon acceptance of this offer and successful completion of all pre-employment formalities, you will receive your formal Appointment Letter on your date of joining.') +
+      _p('Please note that this offer is subject to:') +
+      '<ul style="margin:0 0 10px 20px;padding:0">' +
+        _li('Verification of the information and documents provided by you.') +
+        _li('Submission of all required documents.') +
+        _li('Satisfactory background verification, where applicable.') +
+        _li('Compliance with the policies and code of conduct of ' + _mgEsc(sName) + '.') +
+      '</ul>' +
+
+      _p('We are excited about the possibility of you joining our team and contributing to the success of our preschool. We believe your dedication, professionalism, and passion for education will make a meaningful difference in the lives of our students.') +
+      _p('We warmly welcome you to the ' + _mgEsc(sName) + ' family and look forward to working with you.') +
+
+      '<p style="margin:18px 0 4px"><strong>With best wishes,</strong></p>' +
+      '<p style="margin:0 0 4px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
+      '<p style="margin:0 0 32px;font-size:12px;color:#555">' + principalName + '<br>Owner &amp; Principal</p>' +
+
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
+        '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>' +
+        _p('I, ' + gender + ' ______________________________________, hereby accept the offer of employment for the position of <strong>' + _mgEsc(designation) + '</strong> at ' + _mgEsc(sName) + ' under the terms and conditions mentioned above.') +
+        '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>' +
+          '<tr><td style="padding:10px 0;border:none;width:50%">Employee Signature: ______________________</td><td style="padding:10px 0;border:none">Date: _________________________________</td></tr>' +
+          '<tr><td style="padding:6px 0;border:none">Employee Name: _________________________</td><td style="padding:6px 0;border:none">Place: _________________________________</td></tr>' +
+        '</tbody></table>' +
+      '</div>';
   } else if (docKey === 'experience') {
     var lwd = opts.lwd ? new Date(opts.lwd).toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}) : today;
     var leaveReason = opts.reason || 'personal reasons';
@@ -4529,8 +4687,9 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '<div class="doc-title">' + _mgEsc(title) + '</div>' +
       '<div class="ref-box"><strong>To:</strong> ' + _mgEsc(teacher.name) + ' &nbsp;|&nbsp; <strong>Designation:</strong> ' + _mgEsc(designation) + ' &nbsp;|&nbsp; <strong>Emp ID:</strong> ' + _mgEsc(teacher.employeeId || 'N/A') + '&nbsp;&nbsp;&nbsp;<strong>Date:</strong> ' + today + '</div>' +
       bodyHtml +
-      '<p style="font-size:13px;margin-top:20px">Yours sincerely,</p>' +
-      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principal.name || 'Principal / HR Manager' }) +
+      (docKey === 'joining' || docKey === 'offer' ? '' :
+        '<p style="font-size:13px;margin-top:20px">Yours sincerely,</p>' +
+        buildDocSignatureArea(meta, { showLeft: false, rightLabel: principal.name || 'Principal / HR Manager' })) +
       '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
     '</div>' +
     '</div>' +

@@ -874,7 +874,7 @@ function _skStampSig(meta, rightLabel) {
     ? '<img src="'+signImg+'" style="display:block;width:'+signWidth+'px;height:'+signHeight+'px;object-fit:contain;margin:0 auto 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
     : '<div style="height:'+signHeight+'px"></div>';
   var td = 'border:none';
-  var divider = '<td width="1" style="'+td+';padding:0 18px;vertical-align:middle"><div style="width:1px;height:80px;background:#DCE1EF;margin:0 auto"></div></td>';
+  var divider = '<td width="40" style="'+td+'"></td>';
 
   return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;border-collapse:collapse;border:none">'+
     '<tr>'+
@@ -988,7 +988,7 @@ window.generateHRLetter = function(teacherId, letterType) {
       '<p style="margin:0 0 2px">For <strong>'+_escH(sName)+'</strong></p>'+
       _skStampSig(meta, principalName)+
 
-      '<div style="margin-top:24px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:16px;page-break-before:always;-webkit-column-break-before:always;break-before:page">'+
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>'+
         p('I, '+gender+' ______________________________________, hereby accept the offer of employment for the position of '+desig+' at '+_escH(sName)+' under the terms and conditions mentioned above.')+
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>'+

@@ -4088,10 +4088,7 @@ function buildDocSignatureArea(meta, opts) {
 
   var sigTd = 'border:none;border-top:none;border-bottom:none';
 
-  // Vertical divider between stamp and signature
-  var dividerCol = '<td width="1" style="' + sigTd + ';padding:0 18px;vertical-align:middle">' +
-    '<div style="width:1px;height:80px;background:#DCE1EF;margin:0 auto"></div>' +
-  '</td>';
+  var dividerCol = '<td width="40" style="' + sigTd + '"></td>';
 
   // Left column: teacher line OR stamp
   var leftCol, middleCol;
@@ -4603,7 +4600,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '<p style="margin:0 0 2px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
       buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName }) +
 
-      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:16px">' +
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:16px;page-break-before:always;-webkit-column-break-before:always;break-before:page">' +
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>' +
         _p('I, ' + gender + ' ______________________________________, hereby accept the offer of employment for the position of <strong>' + _mgEsc(designation) + '</strong> at ' + _mgEsc(sName) + ' under the terms and conditions mentioned above.') +
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>' +

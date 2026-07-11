@@ -867,6 +867,7 @@ window.generateHRLetter = function(teacherId, letterType) {
   var sName = meta.schoolName || 'SuperKids India Preschool';
   var sAddr = (meta.schoolAddress || 'Bhosari, Pune – 411026').replace(/\n/g,'<br>');
   var todayStr = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  var _offerExpiry = (function(){ var d = new Date(); d.setDate(d.getDate()+15); return d.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}); })();
   var salary = parseFloat(t.baseSalary||0).toLocaleString('en-IN');
   var structs = DB.getSalaryStructures(teacherId);
   var struct = structs[0] || {};
@@ -927,7 +928,7 @@ window.generateHRLetter = function(teacherId, letterType) {
       h3('','Working Hours')+
       '<ul style="margin:0 0 10px 20px;padding:0">'+
         li('Working Days: <strong>Monday to Saturday</strong>')+
-        li('Working Hours: ____________ to ____________')+
+        li('Working Hours: <strong>8:45 AM to 3:15 PM</strong>')+
         li('Weekly holidays and public holidays shall be as per the school calendar.')+
       '</ul>'+
 
@@ -940,7 +941,7 @@ window.generateHRLetter = function(teacherId, letterType) {
       '</ul>'+
 
       h3('','Acceptance of Offer')+
-      p('This offer is valid until ___________. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.')+
+      p('This offer is valid until <strong>'+_offerExpiry+'</strong>. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.')+
       p('Upon acceptance of this offer and successful completion of all pre-employment formalities, you will receive your formal Appointment Letter on your date of joining.')+
       p('Please note that this offer is subject to:')+
       '<ul style="margin:0 0 10px 20px;padding:0">'+
@@ -993,7 +994,7 @@ window.generateHRLetter = function(teacherId, letterType) {
       h3('4','Working Hours')+
       '<ul style="margin:0 0 10px 20px;padding:0">'+
         li('Working Days: <strong>Monday to Saturday</strong>')+
-        li('Office Hours: ____________ to ____________')+
+        li('Office Hours: <strong>8:45 AM to 3:15 PM</strong>')+
         li('Weekly Off: Sunday and other holidays as declared by the school.')+
       '</ul>'+
       p('You are expected to report to work punctually and maintain regular attendance.')+

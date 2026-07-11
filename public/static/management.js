@@ -4418,6 +4418,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
   var struct = structs[0] || {};
   var principal = (DB.get().users || []).find(function(u) { return u.role === 'superadmin'; }) || {};
   var today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+  var _offerExpiry = (function(){ var d = new Date(); d.setDate(d.getDate()+15); return d.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}); })();
   var sName = meta.schoolName || 'SuperKids India Preschool';
 
   var designation = opts.designation || teacher.designation || 'Class Teacher';
@@ -4464,7 +4465,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       _h3('4','Working Hours') +
       '<ul style="margin:0 0 10px 20px;padding:0">' +
         _li('Working Days: <strong>Monday to Saturday</strong>') +
-        _li('Office Hours: ____________ to ____________') +
+        _li('Office Hours: <strong>8:45 AM to 3:15 PM</strong>') +
         _li('Weekly Off: Sunday and other holidays as declared by the school.') +
       '</ul>' +
       _p('You are expected to report to work punctually and maintain regular attendance.') +
@@ -4572,7 +4573,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       _h3('', 'Working Hours') +
       '<ul style="margin:0 0 10px 20px;padding:0">' +
         _li('Working Days: <strong>Monday to Saturday</strong>') +
-        _li('Working Hours: ____________ to ____________') +
+        _li('Working Hours: <strong>8:45 AM to 3:15 PM</strong>') +
         _li('Weekly holidays and public holidays shall be as per the school calendar.') +
       '</ul>' +
 
@@ -4585,7 +4586,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '</ul>' +
 
       _h3('', 'Acceptance of Offer') +
-      _p('This offer is valid until ___________. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.') +
+      _p('This offer is valid until <strong>' + _offerExpiry + '</strong>. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.') +
       _p('Upon acceptance of this offer and successful completion of all pre-employment formalities, you will receive your formal Appointment Letter on your date of joining.') +
       _p('Please note that this offer is subject to:') +
       '<ul style="margin:0 0 10px 20px;padding:0">' +

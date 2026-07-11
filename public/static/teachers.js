@@ -880,22 +880,195 @@ window.generateHRLetter = function(teacherId, letterType) {
     createdAt: new Date().toISOString()
   });
 
+  var desig   = _escH(t.designation || 'Class Teacher');
+  var tName   = _escH(t.name || '');
+  var gender  = (t.gender||'').toLowerCase() === 'female' ? 'Ms.' : 'Mr.';
+  var joinDateFmt = t.joiningDate ? new Date(t.joiningDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '___________';
+  var grossSal = struct.grossSalary ? '₹'+parseFloat(struct.grossSalary).toLocaleString('en-IN') : (t.baseSalary ? '₹'+parseFloat(t.baseSalary).toLocaleString('en-IN') : '₹____________');
+  var principalName = _escH(meta.principalName || principal.name || 'Nivrutti Pawar');
+  var sAddrPlain = (meta.schoolAddress || '').replace(/\n/g,', ');
+
+  var li = function(txt){ return '<li style="margin-bottom:4px">'+txt+'</li>'; };
+  var h3 = function(n,txt){ return '<h3 style="font-size:13px;font-weight:800;color:#0D1B4A;margin:18px 0 6px">'+n+'. '+txt+'</h3>'; };
+  var p  = function(txt){ return '<p style="margin:6px 0;text-align:justify">'+txt+'</p>'; };
+
   var bodyHTML = '';
   if (letterType === 'Offer Letter') {
-    bodyHTML = '<p>Dear <strong>'+_escH(t.name)+'</strong>,</p>'+
-      '<p>We are pleased to offer you the position of <strong>'+_escH(t.designation||'Class Teacher')+'</strong> at <strong>'+sName+'</strong>.</p>'+
-      '<p>Your employment details are as follows:</p>'+
-      '<table style="width:100%;border-collapse:collapse;margin:12px 0"><tbody>'+
-        [['Designation',t.designation||'Class Teacher'],['Department',t.department||'Teaching'],['Joining Date',t.joiningDate?new Date(t.joiningDate).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}):''],['Employment Type',t.employmentType||'Full-Time'],['Probation Period',(t.probationPeriod||6)+' months'],['Gross Monthly Salary','₹'+salary]].map(function(r){
-          return '<tr><td style="padding:6px 12px;border:1px solid #ddd;width:40%;background:#f9f9f9;font-weight:600">'+r[0]+'</td><td style="padding:6px 12px;border:1px solid #ddd">'+r[1]+'</td></tr>';
+    bodyHTML =
+      p('Dear '+gender+' <strong>'+tName+'</strong>,')+
+      p('We are pleased to offer you the position of <strong>'+desig+'</strong> at <strong>'+_escH(sName)+'</strong>. Based on your qualifications, experience, and interactions during the selection process, we believe you will be a valuable addition to our team.')+
+      p('At '+_escH(sName)+', we are committed to providing a safe, nurturing, and engaging learning environment where every child can learn, grow, and thrive. We are delighted to invite you to join us in our mission of shaping young minds and building a strong educational foundation for our students.')+
+      p('The key terms of this employment offer are as follows:')+
+
+      '<h3 style="font-size:13px;font-weight:800;color:#0D1B4A;margin:18px 0 6px">Employment Details</h3>'+
+      '<table style="width:100%;border-collapse:collapse;margin:0 0 12px;font-size:13px"><tbody>'+
+        [
+          ['Designation', desig],
+          ['Department', _escH(t.department||'Academics / Administration')],
+          ['Reporting To', 'Owner &amp; Principal'],
+          ['Proposed Date of Joining', joinDateFmt],
+          ['Place of Posting', _escH(sName)+(sAddrPlain?', '+_escH(sAddrPlain):'')],
+          ['Employment Type', _escH(t.employmentType||'Full-Time')]
+        ].map(function(r){
+          return '<tr><td style="padding:6px 12px;border:1px solid #ddd;width:42%;background:#f9f9f9;font-weight:600">'+r[0]+'</td><td style="padding:6px 12px;border:1px solid #ddd">'+r[1]+'</td></tr>';
         }).join('')+
       '</tbody></table>'+
-      '<p>Kindly sign and return a copy of this letter as confirmation of your acceptance.</p>';
+
+      '<h3 style="font-size:13px;font-weight:800;color:#0D1B4A;margin:18px 0 6px">Compensation</h3>'+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Gross Monthly Salary: <strong>'+grossSal+'</strong>')+
+        li('Salary will be paid monthly after applicable statutory deductions.')+
+        li('Detailed salary breakup will be provided during the joining process.')+
+      '</ul>'+
+
+      h3('','Probation')+
+      p('Your employment will initially be on probation for <strong>six (6) months</strong>. During this period, your performance and suitability for the role will be evaluated. Upon successful completion of probation, your employment may be confirmed in writing.')+
+
+      h3('','Working Hours')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Working Days: <strong>Monday to Saturday</strong>')+
+        li('Working Hours: ____________ to ____________')+
+        li('Weekly holidays and public holidays shall be as per the school calendar.')+
+      '</ul>'+
+
+      h3('','Documents Required at Joining')+
+      p('Please submit self-attested copies of the following documents at the time of joining:')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Aadhaar Card')+li('PAN Card')+li('Educational Qualification Certificates')+
+        li('Experience Certificates (if applicable)')+li('Address Proof')+
+        li('Passport-size Photographs')+li('Bank Account Details')+
+      '</ul>'+
+
+      h3('','Acceptance of Offer')+
+      p('This offer is valid until ___________. Kindly confirm your acceptance by signing and returning a copy of this letter on or before the above date.')+
+      p('Upon acceptance of this offer and successful completion of all pre-employment formalities, you will receive your formal Appointment Letter on your date of joining.')+
+      p('Please note that this offer is subject to:')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Verification of the information and documents provided by you.')+
+        li('Submission of all required documents.')+
+        li('Satisfactory background verification, where applicable.')+
+        li('Compliance with the policies and code of conduct of '+_escH(sName)+'.')+
+      '</ul>'+
+
+      p('We are excited about the possibility of you joining our team and contributing to the success of our preschool. We believe your dedication, professionalism, and passion for education will make a meaningful difference in the lives of our students.')+
+      p('We warmly welcome you to the '+_escH(sName)+' family and look forward to working with you.')+
+      '<p style="margin:18px 0 4px"><strong>With best wishes,</strong></p>'+
+      '<p style="margin:0">For <strong>'+_escH(sName)+'</strong></p>'+
+
+      '<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px">'+
+        '<div>'+
+          '<div style="height:60px"></div>'+
+          '<div style="border-top:1px solid #333;padding-top:6px;font-weight:700">'+principalName+'</div>'+
+          '<div style="font-size:12px;color:#555">Owner &amp; Principal</div>'+
+          '<div style="font-size:12px;color:#555">'+_escH(sName)+'</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div style="margin-top:36px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
+        '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>'+
+        p('I, '+gender+' ______________________________________, hereby accept the offer of employment for the position of '+desig+' at '+_escH(sName)+' under the terms and conditions mentioned above.')+
+        '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>'+
+          '<tr><td style="padding:10px 0;border:none;width:50%">Employee Signature: _______________________</td><td style="padding:10px 0;border:none">Date: _________________________________</td></tr>'+
+          '<tr><td style="padding:6px 0;border:none">Employee Name: ___________________________</td><td style="padding:6px 0;border:none">Place: _________________________________</td></tr>'+
+        '</tbody></table>'+
+      '</div>';
+
   } else if (letterType === 'Appointment Letter') {
-    bodyHTML = '<p>Dear <strong>'+_escH(t.name)+'</strong>,</p>'+
-      '<p>This is to formally confirm your appointment as <strong>'+_escH(t.designation||'Class Teacher')+'</strong> at '+sName+' with effect from <strong>'+formatDate(t.joiningDate)+'</strong>.</p>'+
-      '<p>Your terms of employment are as per the offer letter issued to you. You will be subject to the school\'s HR policies and guidelines.</p>'+
-      '<p>We welcome you to our team and wish you a successful career with us.</p>';
+    bodyHTML =
+      p('Dear '+gender+' <strong>'+tName+'</strong>,')+
+      p('We are pleased to offer you employment with <strong>'+_escH(sName)+'</strong> as <strong>'+desig+'</strong>. We are delighted to welcome you to our team and look forward to your contribution in providing quality early childhood education and care.')+
+      p('Your appointment is subject to the following terms and conditions:')+
+
+      h3('1','Designation')+
+      p('You are appointed as <strong>'+desig+'</strong>.')+
+
+      h3('2','Date of Joining')+
+      p('Your employment will commence on <strong>'+joinDateFmt+'</strong>.')+
+
+      h3('3','Place of Posting')+
+      p('Your initial place of posting will be:')+
+      '<p style="margin:8px 0 8px 20px"><strong>'+_escH(sName)+'</strong><br>Address: '+(sAddrPlain?_escH(sAddrPlain):'___________________________________________')+'</p>'+
+      p('The management may transfer you to another branch or work location, if required.')+
+
+      h3('4','Working Hours')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Working Days: <strong>Monday to Saturday</strong>')+
+        li('Office Hours: ____________ to ____________')+
+        li('Weekly Off: Sunday and other holidays as declared by the school.')+
+      '</ul>'+
+      p('You are expected to report to work punctually and maintain regular attendance.')+
+
+      h3('5','Salary &amp; Benefits')+
+      p('Your Gross Monthly Salary will be <strong>'+grossSal+'</strong>.')+
+      p('Salary will be paid on or before the 7th day of the following month after statutory deductions, if applicable.')+
+      p('Any additional benefits or incentives will be governed by the policies of '+_escH(sName)+'.')+
+
+      h3('6','Probation')+
+      p('You will be on probation for <strong>six (6) months</strong> from your date of joining. During this period, your performance, conduct, attendance, and suitability for the role will be assessed.')+
+      p('Upon successful completion of probation, your employment may be confirmed in writing.')+
+
+      h3('7','Duties &amp; Responsibilities')+
+      p('You shall:')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Perform your assigned duties sincerely and efficiently.')+
+        li('Maintain a safe, caring, and child-friendly learning environment.')+
+        li('Follow the curriculum, teaching plans, and school guidelines.')+
+        li('Attend staff meetings, training sessions, parent meetings, and school events.')+
+        li('Maintain confidentiality regarding students, parents, staff, and school information.')+
+        li('Uphold the values and reputation of '+_escH(sName)+'.')+
+      '</ul>'+
+
+      h3('8','Code of Conduct')+
+      p('You are expected to:')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Maintain professionalism, honesty, and integrity.')+
+        li('Treat children, parents, colleagues, and visitors with dignity and respect.')+
+        li('Follow all child safety, safeguarding, and hygiene protocols.')+
+        li('Maintain appropriate dress and grooming standards.')+
+        li('Refrain from any behavior that could negatively impact the preschool\'s reputation.')+
+      '</ul>'+
+
+      h3('9','Leave')+
+      p('Leave entitlement shall be governed by the Leave Policy of '+_escH(sName)+'. All leave requests must be approved by the Principal or Management in advance, except in emergencies.')+
+
+      h3('10','Confidentiality')+
+      p('You shall maintain strict confidentiality regarding all information related to the preschool, including student records, parent information, financial data, teaching materials, policies, and business operations, during and after your employment.')+
+
+      h3('11','Notice Period')+
+      p('Either party may terminate this employment by giving <strong>30 days\'</strong> written notice or salary in lieu of notice, subject to applicable laws and school policy.')+
+      p('The management reserves the right to terminate employment without notice in cases of gross misconduct, child safety violations, fraud, theft, breach of confidentiality, or any serious violation of school policies.')+
+
+      h3('12','Documents Required')+
+      p('Please submit self-attested copies of the following documents before or on your joining date:')+
+      '<ul style="margin:0 0 10px 20px;padding:0">'+
+        li('Aadhaar Card')+li('PAN Card')+li('Educational Certificates')+
+        li('Experience Certificates (if applicable)')+li('Address Proof')+
+        li('Passport-size Photographs')+li('Bank Account Details (Cancelled Cheque/Passbook)')+
+      '</ul>'+
+
+      h3('13','Acceptance of Appointment')+
+      p('Please sign and return a copy of this letter as your acceptance of the appointment and the terms and conditions stated herein.')+
+
+      p('We warmly welcome you to the '+_escH(sName)+' family. We are confident that your dedication, enthusiasm, and commitment will contribute to the growth and success of our students and institution.')+
+      p('We wish you a rewarding and successful career with us.')+
+
+      '<p style="margin:20px 0 4px"><strong>Yours sincerely,</strong></p>'+
+      '<p style="margin:0">For <strong>'+_escH(sName)+'</strong></p>'+
+
+      '<div style="margin-top:40px">'+
+        '<div style="height:60px"></div>'+
+        '<div style="border-top:1px solid #333;padding-top:6px;font-weight:700;display:inline-block;min-width:200px">'+principalName+'</div>'+
+        '<div style="font-size:12px;color:#555">Owner &amp; Principal</div>'+
+      '</div>'+
+
+      '<div style="margin-top:36px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
+        '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Employee Acceptance</div>'+
+        p('I, '+gender+' __________________________________________, accept the appointment as <strong>'+desig+'</strong> at '+_escH(sName)+' and agree to abide by all the terms and conditions mentioned in this Appointment &amp; Joining Letter.')+
+        '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>'+
+          '<tr><td style="padding:10px 0;border:none;width:50%">Employee Signature: _______________________</td><td style="padding:10px 0;border:none">Date: ____________________________________</td></tr>'+
+          '<tr><td style="padding:6px 0;border:none">Employee Name: ___________________________</td><td style="padding:6px 0;border:none">Place: ___________________________________</td></tr>'+
+        '</tbody></table>'+
+      '</div>';
   } else if (letterType === 'Probation Confirmation') {
     bodyHTML = '<p>Dear <strong>'+_escH(t.name)+'</strong>,</p>'+
       '<p>We are pleased to inform you that, following a satisfactory evaluation of your performance during the probation period, your services are hereby confirmed as <strong>'+_escH(t.designation||'Class Teacher')+'</strong> with effect from <strong>'+(t.confirmationDate?formatDate(t.confirmationDate):todayStr)+'</strong>.</p>'+
@@ -920,22 +1093,25 @@ window.generateHRLetter = function(teacherId, letterType) {
       '<p>All pending dues, handovers, and formalities have been completed to the satisfaction of the management. We wish you success in your future career.</p>';
   }
 
-  var salStructSection = '';
-  if (letterType === 'Offer Letter' && struct.grossSalary) {
-    salStructSection = '<h4 style="margin:16px 0 8px">Salary Structure</h4>'+
-      '<table style="width:100%;border-collapse:collapse"><tbody>'+
-        [['Basic Salary',struct.basicSalary],['HRA',struct.hra],['Conveyance',struct.conveyance],['Special Allowance',struct.specialAllowance],['Bonus/Incentive',struct.bonus],['Gross Salary',struct.grossSalary],['Total Deductions',struct.totalDeductions],['Net Salary',struct.netSalary]].map(function(r,i){
-          var isTot = i>4;
-          return '<tr><td style="padding:5px 10px;border:1px solid #ddd;width:50%;'+(isTot?'font-weight:700;background:#f0fdf4':'')+'">'+(r[0])+'</td><td style="padding:5px 10px;border:1px solid #ddd;'+(isTot?'font-weight:700;color:#10b981':'')+'">₹'+parseFloat(r[1]||0).toLocaleString('en-IN')+'</td></tr>';
-        }).join('')+
-      '</tbody></table>';
-  }
+  // Appointment Letter & Offer Letter have their own embedded signature/acceptance block
+  var hasEmbeddedSig = (letterType === 'Appointment Letter' || letterType === 'Offer Letter');
+
+  var genericSigBlock = hasEmbeddedSig ? '' :
+    '<div class="signature" style="margin-top:50px">'+
+      '<p style="font-size:13px">Yours sincerely,</p>'+
+      '<br><br>'+
+      '<p style="font-weight:700">______________________________</p>'+
+      '<p style="font-weight:700">'+_escH(principalName)+'</p>'+
+      '<p style="color:#666">'+_escH(sName)+'</p>'+
+    '</div>';
 
   var lh = _skLetterhead(meta, letterType.toUpperCase(), 'Date: '+todayStr+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+_escH(t.employeeId||'N/A')+'/'+new Date().getFullYear());
   var win = window.open('','_blank');
   win.document.write('<!DOCTYPE html><html><head><title>'+letterType+' — '+_escH(t.name)+'</title>'+
     '<style>'+lh.css+
+    'ul{margin:0 0 10px 20px;padding:0}li{margin-bottom:4px}p{margin:6px 0}'+
     '.ref-box{background:#f9f6f0;border-left:3px solid #D4A017;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}'+
+    '@page{size:A4;margin:12mm}'+
     '</style></head><body>'+
     lh.header+
     '<div class="sk-body">'+
@@ -945,15 +1121,8 @@ window.generateHRLetter = function(teacherId, letterType) {
         '<strong>Emp ID:</strong> '+_escH(t.employeeId||'N/A')+
       '</div>'+
       bodyHTML+
-      salStructSection+
-      '<div class="signature" style="margin-top:50px">'+
-        '<p style="font-size:13px">Yours sincerely,</p>'+
-        '<br><br>'+
-        '<p style="font-weight:700">______________________________</p>'+
-        '<p style="font-weight:700">'+_escH(principal.name||'Principal / HR Manager')+'</p>'+
-        '<p style="color:#666">'+sName+'</p>'+
-      '</div>'+
-      '<div class="footer-note">This is a computer-generated document issued by '+sName+'. For queries contact '+_escH(meta.schoolEmail||'')+'</div>'+
+      genericSigBlock+
+      '<div class="footer-note" style="margin-top:24px">This is a computer-generated document issued by '+_escH(sName)+'. For queries contact '+_escH(meta.schoolEmail||'')+'</div>'+
     '</div>'+
     '<script>window.onload=function(){window.print();}<\/script>'+
   '</body></html>');

@@ -1141,7 +1141,12 @@ app.get('/', async (c) => {
       "@type": "Preschool",
       "name": "SuperKids India Preschool",
       "url": "https://superkidsindia.com",
-      "logo": "https://superkidsindia.com/static/school-logo.png",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://superkidsindia.com/static/school-logo.png",
+        "width": 481,
+        "height": 519
+      },
       "image": "https://superkidsindia.com/static/school-logo.png",
       "description": "Play-based early childhood education for ages 1.5–6 in Bhosari, Pune.",
       "telephone": "+91-9822-977-644",
@@ -1155,7 +1160,7 @@ app.get('/', async (c) => {
         "addressCountry": "IN"
       },
       "geo": { "@type": "GeoCoordinates", "latitude": "18.638", "longitude": "73.858" },
-      "openingHours": "Mo-Sa 08:00-18:00",
+      "openingHours": "Mo-Sa 08:45-15:00",
       "sameAs": ["https://superkidsindia.com"]
     })
   }))
@@ -1442,15 +1447,15 @@ app.get('/programs', (c) => {
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         ${[
-          {time:'7:00 AM', activity:'Super Arrival & Free Play', emoji:'🌅', color:'#0F2050'},
-          {time:'8:00 AM', activity:'Morning Circle & Calendar', emoji:'📅', color:'#C4893A'},
-          {time:'9:00 AM', activity:'Learning Centers & STEAM', emoji:'🔬', color:'#1AA6CA'},
+          {time:'8:45 AM', activity:'Super Arrival & Morning Welcome', emoji:'🌅', color:'#0F2050'},
+          {time:'9:00 AM', activity:'Morning Circle & Calendar', emoji:'📅', color:'#C4893A'},
+          {time:'9:30 AM', activity:'Learning Centers & STEAM', emoji:'🔬', color:'#1AA6CA'},
           {time:'10:30 AM', activity:'Outdoor Hero Training', emoji:'🌳', color:'#0F2050'},
           {time:'11:30 AM', activity:'Creative Arts & Music', emoji:'🎨', color:'#C4893A'},
-          {time:'12:30 PM', activity:'Rest & Quiet Time', emoji:'😴', color:'#E8B020'},
-          {time:'2:00 PM', activity:'Story Time & Reading', emoji:'📚', color:'#1AA6CA'},
-          {time:'3:30 PM', activity:'Science & Discovery', emoji:'🧪', color:'#0F2050'},
-          {time:'5:00 PM', activity:'Wind Down & Pickup', emoji:'🌟', color:'#C4893A'},
+          {time:'12:30 PM', activity:'Lunch & Rest Time', emoji:'😴', color:'#E8B020'},
+          {time:'1:30 PM', activity:'Story Time & Reading', emoji:'📚', color:'#1AA6CA'},
+          {time:'2:15 PM', activity:'Science & Discovery', emoji:'🧪', color:'#0F2050'},
+          {time:'3:00 PM', activity:'Wind Down & Pickup', emoji:'🌟', color:'#C4893A'},
         ].map(s => `
           <div class="flex items-center gap-4 card fade-in" style="padding:1rem;border-color:${s.color}22">
             <div style="font-size:1.5rem">${s.emoji}</div>

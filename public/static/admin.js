@@ -3220,7 +3220,7 @@ let rcType = 'Final Result';
 function renderReportCard() {
   const data = DB.get();
   const user = Session.current();
-  const students = data.students || [];
+  const students = DB.getStudents();
   const classes = data.classes || [];
 
   const classOptions = classes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');

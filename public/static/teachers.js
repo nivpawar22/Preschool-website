@@ -2959,7 +2959,7 @@ function renderTeacherPTM() {
         var parent = s.bookedBy ? DB.getUser(s.bookedBy) : null;
         var parentName = parent ? _escH(parent.name) : 'Unknown';
         var parentPhone = parent ? _escH(parent.phone||'') : '';
-        var children = parent && parent.childIds ? (data.students||[]).filter(function(st){return parent.childIds.includes(st.id)&&st.classId===classId;}) : [];
+        var children = parent && parent.childIds ? (data.students||[]).filter(function(st){return !st.deleted&&parent.childIds.includes(st.id)&&st.classId===classId;}) : [];
         var childNames = children.map(function(c){return _escH(c.name);}).join(', ');
         return '<tr style="border-bottom:1px solid #f1f5f9">'+
           '<td style="padding:10px 12px;color:#374151;font-weight:600">'+(s.date||'—')+'</td>'+

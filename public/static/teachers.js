@@ -859,6 +859,37 @@ window._skLetterhead = function(meta, docTitle, refLine) {
   return { css: css, header: header };
 };
 
+// Stamp + signature block for HR letters (mirrors management.js buildDocSignatureArea)
+function _skStampSig(meta, rightLabel) {
+  var stampImg = localStorage.getItem('superkids_school_stamp') || '';
+  var signImg  = localStorage.getItem('superkids_principal_sign') || '';
+  var stampSize  = parseInt(meta.stampSize  || 90, 10);
+  var signWidth  = parseInt(meta.signWidth  || 150, 10);
+  var signHeight = parseInt(meta.signHeight || 60, 10);
+
+  var stampBlock = stampImg
+    ? '<img src="'+stampImg+'" style="width:'+stampSize+'px;height:'+stampSize+'px;object-fit:contain;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+    : '<div style="width:'+stampSize+'px;height:'+stampSize+'px;border-radius:50%;border:2px dashed #ccc;display:inline-block;font-size:9px;color:#aaa;text-align:center;line-height:'+stampSize+'px">SEAL</div>';
+  var signBlock = signImg
+    ? '<img src="'+signImg+'" style="display:block;width:'+signWidth+'px;height:'+signHeight+'px;object-fit:contain;margin:0 auto 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact"/>'
+    : '<div style="height:'+signHeight+'px"></div>';
+  var td = 'border:none';
+  var divider = '<td width="1" style="'+td+';padding:0 18px;vertical-align:middle"><div style="width:1px;height:80px;background:#DCE1EF;margin:0 auto"></div></td>';
+
+  return '<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;border-collapse:collapse;border:none">'+
+    '<tr>'+
+      '<td style="'+td+';vertical-align:bottom;text-align:left">'+stampBlock+'</td>'+
+      divider+
+      '<td width="30%" style="'+td+';vertical-align:bottom;text-align:center">'+
+        signBlock+
+        '<div style="border-bottom:1.5px solid #0F1E3D;margin-bottom:6px"></div>'+
+        '<div style="font-size:11px;font-weight:700;color:#0F2050">'+rightLabel+'</div>'+
+        '<div style="font-size:11px;color:#555">Owner &amp; Principal</div>'+
+      '</td>'+
+    '</tr>'+
+  '</table>';
+}
+
 window.generateHRLetter = function(teacherId, letterType) {
   var data = DB.get();
   var t = (data.users||[]).find(function(u){return u.id===teacherId;}) || {};
@@ -953,19 +984,11 @@ window.generateHRLetter = function(teacherId, letterType) {
 
       p('We are excited about the possibility of you joining our team and contributing to the success of our preschool. We believe your dedication, professionalism, and passion for education will make a meaningful difference in the lives of our students.')+
       p('We warmly welcome you to the '+_escH(sName)+' family and look forward to working with you.')+
-      '<p style="margin:18px 0 4px"><strong>With best wishes,</strong></p>'+
-      '<p style="margin:0">For <strong>'+_escH(sName)+'</strong></p>'+
+      '<p style="margin:18px 0 2px"><strong>With best wishes,</strong></p>'+
+      '<p style="margin:0 0 2px">For <strong>'+_escH(sName)+'</strong></p>'+
+      _skStampSig(meta, principalName)+
 
-      '<div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px">'+
-        '<div>'+
-          '<div style="height:60px"></div>'+
-          '<div style="border-top:1px solid #333;padding-top:6px;font-weight:700">'+principalName+'</div>'+
-          '<div style="font-size:12px;color:#555">Owner &amp; Principal</div>'+
-          '<div style="font-size:12px;color:#555">'+_escH(sName)+'</div>'+
-        '</div>'+
-      '</div>'+
-
-      '<div style="margin-top:36px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
+      '<div style="margin-top:24px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>'+
         p('I, '+gender+' ______________________________________, hereby accept the offer of employment for the position of '+desig+' at '+_escH(sName)+' under the terms and conditions mentioned above.')+
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>'+
@@ -1053,16 +1076,11 @@ window.generateHRLetter = function(teacherId, letterType) {
       p('We warmly welcome you to the '+_escH(sName)+' family. We are confident that your dedication, enthusiasm, and commitment will contribute to the growth and success of our students and institution.')+
       p('We wish you a rewarding and successful career with us.')+
 
-      '<p style="margin:20px 0 4px"><strong>Yours sincerely,</strong></p>'+
-      '<p style="margin:0">For <strong>'+_escH(sName)+'</strong></p>'+
+      '<p style="margin:20px 0 2px"><strong>Yours sincerely,</strong></p>'+
+      '<p style="margin:0 0 2px">For <strong>'+_escH(sName)+'</strong></p>'+
+      _skStampSig(meta, principalName)+
 
-      '<div style="margin-top:40px">'+
-        '<div style="height:60px"></div>'+
-        '<div style="border-top:1px solid #333;padding-top:6px;font-weight:700;display:inline-block;min-width:200px">'+principalName+'</div>'+
-        '<div style="font-size:12px;color:#555">Owner &amp; Principal</div>'+
-      '</div>'+
-
-      '<div style="margin-top:36px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
+      '<div style="margin-top:24px;border:1px solid #ccc;border-radius:6px;padding:16px">'+
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Employee Acceptance</div>'+
         p('I, '+gender+' __________________________________________, accept the appointment as <strong>'+desig+'</strong> at '+_escH(sName)+' and agree to abide by all the terms and conditions mentioned in this Appointment &amp; Joining Letter.')+
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>'+

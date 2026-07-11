@@ -4524,9 +4524,8 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       _p('We warmly welcome you to the ' + _mgEsc(sName) + ' family. We are confident that your dedication, enthusiasm, and commitment will contribute to the growth and success of our students and institution.') +
       _p('We wish you a rewarding and successful career with us.') +
 
-      '<p style="margin:20px 0 4px"><strong>Yours sincerely,</strong></p>' +
-      '<p style="margin:0 0 4px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
-      '<p style="margin:0 0 32px;font-size:12px;color:#555">' + principalName + '<br>Owner &amp; Principal</p>' +
+      '<p style="margin:20px 0 2px"><strong>Yours sincerely,</strong></p>' +
+      '<p style="margin:0 0 2px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
 
       '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Employee Acceptance</div>' +
@@ -4599,9 +4598,8 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       _p('We are excited about the possibility of you joining our team and contributing to the success of our preschool. We believe your dedication, professionalism, and passion for education will make a meaningful difference in the lives of our students.') +
       _p('We warmly welcome you to the ' + _mgEsc(sName) + ' family and look forward to working with you.') +
 
-      '<p style="margin:18px 0 4px"><strong>With best wishes,</strong></p>' +
-      '<p style="margin:0 0 4px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
-      '<p style="margin:0 0 32px;font-size:12px;color:#555">' + principalName + '<br>Owner &amp; Principal</p>' +
+      '<p style="margin:18px 0 2px"><strong>With best wishes,</strong></p>' +
+      '<p style="margin:0 0 2px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
 
       '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>' +
@@ -4688,9 +4686,7 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '<div class="doc-title">' + _mgEsc(title) + '</div>' +
       '<div class="ref-box"><strong>To:</strong> ' + _mgEsc(teacher.name) + ' &nbsp;|&nbsp; <strong>Designation:</strong> ' + _mgEsc(designation) + ' &nbsp;|&nbsp; <strong>Emp ID:</strong> ' + _mgEsc(teacher.employeeId || 'N/A') + '&nbsp;&nbsp;&nbsp;<strong>Date:</strong> ' + today + '</div>' +
       bodyHtml +
-      (docKey === 'joining' || docKey === 'offer' ? '' :
-        '<p style="font-size:13px;margin-top:20px">Yours sincerely,</p>' +
-        buildDocSignatureArea(meta, { showLeft: false, rightLabel: principal.name || 'Principal / HR Manager' })) +
+      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName }) +
       '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
     '</div>' +
     '</div>' +

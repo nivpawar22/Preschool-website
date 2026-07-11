@@ -1,0 +1,5 @@
+Contact: mailto:superkidsprincipal@gmail.com
+Expires: 2027-07-12T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://superkidsindia.com/.well-known/security.txt
+Policy: https://superkidsindia.com/security-policy

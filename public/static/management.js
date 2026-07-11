@@ -4526,8 +4526,9 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
 
       '<p style="margin:20px 0 2px"><strong>Yours sincerely,</strong></p>' +
       '<p style="margin:0 0 2px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
+      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName }) +
 
-      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:16px">' +
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Employee Acceptance</div>' +
         _p('I, ' + gender + ' __________________________________________, accept the appointment as <strong>' + _mgEsc(designation) + '</strong> at ' + _mgEsc(sName) + ' and agree to abide by all the terms and conditions mentioned in this Appointment &amp; Joining Letter.') +
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>' +
@@ -4600,8 +4601,9 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
 
       '<p style="margin:18px 0 2px"><strong>With best wishes,</strong></p>' +
       '<p style="margin:0 0 2px">For <strong>' + _mgEsc(sName) + '</strong></p>' +
+      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName }) +
 
-      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:8px">' +
+      '<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-top:16px">' +
         '<div style="font-size:13px;font-weight:800;color:#0D1B4A;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px">Acceptance of Offer</div>' +
         _p('I, ' + gender + ' ______________________________________, hereby accept the offer of employment for the position of <strong>' + _mgEsc(designation) + '</strong> at ' + _mgEsc(sName) + ' under the terms and conditions mentioned above.') +
         '<table style="width:100%;border-collapse:collapse;margin-top:14px;font-size:13px"><tbody>' +
@@ -4686,7 +4688,9 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
       '<div class="doc-title">' + _mgEsc(title) + '</div>' +
       '<div class="ref-box"><strong>To:</strong> ' + _mgEsc(teacher.name) + ' &nbsp;|&nbsp; <strong>Designation:</strong> ' + _mgEsc(designation) + ' &nbsp;|&nbsp; <strong>Emp ID:</strong> ' + _mgEsc(teacher.employeeId || 'N/A') + '&nbsp;&nbsp;&nbsp;<strong>Date:</strong> ' + today + '</div>' +
       bodyHtml +
-      buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName }) +
+      (docKey === 'joining' || docKey === 'offer' ? '' :
+        '<p style="font-size:13px;margin-top:20px">Yours sincerely,</p>' +
+        buildDocSignatureArea(meta, { showLeft: false, rightLabel: principalName })) +
       '<div class="footer-note">This is a computer-generated document issued by ' + _mgEsc(sName) + '. For queries contact ' + _mgEsc(meta.schoolEmail || '') + '</div>' +
     '</div>' +
     '</div>' +

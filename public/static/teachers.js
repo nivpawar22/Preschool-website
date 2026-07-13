@@ -903,7 +903,9 @@ window.generateHRLetter = function(teacherId, letterType) {
   var structs = DB.getSalaryStructures(teacherId);
   var struct = structs[0] || {};
 
-  // Save letter record
+  // Save letter record — remove any existing record of the same type first to prevent duplicates
+  var _existingLetters = DB.getHRLetters(teacherId).filter(function(l){ return l.type === letterType; });
+  _existingLetters.forEach(function(l){ if (DB.deleteHRLetter) DB.deleteHRLetter(l.id); });
   DB.addHRLetter({
     id: 'ltr_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
     teacherId: teacherId,

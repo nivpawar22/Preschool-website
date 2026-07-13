@@ -859,8 +859,13 @@ function renderTeacherDocuments() {
   var fulfilledDocTypes = myRequests
     .filter(function(r){ return r.status === 'Fulfilled'; })
     .map(function(r){ return r.docType; });
+  // getHRLetters returns newest-first; keep only the latest per type
+  var myLettersSeen = {};
   var myLetters = DB.getHRLetters(user.id).filter(function(l){
-    return fulfilledDocTypes.indexOf(l.type) !== -1;
+    if (fulfilledDocTypes.indexOf(l.type) === -1) return false;
+    if (myLettersSeen[l.type]) return false;
+    myLettersSeen[l.type] = true;
+    return true;
   });
   var tab = window._tDocTab || 'letters';
 

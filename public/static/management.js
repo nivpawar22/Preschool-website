@@ -93,6 +93,7 @@ function renderManagement() {
   if (mgmtTab === 'documents') setTimeout(loadDocumentsTab, 50);
   if (mgmtTab === 'adm-mgmt') setTimeout(loadAdmissionsManagement, 50);
   if (mgmtTab === 'receipts') setTimeout(loadReceiptsManagement, 50);
+  if (mgmtTab === 'fee-manager') setTimeout(_loadAdmReceiptsForFeeManager, 50);
 }
 
 // ---- Sub-Admins Tab ----
@@ -2968,10 +2969,12 @@ function renderAdmReportsTab() {
 
 function loadAdmReports() {
   var wrap = document.getElementById('adm-rep-wrap'); if (!wrap) return;
+  var _rTok = localStorage.getItem('sk_session_token');
+  var _rHdr = _rTok ? {'Authorization':'Bearer '+_rTok} : {};
   Promise.all([
-    fetch('/api/inquiries').then(function(r){return r.json();}),
-    fetch('/api/admissions').then(function(r){return r.json();}),
-    fetch('/api/payments').then(function(r){return r.json();}),
+    fetch('/api/inquiries', {headers:_rHdr}).then(function(r){return r.json();}),
+    fetch('/api/admissions', {headers:_rHdr}).then(function(r){return r.json();}),
+    fetch('/api/payments', {headers:_rHdr}).then(function(r){return r.json();}),
   ]).then(function(results) {
     var inq = results[0].items || [];
     var adm = results[1].items || [];
@@ -3310,7 +3313,8 @@ function renderReceiptsTab() {
 function loadReceiptsManagement() {
   var wrap = document.getElementById('receipts-mgmt-wrap');
   if (!wrap) return;
-  fetch('/api/payments')
+  var _rcTok = localStorage.getItem('sk_session_token');
+  fetch('/api/payments', {headers: _rcTok ? {'Authorization':'Bearer '+_rcTok} : {}})
     .then(function(r){ return r.json(); })
     .then(function(data) {
       var payments = data.items || [];
@@ -3360,7 +3364,8 @@ function loadReceiptsManagement() {
 
 window.deleteReceipt = function(id) {
   confirmDialog('Are you sure you want to permanently delete this receipt? This cannot be undone.', function() {
-    fetch('/api/payments/' + id, { method: 'DELETE' })
+    var _dpTok = localStorage.getItem('sk_session_token');
+    fetch('/api/payments/' + id, { method: 'DELETE', headers: _dpTok ? {'Authorization':'Bearer '+_dpTok} : {} })
       .then(function(r) {
         if (!r.ok) throw new Error('Server error ' + r.status);
         return r.json();
@@ -3393,7 +3398,9 @@ function loadAdmissionsManagement() {
   var wrap = document.getElementById('adm-mgmt-wrap');
   if (!wrap) return;
   var isSuperAdmin = (Session.current() || {}).role === 'superadmin';
-  fetch('/api/admissions')
+  var _mgTok = localStorage.getItem('sk_session_token');
+  var _mgHdr = _mgTok ? {'Authorization':'Bearer '+_mgTok} : {};
+  fetch('/api/admissions', {headers: _mgHdr})
     .then(function(r){ return r.json(); })
     .then(function(data) {
       var admissions = data.items || [];
@@ -3453,9 +3460,10 @@ function loadAdmissionsManagement() {
 
 window.approveAdmission = function(id) {
   confirmDialog('Approve this admission? The student status will be set to Approved.', function() {
+    var _aTok = localStorage.getItem('sk_session_token');
     fetch('/api/admissions/' + id, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({'Content-Type':'application/json'}, _aTok ? {'Authorization':'Bearer '+_aTok} : {}),
       body: JSON.stringify({ status: 'approved' })
     })
       .then(function(r) {
@@ -3474,7 +3482,8 @@ window.approveAdmission = function(id) {
 
 window.deleteAdmission = function(id) {
   confirmDialog('Are you sure you want to permanently delete this admission record? This cannot be undone.', function() {
-    fetch('/api/admissions/' + id, { method: 'DELETE' })
+    var _dTok = localStorage.getItem('sk_session_token');
+    fetch('/api/admissions/' + id, { method: 'DELETE', headers: _dTok ? {'Authorization':'Bearer '+_dTok} : {} })
       .then(function(r) {
         if (!r.ok) throw new Error('Server error ' + r.status);
         return r.json();
@@ -3730,7 +3739,7 @@ function renderFeeManagerTab() {
       }).join('');
 
   return '<div class="card">'+
-    '<div class="card-header"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#C4893A"></i> Fee Management</div>'+
+    '<div class="card-header"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#C4893A"></i> Fee Invoices</div>'+
       '<button class="btn btn-primary btn-sm" onclick="_openAddFeeModal()"><i class="fas fa-plus"></i> Add Invoice</button>'+
     '</div>'+
     '<div style="padding:16px">'+
@@ -3756,7 +3765,53 @@ function renderFeeManagerTab() {
         '<tbody>'+rows+'</tbody>'+
       '</table></div>'+
     '</div>'+
-  '</div>';
+  '</div>'+
+  '<div id="adm-receipts-section" style="margin-top:20px"><div style="text-align:center;padding:32px;color:#94a3b8"><i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:10px"></i>Loading admission fee receipts…</div></div>';
+}
+
+function _loadAdmReceiptsForFeeManager() {
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/payments', {headers: tok ? {'Authorization':'Bearer '+tok} : {}})
+    .then(function(r){ return r.ok ? r.json() : {items:[]}; })
+    .then(function(res) {
+      var sec = document.getElementById('adm-receipts-section');
+      if (!sec) return;
+      var items = res.items || [];
+      var total = items.reduce(function(s,p){ var d={}; try{d=typeof p.data==='string'?JSON.parse(p.data):(p.data||{});}catch(e){} return s+(parseFloat(d.total)||0); },0);
+      var rows = items.length === 0
+        ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No admission fee receipts yet</td></tr>'
+        : items.map(function(p){
+            var d={}; try{d=typeof p.data==='string'?JSON.parse(p.data):(p.data||{});}catch(e){}
+            return '<tr style="border-bottom:1px solid #f1f5f9">'+
+              '<td style="padding:10px 12px;font-weight:700;color:#0F2050">'+_mgEsc(d.receiptNo||p.id)+'</td>'+
+              '<td style="padding:10px 12px;font-weight:600">'+_mgEsc(d.studentName||'—')+'</td>'+
+              '<td style="padding:10px 12px;color:#64748b">'+_mgEsc(d.classId||'—')+'</td>'+
+              '<td style="padding:10px 12px;font-weight:700;color:#0F2050">₹'+(parseFloat(d.total||0)||0).toLocaleString('en-IN')+'</td>'+
+              '<td style="padding:10px 12px;color:#64748b">'+(d.paymentDate||'—')+'</td>'+
+              '<td style="padding:10px 12px;color:#64748b">'+_mgEsc(d.paymentMode||'Cash')+'</td>'+
+            '</tr>';
+          }).join('');
+      sec.innerHTML = '<div class="card">'+
+        '<div class="card-header">'+
+          '<div class="card-title"><i class="fas fa-receipt" style="color:#059669"></i> Admission Fee Receipts</div>'+
+          '<span style="font-weight:800;color:#059669;font-size:14px">Total: ₹'+total.toLocaleString('en-IN')+'</span>'+
+        '</div>'+
+        '<div style="padding:16px;overflow-x:auto">'+
+          '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+            '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Receipt No</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Class</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Amount</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Mode</th>'+
+            '</tr></thead>'+
+            '<tbody>'+rows+'</tbody>'+
+          '</table>'+
+        '</div>'+
+      '</div>';
+    })
+    .catch(function(){ var sec=document.getElementById('adm-receipts-section'); if(sec) sec.innerHTML=''; });
 }
 
 window._openAddFeeModal = function() {

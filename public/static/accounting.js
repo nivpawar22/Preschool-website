@@ -3,6 +3,8 @@
 // Role: accounting
 // ============================================================
 
+function _accAuthHdr() { var t=localStorage.getItem('sk_session_token'); return t?{'Authorization':'Bearer '+t}:{}; }
+
 // ---- Dashboard ----
 function renderAccDashboard() {
   const user = Session.current();
@@ -118,7 +120,7 @@ function renderAccDashboard() {
   renderLayout('acc-dashboard', dashContent, 'Accounting Dashboard', 'Accounting / Dashboard');
 
   // Fetch payments asynchronously
-  fetch('/api/payments')
+  fetch('/api/payments', {headers: _accAuthHdr()})
     .then(r => r.ok ? r.json() : { items: [] })
     .then(function(res) {
       const rawItems = res.items || res.payments || [];
@@ -200,7 +202,7 @@ function renderAccFees() {
   renderLayout('acc-fees', content, 'Fee Collection', 'Accounting / Fee Collection');
 
   // Fetch payments
-  fetch('/api/payments')
+  fetch('/api/payments', {headers: _accAuthHdr()})
     .then(function(r) { return r.ok ? r.json() : { items: [] }; })
     .then(function(res) {
       const rawItems = res.items || res.payments || [];

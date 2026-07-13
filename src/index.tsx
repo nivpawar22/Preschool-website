@@ -14,7 +14,7 @@ function esc(s: any): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
 }
 
-const ALLOWED_MIME = new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif','image/svg+xml'])
+const ALLOWED_MIME = new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif','image/svg+xml','application/pdf'])
 
 async function ensureSessionTable(db: any) {
   await db.exec('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id TEXT NOT NULL, role TEXT NOT NULL, expires_at INTEGER NOT NULL)')

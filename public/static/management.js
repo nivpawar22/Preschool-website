@@ -2520,7 +2520,8 @@ function saveTeamMember() {
       if (!blob) { doSave(''); return; }
       var form = new FormData();
       form.append('file', blob, 'team-photo.jpg');
-      fetch('/api/upload?folder=team', { method: 'POST', body: form })
+      var _mTok = localStorage.getItem('sk_session_token');
+      fetch('/api/upload?folder=team', { method: 'POST', headers: _mTok ? {'Authorization':'Bearer '+_mTok} : {}, body: form })
         .then(function(r) { return r.json(); })
         .then(function(res) {
           if (res.key) doSave(res.key);
@@ -2531,7 +2532,8 @@ function saveTeamMember() {
   } else if (photoFile) {
     var form = new FormData();
     form.append('file', photoFile);
-    fetch('/api/upload?folder=team', { method: 'POST', body: form })
+    var _mTok2 = localStorage.getItem('sk_session_token');
+    fetch('/api/upload?folder=team', { method: 'POST', headers: _mTok2 ? {'Authorization':'Bearer '+_mTok2} : {}, body: form })
       .then(function(r) { return r.json(); })
       .then(function(res) {
         if (res.key) doSave(res.key);
@@ -3195,7 +3197,8 @@ window.uploadSignature = function(input) {
   if (!input.files || !input.files[0]) return;
   showToast('Uploading signature…','default');
   var form = new FormData(); form.append('file', input.files[0]);
-  fetch('/api/upload?folder=signatures', {method:'POST', body:form})
+  var _sTok = localStorage.getItem('sk_session_token');
+  fetch('/api/upload?folder=signatures', {method:'POST', headers: _sTok ? {'Authorization':'Bearer '+_sTok} : {}, body:form})
     .then(function(r){return r.json();})
     .then(function(r){
       if (r.error) { showToast('Upload failed','error'); return; }

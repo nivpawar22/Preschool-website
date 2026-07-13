@@ -166,7 +166,8 @@ window.teacherUploadDoc = function() {
   showToast('Uploading...', 'default', 10000);
   var formData = new FormData();
   formData.append('file', file);
-  fetch('/api/upload?folder=teacher-docs', { method: 'POST', body: formData })
+  var _tok2 = localStorage.getItem('sk_session_token');
+  fetch('/api/upload?folder=teacher-docs', { method: 'POST', headers: _tok2 ? {'Authorization':'Bearer '+_tok2} : {}, body: formData })
     .then(function(r){ return r.json(); })
     .then(function(res) {
       if (res.error) throw new Error(res.error);

@@ -722,7 +722,7 @@ function uploadAdmDoc(docId,input) {
   showToast('Uploading…','default');
   var form=new FormData(); form.append('file',input.files[0]);
   fetch('/api/upload?folder=admissions',{method:'POST',headers:_admAuthHeader(),body:form}).then(function(r){return r.json();}).then(function(r){
-    if(r.error){showToast('Upload failed','error');return;}
+    if(r.error){showToast('Upload failed: '+r.error,'error');return;}
     if(!_admFormData) _admFormData={};
     if(!_admFormData.docs) _admFormData.docs={};
     _admFormData.docs[docId]=r.key;

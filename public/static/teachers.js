@@ -391,7 +391,8 @@ window._tobDocSelect = function(domKey, docType, inputEl) {
 
   var formData = new FormData();
   formData.append('file', file);
-  fetch('/api/upload?folder=teacher-docs', { method: 'POST', body: formData })
+  var _tok = localStorage.getItem('sk_session_token');
+  fetch('/api/upload?folder=teacher-docs', { method: 'POST', headers: _tok ? {'Authorization':'Bearer '+_tok} : {}, body: formData })
     .then(function(r){ return r.json(); })
     .then(function(res) {
       if (res.error) throw new Error(res.error);
@@ -421,7 +422,8 @@ window._tobRemoveDoc = function(domKey, docType) {
   if (window._tobRemovedDocs.indexOf(docType) === -1) window._tobRemovedDocs.push(docType);
   var pending = window._tobPendingDocs[docType];
   if (pending && pending.r2Key) {
-    fetch('/api/upload', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ key: pending.r2Key }) });
+    var _delTok = localStorage.getItem('sk_session_token');
+    fetch('/api/upload', { method: 'DELETE', headers: Object.assign({'Content-Type':'application/json'}, _delTok ? {'Authorization':'Bearer '+_delTok} : {}), body: JSON.stringify({ key: pending.r2Key }) });
   }
   delete window._tobPendingDocs[docType];
   var prev = document.getElementById('tob-prev-' + domKey);

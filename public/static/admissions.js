@@ -60,10 +60,11 @@ function admBadge(status, map) {
   return '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:'+s.bg+';color:'+s.color+'">'+s.label+'</span>';
 }
 function fmtRs(n) { return '₹'+(n||0).toLocaleString('en-IN'); }
-function admGet(path) { return fetch(path).then(function(r){return r.json();}); }
-function admPost(path,body) { return fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}); }
-function admPut(path,body) { return fetch(path,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}); }
-function admDel(path) { return fetch(path,{method:'DELETE'}).then(function(r){return r.json();}); }
+function _admAuthHeader() { var t=localStorage.getItem('sk_session_token'); return t?{'Authorization':'Bearer '+t}:{}; }
+function admGet(path) { return fetch(path,{headers:_admAuthHeader()}).then(function(r){return r.json();}); }
+function admPost(path,body) { return fetch(path,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},_admAuthHeader()),body:JSON.stringify(body)}).then(function(r){return r.json();}); }
+function admPut(path,body) { return fetch(path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},_admAuthHeader()),body:JSON.stringify(body)}).then(function(r){return r.json();}); }
+function admDel(path) { return fetch(path,{method:'DELETE',headers:_admAuthHeader()}).then(function(r){return r.json();}); }
 function fi(id) { var e=document.getElementById(id); return e?e.value.trim():''; }
 function fc(id) { var e=document.getElementById(id); return e?e.checked:false; }
 function fLabel(label, required) {
@@ -505,10 +506,10 @@ window.uploadStudentPhoto = function(input) {
   showToast('Uploading photo…', 'default');
   var form = new FormData();
   form.append('file', input.files[0]);
-  fetch('/api/upload?folder=admissions', {method: 'POST', body: form})
+  fetch('/api/upload?folder=admissions', {method: 'POST', headers: _admAuthHeader(), body: form})
     .then(function(r) { return r.json(); })
     .then(function(r) {
-      if (r.error) { showToast('Upload failed', 'error'); return; }
+      if (r.error) { showToast('Upload failed: '+r.error, 'error'); return; }
       if (!_admFormData) _admFormData = {};
       _admFormData.studentPhotoUrl = r.key;
       _admFormData.studentPhotoZoom = 1;
@@ -720,7 +721,7 @@ function uploadAdmDoc(docId,input) {
   if(!input.files||!input.files[0]) return;
   showToast('Uploading…','default');
   var form=new FormData(); form.append('file',input.files[0]);
-  fetch('/api/upload?folder=admissions',{method:'POST',body:form}).then(function(r){return r.json();}).then(function(r){
+  fetch('/api/upload?folder=admissions',{method:'POST',headers:_admAuthHeader(),body:form}).then(function(r){return r.json();}).then(function(r){
     if(r.error){showToast('Upload failed','error');return;}
     if(!_admFormData) _admFormData={};
     if(!_admFormData.docs) _admFormData.docs={};

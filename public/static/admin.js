@@ -11,7 +11,11 @@ function renderDashboard() {
 
   const allStudents = DB.getStudents(myClassId);
   const allClasses = myClassId ? [DB.getClass(myClassId)].filter(Boolean) : data.classes;
-  const pendingLeaves = data.leaves.filter(l => l.status === 'pending' && (!myClassId || (DB.getStudent(l.studentId) || {}).classId === myClassId));
+  const pendingLeaves = data.leaves.filter(l => {
+    if (l.status !== 'pending' || l.cleared) return false;
+    const stu = DB.getStudent(l.studentId);
+    return stu && (!myClassId || stu.classId === myClassId);
+  });
   const recentAnn = DB.getAnnouncements(myClassId).slice(0, 3);
 
   // Attendance today
@@ -1751,11 +1755,18 @@ function renderLeaves() {
   const isSuperAdmin = user.role === 'superadmin';
   const myClassId = isSubAdmin ? user.assignedClass : null;
   const activeTab = window._leavesTab || 'student';
-  const leaves = DB.getLeaves(null, null, myClassId);
+  // Hide cleared requests and leaves belonging to deleted/removed students
+  const leaves = DB.getLeaves(null, null, myClassId).filter(l => !l.cleared && DB.getStudent(l.studentId));
 
-  // Staff leaves (superadmin only)
-  const staffLeaves = isSuperAdmin ? DB.getStaffLeaves(null) : [];
+  // Staff leaves (superadmin only) — hide cleared and deleted teachers
+  const staffLeaves = isSuperAdmin ? DB.getStaffLeaves(null).filter(l => {
+    if (l.cleared) return false;
+    const t = DB.getUser(l.teacherId);
+    return t && !t.deleted;
+  }) : [];
   const pendingStaff = staffLeaves.filter(l => l.status === 'Pending').length;
+  const processedStudent = leaves.filter(l => l.status !== 'pending').length;
+  const processedStaff = staffLeaves.filter(l => l.status !== 'Pending').length;
   const data = DB.get();
 
   const tabBar = isSuperAdmin ? `
@@ -1774,6 +1785,7 @@ function renderLeaves() {
       <div class="card">
         <div class="card-header">
           <div class="card-title"><i class="fas fa-calendar-times" style="color:#ef4444"></i> Student Leave Requests (${leaves.length})</div>
+          ${processedStudent ? `<button class="btn btn-secondary btn-sm" onclick="clearProcessedLeaves('student')"><i class="fas fa-broom"></i> Clear Processed (${processedStudent})</button>` : ''}
         </div>
         ${leaves.length ? leaves.map(l => {
           const stu = DB.getStudent(l.studentId);
@@ -1814,6 +1826,7 @@ function renderLeaves() {
     };
     tabContent = `
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        ${processedStaff ? `<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-secondary btn-sm" onclick="clearProcessedLeaves('staff')"><i class="fas fa-broom"></i> Clear Processed (${processedStaff})</button></div>` : ''}
         ${staffLeaves.length === 0
           ? '<div class="empty-state"><i class="fas fa-umbrella-beach"></i><h3>No staff leave requests</h3></div>'
           : staffLeaves.map(l => {
@@ -1879,6 +1892,29 @@ function confirmReviewStaffLeave(lid, status) {
   document.querySelector('.modal-overlay').remove();
   showToast('Staff leave ' + status.toLowerCase() + '!', status === 'Approved' ? 'success' : 'warning');
   renderLeaves();
+}
+
+function clearProcessedLeaves(kind) {
+  const label = kind === 'staff' ? 'staff' : 'student';
+  confirmDialog('Clear all approved/rejected ' + label + ' leave requests from this list? Pending requests are kept. Teachers and parents keep their own leave history.', function() {
+    const data = DB.get();
+    let n = 0;
+    if (kind === 'staff') {
+      // Soft-clear: mark hidden instead of deleting — approved staff leaves
+      // still feed leave balance calculations and the teacher's own history
+      (data.staffLeaves || []).forEach(function(l) {
+        const t = DB.getUser(l.teacherId);
+        if ((l.status !== 'Pending' || !t || t.deleted) && !l.cleared) { l.cleared = true; n++; }
+      });
+    } else {
+      (data.leaves || []).forEach(function(l) {
+        if ((l.status !== 'pending' || !DB.getStudent(l.studentId)) && !l.cleared) { l.cleared = true; n++; }
+      });
+    }
+    DB.commit();
+    showToast('Cleared ' + n + ' leave request(s)', 'success');
+    renderLeaves();
+  }, 'Clear');
 }
 
 function reviewLeave(lid, status) {

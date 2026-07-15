@@ -196,7 +196,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'growth', icon: 'fa-chart-line', label: 'Growth' },
       { id: 'activities', icon: 'fa-running', label: 'Activities' },
       { id: 'syllabus', icon: 'fa-book-open', label: 'Syllabus' },
-      { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: (user.role === 'subadmin' && user.assignedClass ? DB.getLeaves(null, null, user.assignedClass).filter(l => l.status === 'pending').length : data.leaves.filter(l => l.status === 'pending').length) || 0 },
+      { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: (user.role === 'subadmin' && user.assignedClass ? DB.getLeaves(null, null, user.assignedClass) : data.leaves).filter(l => l.status === 'pending' && !l.cleared && DB.getStudent(l.studentId)).length || 0 },
       { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: annBadge },
       { id: 'events', icon: 'fa-calendar-alt', label: 'Events', badge: evtBadge },
       { id: 'messages', icon: 'fa-comment-dots', label: 'Messages', badge: msgBadge },
@@ -205,10 +205,14 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
 
     // Management tab only for superadmin (not impersonated)
     if (user.role === 'superadmin' && !isImp) {
-      const pendingStaffLeaves = (DB.getStaffLeaves(null) || []).filter(l => l.status === 'Pending').length;
+      const pendingStaffLeaves = (DB.getStaffLeaves(null) || []).filter(l => {
+        if (l.status !== 'Pending' || l.cleared) return false;
+        const t = (data.users || []).find(u => u.id === l.teacherId);
+        return t && !t.deleted;
+      }).length;
       // Update leaves badge to include staff leave count
       const leavesNavItem = navItems.find(n => n.id === 'leaves');
-      if (leavesNavItem) leavesNavItem.badge = (data.leaves.filter(l => l.status === 'pending').length + pendingStaffLeaves) || 0;
+      if (leavesNavItem) leavesNavItem.badge = (data.leaves.filter(l => l.status === 'pending' && !l.cleared && DB.getStudent(l.studentId)).length + pendingStaffLeaves) || 0;
       const pendingGrievances = (DB.getGrievances ? DB.getGrievances(null) : []).filter(g => g.status === 'Open').length;
       navItems.push({ id: 'exam-schedule', icon: 'fa-clipboard-list', label: 'Exam Schedule', divider: true, dividerLabel: 'Student Portal' });
       navItems.push({ id: 'meal-menu', icon: 'fa-utensils', label: 'Meal Menu' });

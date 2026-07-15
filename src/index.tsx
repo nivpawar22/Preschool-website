@@ -6,8 +6,8 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/static/*', serveStatic({ root: './public' }))
 
-// Browsers auto-request /favicon.ico — serve the school logo PNG for it
-app.get('/favicon.ico', (c) => c.redirect('/static/school-logo.png', 302))
+// Browsers auto-request /favicon.ico — serve the square school icon for it
+app.get('/favicon.ico', (c) => c.redirect('/static/favicon-192.png', 301))
 
 // ── Security helpers ─────────────────────────────────────────
 function esc(s: any): string {
@@ -286,8 +286,9 @@ const Layout = ({ children, title = 'SuperKids India Preschool', description = '
   <!-- Indexing -->
   <meta name="robots" content="index, follow" />
   <meta name="googlebot" content="index, follow" />
-  <link rel="icon" type="image/png" href="/static/school-logo.png">
-  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
+  <link rel="shortcut icon" href="/static/favicon-192.png">
+  <link rel="apple-touch-icon" href="/static/favicon-192.png">
   ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2103,9 +2104,9 @@ app.get('/parent-portal', (c) => {
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="SuperKids"/>
-  <link rel="apple-touch-icon" href="/static/school-logo.png"/>
-  <link rel="icon" type="image/png" href="/static/school-logo.png"/>
-  <link rel="shortcut icon" href="/favicon.ico"/>
+  <link rel="apple-touch-icon" href="/static/favicon-192.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png"/>
+  <link rel="shortcut icon" href="/static/favicon-192.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

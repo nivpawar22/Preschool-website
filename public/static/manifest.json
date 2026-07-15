@@ -12,14 +12,14 @@
   "lang": "en",
   "icons": [
     {
-      "src": "/static/school-logo.png",
-      "sizes": "256x256",
+      "src": "/static/favicon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/school-logo.png",
-      "sizes": "256x256",
+      "src": "/static/favicon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     }

@@ -1143,23 +1143,54 @@ function skAuthHeader() {
 // Convert iPhone HEIC/HEIF images to JPEG before upload — most browsers
 // can't display HEIC, so we transcode client-side. Loads the converter
 // from CDN lazily, only when a HEIC file is actually selected.
+// Never rejects: if conversion isn't possible the original file is
+// returned and uploaded as-is (the server accepts image/heic).
 function skPrepareImageFile(file) {
   var isHeic = /\.hei[cf]$/i.test(file.name || '') || /image\/hei[cf]/i.test(file.type || '');
   if (!isHeic) return Promise.resolve(file);
+
+  function renamed(blob, type, ext) {
+    var name = (file.name || 'photo').replace(/\.hei[cf]$/i, '') + ext;
+    try { return new File([blob], name, { type: type }); }
+    catch (e) { return blob; }
+  }
+
   function convert() {
     return heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 }).then(function(out) {
       var blob = Array.isArray(out) ? out[0] : out;
-      var name = (file.name || 'photo').replace(/\.hei[cf]$/i, '') + '.jpg';
-      try { return new File([blob], name, { type: 'image/jpeg' }); }
-      catch (e) { blob.name = name; return blob; }
+      return renamed(blob, 'image/jpeg', '.jpg');
     });
   }
-  if (typeof heic2any !== 'undefined') return convert();
-  return new Promise(function(resolve, reject) {
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-    s.onload = function() { convert().then(resolve, reject); };
-    s.onerror = function() { reject(new Error('Could not load HEIC converter')); };
-    document.head.appendChild(s);
+
+  function loadAndConvert() {
+    if (typeof heic2any !== 'undefined') return convert();
+    return new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      s.onload = function() { convert().then(resolve, reject); };
+      s.onerror = function() { reject(new Error('Could not load HEIC converter')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  // Sniff the real container first — iOS often hands over ".heic" files
+  // that are actually JPEG already, which the HEIC decoder rejects with
+  // "ERR_LIBHEIF format not supported"
+  var sniff;
+  try { sniff = file.slice(0, 16).arrayBuffer(); } catch (e) { sniff = Promise.reject(e); }
+  return sniff.then(function(buf) {
+    var b = new Uint8Array(buf);
+    if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) {
+      return renamed(file, 'image/jpeg', '.jpg'); // JPEG in disguise — just relabel
+    }
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) {
+      return renamed(file, 'image/png', '.png'); // PNG in disguise
+    }
+    return loadAndConvert();
+  })
+  .catch(function() {
+    // Conversion failed or unsupported variant — upload the original;
+    // the server accepts HEIC directly as a fallback
+    return file;
   });
 }

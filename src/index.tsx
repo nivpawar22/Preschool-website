@@ -79,11 +79,14 @@ app.post('/api/upload', async (c) => {
     const form = await c.req.formData()
     const file = form.get('file') as File | null
     if (!file) return c.json({ error: 'No file provided' }, 400)
-    if (!ALLOWED_MIME.has(file.type)) return c.json({ error: 'File type not allowed' }, 400)
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 10)
+    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase()
+    // Browsers on Windows/Linux often report an empty MIME for HEIC files — infer from extension
+    const EXT_MIME: Record<string, string> = { heic: 'image/heic', heif: 'image/heif', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', pdf: 'application/pdf' }
+    const mimeType = file.type || EXT_MIME[ext] || ''
+    if (!ALLOWED_MIME.has(mimeType)) return c.json({ error: 'File type not allowed' }, 400)
     const folder = (c.req.query('folder') || 'gallery').replace(/[^a-z0-9_-]/gi, '')
     const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
+    await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: mimeType } })
     const url = `https://pub-92df4935826e41f29b59fa7b32da3a0d.r2.dev/${key}`
     return c.json({ ok: true, url, key })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
@@ -2137,15 +2140,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=29"></script>
-  <script src="/static/app.js?v=29"></script>
-  <script src="/static/admin.js?v=29"></script>
-  <script src="/static/management.js?v=29"></script>
-  <script src="/static/parent.js?v=29"></script>
-  <script src="/static/admissions.js?v=29"></script>
-  <script src="/static/accounting.js?v=29"></script>
-  <script src="/static/teacher.js?v=29"></script>
-  <script src="/static/teachers.js?v=29"></script>
+  <script src="/static/data.js?v=30"></script>
+  <script src="/static/app.js?v=30"></script>
+  <script src="/static/admin.js?v=30"></script>
+  <script src="/static/management.js?v=30"></script>
+  <script src="/static/parent.js?v=30"></script>
+  <script src="/static/admissions.js?v=30"></script>
+  <script src="/static/accounting.js?v=30"></script>
+  <script src="/static/teacher.js?v=30"></script>
+  <script src="/static/teachers.js?v=30"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;

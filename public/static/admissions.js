@@ -254,10 +254,11 @@ function updateInqStatus(id,status) {
 
 function deleteInq(id) {
   confirmDialog('Delete this inquiry?',function(){
-    admDel('/api/inquiries/'+id).then(function(){
+    admDel('/api/inquiries/'+id).then(function(r){
+      if(r&&r.error){showToast('Delete failed: '+r.error,'error');return;}
       _adm.inquiries=_adm.inquiries.filter(function(i){return i.id!==id;});
       showToast('Deleted','success'); renderInqList();
-    });
+    }).catch(function(){showToast('Delete failed: network error','error');});
   });
 }
 
@@ -399,11 +400,15 @@ function _syncAdmToPortal(adm) {
   DB.commit();
 }
 function deleteAdm(id) {
-  confirmDialog('Delete this admission permanently?',function(){
-    admDel('/api/admissions/'+id).then(function(){
+  confirmDialog('Delete this admission permanently? The linked student and parent profile are removed for all users.',function(){
+    admDel('/api/admissions/'+id).then(function(r){
+      if(r&&r.error){showToast('Delete failed: '+r.error,'error');return;}
       _adm.admissions=_adm.admissions.filter(function(a){return a.id!==id;});
-      showToast('Deleted','success'); renderAdmList();
-    });
+      showToast('Admission deleted','success'); renderAdmList();
+      // Pull the server-updated student DB so this client doesn't hold
+      // (and later re-sync) the removed student/parent
+      if (typeof DB!=='undefined'&&DB.initFromServer) DB.initFromServer();
+    }).catch(function(){showToast('Delete failed: network error','error');});
   });
 }
 

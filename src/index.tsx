@@ -2140,15 +2140,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=32"></script>
-  <script src="/static/app.js?v=32"></script>
-  <script src="/static/admin.js?v=32"></script>
-  <script src="/static/management.js?v=32"></script>
-  <script src="/static/parent.js?v=32"></script>
-  <script src="/static/admissions.js?v=32"></script>
-  <script src="/static/accounting.js?v=32"></script>
-  <script src="/static/teacher.js?v=32"></script>
-  <script src="/static/teachers.js?v=32"></script>
+  <script src="/static/data.js?v=33"></script>
+  <script src="/static/app.js?v=33"></script>
+  <script src="/static/admin.js?v=33"></script>
+  <script src="/static/management.js?v=33"></script>
+  <script src="/static/parent.js?v=33"></script>
+  <script src="/static/admissions.js?v=33"></script>
+  <script src="/static/accounting.js?v=33"></script>
+  <script src="/static/teacher.js?v=33"></script>
+  <script src="/static/teachers.js?v=33"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -2466,9 +2466,30 @@ app.put('/api/admissions/:id', async (c) => {
 app.delete('/api/admissions/:id', async (c) => {
   const sess = await getSession(c)
   if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  if (sess.role !== 'superadmin') return c.json({ error: 'Only Super Admin can delete admissions' }, 403)
   try {
     await ensureAdmTables(c.env.DB)
-    await c.env.DB.prepare('DELETE FROM admissions WHERE id=?').bind(c.req.param('id')).run()
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM admissions WHERE id=?').bind(id).run()
+    // Cascade: remove the student and parent profiles created from this
+    // admission out of the shared portal data so every role sees the same DB
+    const safeId = id.replace(/[^a-z0-9]/gi, '_')
+    const blobRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+    if (blobRow) {
+      try {
+        const blob = JSON.parse(blobRow.value)
+        let changed = false
+        const sBefore = (blob.students || []).length
+        blob.students = (blob.students || []).filter((s: any) => s.admissionId !== id && s.id !== `stu_${safeId}`)
+        if (blob.students.length !== sBefore) changed = true
+        const uBefore = (blob.users || []).length
+        blob.users = (blob.users || []).filter((u: any) => !(u.role === 'parent' && (u.admissionId === id || u.id === `par_${safeId}`)))
+        if (blob.users.length !== uBefore) changed = true
+        if (changed) {
+          await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('main', JSON.stringify(blob), new Date().toISOString()).run()
+        }
+      } catch {}
+    }
     return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })

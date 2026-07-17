@@ -2672,6 +2672,7 @@ function loadAcademicConfig() {
           '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Current Academic Year</label><input id="ac-year" value="'+(cfg.currentYear||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
           '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Admission Start Date</label><input id="ac-start" type="date" value="'+(cfg.admissionStartDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
           '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Admission End Date</label><input id="ac-end" type="date" value="'+(cfg.admissionEndDate||'')+'" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
+          '<div><label style="display:block;font-size:11px;font-weight:700;color:#6B7A9D;margin-bottom:4px;text-transform:uppercase">Board / Curriculum Label</label><input id="ac-board" value="'+(cfg.board||'CBSE')+'" placeholder="e.g. CBSE" style="width:100%;padding:9px 12px;border:1.5px solid #DCE1EF;border-radius:8px;font-size:13px;box-sizing:border-box"></div>' +
         '</div>' +
         '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:#2A3B60"><input type="checkbox" id="ac-open" '+(cfg.admissionOpen?'checked':'')+' style="width:18px;height:18px;accent-color:#C4893A;cursor:pointer"> Admissions Currently Open</label>' +
         '<div><div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:10px">Classes & Seat Capacity</div>' +
@@ -2718,6 +2719,7 @@ function saveAcademicConfig() {
     admissionOpen: (document.getElementById('ac-open')||{}).checked || false,
     admissionStartDate: (document.getElementById('ac-start')||{}).value || '',
     admissionEndDate: (document.getElementById('ac-end')||{}).value || '',
+    board: (document.getElementById('ac-board')||{}).value || 'CBSE',
     classes: classes,
   };
   fetch('/api/academic-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
@@ -2752,6 +2754,9 @@ function loadFeeConfig() {
       classes: (ac.classes||[]).length > 0 ? ac.classes : [
         {name:'Play Group'},{name:'Nursery'},{name:'Jr. KG'},{name:'Sr. KG'},{name:'Super Heroes 5+'},
       ],
+      admissionOpen: ac.admissionOpen !== false,
+      currentYear: ac.currentYear || getAcademicYear(),
+      board: ac.board || 'CBSE',
     };
     renderFeeConfigUI();
   }).catch(function(){ var w=document.getElementById('feeconfig-wrap'); if(w) w.innerHTML='<div style="color:#dc2626;padding:20px">Failed to load fee config</div>'; });
@@ -2771,7 +2776,13 @@ function renderFeeConfigUI() {
 
   wrap.innerHTML =
     '<div class="card" style="margin-bottom:16px">' +
-      '<div class="card-header" style="margin-bottom:16px"><div class="card-title"><i class="fas fa-rupee-sign" style="color:#E8B020"></i> Class-wise Fee Structure</div></div>' +
+      '<div class="card-header" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
+        '<div class="card-title"><i class="fas fa-rupee-sign" style="color:#E8B020"></i> Class-wise Fee Structure</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button onclick="printFeeStructure()" class="btn btn-secondary" style="font-size:12px"><i class="fas fa-print" style="margin-right:6px"></i>Print</button>' +
+          '<button onclick="printFeeStructure()" class="btn btn-secondary" style="font-size:12px"><i class="fas fa-file-pdf" style="margin-right:6px"></i>Export PDF</button>' +
+        '</div>' +
+      '</div>' +
       '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
         '<thead><tr style="background:#F8F9FB">' +
           '<th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#6B7A9D;text-transform:uppercase;min-width:110px">Class</th>' +
@@ -2878,6 +2889,92 @@ function saveFeeStructure() {
     .then(function(r){return r.json();}).then(function(){showToast('Fee structure saved','success');})
     .catch(function(){showToast('Failed to save','error');});
 }
+
+window.printFeeStructure = function() {
+  if (!_feeCfg) { showToast('Fee structure still loading, please wait', 'warning'); return; }
+  var meta = DB.get().meta || {};
+  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
+  var schoolName = meta.schoolName || 'SuperKids India Preschool';
+  var _rawAddr = meta.schoolAddress || '';
+  var address = (_rawAddr.indexOf('\n') !== -1) ? _rawAddr : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
+  var addrHtml = address.replace(/\n/g, '<br>');
+  var phone1 = meta.schoolPhone || '';
+  var phone2 = meta.schoolPhone2 || '';
+  var email = meta.schoolEmail || '';
+  var website = meta.schoolWebsite || 'https://superkidsindia.com';
+  var board = _feeCfg.board || 'CBSE';
+  var year = _feeCfg.currentYear || getAcademicYear();
+  var admissionsOpen = _feeCfg.admissionOpen;
+
+  var rowsHtml = _feeCfg.classes.map(function(cls) {
+    var fees = _feeCfg.classWise[cls.name] || {};
+    return '<tr><td style="font-weight:700;text-align:left">' + cls.name + '</td>' +
+      FEE_COLS.map(function(c) {
+        var v = fees[c.id];
+        return '<td>' + (v ? '&#8377;' + Number(v).toLocaleString('en-IN') : '—') + '</td>';
+      }).join('') +
+    '</tr>';
+  }).join('');
+
+  var win = window.open('', '_blank', 'width=900,height=750');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Class-wise Fee Structure – ' + schoolName + '</title><style>' +
+    '@page{margin:6mm}' +
+    'body{font-family:Georgia,serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:900px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+    '.hdr{background-color:#0F2050}' +
+    '.hdr-top{display:flex;align-items:center;padding:18px 28px;gap:18px}' +
+    '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
+    '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
+    '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
+    '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
+    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
+    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
+    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
+    '.admission-banner{text-align:center;padding:12px 20px 4px}' +
+    '.admission-badge{display:inline-block;padding:8px 26px;background:#0F2050;color:#E8B020;font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.12em;border-radius:8px;border:2px solid #E8B020;text-transform:uppercase}' +
+    '.year-line{text-align:center;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#0F2050;margin-top:8px}' +
+    '.board-title{text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;background:#0F2050;padding:8px;margin:16px 28px 0;border-radius:6px;text-transform:uppercase;letter-spacing:0.08em}' +
+    '.body{padding:16px 28px 28px}' +
+    'table{width:100%;border-collapse:collapse}' +
+    'th,td{border:1px solid #DCE1EF;padding:8px 10px;font-family:Arial,sans-serif;font-size:12px;text-align:center}' +
+    'th{background:#F8F9FB;font-weight:700;color:#0F2050;text-transform:uppercase;font-size:10px;letter-spacing:0.04em}' +
+    'tbody tr:nth-child(even){background:#F8F9FB}' +
+    '.footer{text-align:center;font-size:10px;color:#555;padding:6px 28px;margin-top:10px;font-family:Arial,sans-serif}' +
+    '.pborder{box-sizing:border-box}' +
+    '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
+    '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.board-title{background:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+  '</style></head><body><div class="pborder">' +
+    '<div class="hdr">' +
+      '<div class="hdr-top"><img src="' + logoUrl + '" alt="Logo"/><div style="flex:1"><div class="hdr-name">' + schoolName + '</div><div class="hdr-sub">Class-wise Fee Structure</div></div></div>' +
+      '<div class="hdr-bar">' +
+        '<div class="hdr-bl">' +
+          (phone1 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>' + phone1 + '</div>' : '') +
+          (phone2 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>' + phone2 + '</div>' : '') +
+          (email ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>' + email + '</div>' : '') +
+          '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>' + website + '</div>' +
+        '</div>' +
+        '<div class="hdr-br">' +
+          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>' + schoolName + '</div>' +
+          '<div>' + addrHtml + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    (admissionsOpen
+      ? '<div class="admission-banner"><span class="admission-badge">Admissions Open</span><div class="year-line">Academic Year ' + year + '</div></div>'
+      : '<div class="year-line" style="padding-top:12px">Academic Year ' + year + '</div>') +
+    '<div class="board-title">' + board + ' Board</div>' +
+    '<div class="body">' +
+      '<table><thead><tr><th style="text-align:left">Class</th>' + FEE_COLS.map(function(c) { return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead>' +
+      '<tbody>' + rowsHtml + '</tbody></table>' +
+    '</div>' +
+  '</div>' +
+  '<div class="footer">' + schoolName + ' | ' + address.replace(/\n/g, ', ') + (website ? ' | ' + website : '') + '</div>' +
+  '</body></html>');
+  win.document.close();
+  setTimeout(function() { win.print(); }, 500);
+};
 
 function saveActivities() {
   if (!_feeCfg) return;

@@ -417,7 +417,7 @@ function viewAdmission(id) {
   }
 
   var photoHtml = d.studentPhotoUrl
-    ? '<div style="float:right;margin:0 0 12px 16px;text-align:center"><div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;background:#F8F9FB"><img src="'+(d.studentPhotoUrl.startsWith('http')?d.studentPhotoUrl:'/r2/'+d.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform:scale('+(d.studentPhotoZoom||1)+');transform-origin:center"></div><div style="font-size:9px;color:#6B7A9D;margin-top:4px;font-weight:700">PHOTO</div></div>'
+    ? '<div style="float:right;margin:0 0 12px 16px;text-align:center"><div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;background:#F8F9FB"><img src="'+(d.studentPhotoUrl.startsWith('http')?d.studentPhotoUrl:'/r2/'+d.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform:'+_afPhotoTransform(d)+';transform-origin:center"></div><div style="font-size:9px;color:#6B7A9D;margin-top:4px;font-weight:700">PHOTO</div></div>'
     : '';
 
   var overlay = document.createElement('div');
@@ -518,18 +518,67 @@ window.uploadStudentPhoto = function(input) {
       if (r.error) { showToast('Upload failed: '+r.error, 'error'); return; }
       _admFormData.studentPhotoUrl = r.key;
       _admFormData.studentPhotoZoom = 1;
+      _admFormData.studentPhotoX = 0;
+      _admFormData.studentPhotoY = 0;
       showToast('Photo uploaded', 'success');
       buildAdmForm((_admFormData || {}).status || 'application_submitted');
     })
     .catch(function(e) { showToast('Upload failed' + (e && e.message ? ': ' + e.message : ''), 'error'); });
 };
-window.adjustPhotoZoom = function(val) {
+function _afPhotoTransform(fd) {
+  fd = fd || {};
+  var x = parseFloat(fd.studentPhotoX) || 0;
+  var y = parseFloat(fd.studentPhotoY) || 0;
+  var z = parseFloat(fd.studentPhotoZoom) || 1;
+  return 'translate(' + x + '%,' + y + '%) scale(' + z + ')';
+}
+
+function _afApplyPhotoTransform() {
   var img = document.getElementById('af-photo-img');
-  if (img) img.style.transform = 'scale(' + val + ')';
-  var lbl = document.getElementById('af-photo-zoom-label');
-  if (lbl) lbl.textContent = Math.round(parseFloat(val) * 100) + '%';
+  if (img) img.style.transform = _afPhotoTransform(_admFormData);
+}
+
+window.adjustPhotoZoom = function(val) {
   if (!_admFormData) _admFormData = {};
   _admFormData.studentPhotoZoom = parseFloat(val);
+  _afApplyPhotoTransform();
+  var lbl = document.getElementById('af-photo-zoom-label');
+  if (lbl) lbl.textContent = Math.round(parseFloat(val) * 100) + '%';
+};
+
+window.adjustPhotoPan = function(axis, val) {
+  if (!_admFormData) _admFormData = {};
+  _admFormData['studentPhoto' + axis] = parseFloat(val);
+  _afApplyPhotoTransform();
+};
+
+// Drag the photo inside the circle to position it
+window.afPhotoDragStart = function(e) {
+  var img = document.getElementById('af-photo-img');
+  if (!img) return;
+  e.preventDefault();
+  if (!_admFormData) _admFormData = {};
+  var fd = _admFormData;
+  var startX = e.clientX, startY = e.clientY;
+  var baseX = parseFloat(fd.studentPhotoX) || 0;
+  var baseY = parseFloat(fd.studentPhotoY) || 0;
+  var wrap = document.getElementById('af-photo-wrap');
+  var size = wrap ? wrap.offsetWidth : 120;
+  img.style.cursor = 'grabbing';
+  function move(ev) {
+    fd.studentPhotoX = Math.max(-60, Math.min(60, baseX + (ev.clientX - startX) / size * 100));
+    fd.studentPhotoY = Math.max(-60, Math.min(60, baseY + (ev.clientY - startY) / size * 100));
+    _afApplyPhotoTransform();
+    var sx = document.getElementById('af-photo-panx'); if (sx) sx.value = fd.studentPhotoX;
+    var sy = document.getElementById('af-photo-pany'); if (sy) sy.value = fd.studentPhotoY;
+  }
+  function up() {
+    img.style.cursor = 'grab';
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+  }
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
 };
 
 function renderNewAdmission() {
@@ -579,15 +628,22 @@ function buildAdmForm(curStatus) {
           fLabel('Student Photo',false)+
           '<div id="af-photo-wrap" style="width:120px;height:120px;border-radius:50%;overflow:hidden;border:2.5px dashed #DCE1EF;background:#F8F9FB;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative">'+
             (fd.studentPhotoUrl?
-              '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+');transition:transform 0.1s">':
+              '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" onpointerdown="afPhotoDragStart(event)" draggable="false" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+_afPhotoTransform(fd)+';transition:transform 0.05s;cursor:grab;touch-action:none;user-select:none">':
               '<i class="fas fa-user" style="font-size:40px;color:#DCE1EF"></i>')+
           '</div>'+
           '<input type="file" id="af-photo-input" accept="image/*,.heic,.heif" style="display:none" onchange="uploadStudentPhoto(this)">'+
           '<button type="button" onclick="document.getElementById(\'af-photo-input\').click()" style="width:120px;padding:5px 8px;border:1.5px solid #1AA6CA;border-radius:6px;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer;font-weight:600;margin-bottom:6px"><i class="fas fa-camera"></i> Upload Photo</button>'+
           (fd.studentPhotoUrl?
-            '<div><div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700">Zoom</div>'+
+            '<div><div style="font-size:9px;color:#94a3b8;margin-bottom:6px"><i class="fas fa-hand-pointer"></i> Drag photo to position</div>'+
+            '<div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700">Zoom</div>'+
             '<input type="range" id="af-photo-zoom" min="0.8" max="2.5" step="0.05" value="'+(fd.studentPhotoZoom||1)+'" oninput="adjustPhotoZoom(this.value)" style="width:120px;accent-color:#1AA6CA">'+
-            '<div style="font-size:10px;color:#6B7A9D;margin-top:2px" id="af-photo-zoom-label">'+(Math.round((fd.studentPhotoZoom||1)*100))+'%</div></div>':'') +
+            '<div style="font-size:10px;color:#6B7A9D;margin-top:2px;margin-bottom:6px" id="af-photo-zoom-label">'+(Math.round((fd.studentPhotoZoom||1)*100))+'%</div>'+
+            '<div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700"><i class="fas fa-arrows-alt-h"></i> Horizontal</div>'+
+            '<input type="range" id="af-photo-panx" min="-60" max="60" step="1" value="'+(parseFloat(fd.studentPhotoX)||0)+'" oninput="adjustPhotoPan(\'X\',this.value)" style="width:120px;accent-color:#1AA6CA">'+
+            '<div style="font-size:10px;color:#6B7A9D;margin:6px 0 4px;font-weight:700"><i class="fas fa-arrows-alt-v"></i> Vertical</div>'+
+            '<input type="range" id="af-photo-pany" min="-60" max="60" step="1" value="'+(parseFloat(fd.studentPhotoY)||0)+'" oninput="adjustPhotoPan(\'Y\',this.value)" style="width:120px;accent-color:#1AA6CA">'+
+            '<div style="margin-top:6px"><button type="button" onclick="adjustPhotoPan(\'X\',0);adjustPhotoPan(\'Y\',0);adjustPhotoZoom(1);var sx=document.getElementById(\'af-photo-panx\');if(sx)sx.value=0;var sy=document.getElementById(\'af-photo-pany\');if(sy)sy.value=0;var sz=document.getElementById(\'af-photo-zoom\');if(sz)sz.value=1;" style="border:none;background:#F1F5F9;color:#64748b;font-size:10px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600"><i class="fas fa-undo"></i> Reset</button></div>'+
+            '</div>':'') +
         '</div>'+
         '</div>') +
 
@@ -695,6 +751,8 @@ function collectAdmFormData() {
     kit:kit,declarationAccepted:fc('af-decl'),
     studentPhotoUrl: (_admFormData||{}).studentPhotoUrl||'',
     studentPhotoZoom: (_admFormData||{}).studentPhotoZoom||1,
+    studentPhotoX: (_admFormData||{}).studentPhotoX||0,
+    studentPhotoY: (_admFormData||{}).studentPhotoY||0,
     docs:(_admFormData||{}).docs||{},admissionNo:(_admFormData||{}).admissionNo||'',fromInquiryId:(_admFormData||{}).fromInquiryId||'',
   };
 }
@@ -812,7 +870,7 @@ function printAdmForm() {
         (fd.studentPhotoUrl?
           '<div style="width:86px;flex-shrink:0;text-align:center">'+
             '<div style="width:78px;height:78px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;margin:0 auto;background:#F8F9FB">'+
-              '<img src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+')">'+
+              '<img src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+_afPhotoTransform(fd)+'">'+
             '</div>'+
             '<div style="font-size:8px;color:#666;margin-top:3px;font-weight:700">STUDENT PHOTO</div>'+
           '</div>':'') +

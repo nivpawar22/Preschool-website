@@ -14,7 +14,7 @@ function esc(s: any): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
 }
 
-const ALLOWED_MIME = new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif','image/svg+xml','application/pdf'])
+const ALLOWED_MIME = new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif','image/svg+xml','application/pdf','image/heic','image/heif'])
 
 async function ensureSessionTable(db: any) {
   await db.exec('CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id TEXT NOT NULL, role TEXT NOT NULL, expires_at INTEGER NOT NULL)')
@@ -2137,15 +2137,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=28"></script>
-  <script src="/static/app.js?v=28"></script>
-  <script src="/static/admin.js?v=28"></script>
-  <script src="/static/management.js?v=28"></script>
-  <script src="/static/parent.js?v=28"></script>
-  <script src="/static/admissions.js?v=28"></script>
-  <script src="/static/accounting.js?v=28"></script>
-  <script src="/static/teacher.js?v=28"></script>
-  <script src="/static/teachers.js?v=28"></script>
+  <script src="/static/data.js?v=29"></script>
+  <script src="/static/app.js?v=29"></script>
+  <script src="/static/admin.js?v=29"></script>
+  <script src="/static/management.js?v=29"></script>
+  <script src="/static/parent.js?v=29"></script>
+  <script src="/static/admissions.js?v=29"></script>
+  <script src="/static/accounting.js?v=29"></script>
+  <script src="/static/teacher.js?v=29"></script>
+  <script src="/static/teachers.js?v=29"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;

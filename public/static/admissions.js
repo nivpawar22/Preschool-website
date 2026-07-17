@@ -503,20 +503,25 @@ function admEditForm(id) { _admFormId=id; _admFormData={}; navigate('new-admissi
 // ============================================================
 window.uploadStudentPhoto = function(input) {
   if (!input.files || !input.files[0]) return;
+  // Capture everything typed so far — the form is rebuilt after upload
+  // and values living only in the DOM would otherwise be wiped
+  _admFormData = Object.assign({}, _admFormData || {}, collectAdmFormData());
   showToast('Uploading photo…', 'default');
-  var form = new FormData();
-  form.append('file', input.files[0]);
-  fetch('/api/upload?folder=admissions', {method: 'POST', headers: _admAuthHeader(), body: form})
+  skPrepareImageFile(input.files[0])
+    .then(function(file) {
+      var form = new FormData();
+      form.append('file', file);
+      return fetch('/api/upload?folder=admissions', {method: 'POST', headers: _admAuthHeader(), body: form});
+    })
     .then(function(r) { return r.json(); })
     .then(function(r) {
       if (r.error) { showToast('Upload failed: '+r.error, 'error'); return; }
-      if (!_admFormData) _admFormData = {};
       _admFormData.studentPhotoUrl = r.key;
       _admFormData.studentPhotoZoom = 1;
       showToast('Photo uploaded', 'success');
       buildAdmForm((_admFormData || {}).status || 'application_submitted');
     })
-    .catch(function() { showToast('Upload failed', 'error'); });
+    .catch(function(e) { showToast('Upload failed' + (e && e.message ? ': ' + e.message : ''), 'error'); });
 };
 window.adjustPhotoZoom = function(val) {
   var img = document.getElementById('af-photo-img');
@@ -577,7 +582,7 @@ function buildAdmForm(curStatus) {
               '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:scale('+(fd.studentPhotoZoom||1)+');transition:transform 0.1s">':
               '<i class="fas fa-user" style="font-size:40px;color:#DCE1EF"></i>')+
           '</div>'+
-          '<input type="file" id="af-photo-input" accept="image/*" style="display:none" onchange="uploadStudentPhoto(this)">'+
+          '<input type="file" id="af-photo-input" accept="image/*,.heic,.heif" style="display:none" onchange="uploadStudentPhoto(this)">'+
           '<button type="button" onclick="document.getElementById(\'af-photo-input\').click()" style="width:120px;padding:5px 8px;border:1.5px solid #1AA6CA;border-radius:6px;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer;font-weight:600;margin-bottom:6px"><i class="fas fa-camera"></i> Upload Photo</button>'+
           (fd.studentPhotoUrl?
             '<div><div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700">Zoom</div>'+
@@ -719,22 +724,26 @@ function saveAdmForm(isDraft) {
 
 function uploadAdmDoc(docId,input) {
   if(!input.files||!input.files[0]) return;
+  var wrapper=input.closest('[style*="dashed"]');
   showToast('Uploading…','default');
-  var form=new FormData(); form.append('file',input.files[0]);
-  fetch('/api/upload?folder=admissions',{method:'POST',headers:_admAuthHeader(),body:form}).then(function(r){return r.json();}).then(function(r){
+  skPrepareImageFile(input.files[0]).then(function(file){
+    var form=new FormData(); form.append('file',file);
+    return fetch('/api/upload?folder=admissions',{method:'POST',headers:_admAuthHeader(),body:form});
+  }).then(function(r){return r.json();}).then(function(r){
     if(r.error){showToast('Upload failed: '+r.error,'error');return;}
     if(!_admFormData) _admFormData={};
     if(!_admFormData.docs) _admFormData.docs={};
     _admFormData.docs[docId]=r.key;
     showToast('Uploaded','success');
-    var wrapper=input.closest('[style*="dashed"]');
     if(wrapper){wrapper.style.borderColor='#059669';wrapper.style.background='#F0FFF8';
       wrapper.innerHTML=wrapper.querySelector('div').outerHTML+'<div style="display:flex;align-items:center;gap:8px"><i class="fas fa-check-circle" style="color:#059669"></i><a href="/r2/'+r.key+'" target="_blank" style="font-size:12px;color:#059669;font-weight:700">Uploaded</a></div>';}
-  }).catch(function(){showToast('Upload failed','error');});
+  }).catch(function(e){showToast('Upload failed'+(e&&e.message?': '+e.message:''),'error');});
 }
 
 function removeAdmDoc(docId) {
-  if(_admFormData&&_admFormData.docs) delete _admFormData.docs[docId];
+  // Capture typed values before rebuilding the form so nothing is wiped
+  _admFormData = Object.assign({}, _admFormData || {}, collectAdmFormData());
+  if(_admFormData.docs) delete _admFormData.docs[docId];
   buildAdmForm((_admFormData||{}).status||'application_submitted');
 }
 

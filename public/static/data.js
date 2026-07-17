@@ -1139,3 +1139,27 @@ function skAuthHeader() {
   var token = localStorage.getItem('sk_session_token');
   return token ? { 'Authorization': 'Bearer ' + token } : {};
 }
+
+// Convert iPhone HEIC/HEIF images to JPEG before upload — most browsers
+// can't display HEIC, so we transcode client-side. Loads the converter
+// from CDN lazily, only when a HEIC file is actually selected.
+function skPrepareImageFile(file) {
+  var isHeic = /\.hei[cf]$/i.test(file.name || '') || /image\/hei[cf]/i.test(file.type || '');
+  if (!isHeic) return Promise.resolve(file);
+  function convert() {
+    return heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 }).then(function(out) {
+      var blob = Array.isArray(out) ? out[0] : out;
+      var name = (file.name || 'photo').replace(/\.hei[cf]$/i, '') + '.jpg';
+      try { return new File([blob], name, { type: 'image/jpeg' }); }
+      catch (e) { blob.name = name; return blob; }
+    });
+  }
+  if (typeof heic2any !== 'undefined') return convert();
+  return new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload = function() { convert().then(resolve, reject); };
+    s.onerror = function() { reject(new Error('Could not load HEIC converter')); };
+    document.head.appendChild(s);
+  });
+}

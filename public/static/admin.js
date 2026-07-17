@@ -2080,10 +2080,13 @@ function openAddAnnouncementModal() {
 function uploadAnnouncementImage(input) {
   if (!input.files || !input.files[0]) return;
   showToast('Uploading image…', 'default');
-  var form = new FormData();
-  form.append('file', input.files[0]);
   var _annTok = localStorage.getItem('sk_session_token');
-  fetch('/api/upload?folder=announcements', {method: 'POST', headers: _annTok ? {'Authorization':'Bearer '+_annTok} : {}, body: form})
+  skPrepareImageFile(input.files[0])
+    .then(function(file) {
+      var form = new FormData();
+      form.append('file', file);
+      return fetch('/api/upload?folder=announcements', {method: 'POST', headers: _annTok ? {'Authorization':'Bearer '+_annTok} : {}, body: form});
+    })
     .then(function(r) { return r.json(); })
     .then(function(r) {
       if (r.error) { showToast('Upload failed', 'error'); return; }
@@ -2730,17 +2733,20 @@ function closeGalleryModal() {
 function previewGalleryImages(input) {
   const files = [...input.files];
   if (!files.length) return;
-  const valid = files.filter(f => f.type.startsWith('image/'));
+  const valid = files.filter(f => f.type.startsWith('image/') || /\.hei[cf]$/i.test(f.name || ''));
   if (!valid.length) return;
   let loaded = 0;
   valid.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      _galSelectedFiles.push({ name: file.name, dataUrl: e.target.result });
-      loaded++;
-      if (loaded === valid.length) renderGalleryPreviews();
-    };
-    reader.readAsDataURL(file);
+    // Convert iPhone HEIC to JPEG so previews and uploads work everywhere
+    skPrepareImageFile(file).catch(() => file).then(f => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        _galSelectedFiles.push({ name: f.name || file.name, dataUrl: e.target.result });
+        loaded++;
+        if (loaded === valid.length) renderGalleryPreviews();
+      };
+      reader.readAsDataURL(f);
+    });
   });
 }
 

@@ -280,6 +280,17 @@ function renderAdmissionsList() {
   admGet('/api/admissions').then(function(r){ _adm.admissions=r.items||[]; renderAdmList(); });
 }
 
+window.admRenumber = function() {
+  confirmDialog('Renumber all admissions sequentially starting from 0001 (in order of creation)? Receipts and enrolled student roll numbers are updated to match. This cannot be undone.', function() {
+    showToast('Renumbering…', 'default');
+    admPost('/api/admissions/renumber', {}).then(function(r) {
+      if (r.error) { showToast('Failed: ' + r.error, 'error'); return; }
+      showToast(r.renumbered + ' admission(s) renumbered. Next admission will continue from the new sequence.', 'success', 5000);
+      admGet('/api/admissions').then(function(rr) { _adm.admissions = rr.items || []; renderAdmList(); });
+    }).catch(function() { showToast('Network error', 'error'); });
+  }, 'Renumber', false);
+};
+
 function renderAdmList() {
   var wrap=document.getElementById('adm-list'); if(!wrap) return;
   var classes=Array.from(new Set(_adm.admissions.map(function(a){var d=a.data?JSON.parse(a.data):{};return d.classId||'';}).filter(Boolean))).sort();
@@ -302,6 +313,7 @@ function renderAdmList() {
         '<option value="all">All Classes</option>'+classes.map(function(c){return '<option value="'+c+'"'+(_admClassFilter===c?' selected':'')+'> '+c+'</option>';}).join('')+
       '</select>'+
       '<button class="btn btn-primary" onclick="admNewForm()"><i class="fas fa-plus"></i> New Admission</button>'+
+      ((Session.current()||{}).role==='superadmin'?'<button class="btn btn-secondary" onclick="admRenumber()" title="Renumber all admissions sequentially from 0001 and reset the counter"><i class="fas fa-sort-numeric-down"></i> Fix Numbering</button>':'')+
     '</div></div>'+
     '<div class="card"><div style="font-size:12px;color:#6B7A9D;margin-bottom:12px">'+list.length+' record(s)</div>'+
     '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+

@@ -2140,15 +2140,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=31"></script>
-  <script src="/static/app.js?v=31"></script>
-  <script src="/static/admin.js?v=31"></script>
-  <script src="/static/management.js?v=31"></script>
-  <script src="/static/parent.js?v=31"></script>
-  <script src="/static/admissions.js?v=31"></script>
-  <script src="/static/accounting.js?v=31"></script>
-  <script src="/static/teacher.js?v=31"></script>
-  <script src="/static/teachers.js?v=31"></script>
+  <script src="/static/data.js?v=32"></script>
+  <script src="/static/app.js?v=32"></script>
+  <script src="/static/admin.js?v=32"></script>
+  <script src="/static/management.js?v=32"></script>
+  <script src="/static/parent.js?v=32"></script>
+  <script src="/static/admissions.js?v=32"></script>
+  <script src="/static/accounting.js?v=32"></script>
+  <script src="/static/teacher.js?v=32"></script>
+  <script src="/static/teachers.js?v=32"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -2368,6 +2368,64 @@ app.get('/api/admissions/:id', async (c) => {
     const row = await c.env.DB.prepare('SELECT * FROM admissions WHERE id=?').bind(c.req.param('id')).first()
     if (!row) return c.json({ error: 'Not found' }, 404)
     return c.json({ item: row })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// Renumber all admissions sequentially per year (creation order) and reset
+// the counters to match — fixes gaps left by deleted test admissions.
+// Cascades renames into payment receipts and enrolled students' roll numbers.
+app.post('/api/admissions/renumber', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM admissions ORDER BY created_at ASC').all()
+    const items = (rows.results || []) as any[]
+    const counters: Record<string, number> = {}
+    const renames: Record<string, string> = {}
+    const now = new Date().toISOString()
+    for (const row of items) {
+      let d: any = {}
+      try { d = row.data ? JSON.parse(row.data) : {} } catch {}
+      const m = /^SKI-(\d{4})-/.exec(d.admissionNo || '')
+      const year = m ? m[1] : String(new Date(row.created_at || Date.now()).getFullYear())
+      counters[year] = (counters[year] || 0) + 1
+      const newNo = `SKI-${year}-${String(counters[year]).padStart(4, '0')}`
+      if (d.admissionNo !== newNo) {
+        if (d.admissionNo) renames[d.admissionNo] = newNo
+        d.admissionNo = newNo
+        await c.env.DB.prepare('UPDATE admissions SET data=?, updated_at=? WHERE id=?').bind(JSON.stringify(d), now, row.id).run()
+      }
+    }
+    // Counters continue from the real count (also reset years with zero admissions left)
+    const curYear = new Date().getFullYear().toString()
+    if (!counters[curYear]) counters[curYear] = 0
+    for (const [year, n] of Object.entries(counters)) {
+      await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind(`adm_counter_${year}`, String(n), now).run()
+    }
+    if (Object.keys(renames).length) {
+      const pays = await c.env.DB.prepare('SELECT * FROM payments').all()
+      for (const p of (pays.results || []) as any[]) {
+        let pd: any = {}
+        try { pd = p.data ? JSON.parse(p.data) : {} } catch {}
+        if (pd.admissionNo && renames[pd.admissionNo]) {
+          pd.admissionNo = renames[pd.admissionNo]
+          await c.env.DB.prepare('UPDATE payments SET data=? WHERE id=?').bind(JSON.stringify(pd), p.id).run()
+        }
+      }
+      const blobRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
+      if (blobRow) {
+        try {
+          const blob = JSON.parse(blobRow.value)
+          let changed = false
+          for (const s of (blob.students || [])) {
+            if (s.rollNo && renames[s.rollNo]) { s.rollNo = renames[s.rollNo]; changed = true }
+          }
+          if (changed) await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('main', JSON.stringify(blob), now).run()
+        } catch {}
+      }
+    }
+    return c.json({ ok: true, renumbered: Object.keys(renames).length, total: items.length, counters })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

@@ -645,7 +645,7 @@ function buildAdmForm(curStatus) {
           fLabel('Student Photo',false)+
           '<div id="af-photo-wrap" style="width:120px;height:120px;border-radius:50%;overflow:hidden;border:2.5px dashed #DCE1EF;background:#F8F9FB;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;position:relative">'+
             (fd.studentPhotoUrl?
-              '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" onpointerdown="afPhotoDragStart(event)" draggable="false" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+_afPhotoTransform(fd)+';transition:transform 0.05s;cursor:grab;touch-action:none;user-select:none">':
+              '<img id="af-photo-img" src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" onpointerdown="afPhotoDragStart(event)" draggable="false" style="width:100%;height:100%;object-fit:contain;transform-origin:center;transform:'+_afPhotoTransform(fd)+';transition:transform 0.05s;cursor:grab;touch-action:none;user-select:none">':
               '<i class="fas fa-user" style="font-size:40px;color:#DCE1EF"></i>')+
           '</div>'+
           '<input type="file" id="af-photo-input" accept="image/*,.heic,.heif" style="display:none" onchange="uploadStudentPhoto(this)">'+

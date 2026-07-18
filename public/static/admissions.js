@@ -653,7 +653,7 @@ function buildAdmForm(curStatus) {
           (fd.studentPhotoUrl?
             '<div><div style="font-size:9px;color:#94a3b8;margin-bottom:6px"><i class="fas fa-hand-pointer"></i> Drag photo to position</div>'+
             '<div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700">Zoom</div>'+
-            '<input type="range" id="af-photo-zoom" min="0.8" max="2.5" step="0.05" value="'+(fd.studentPhotoZoom||1)+'" oninput="adjustPhotoZoom(this.value)" style="width:120px;accent-color:#1AA6CA">'+
+            '<input type="range" id="af-photo-zoom" min="0.8" max="5" step="0.05" value="'+(fd.studentPhotoZoom||1)+'" oninput="adjustPhotoZoom(this.value)" style="width:120px;accent-color:#1AA6CA">'+
             '<div style="font-size:10px;color:#6B7A9D;margin-top:2px;margin-bottom:6px" id="af-photo-zoom-label">'+(Math.round((fd.studentPhotoZoom||1)*100))+'%</div>'+
             '<div style="font-size:10px;color:#6B7A9D;margin-bottom:4px;font-weight:700"><i class="fas fa-arrows-alt-h"></i> Horizontal</div>'+
             '<input type="range" id="af-photo-panx" min="-60" max="60" step="1" value="'+(parseFloat(fd.studentPhotoX)||0)+'" oninput="adjustPhotoPan(\'X\',this.value)" style="width:120px;accent-color:#1AA6CA">'+

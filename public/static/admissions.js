@@ -918,9 +918,6 @@ function printAdmForm() {
     '<div class="sec"><div class="sh">Mother\'s Details</div><div class="sb">'+
       [['Full Name',fd.motherName||''],['Mobile',fd.motherMobile||''],['Email',fd.motherEmail||''],['Profession',fd.motherProfession||''],['Aadhaar',fd.motherAadhaar||'']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
     '</div></div>'+
-    (fd.marriageDate?'<div class="sec"><div class="sh">Marriage Anniversary</div><div class="sb">'+
-      [['Marriage Date',fd.marriageDate||''],['Note',fd.anniversaryNote||'–']].map(function(f){return '<div><div class="fl">'+f[0]+'</div><div class="fv">'+f[1]+'</div></div>';}).join('')+
-    '</div></div>':'')+
     '<div class="sec"><div class="sh">Address</div><div class="sb" style="grid-template-columns:1fr">'+
       '<div><div class="fl">Residential Address</div><div class="fv">'+[fd.address1,fd.address2,fd.city,fd.pincode].filter(Boolean).join(', ')+'</div></div>'+
     '</div></div>'+

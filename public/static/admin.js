@@ -1596,7 +1596,7 @@ function renderSyllabus() {
             <div class="topic-row">
               <div style="flex:1">
                 <div style="font-weight:600">${t.title}</div>
-                <div class="text-muted">Weeks ${t.weeks} · ${t.description}</div>
+                ${(t.weeks || t.description) ? `<div class="text-muted">${[t.weeks ? 'Weeks ' + t.weeks : '', t.description].filter(Boolean).join(' · ')}</div>` : ''}
               </div>
               <span class="topic-status-badge" style="background:${statusColors[t.status]}20;color:${statusColors[t.status]}">${statusLabels[t.status]}</span>
               <div style="display:flex;gap:4px">
@@ -1644,6 +1644,11 @@ function openAddSyllabusModal(classId) {
             <input class="form-control" id="syl-year" value="${new Date().getFullYear()}"/>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Syllabus Description</label>
+          <textarea class="form-control" id="syl-desc-lines" rows="6" placeholder="Type each topic/point on its own line, e.g.&#10;Fractions & Decimals&#10;Introduction to Geometry&#10;Word Problems"></textarea>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px">Each line becomes a topic in the syllabus below.</div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
@@ -1666,11 +1671,18 @@ function saveNewSyllabus(classId) {
   const subEl = document.getElementById('syl-sub');
   const subject = subEl.value === 'custom' ? document.getElementById('syl-custom').value.trim() : subEl.value;
   if (!subject) { showToast('Subject required', 'error'); return; }
+  const descLines = (document.getElementById('syl-desc-lines').value || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  const topics = descLines.map(line => ({
+    id: DB.genId('t'), title: line, weeks: '', description: '', status: 'pending'
+  }));
   data.syllabus.push({
     id: DB.genId('syl'), classId, subject,
     term: document.getElementById('syl-term').value,
     year: document.getElementById('syl-year').value,
-    topics: []
+    topics
   });
   DB.commit();
   document.querySelector('.modal-overlay').remove();

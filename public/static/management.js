@@ -2628,25 +2628,37 @@ function loadReviews() {
 }
 
 function approveReview(id) {
-  fetch('/api/reviews/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'approved' }) })
-    .then(function(r) { return r.json(); })
+  var _revTok = localStorage.getItem('sk_session_token');
+  fetch('/api/reviews/' + id, {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, _revTok ? { 'Authorization': 'Bearer ' + _revTok } : {}),
+    body: JSON.stringify({ status: 'approved' })
+  })
+    .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
     .then(function() { showToast('Review approved — now live on homepage', 'success'); loadReviews(); })
-    .catch(function() { showToast('Failed to approve review', 'error'); });
+    .catch(function(e) { showToast('Failed to approve review: ' + e.message, 'error'); });
 }
 
 function unapproveReview(id) {
-  fetch('/api/reviews/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'pending' }) })
-    .then(function(r) { return r.json(); })
+  var _revTok = localStorage.getItem('sk_session_token');
+  fetch('/api/reviews/' + id, {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, _revTok ? { 'Authorization': 'Bearer ' + _revTok } : {}),
+    body: JSON.stringify({ status: 'pending' })
+  })
+    .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
     .then(function() { showToast('Review moved back to pending', 'success'); loadReviews(); })
-    .catch(function() { showToast('Failed to update review', 'error'); });
+    .catch(function(e) { showToast('Failed to update review: ' + e.message, 'error'); });
 }
 
 function deleteReview(id) {
-  if (!confirm('Delete this review permanently?')) return;
-  fetch('/api/reviews/' + id, { method: 'DELETE' })
-    .then(function(r) { return r.json(); })
-    .then(function() { showToast('Review deleted', 'success'); loadReviews(); })
-    .catch(function() { showToast('Failed to delete review', 'error'); });
+  confirmDialog('Delete this review permanently?', function() {
+    var _revTok = localStorage.getItem('sk_session_token');
+    fetch('/api/reviews/' + id, { method: 'DELETE', headers: _revTok ? { 'Authorization': 'Bearer ' + _revTok } : {} })
+      .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+      .then(function() { showToast('Review deleted', 'success'); loadReviews(); })
+      .catch(function(e) { showToast('Failed to delete review: ' + e.message, 'error'); });
+  }, 'Delete Review', true);
 }
 
 // Register route

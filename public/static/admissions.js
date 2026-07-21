@@ -302,6 +302,9 @@ function renderAdmList() {
     var q=_admSearch.toLowerCase();
     var mq=!q||(d.studentName||'').toLowerCase().includes(q)||(d.admissionNo||'').toLowerCase().includes(q)||(d.fatherMobile||'').includes(q)||(d.motherMobile||'').includes(q);
     return ms&&mc&&mq;
+  }).sort(function(x,y){
+    var dx=x.data?JSON.parse(x.data):{}; var dy=y.data?JSON.parse(y.data):{};
+    return (dx.admissionNo||'').localeCompare(dy.admissionNo||'', undefined, {numeric:true, sensitivity:'base'});
   });
 
   wrap.innerHTML=
@@ -343,6 +346,7 @@ function renderAdmList() {
                   ? '<button onclick="admEditForm(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #1AA6CA;background:#E5F5FF;color:#1AA6CA;font-size:11px;cursor:pointer"><i class="fas fa-edit"></i></button>'
                   : '<span style="padding:5px 8px;border-radius:6px;background:#F1F5F9;color:#9CA3AF;font-size:11px"><i class="fas fa-lock"></i></span>')+
                 '<button onclick="openCollectFeeModal(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #059669;background:#D1FAE5;color:#059669;font-size:11px;cursor:pointer" title="Collect Fee"><i class="fas fa-rupee-sign"></i></button>'+
+                '<button onclick="printAdmissionFromList(\''+a.id+'\')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #0F2050;background:#E8EDF5;color:#0F2050;font-size:11px;cursor:pointer" title="Print / Export PDF"><i class="fas fa-print"></i></button>'+
                 statusControl +
                 deleteControl +
               '</div></td>'+
@@ -821,6 +825,21 @@ function removeAdmDoc(docId) {
   if(_admFormData.docs) delete _admFormData.docs[docId];
   buildAdmForm((_admFormData||{}).status||'application_submitted');
 }
+
+// Print/export a student application straight from the admissions list,
+// without navigating into the edit form first.
+window.printAdmissionFromList = function(id) {
+  var a = _adm.admissions.find(function(x){ return x.id === id; });
+  if (!a) { showToast('Admission not found', 'error'); return; }
+  var d = {};
+  try { d = typeof a.data === 'string' ? JSON.parse(a.data) : (a.data || {}); } catch(e) {}
+  var prevId = _admFormId, prevData = _admFormData;
+  _admFormId = id;
+  _admFormData = d;
+  printAdmForm();
+  _admFormId = prevId;
+  _admFormData = prevData;
+};
 
 function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}

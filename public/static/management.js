@@ -2734,9 +2734,15 @@ function saveAcademicConfig() {
     board: (document.getElementById('ac-board')||{}).value || 'CBSE',
     classes: classes,
   };
-  fetch('/api/academic-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Academic config saved','success');})
-    .catch(function(){showToast('Failed to save','error');});
+  var _acTok = localStorage.getItem('sk_session_token');
+  fetch('/api/academic-config', {
+    method:'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _acTok ? {'Authorization':'Bearer '+_acTok} : {}),
+    body:JSON.stringify({config:cfg})
+  })
+    .then(function(r){ if(!r.ok) throw new Error('Server error '+r.status); return r.json(); })
+    .then(function(){showToast('Academic config saved','success');})
+    .catch(function(e){showToast('Failed to save: '+e.message,'error');});
 }
 
 // ---- Fee Structure Config Tab ----
@@ -2896,10 +2902,16 @@ function saveFeeStructure() {
     if (v > 0) classWiseFees[cls][col] = v;
   });
   _feeCfg.classWise = classWiseFees;
-  var cfg = {classWiseFees: classWiseFees, kitItems: _feeCfg.kit, activities: _feeCfg.activities};
-  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Fee structure saved','success');})
-    .catch(function(){showToast('Failed to save','error');});
+  var cfg = {classWiseFees: classWiseFees, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var _fsTok = localStorage.getItem('sk_session_token');
+  fetch('/api/fee-config', {
+    method:'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _fsTok ? {'Authorization':'Bearer '+_fsTok} : {}),
+    body:JSON.stringify({config:cfg})
+  })
+    .then(function(r){ if(!r.ok) throw new Error('Server error '+r.status); return r.json(); })
+    .then(function(){showToast('Fee structure saved','success');})
+    .catch(function(e){showToast('Failed to save: '+e.message,'error');});
 }
 
 window.printFeeStructure = function() {
@@ -2990,10 +3002,16 @@ window.printFeeStructure = function() {
 
 function saveActivities() {
   if (!_feeCfg) return;
-  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: _feeCfg.kit, activities: _feeCfg.activities};
-  fetch('/api/fee-config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Activities saved','success');})
-    .catch(function(){showToast('Failed to save','error');});
+  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var _actTok = localStorage.getItem('sk_session_token');
+  fetch('/api/fee-config', {
+    method:'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _actTok ? {'Authorization':'Bearer '+_actTok} : {}),
+    body:JSON.stringify({config:cfg})
+  })
+    .then(function(r){ if(!r.ok) throw new Error('Server error '+r.status); return r.json(); })
+    .then(function(){showToast('Activities saved','success');})
+    .catch(function(e){showToast('Failed to save: '+e.message,'error');});
 }
 
 function renderKitItemsList(kit) {
@@ -3047,9 +3065,15 @@ window.removeKitItem = function(i) {
 window.saveKitItems = function() {
   if (!_feeCfg) return;
   var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
-  fetch('/api/fee-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Kit items saved','success');})
-    .catch(function(){showToast('Failed to save','error');});
+  var _kiTok = localStorage.getItem('sk_session_token');
+  fetch('/api/fee-config',{
+    method:'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _kiTok ? {'Authorization':'Bearer '+_kiTok} : {}),
+    body:JSON.stringify({config:cfg})
+  })
+    .then(function(r){ if(!r.ok) throw new Error('Server error '+r.status); return r.json(); })
+    .then(function(){showToast('Kit items saved','success');})
+    .catch(function(e){showToast('Failed to save: '+e.message,'error');});
 };
 
 function saveKitPrices() {
@@ -3066,9 +3090,15 @@ function saveKitPrices() {
   });
   _feeCfg.classWiseKit[className] = classPrices;
   var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
-  fetch('/api/fee-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})})
-    .then(function(r){return r.json();}).then(function(){showToast('Kit prices saved for '+className,'success');})
-    .catch(function(){showToast('Failed to save','error');});
+  var _kpTok = localStorage.getItem('sk_session_token');
+  fetch('/api/fee-config',{
+    method:'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _kpTok ? {'Authorization':'Bearer '+_kpTok} : {}),
+    body:JSON.stringify({config:cfg})
+  })
+    .then(function(r){ if(!r.ok) throw new Error('Server error '+r.status); return r.json(); })
+    .then(function(){showToast('Kit prices saved for '+className,'success');})
+    .catch(function(e){showToast('Failed to save: '+e.message,'error');});
 }
 
 // ---- Admission Reports Tab ----

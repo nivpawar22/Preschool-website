@@ -1589,13 +1589,16 @@ function renderSyllabus() {
           <div class="progress-bar" style="margin-bottom:16px">
             <div class="progress-fill" style="width:${Math.round(done/totalTopics*100)||0}%"></div>
           </div>
-          ${syl.topics.map(t => {
+          ${syl.topics.map((t, idx) => {
             const statusColors = { completed: '#10b981', in_progress: '#E8B020', pending: '#6B7A9D' };
             const statusLabels = { completed: 'Completed', in_progress: 'In Progress', pending: 'Pending' };
+            const bulletGlyphs = { disc: '•', circle: '○', square: '▪', arrow: '➤', check: '✓', dash: '–' };
+            const bulletStyle = syl.bulletStyle || 'disc';
+            const bullet = bulletStyle === 'decimal' ? (idx + 1) + '.' : (bulletGlyphs[bulletStyle] || '•');
             return `
             <div class="topic-row">
               <div style="flex:1">
-                <div style="font-weight:600">${t.title}</div>
+                <div style="font-weight:600"><span style="color:#C4893A;margin-right:8px;font-weight:800">${bullet}</span>${t.title}</div>
                 ${(t.weeks || t.description) ? `<div class="text-muted">${[t.weeks ? 'Weeks ' + t.weeks : '', t.description].filter(Boolean).join(' · ')}</div>` : ''}
               </div>
               <span class="topic-status-badge" style="background:${statusColors[t.status]}20;color:${statusColors[t.status]}">${statusLabels[t.status]}</span>
@@ -1646,8 +1649,24 @@ function openAddSyllabusModal(classId) {
         </div>
         <div class="form-group">
           <label class="form-label">Syllabus Description</label>
-          <textarea class="form-control" id="syl-desc-lines" rows="6" placeholder="Type each topic/point on its own line, e.g.&#10;Fractions & Decimals&#10;Introduction to Geometry&#10;Word Problems"></textarea>
-          <div style="font-size:11px;color:#94a3b8;margin-top:4px">Each line becomes a topic in the syllabus below.</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+            <button type="button" onmousedown="event.preventDefault()" onclick="_sylFmt('bold')" class="btn btn-secondary btn-xs" title="Bold" style="width:30px;font-weight:900">B</button>
+            <button type="button" onmousedown="event.preventDefault()" onclick="_sylFmt('italic')" class="btn btn-secondary btn-xs" title="Italic" style="width:30px;font-style:italic">I</button>
+            <button type="button" onmousedown="event.preventDefault()" onclick="_sylFmt('underline')" class="btn btn-secondary btn-xs" title="Underline" style="width:30px;text-decoration:underline">U</button>
+            <span style="width:1px;height:20px;background:#DCE1EF;margin:0 4px"></span>
+            <label style="font-size:11px;color:#6B7A9D;font-weight:700">Bullet Style</label>
+            <select class="form-control" id="syl-bullet-style" style="width:auto;padding:4px 8px;font-size:12px">
+              <option value="disc">• Disc</option>
+              <option value="circle">○ Circle</option>
+              <option value="square">▪ Square</option>
+              <option value="arrow">➤ Arrow</option>
+              <option value="check">✓ Check</option>
+              <option value="dash">– Dash</option>
+              <option value="decimal">1. Numbered</option>
+            </select>
+          </div>
+          <div class="form-control" id="syl-desc-lines" contenteditable="true" style="min-height:120px;white-space:pre-wrap;overflow-y:auto" data-placeholder="Type each topic/point on its own line (press Enter for a new line), e.g. Fractions & Decimals"></div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px">Each line becomes a topic in the syllabus below. Select text and use B/I/U to format.</div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1666,15 +1685,40 @@ function openAddSyllabusModal(classId) {
   if (noPreset) setTimeout(() => { const el = document.getElementById('syl-custom'); if (el) el.focus(); }, 80);
 }
 
+function _sylFmt(cmd) {
+  const el = document.getElementById('syl-desc-lines');
+  if (!el) return;
+  el.focus();
+  document.execCommand(cmd, false, null);
+}
+
+// Reads a contenteditable box into an array of per-line HTML strings,
+// preserving inline formatting (bold/italic/underline) inside each line.
+function _sylReadLines(el) {
+  const lines = [];
+  let current = '';
+  Array.prototype.forEach.call(el.childNodes, node => {
+    if (node.nodeType === 3) {
+      current += node.textContent;
+    } else if (node.nodeName === 'BR') {
+      lines.push(current); current = '';
+    } else if (node.nodeName === 'DIV' || node.nodeName === 'P') {
+      if (current) { lines.push(current); current = ''; }
+      lines.push(node.innerHTML === '<br>' ? '' : node.innerHTML);
+    } else {
+      current += node.outerHTML || node.textContent || '';
+    }
+  });
+  if (current) lines.push(current);
+  return lines.map(l => l.trim()).filter(l => l && l !== '<br>');
+}
+
 function saveNewSyllabus(classId) {
   const data = DB.get();
   const subEl = document.getElementById('syl-sub');
   const subject = subEl.value === 'custom' ? document.getElementById('syl-custom').value.trim() : subEl.value;
   if (!subject) { showToast('Subject required', 'error'); return; }
-  const descLines = (document.getElementById('syl-desc-lines').value || '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean);
+  const descLines = _sylReadLines(document.getElementById('syl-desc-lines'));
   const topics = descLines.map(line => ({
     id: DB.genId('t'), title: line, weeks: '', description: '', status: 'pending'
   }));
@@ -1682,6 +1726,7 @@ function saveNewSyllabus(classId) {
     id: DB.genId('syl'), classId, subject,
     term: document.getElementById('syl-term').value,
     year: document.getElementById('syl-year').value,
+    bulletStyle: document.getElementById('syl-bullet-style').value || 'disc',
     topics
   });
   DB.commit();

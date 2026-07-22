@@ -2113,7 +2113,7 @@ app.get('/parent-portal', (c) => {
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&family=Cinzel:wght@600;700;900&family=Bodoni+Moda:wght@700;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/style.css?v=25"/>
 </head>
 <body>
@@ -2551,38 +2551,52 @@ const SCHOOL_PRINT_FONTS_HTML =
   '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Bodoni+Moda:wght@700;900&display=swap" rel="stylesheet">'
 
 const SCHOOL_PRINT_HEADER_CSS = `
-.sph{width:100%;font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#fff}
+.sph{width:100%;font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#fff;container-type:inline-size}
 .sph-gold-bar{height:6px;background:#c99b3a}
 .sph-top{display:flex;align-items:center;gap:24px;background:#141b4d;padding:22px 40px;flex-wrap:wrap}
 .sph-logo{width:88px;height:88px;flex-shrink:0;border-radius:50%;overflow:hidden;border:3px solid #c99b3a;background:#141b4d}
 .sph-logo img{width:100%;height:100%;object-fit:contain}
-.sph-titles{display:flex;flex-direction:column;gap:6px}
-.sph-name{font-family:'Bodoni Moda',serif;font-weight:700;font-size:38px;letter-spacing:.5px;color:#fff;line-height:1.1;text-transform:uppercase}
-.sph-sub{font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:3px;color:#d8a13e}
+.sph-titles{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.sph-name{font-family:'Bodoni Moda',serif;font-weight:700;letter-spacing:.5px;color:#fff;line-height:1.1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sph-sub{font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:3px;color:#d8a13e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .sph-motto{margin-left:auto;max-width:220px;text-align:right;flex-shrink:0}
 .sph-sanskrit{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:#d8a13e}
 .sph-tagline{font-family:'Poppins','Segoe UI',Arial,sans-serif;font-style:italic;font-size:10px;color:#c8ccdd;line-height:1.3}
 .sph-tagline span{font-style:normal}
 .sph-contact{display:flex;justify-content:space-between;align-items:flex-start;background:#dbaa8b;padding:18px 40px;gap:24px;flex-wrap:wrap}
-.sph-cleft{display:flex;flex-direction:column;gap:3px}
+.sph-cleft{display:flex;flex-direction:column;gap:3px;min-width:0}
 .sph-crow,.sph-crow-r{display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'}
 .sph-crow a,.sph-cright a{color:#141b4d;text-decoration:none}
 .sph-ico{width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sph-ico svg{width:12px;height:12px}
-.sph-cright{text-align:right;color:#141b4d;font-weight:700;font-size:15px;line-height:1.25;font-family:'Times New Roman'}
+.sph-cright{text-align:right;color:#141b4d;font-weight:700;font-size:15px;line-height:1.25;font-family:'Times New Roman';min-width:0}
 .sph-crow-r{justify-content:flex-end}
-@media(max-width:600px){
-  .sph-top{padding:14px 16px;gap:12px}
+@container (max-width: 700px){
+  .sph-top{padding:14px 18px;gap:14px}
   .sph-logo{width:56px;height:56px}
-  .sph-name{font-size:22px}
+  .sph-motto{display:none}
   .sph-sub{font-size:11px;letter-spacing:2px}
-  .sph-motto{max-width:140px}
-  .sph-sanskrit{font-size:11px}
-  .sph-tagline{font-size:8px}
-  .sph-contact{padding:12px 16px;gap:12px}
-  .sph-crow,.sph-crow-r,.sph-cleft,.sph-cright{font-size:12px}
+  .sph-contact{padding:12px 18px;gap:12px}
+  .sph-crow,.sph-crow-r{font-size:12px}
+}
+@container (max-width: 420px){
+  .sph-name{font-size:16px !important}
 }
 `
+
+// Keeps the school name on a single line at any container width by
+// scaling the font down as the name gets longer, instead of letting it
+// wrap to 2-3 lines.
+function schoolNameFontSizePx(name: string): number {
+  const len = (name || '').length
+  if (len <= 12) return 34
+  if (len <= 16) return 29
+  if (len <= 20) return 25
+  if (len <= 24) return 21
+  if (len <= 28) return 18
+  if (len <= 34) return 16
+  return 14
+}
 
 function schoolPrintHeaderHtml(meta: any, subtitle: string): string {
   const schoolName = meta.schoolName || 'SuperKids India Preschool'
@@ -2594,13 +2608,14 @@ function schoolPrintHeaderHtml(meta: any, subtitle: string): string {
   const rawAddr = meta.schoolAddress || ''
   const address = rawAddr.indexOf('\n') !== -1 ? rawAddr : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026'
   const addrLines = address.split('\n')
+  const nameFontSize = schoolNameFontSizePx(schoolName)
   return `
 <div class="sph">
   <div class="sph-gold-bar"></div>
   <div class="sph-top">
     <div class="sph-logo"><img src="${logoUrl}" alt="Logo"/></div>
     <div class="sph-titles">
-      <div class="sph-name">${schoolName}</div>
+      <div class="sph-name" style="font-size:${nameFontSize}px">${schoolName}</div>
       <div class="sph-sub">${subtitle.toUpperCase()}</div>
     </div>
     <div class="sph-motto">

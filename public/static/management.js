@@ -3202,13 +3202,9 @@ function loadLetterheadConfig() {
 }
 
 function buildLetterheadHtml(meta, lh) {
-  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
   var _raw = meta.schoolAddress || '';
-  var address = (_raw.indexOf('\n') !== -1) ? _raw : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
-  var phone1 = meta.schoolPhone || '';
-  var phone2 = meta.schoolPhone2 || '';
-  var email = meta.schoolEmail || '';
+  var address = (_raw.indexOf('\n') !== -1) ? _raw : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
   var principal = meta.principalName || 'Principal';
   var sigUrl = lh.signatureUrl || '';
@@ -3219,31 +3215,9 @@ function buildLetterheadHtml(meta, lh) {
   var body = lh.body || '[Letter content will appear here…]';
   var closing = lh.closing || 'Yours Sincerely,';
   var today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
-  var ico = function(fa) { return '<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;vertical-align:middle;margin-right:4px;flex-shrink:0"><i class="'+fa+'"></i></span>'; };
-  var addrHtml = address.replace(/\n/g,'<br>');
 
-  return '<div style="font-family:Georgia,serif;font-size:13px;color:#1a1a2e;background:#fff">' +
-    '<div style="background-color:#0F2050">' +
-      '<div style="display:flex;align-items:center;padding:18px 24px;gap:16px">' +
-        '<img src="'+logoUrl+'" style="width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0"/>' +
-        '<div style="flex:1">' +
-          '<div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.3px;font-family:Arial,sans-serif">'+schoolName+'</div>' +
-          '<div style="font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px">Official School Correspondence</div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="background-color:#dcad92;padding:7px 24px;display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45">' +
-          (phone1 ? '<div style="display:flex;align-items:center">'+ico('fas fa-phone')+phone1+'</div>' : '') +
-          (phone2 ? '<div style="display:flex;align-items:center">'+ico('fas fa-mobile-alt')+phone2+'</div>' : '') +
-          (email ? '<div style="display:flex;align-items:center">'+ico('fas fa-envelope')+email+'</div>' : '') +
-          '<div style="display:flex;align-items:center">'+ico('fas fa-globe')+website+'</div>' +
-        '</div>' +
-        '<div style="font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%">' +
-          '<div style="font-weight:800;margin-bottom:2px">'+ico('fas fa-home')+schoolName+'</div>' +
-          '<div>'+addrHtml+'</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
+  return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff">' +
+    schoolPrintHeaderHtml('Official School Correspondence') +
     '<div style="padding:22px 24px">' +
       '<div style="text-align:right;font-size:12px;color:#555;margin-bottom:18px">Date: '+today+'</div>' +
       '<div style="font-size:13px;color:#1a1a2e;margin-bottom:16px;font-weight:600">'+salutation+'</div>' +

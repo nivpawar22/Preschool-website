@@ -775,7 +775,7 @@ window.teacherPrintSlip = function(id) {
   var lh = (typeof _skLetterhead==='function') ? _skLetterhead(meta, 'SALARY SLIP — '+_tFmtMonth(p.month), 'Pay Period: '+_tFmtMonth(p.month)+'&nbsp;&nbsp;|&nbsp;&nbsp;Generated: '+new Date().toLocaleDateString('en-IN')) : null;
   var win = window.open('','_blank');
   if (lh) {
-    win.document.write('<!DOCTYPE html><html><head><title>Salary Slip - '+_tFmtMonth(p.month)+'</title><style>'+lh.css+'</style></head><body>'+
+    win.document.write('<!DOCTYPE html><html><head><title>Salary Slip - '+_tFmtMonth(p.month)+'</title>'+(typeof SCHOOL_PRINT_FONTS_HTML!=='undefined'?SCHOOL_PRINT_FONTS_HTML:'')+'<style>'+lh.css+'</style></head><body>'+
       lh.header+
       '<div class="sk-body">'+
         '<table style="margin-bottom:16px">'+
@@ -818,7 +818,7 @@ window.teacherDownloadSalaryCert = function() {
   var lh = (typeof _skLetterhead==='function') ? _skLetterhead(meta, 'SALARY CERTIFICATE', 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/SC/'+new Date().getFullYear()) : null;
   var sName = meta.schoolName||meta.name||'SuperKids India Preschool';
   var win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Salary Certificate</title><style>'+(lh?lh.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px;font-size:14px}</style></head><body>'+
+  win.document.write('<!DOCTYPE html><html><head><title>Salary Certificate</title>'+(typeof SCHOOL_PRINT_FONTS_HTML!=='undefined'?SCHOOL_PRINT_FONTS_HTML:'')+'<style>'+(lh?lh.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px;font-size:14px}</style></head><body>'+
     (lh ? lh.header : '<h1>'+escHtml(sName)+'</h1>')+
     '<div class="sk-body">'+
       '<p>To Whom It May Concern,</p>'+
@@ -972,7 +972,7 @@ window.teacherPrintIssuedLetter = function(letterId) {
     var lh2 = (typeof _skLetterhead==='function') ? _skLetterhead(meta, letter.type.toUpperCase(), 'Date: '+formatDate(letter.issuedDate||letter.createdAt)+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/'+new Date().getFullYear()) : null;
     var sName2 = meta.schoolName||meta.name||'SuperKids India Preschool';
     var win = window.open('','_blank');
-    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(letter.type)+'</title><style>'+(lh2?lh2.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(letter.type)+'</title>'+(typeof SCHOOL_PRINT_FONTS_HTML!=='undefined'?SCHOOL_PRINT_FONTS_HTML:'')+'<style>'+(lh2?lh2.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
       (lh2?lh2.header:'<h1>'+escHtml(sName2)+'</h1>')+
       '<div class="sk-body">'+
         '<p>To Whom It May Concern,</p>'+
@@ -1112,7 +1112,7 @@ window.teacherDownloadExitDoc = function(type) {
     var lhX = (typeof _skLetterhead==='function') ? _skLetterhead(meta, type.toUpperCase(), 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+escHtml(user.employeeId||user.id)+'/'+new Date().getFullYear()) : null;
     var sNameX = meta.schoolName||meta.name||'SuperKids India Preschool';
     var win = window.open('','_blank');
-    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(type)+'</title><style>'+(lhX?lhX.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
+    win.document.write('<!DOCTYPE html><html><head><title>'+escHtml(type)+'</title>'+(typeof SCHOOL_PRINT_FONTS_HTML!=='undefined'?SCHOOL_PRINT_FONTS_HTML:'')+'<style>'+(lhX?lhX.css:'body{font-family:Arial,sans-serif;margin:60px;color:#333;line-height:1.8}')+'p{margin-bottom:14px}</style></head><body>'+
       (lhX?lhX.header:'<h1>'+escHtml(sNameX)+'</h1>')+
       '<div class="sk-body">'+
         '<p>To Whom It May Concern,</p>'+

@@ -4227,39 +4227,6 @@ function buildDocSignatureArea(meta, opts) {
   '</table>';
 }
 
-// ---- Shared letterhead builder ----
-function buildDocLetterhead(meta) {
-  var logo = meta.schoolLogo || '/static/school-logo.png';
-  var sName = meta.schoolName || 'SuperKids India Preschool';
-  var addr = (meta.schoolAddress || '').replace(/\n/g, ', ');
-  var phone = meta.schoolPhone || '';
-  var email = meta.schoolEmail || '';
-  var website = meta.schoolWebsite || '';
-  var contactParts = [];
-  if (phone) contactParts.push('Tel: ' + phone);
-  if (email) contactParts.push('Email: ' + email);
-  if (website) contactParts.push(website);
-  var contactLine = contactParts.join('  |  ');
-
-  var tdBase = 'border:none;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact';
-  return '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#0F2050;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
-    '<tr>' +
-      '<td width="108" style="' + tdBase + ';padding:16px 8px 16px 18px;vertical-align:middle;text-align:center">' +
-        '<div style="width:78px;height:78px;border-radius:50%;border:3px solid #C4893A;overflow:hidden;background:#fff;display:inline-block;line-height:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">' +
-          '<img src="' + logo + '" width="72" height="72" style="display:block;border-radius:50%;object-fit:cover;-webkit-print-color-adjust:exact;print-color-adjust:exact" onerror="this.style.display=\'none\'"/>' +
-        '</div>' +
-      '</td>' +
-      '<td style="' + tdBase + ';padding:16px 20px;text-align:center;vertical-align:middle">' +
-        '<div style="font-family:Georgia,serif;font-size:26px;font-weight:900;color:#ffffff;letter-spacing:0.8px;line-height:1.2">' + sName + '</div>' +
-        (addr ? '<div style="font-size:11px;color:#C4893A;margin-top:6px">' + addr + '</div>' : '') +
-        (contactLine ? '<div style="font-size:10px;color:#b0bec5;margin-top:4px">' + contactLine + '</div>' : '') +
-      '</td>' +
-    '</tr>' +
-    '<tr>' +
-      '<td colspan="2" style="border:none;height:5px;background:#C4893A;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact"></td>' +
-    '</tr>' +
-  '</table>';
-}
 
 // ---- Student doc modal ----
 window._openStudentDocModal = function(studentId, docKey) {
@@ -4331,20 +4298,21 @@ window._printStudentDocDirect = function(studentId, docKey) {
   var today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   var ayear = cust.admitYear || (typeof getAcademicYear === 'function' ? getAcademicYear() : '2025-26');
 
-  var lhHtml = buildDocLetterhead(meta);
-  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+  var docTitleMap = { admit: 'Admit Card', bonafide: 'Bonafide Certificate', character: 'Character Certificate' };
+  var lhHtml = schoolPrintHeaderHtml(docTitleMap[docKey] || '');
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Arial,sans-serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '@page{size:A4;margin:15mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}' +
-    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
+    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#141b4d}' +
     '.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;background:#f8fafc;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}' +
     '.field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em;display:block}' +
     '.field .val{font-size:13px;font-weight:700;margin-top:2px}' +
     'table{width:100%;border-collapse:collapse;margin-bottom:14px}' +
-    'th{background:#0F2050;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;text-align:left}' +
+    'th{background:#141b4d;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;text-align:left}' +
     '.content-area td{padding:8px 10px;border-bottom:1px solid #f1f5f9}.content-area tr:nth-child(even) td{background:#f8fafc}' +
     '.notice{background:#FEF7E0;border:1px solid #C4893A;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px;line-height:1.6}' +
     '.body-text{font-size:13px;line-height:1.9;margin-bottom:14px}' +
     '.footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
-    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}' +
+    '.page-wrap{border:2px solid #141b4d;margin:8px;padding:0}' +
     '.content-area{padding:20px 28px 28px}';
 
   var bodyHtml = '';
@@ -4392,7 +4360,7 @@ window._printStudentDocDirect = function(studentId, docKey) {
       buildDocSignatureArea(meta, { leftLabel: 'Class Teacher' });
   }
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + (docKey === 'admit' ? 'Admit Card' : docKey === 'bonafide' ? 'Bonafide Certificate' : 'Character Certificate') + ' — ' + _mgEsc(student.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + (docKey === 'admit' ? 'Admit Card' : docKey === 'bonafide' ? 'Bonafide Certificate' : 'Character Certificate') + ' — ' + _mgEsc(student.name) + '</title>' + SCHOOL_PRINT_FONTS_HTML + '<style>' + baseCSS + '</style></head><body>' +
     '<div class="page-wrap">' +
     lhHtml +
     '<div class="content-area">' + bodyHtml + '<div class="footer">' + _mgEsc(meta.schoolName) + ' &bull; ' + _mgEsc((meta.schoolAddress||'').replace(/\n/g,' | ')) + '<br>This is a computer-generated document.</div></div>' +
@@ -4771,19 +4739,19 @@ window._printTeacherDocWithOpts = function(teacherId, docKey, opts) {
     createdAt: new Date().toISOString()
   });
 
-  var lhHtml = buildDocLetterhead(meta);
-  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Georgia,serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+  var lhHtml = schoolPrintHeaderHtml(title || '');
+  var baseCSS = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Arial,sans-serif;color:#0F1E3D;background:#fff;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '@page{size:A4;margin:15mm}@media print{body{padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}' +
-    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#0F2050}' +
+    '.doc-title{text-align:center;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-decoration:underline;margin:18px 0 16px;color:#141b4d}' +
     '.ref-box{background:#f9f6f0;border-left:3px solid #C4893A;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}' +
     '.content-area table{width:100%;border-collapse:collapse;margin:12px 0}' +
-    '.content-area td,.content-area th{padding:7px 12px;border:1px solid #DCE1EF}.content-area th{background:#0F2050;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.content-area td,.content-area th{padding:7px 12px;border:1px solid #DCE1EF}.content-area th{background:#141b4d;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     'p{margin-bottom:12px;line-height:1.8}' +
     '.footer-note{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:16px}' +
     '.content-area{padding:16px 24px 24px}' +
-    '.page-wrap{border:2px solid #0F2050;margin:8px;padding:0}';
+    '.page-wrap{border:2px solid #141b4d;margin:8px;padding:0}';
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + _mgEsc(title) + ' — ' + _mgEsc(teacher.name) + '</title><style>' + baseCSS + '</style></head><body>' +
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>' + _mgEsc(title) + ' — ' + _mgEsc(teacher.name) + '</title>' + SCHOOL_PRINT_FONTS_HTML + '<style>' + baseCSS + '</style></head><body>' +
     '<div class="page-wrap">' +
     lhHtml +
     '<div class="content-area">' +

@@ -2563,21 +2563,22 @@ const SCHOOL_PRINT_HEADER_CSS = `
 .sph-sanskrit{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:#d8a13e}
 .sph-tagline{font-family:'Poppins','Segoe UI',Arial,sans-serif;font-style:italic;font-size:10px;color:#c8ccdd;line-height:1.3}
 .sph-tagline span{font-style:normal}
-.sph-contact{display:flex;justify-content:space-between;align-items:flex-start;background:#dbaa8b;padding:18px 40px;gap:24px;flex-wrap:wrap}
-.sph-cleft{display:flex;flex-direction:column;gap:3px;min-width:0}
-.sph-crow,.sph-crow-r{display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'}
+.sph-contact{display:flex;justify-content:space-between;align-items:flex-start;background:#dbaa8b;padding:12px 40px;gap:24px;flex-wrap:wrap}
+.sph-cleft{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sph-crow,.sph-crow-r{display:flex;align-items:center;gap:7px;font-weight:700;color:#141b4d;font-size:12px;font-family:'Times New Roman';line-height:1.5}
 .sph-crow a,.sph-cright a{color:#141b4d;text-decoration:none}
-.sph-ico{width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sph-ico svg{width:12px;height:12px}
-.sph-cright{text-align:right;color:#141b4d;font-weight:700;font-size:15px;line-height:1.25;font-family:'Times New Roman';min-width:0}
+.sph-ico{width:17px;height:17px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sph-ico svg{width:9px;height:9px}
+.sph-cright{text-align:right;color:#141b4d;font-weight:700;font-size:12px;line-height:1.5;font-family:'Times New Roman';min-width:0}
+.sph-cright>div{line-height:1.5}
 .sph-crow-r{justify-content:flex-end}
 @container (max-width: 700px){
   .sph-top{padding:14px 18px;gap:14px}
   .sph-logo{width:56px;height:56px}
   .sph-motto{display:none}
   .sph-sub{font-size:11px;letter-spacing:2px}
-  .sph-contact{padding:12px 18px;gap:12px}
-  .sph-crow,.sph-crow-r{font-size:12px}
+  .sph-contact{padding:10px 18px;gap:12px}
+  .sph-crow,.sph-crow-r{font-size:11px}
 }
 @container (max-width: 420px){
   .sph-name{font-size:16px !important}

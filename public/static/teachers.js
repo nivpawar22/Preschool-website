@@ -783,80 +783,21 @@ window._delHRLetterFromModal = function(lid, teacherId) {
 // Returns complete CSS + header HTML for all printed/exported documents.
 // Matches the official SuperKids India Preschool letterhead design.
 window._skLetterhead = function(meta, docTitle, refLine) {
-  var sName  = meta.schoolName  || meta.name      || 'SuperKids India Preschool';
-  var ph1    = meta.schoolPhone || meta.phone      || '9822-977-644';
-  var ph2    = meta.schoolPhone2|| meta.phone2     || '9822-977-944';
-  var email  = meta.schoolEmail || meta.email      || 'superkidsprincipal@gmail.com';
-  var web    = meta.schoolWebsite||meta.website    || 'https://superkidsindia.com/';
-  var rawAddr = meta.schoolAddress || meta.address || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
-  // Split address into separate lines for 4-line right-column display
-  var addrLines = rawAddr.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
-  var logoSrc = (window.location.origin||'') + '/static/school-logo.png';
-
-  // SVG icon inside a circular navy badge — matches the letterhead icon style
-  function iconBadge(svgPath, vb, w, h) {
-    return '<span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:#0D1B4A;align-items:center;justify-content:center;flex-shrink:0">'+
-      '<svg viewBox="'+vb+'" width="'+w+'" height="'+h+'" fill="#fff">'+svgPath+'</svg>'+
-    '</span>';
-  }
-
-  var phoneIcon  = iconBadge('<path d="M493.4 24.6l-104-24c-11.3-2.6-22.9 3.3-27.5 13.9l-48 112c-4.2 9.8-1.4 21.3 6.9 28l60.6 49.6c-36 76.7-98.9 140.5-177.2 177.2l-49.6-60.6c-6.8-8.3-18.2-11.1-28-6.9l-112 48C3.9 366.5-2 378.1.6 389.4l24 104C27.1 504.2 36.7 512 48 512c256.1 0 464-207.5 464-464 0-11.2-7.7-20.9-18.6-23.4z"/>','0 0 512 512','10','10');
-  var mobileIcon = iconBadge('<path d="M272 0H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h224c26.5 0 48-21.5 48-48V48c0-26.5-21.5-48-48-48zm-96 480c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm112-108c0 6.6-5.4 12-12 12H60c-6.6 0-12-5.4-12-12V60c0-6.6 5.4-12 12-12h200c6.6 0 12 5.4 12 12v312z"/>','0 0 320 512','9','10');
-  var emailIcon  = iconBadge('<path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/>','0 0 512 512','11','10');
-  var globeIcon  = iconBadge('<path d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"/>','0 0 496 512','10','10');
-  var homeIcon   = iconBadge('<path d="M488 312.7V456c0 13.3-10.7 24-24 24H348c-6.6 0-12-5.4-12-12V356c0-6.6-5.4-12-12-12h-72c-6.6 0-12 5.4-12 12v112c0 6.6-5.4 12-12 12H112c-13.3 0-24-10.7-24-24V312.7c0-6.2 2.5-12.2 7-16.6l176-167.7c4.3-4.1 11.4-4.1 15.7 0l176 167.7c4.5 4.4 7 10.4 7 16.6zm83.6-60.5L488 182.7V44c0-6.6-5.4-12-12-12h-56c-6.6 0-12 5.4-12 12v85.7l-64.6-61.5c-18.7-17.8-48.8-17.8-67.5 0L4.4 252.2c-5.8 5.5-6 14.8-.4 20.5l19.6 20.6c5.5 5.8 14.8 6 20.5.4L288 99c3.8-3.6 10.6-3.6 14.4 0l243.9 194.4c5.8 5.5 15 5.4 20.5-.4l19.6-20.6c5.7-5.7 5.5-15-.8-20.2z"/>','0 0 576 512','11','10');
-
-  function cRow(icon, text) {
-    if (!text) return '';
-    return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:#0D1B4A;line-height:1.7">'+icon+'<span>'+text+'</span></div>';
-  }
-
-  // Right column: home icon + school name on first line, then address lines below
-  var rightCol =
-    '<div style="text-align:right">'+
-      '<div style="display:flex;justify-content:flex-end;align-items:center;gap:7px;font-size:11px;font-weight:900;color:#0D1B4A;margin-bottom:2px">'+homeIcon+'<strong>'+sName+'</strong></div>'+
-      addrLines.map(function(l){ return '<div style="font-size:11px;font-weight:700;color:#0D1B4A;line-height:1.65">'+l+'</div>'; }).join('')+
-    '</div>';
-
   var css =
     '*{margin:0;padding:0;box-sizing:border-box}'+
     'body{font-family:Arial,sans-serif;color:#333;font-size:13px;line-height:1.65}'+
-    '.sk-lh-top{background:#0D1B4A;padding:16px 30px;display:flex;align-items:center;gap:18px}'+
-    '.sk-lh-bar{background:#C4A47A;padding:10px 30px;display:flex;justify-content:space-between;align-items:center;gap:16px}'+
-    '.sk-lh-bar-left{display:flex;flex-direction:column;gap:4px}'+
-    '.sk-doc-title{text-align:center;padding:14px 30px 0}'+
-    '.sk-doc-title-inner{display:inline-block;border-bottom:3px solid #D4A017;padding-bottom:4px;font-size:16px;font-weight:900;letter-spacing:2px;color:#0D1B4A;text-transform:uppercase}'+
-    '.sk-ref{font-size:11.5px;color:#666;padding:6px 30px 0;text-align:right}'+
-    '.sk-body{padding:20px 30px 50px}'+
+    '.sk-ref{font-size:11.5px;color:#666;padding:6px 40px 0;text-align:right}'+
+    '.sk-body{padding:20px 40px 50px}'+
     'table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}'+
     'th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}'+
     'th{background:#f8fafc;font-weight:700;color:#475569}'+
-    '.net-row{background:#0D1B4A;color:#fff;font-size:15px;font-weight:900;text-align:right;padding:12px 16px}'+
+    '.net-row{background:#141b4d;color:#fff;font-size:15px;font-weight:900;text-align:right;padding:12px 16px}'+
     '.signature{margin-top:50px}'+
     '.footer-note{font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:8px;margin-top:24px}'+
     '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
 
-  var header =
-    '<div class="sk-lh-top">'+
-      '<img src="'+logoSrc+'" style="width:68px;height:68px;border-radius:50%;border:2.5px solid #D4A017;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'+
-      '<div>'+
-        '<div style="color:#fff;font-size:22px;font-weight:900;letter-spacing:-0.3px">'+sName+'</div>'+
-        '<div style="color:#D4A017;font-size:10px;font-weight:700;letter-spacing:3.5px;margin-top:5px">OFFICIAL SCHOOL CORRESPONDENCE</div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="sk-lh-bar">'+
-      '<div class="sk-lh-bar-left">'+
-        cRow(phoneIcon,  ph1)+
-        cRow(mobileIcon, ph2)+
-        cRow(emailIcon,  email)+
-        cRow(globeIcon,  web)+
-      '</div>'+
-      rightCol+
-    '</div>'+
-    (docTitle
-      ? '<div class="sk-doc-title"><span class="sk-doc-title-inner">'+docTitle+'</span></div>'+
-        (refLine ? '<div class="sk-ref">'+refLine+'</div>' : '')
-      : '');
+  var header = schoolPrintHeaderHtml(docTitle || '') +
+    (refLine ? '<div class="sk-ref">'+refLine+'</div>' : '');
 
   return { css: css, header: header };
 };
@@ -1130,7 +1071,7 @@ window.generateHRLetter = function(teacherId, letterType) {
 
   var lh = _skLetterhead(meta, letterType.toUpperCase(), 'Date: '+todayStr+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+_escH(t.employeeId||'N/A')+'/'+new Date().getFullYear());
   var win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>'+letterType+' — '+_escH(t.name)+'</title>'+
+  win.document.write('<!DOCTYPE html><html><head><title>'+letterType+' — '+_escH(t.name)+'</title>'+SCHOOL_PRINT_FONTS_HTML+
     '<style>'+lh.css+
     'ul{margin:0 0 10px 20px;padding:0}li{margin-bottom:4px}p{margin:6px 0}'+
     '.ref-box{background:#f9f6f0;border-left:3px solid #D4A017;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:12px}'+
@@ -1768,7 +1709,7 @@ window._printAttReport = function() {
   var meta = DB.getMeta();
   var lh = _skLetterhead(meta, 'STAFF ATTENDANCE REPORT', 'Period: '+_fmtMonth(month)+'&nbsp;&nbsp;|&nbsp;&nbsp;Generated: '+new Date().toLocaleDateString('en-IN'));
   var win = window.open('', '_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Attendance Report</title><style>'+
+  win.document.write('<!DOCTYPE html><html><head><title>Attendance Report</title>'+SCHOOL_PRINT_FONTS_HTML+'<style>'+
     lh.css+
     'tr:nth-child(even){background:#f9fafb}'+
     'h3.sk-sec{font-size:13px;color:#0F2050;margin:26px 0 10px;border-bottom:2px solid #e2e8f0;padding-bottom:6px}'+
@@ -2025,7 +1966,7 @@ window.generateExitLetter = function(teacherId) {
 
   var lh = _skLetterhead(meta, 'RELIEVING LETTER', 'Date: '+today+'&nbsp;&nbsp;|&nbsp;&nbsp;Ref: '+_escH(teacher.empId||teacher.id)+'/REL/'+new Date().getFullYear());
   var win = window.open('', '_blank');
-  win.document.write('<!DOCTYPE html><html><head><title>Relieving Letter — '+_escH(teacher.name)+'</title><style>'+
+  win.document.write('<!DOCTYPE html><html><head><title>Relieving Letter — '+_escH(teacher.name)+'</title>'+SCHOOL_PRINT_FONTS_HTML+'<style>'+
     lh.css+
     'p{margin-bottom:14px}'+
     '</style></head><body>'+

@@ -11,6 +11,74 @@ function getAcademicYear() {
   return month >= 6 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
 }
 
+// ============================================================
+// Shared School Print/PDF Header
+// One canonical header (logo, name, gold subtitle, contact bar,
+// address) used by every printed document / PDF export in the app,
+// so they all render with the same design and fonts.
+// ============================================================
+const SCHOOL_PRINT_FONTS_HTML =
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Bodoni+Moda:wght@700;900&display=swap" rel="stylesheet">';
+
+function schoolPrintHeaderHtml(subtitle) {
+  const meta = DB.getMeta();
+  const schoolName = meta.schoolName || 'SuperKids India Preschool';
+  const logoUrl = meta.schoolLogo || '/static/school-logo.png';
+  const phone1 = meta.schoolPhone || '9822-977-644';
+  const phone2 = meta.schoolPhone2 || '9822-977-944';
+  const email = meta.schoolEmail || 'superkidsprincipal@gmail.com';
+  const website = meta.schoolWebsite || 'https://superkidsindia.com/';
+  const rawAddr = meta.schoolAddress || '';
+  const address = rawAddr.indexOf('\n') !== -1 ? rawAddr : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
+  const addrLines = address.split('\n');
+
+  return `
+<div style="width:100%;font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#fff">
+  <div style="height:6px;background:#c99b3a"></div>
+  <div style="display:flex;align-items:center;gap:24px;background:#141b4d;padding:22px 40px">
+    <div style="width:88px;height:88px;flex-shrink:0;border-radius:50%;overflow:hidden;border:3px solid #c99b3a;background:#141b4d">
+      <img src="${logoUrl}" alt="Logo" style="width:100%;height:100%;object-fit:contain"/>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-family:'Bodoni Moda',serif;font-weight:700;font-size:38px;letter-spacing:0.5px;color:#ffffff;line-height:1.1;text-transform:uppercase">${schoolName}</div>
+      <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:3px;color:#d8a13e">${(subtitle || '').toUpperCase()}</div>
+    </div>
+    <div style="margin-left:auto;max-width:220px;text-align:right;flex-shrink:0">
+      <div style="font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:#d8a13e">।सा विद्या या विमुक्तये।</div>
+      <div style="font-family:'Poppins','Segoe UI',Arial,sans-serif;font-style:italic;font-size:10px;color:#c8ccdd;line-height:1.3"><span style="font-style:normal">True education is that which liberates the mind, develops character, and inspires wisdom</span></div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;background:#dbaa8b;padding:18px 40px;gap:24px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'">
+        <span style="width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.3 11.3 0 003.55.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.3 11.3 0 00.57 3.55 1 1 0 01-.25 1.02l-2.2 2.22z"></path></svg></span>
+        ${phone1}
+      </div>
+      ${phone2 ? `<div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'">
+        <span style="width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2H7zm0 3h10v13H7V5zm5 14.5a1 1 0 110 2 1 1 0 010-2z"></path></svg></span>
+        ${phone2}
+      </div>` : ''}
+      ${email ? `<div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'">
+        <span style="width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v.01L12 12l8-5.99V6H4zm16 2.24l-7.4 5.55a1 1 0 01-1.2 0L4 8.24V18h16V8.24z"></path></svg></span>
+        <a href="mailto:${email}" style="color:#141b4d;text-decoration:none">${email}</a>
+      </div>` : ''}
+      ${website ? `<div style="display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'">
+        <span style="width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"></path></svg></span>
+        <a href="${website}" target="_blank" rel="noopener" style="color:#141b4d;text-decoration:none">${website}</a>
+      </div>` : ''}
+    </div>
+    <div style="text-align:right;color:#141b4d;font-weight:700;font-size:15px;line-height:1.25;font-family:'Times New Roman'">
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+        <span style="width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-2.5v9H15v-6H9v6H5.5v-9H3l9-8z"></path></svg></span>
+        ${schoolName}
+      </div>
+      ${addrLines.map(l => `<div>${l}</div>`).join('')}
+    </div>
+  </div>
+</div>`;
+}
+
 // ---- PWA Install prompt ----
 let _pwaPrompt = null;
 

@@ -3480,14 +3480,12 @@ function printAdminResult(studentId, type) {
 
   const dob = student.dob ? (() => { try { return new Date(student.dob).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch(e) { return student.dob; } })() : '—';
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${docTitle} – ${student.name}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>${docTitle} – ${student.name}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-body{font-family:Arial,sans-serif;color:#0F1E3D;padding:24px;background:#fff}
-.header{display:flex;align-items:center;gap:20px;padding:20px 24px;background:linear-gradient(135deg,#0F2050,#1AA6CA);color:#fff;border-radius:10px;margin-bottom:18px}
-.logo{width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,0.35);object-fit:cover;background:#fff;flex-shrink:0}
-.school-name{font-size:22px;font-weight:900}
-.report-title{font-size:15px;color:#fbbf24;font-weight:700;margin-top:6px;letter-spacing:.5px}
+body{font-family:Arial,sans-serif;color:#0F1E3D;padding:0;background:#fff}
+.doc-body{padding:24px}
+.report-title{text-align:center;font-size:13px;color:#141b4d;font-weight:700;letter-spacing:.5px;margin-bottom:16px}
 .info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}
 .info-label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.05em}
 .info-value{font-size:13px;font-weight:700;margin-top:3px}
@@ -3506,20 +3504,11 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .sig-label{font-size:12px;font-weight:700;text-align:center}
 .sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
 .result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
-@media print{body{padding:2px;font-size:12px}.header{padding:10px 14px!important;margin-bottom:8px!important}.no-print{display:none}}
+@media print{.doc-body{padding:2px;font-size:12px}.no-print{display:none}}
 </style></head><body>
-<div class="header">
-  <img src="${meta.schoolLogo||'/static/logo.png'}" class="logo" alt="Logo"/>
-  <div style="flex:1">
-    <div class="school-name">${meta.schoolName||'SuperKids India Preschool'}</div>
-    <div style="color:#c7d2fe;font-size:12px;margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">
-      ${meta.schoolPhone ? `<span>&#128222; ${meta.schoolPhone}</span>` : '<span>&#128222; 9822-977-644 / 9822-977-944</span>'}
-      ${meta.schoolEmail ? `<span>&#9993; ${meta.schoolEmail}</span>` : '<span>&#9993; superkidsprincipal@gmail.com</span>'}
-    </div>
-    ${meta.schoolAddress ? `<div style="color:#a5b4fc;font-size:11px;margin-top:3px">&#128205; ${meta.schoolAddress}</div>` : ''}
-    <div class="report-title">${docTitle.toUpperCase()} – Academic Year ${academicYear}</div>
-  </div>
-</div>
+${schoolPrintHeaderHtml(docTitle)}
+<div class="doc-body">
+<div class="report-title">Academic Year ${academicYear}</div>
 <div class="info-grid">
   <div><div class="info-label">Student Name</div><div class="info-value">${student.name}</div></div>
   <div><div class="info-label">Roll Number</div><div class="info-value">${student.rollNo||'—'}</div></div>
@@ -3532,6 +3521,7 @@ ${tableHtml}
   <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div><div class="sig-name">${teacher ? teacher.name : ''}</div></div>
   <div><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-name">${meta.principalName||''}</div></div>
   <div><div class="sig-date">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div class="sig-label">Date of Issue</div></div>
+</div>
 </div>
 <div class="result-footer">${meta.schoolName||'SuperKids India Preschool'}${meta.schoolAddress?' | '+meta.schoolAddress:''}${meta.schoolWebsite?' | '+meta.schoolWebsite:' | https://superkidsindia.com'}</div>
 <script>window.onload=()=>{window.print();};<\/script>

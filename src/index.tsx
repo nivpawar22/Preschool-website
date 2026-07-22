@@ -2542,6 +2542,87 @@ app.delete('/api/payments/:id', async (c) => {
 })
 
 // ── Public Receipt View (no auth) ────────────────────────────
+// Shared school header (logo, name, gold subtitle, contact bar, address) —
+// server-rendered equivalent of schoolPrintHeaderHtml() in static/app.js,
+// used so every printed page (client popups + this public receipt page)
+// renders with the same design and fonts.
+const SCHOOL_PRINT_FONTS_HTML =
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Bodoni+Moda:wght@700;900&display=swap" rel="stylesheet">'
+
+const SCHOOL_PRINT_HEADER_CSS = `
+.sph{width:100%;font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#fff}
+.sph-gold-bar{height:6px;background:#c99b3a}
+.sph-top{display:flex;align-items:center;gap:24px;background:#141b4d;padding:22px 40px;flex-wrap:wrap}
+.sph-logo{width:88px;height:88px;flex-shrink:0;border-radius:50%;overflow:hidden;border:3px solid #c99b3a;background:#141b4d}
+.sph-logo img{width:100%;height:100%;object-fit:contain}
+.sph-titles{display:flex;flex-direction:column;gap:6px}
+.sph-name{font-family:'Bodoni Moda',serif;font-weight:700;font-size:38px;letter-spacing:.5px;color:#fff;line-height:1.1;text-transform:uppercase}
+.sph-sub{font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:3px;color:#d8a13e}
+.sph-motto{margin-left:auto;max-width:220px;text-align:right;flex-shrink:0}
+.sph-sanskrit{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:#d8a13e}
+.sph-tagline{font-family:'Poppins','Segoe UI',Arial,sans-serif;font-style:italic;font-size:10px;color:#c8ccdd;line-height:1.3}
+.sph-tagline span{font-style:normal}
+.sph-contact{display:flex;justify-content:space-between;align-items:flex-start;background:#dbaa8b;padding:18px 40px;gap:24px;flex-wrap:wrap}
+.sph-cleft{display:flex;flex-direction:column;gap:3px}
+.sph-crow,.sph-crow-r{display:flex;align-items:center;gap:10px;font-weight:700;color:#141b4d;font-size:15px;font-family:'Times New Roman'}
+.sph-crow a,.sph-cright a{color:#141b4d;text-decoration:none}
+.sph-ico{width:22px;height:22px;border-radius:50%;background:#141b4d;color:#dbaa8b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sph-ico svg{width:12px;height:12px}
+.sph-cright{text-align:right;color:#141b4d;font-weight:700;font-size:15px;line-height:1.25;font-family:'Times New Roman'}
+.sph-crow-r{justify-content:flex-end}
+@media(max-width:600px){
+  .sph-top{padding:14px 16px;gap:12px}
+  .sph-logo{width:56px;height:56px}
+  .sph-name{font-size:22px}
+  .sph-sub{font-size:11px;letter-spacing:2px}
+  .sph-motto{max-width:140px}
+  .sph-sanskrit{font-size:11px}
+  .sph-tagline{font-size:8px}
+  .sph-contact{padding:12px 16px;gap:12px}
+  .sph-crow,.sph-crow-r,.sph-cleft,.sph-cright{font-size:12px}
+}
+`
+
+function schoolPrintHeaderHtml(meta: any, subtitle: string): string {
+  const schoolName = meta.schoolName || 'SuperKids India Preschool'
+  const logoUrl = meta.schoolLogo || '/static/school-logo.png'
+  const phone1 = meta.schoolPhone || '9822-977-644'
+  const phone2 = meta.schoolPhone2 || '9822-977-944'
+  const email = meta.schoolEmail || 'superkidsprincipal@gmail.com'
+  const website = meta.schoolWebsite || 'https://superkidsindia.com/'
+  const rawAddr = meta.schoolAddress || ''
+  const address = rawAddr.indexOf('\n') !== -1 ? rawAddr : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026'
+  const addrLines = address.split('\n')
+  return `
+<div class="sph">
+  <div class="sph-gold-bar"></div>
+  <div class="sph-top">
+    <div class="sph-logo"><img src="${logoUrl}" alt="Logo"/></div>
+    <div class="sph-titles">
+      <div class="sph-name">${schoolName}</div>
+      <div class="sph-sub">${subtitle.toUpperCase()}</div>
+    </div>
+    <div class="sph-motto">
+      <div class="sph-sanskrit">।सा विद्या या विमुक्तये।</div>
+      <div class="sph-tagline"><span>True education is that which liberates the mind, develops character, and inspires wisdom</span></div>
+    </div>
+  </div>
+  <div class="sph-contact">
+    <div class="sph-cleft">
+      <div class="sph-crow"><span class="sph-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.3 11.3 0 003.55.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.3 11.3 0 00.57 3.55 1 1 0 01-.25 1.02l-2.2 2.22z"></path></svg></span>${phone1}</div>
+      ${phone2 ? `<div class="sph-crow"><span class="sph-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2a2 2 0 00-2 2v16a2 2 0 002 2h10a2 2 0 002-2V4a2 2 0 00-2-2H7zm0 3h10v13H7V5zm5 14.5a1 1 0 110 2 1 1 0 010-2z"></path></svg></span>${phone2}</div>` : ''}
+      ${email ? `<div class="sph-crow"><span class="sph-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v.01L12 12l8-5.99V6H4zm16 2.24l-7.4 5.55a1 1 0 01-1.2 0L4 8.24V18h16V8.24z"></path></svg></span><a href="mailto:${email}">${email}</a></div>` : ''}
+      ${website ? `<div class="sph-crow"><span class="sph-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"></path></svg></span><a href="${website}" target="_blank" rel="noopener">${website}</a></div>` : ''}
+    </div>
+    <div class="sph-cright">
+      <div class="sph-crow-r"><span class="sph-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-2.5v9H15v-6H9v6H5.5v-9H3l9-8z"></path></svg></span>${schoolName}</div>
+      ${addrLines.map(l => `<div>${l}</div>`).join('')}
+    </div>
+  </div>
+</div>`
+}
+
 app.get('/receipt/:id', async (c) => {
   try {
     await ensureAdmTables(c.env.DB)
@@ -2551,13 +2632,6 @@ app.get('/receipt/:id', async (c) => {
     const metaRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('main').first<{value:string}>()
     const meta: any = metaRow ? JSON.parse(metaRow.value) : {}
     const schoolName = meta.schoolName || 'SuperKids India Preschool'
-    const rawAddr = meta.schoolAddress || 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin: 411026'
-    const logoUrl = meta.schoolLogo || '/static/school-logo.png'
-    const phone1 = meta.schoolPhone || '9822-977-644'
-    const phone2 = meta.schoolPhone2 || '9822-977-944'
-    const email = meta.schoolEmail || 'superkidsprincipal@gmail.com'
-    const website = meta.schoolWebsite || 'https://superkidsindia.com'
-    const addrHtml = rawAddr.replace(/\n/g, '<br>')
     const fmtRs = (n: number) => '&#8377;' + (n || 0).toLocaleString('en-IN')
     const infoRows: [string,string][] = [
       ['Receipt No.', d.receiptNo||'–'], ['Payment Date', d.paymentDate||'–'],
@@ -2568,24 +2642,14 @@ app.get('/receipt/:id', async (c) => {
     ]
     const html = `<!DOCTYPE html><html><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+${SCHOOL_PRINT_FONTS_HTML}
 <title>Receipt ${d.receiptNo||''} — ${schoolName}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F8;padding:16px;min-height:100vh}
 .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.15)}
-.hdr{background:#0F2050}
-.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}
-.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}
-.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.3px}
-.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
-.hdr-bar{background:#dcad92;padding:8px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}
-.hdr-bl{font-size:11px;color:#0F2050;font-weight:600;line-height:1.8;min-width:0}
-.hdr-bl div{display:flex;align-items:flex-start;overflow-wrap:anywhere;word-break:break-word}
-.hdr-bl div .ico-badge{margin-top:2px;flex-shrink:0}
-.hdr-br{font-size:11px;color:#0F2050;font-weight:600;text-align:right;line-height:1.7;min-width:0;word-break:break-word}
-.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}
+${SCHOOL_PRINT_HEADER_CSS}
+.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:.5px;background:#E8EDF5;color:#141b4d;border-bottom:3px solid #141b4d}
 .ig{display:grid;grid-template-columns:1fr 1fr;border:1px solid #ddd}
 .ic{padding:9px 14px;border-bottom:1px solid #eee;border-right:1px solid #eee}
 .ic:nth-child(even){border-right:none}
@@ -2599,14 +2663,6 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 @media(max-width:500px){
   body{padding:0;background:#fff}
   .wrap{border-radius:0;box-shadow:none}
-  .hdr-top{padding:10px 12px;gap:8px}
-  .hdr-top img{width:44px;height:44px;border:2px solid #E8B020}
-  .hdr-name{font-size:13px}
-  .hdr-sub{font-size:7px;letter-spacing:.06em}
-  .hdr-bar{flex-direction:row;gap:6px;padding:7px 10px;align-items:flex-start}
-  .hdr-bl{font-size:9px;line-height:1.7;word-break:break-word;flex:1;min-width:0}
-  .hdr-br{font-size:9px;line-height:1.6;word-break:break-word;flex:1;min-width:0;text-align:right}
-  .hdr-bl div .ico-badge{width:12px;height:12px;font-size:6px;margin-top:2px}
   .rt{font-size:12px;padding:6px}
   .ig{grid-template-columns:1fr}
   .ic{border-right:none}
@@ -2618,24 +2674,7 @@ body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;background:#EFF3F
 }
 </style></head><body>
 <div class="wrap">
-  <div class="hdr">
-    <div class="hdr-top">
-      <img src="${logoUrl}" alt="Logo" onerror="this.style.display='none'">
-      <div style="flex:1"><div class="hdr-name">${schoolName}</div><div class="hdr-sub">Fee Payment Receipt</div></div>
-    </div>
-    <div class="hdr-bar">
-      <div class="hdr-bl">
-        <div><span class="ico-badge"><i class="fas fa-phone"></i></span>${phone1}</div>
-        <div><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>${phone2}</div>
-        <div><span class="ico-badge"><i class="fas fa-envelope"></i></span>${email}</div>
-        <div><span class="ico-badge"><i class="fas fa-globe"></i></span>${website}</div>
-      </div>
-      <div class="hdr-br">
-        <div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>${schoolName}</div>
-        <div>${rawAddr.replace(/\n/g, '<br>')}</div>
-      </div>
-    </div>
-  </div>
+  ${schoolPrintHeaderHtml(meta, 'Fee Payment Receipt')}
   <div class="rt">PAYMENT RECEIPT</div>
   <div class="ig">
     ${infoRows.map(([l,v]) => `<div class="ic"><div class="il">${l}</div><div class="iv">${v}</div></div>`).join('')}

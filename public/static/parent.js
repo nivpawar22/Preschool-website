@@ -1126,25 +1126,12 @@ function printFinalResult(childId) {
   const scoreColor = (pct) => pct >= 80 ? '#10b981' : pct >= 60 ? '#1AA6CA' : '#ef4444';
 
   const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"/><title>Final Result – ${child.name}</title>
+<html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>Final Result – ${child.name}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
-body{font-family:Arial,sans-serif;color:#0F1E3D;padding:20px;background:#fff}
-/* ── Letterhead Header ── */
-.lh-wrap{border:2.5px solid #0F2050;border-radius:10px;overflow:hidden;margin-bottom:18px}
-.lh-top{display:flex;align-items:center;gap:20px;padding:18px 26px;background:#0F2050}
-.lh-logo{width:76px;height:76px;border-radius:50%;border:3px solid #E8B020;object-fit:cover;background:#fff;flex-shrink:0}
-.lh-center{flex:1;text-align:center}
-.lh-school-name{font-size:23px;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1.15}
-.lh-school-tag{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-top:5px}
-.lh-seal{width:70px;height:70px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,.35);font-size:8px;font-weight:700;text-align:center;line-height:1.5;letter-spacing:.06em;text-transform:uppercase}
-.lh-contact-strip{background:#122a59;padding:7px 26px;display:flex;align-items:center;flex-wrap:wrap;gap:0;font-size:11px;color:#c7d2fe;border-top:1px solid rgba(255,255,255,.12)}
-.lh-contact-strip .ci{padding:2px 14px;border-right:1px solid rgba(255,255,255,.2)}
-.lh-contact-strip .ci:first-child{padding-left:0}
-.lh-contact-strip .ci:last-child{border-right:none}
-.lh-addr-strip{background:#0f2050;padding:6px 26px;font-size:11px;color:#a5b4fc;border-top:1px solid rgba(255,255,255,.1)}
-.lh-gold-rule{height:4px;background:#E8B020}
-.lh-doc-title{background:#E8B020;color:#0F1E3D;text-align:center;padding:10px 26px;font-size:13px;font-weight:900;letter-spacing:.7px;text-transform:uppercase}
+body{font-family:Arial,sans-serif;color:#0F1E3D;padding:0;background:#fff}
+.doc-body{padding:20px}
+.lh-doc-title{background:#141b4d;color:#d8a13e;text-align:center;padding:10px 26px;font-size:13px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;margin-bottom:18px}
 /* ── Info Grid ── */
 .info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#F8F9FB;border:1px solid #DCE1EF;border-radius:8px;margin-bottom:16px}
 .info-label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.05em}
@@ -1167,12 +1154,7 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .sig-name{font-size:11px;color:#6B7A9D;text-align:center;margin-top:3px}
 .result-footer{text-align:center;font-size:10px;color:#555;padding:6px 0;margin-top:8px;border-top:1px solid #DCE1EF}
 @media print{
-  body{padding:2px;font-size:12px}
-  .lh-wrap{margin-bottom:10px!important;border-radius:6px!important}
-  .lh-top{padding:10px 16px!important}
-  .lh-school-name{font-size:17px!important}
-  .lh-seal{width:52px!important;height:52px!important}
-  .lh-contact-strip,.lh-addr-strip{padding:5px 16px!important;font-size:10px!important}
+  .doc-body{padding:2px;font-size:12px}
   .lh-doc-title{padding:7px 16px!important;font-size:12px!important}
   .info-grid{padding:8px!important;margin-bottom:8px!important;gap:6px!important}
   .summary{margin-bottom:8px!important;gap:8px!important}
@@ -1187,21 +1169,9 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   .no-print{display:none}
 }
 </style></head><body>
-
-<div class="lh-wrap">
-  <div class="lh-top">
-    <img src="${schoolMeta.schoolLogo || '/static/school-logo.png'}" class="lh-logo" alt="Logo" onerror="this.style.background='#1e3a6b'"/>
-    <div class="lh-center">
-      <div class="lh-school-name">${schoolMeta.schoolName}</div>
-      <div class="lh-school-tag">Pre&#8209;Primary School</div>
-    </div>
-    <div class="lh-seal">OFFICIAL<br>SEAL</div>
-  </div>
-  ${(schoolMeta.schoolPhone || schoolMeta.schoolPhone2 || schoolMeta.schoolEmail || schoolMeta.schoolWebsite) ? `<div class="lh-contact-strip">${[schoolMeta.schoolPhone?`<span class="ci">&#128222; ${schoolMeta.schoolPhone}</span>`:'',schoolMeta.schoolPhone2?`<span class="ci">&#128241; ${schoolMeta.schoolPhone2}</span>`:'',schoolMeta.schoolEmail?`<span class="ci">&#9993; ${schoolMeta.schoolEmail}</span>`:'',schoolMeta.schoolWebsite?`<span class="ci">&#127760; ${schoolMeta.schoolWebsite}</span>`:''].filter(Boolean).join('')}</div>` : ''}
-  ${schoolMeta.schoolAddress ? `<div class="lh-addr-strip">&#128205; ${schoolMeta.schoolAddress}</div>` : ''}
-  <div class="lh-gold-rule"></div>
-  <div class="lh-doc-title">Final Result Card &mdash; Academic Year ${academicYear}</div>
-</div>
+${schoolPrintHeaderHtml('Final Result Card')}
+<div class="doc-body">
+<div class="lh-doc-title">Academic Year ${academicYear}</div>
 <div class="info-grid">
   <div><div class="info-label">Student Name</div><div class="info-value">${child.name}</div></div>
   <div><div class="info-label">Roll Number</div><div class="info-value">${child.rollNo}</div></div>
@@ -1232,6 +1202,7 @@ td{padding:9px 12px;border-bottom:1px solid #f1f5f9;font-size:13px}
   <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div><div class="sig-name">${teacher ? teacher.name : ''}</div></div>
   <div><div class="sig-line"></div><div class="sig-label">Principal</div><div class="sig-name">${schoolMeta.principalName || ''}</div></div>
   <div><div class="sig-date">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div class="sig-label">Date of Issue</div></div>
+</div>
 </div>
 <div class="result-footer">${schoolMeta.schoolName}${schoolMeta.schoolAddress ? ' | ' + schoolMeta.schoolAddress : ''}${schoolMeta.schoolWebsite ? ' | ' + schoolMeta.schoolWebsite : ''}</div>
 <script>window.onload=()=>{window.print();};<\/script>
@@ -1681,13 +1652,10 @@ window.printFeeReceipt = function(feeId) {
   const meta = DB.getMeta();
   const cls = student ? DB.getClass(student.classId) : null;
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Fee Receipt</title>
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
-  .hdr{background:#0F2050;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:16px}
-  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
-  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:11px;color:#90C4E0}
-  .gold-bar{height:4px;background:#E8B020;margin-bottom:20px}
-  .title{text-align:center;font-size:16px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;padding:10px;background:#E8B020;color:#0F1E3D;border-radius:6px}
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>Fee Receipt</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:0;color:#0F1E3D;background:#fff}
+  .doc-body{padding:30px}
+  .title{text-align:center;font-size:16px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;padding:10px;background:#141b4d;color:#d8a13e;border-radius:6px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
   .field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em}
   .field .val{font-size:13px;font-weight:700}
@@ -1697,13 +1665,9 @@ window.printFeeReceipt = function(feeId) {
   .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}
   .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
   .sig-label{font-size:12px;font-weight:700;text-align:center}
-  @media print{body{padding:10px}.no-print{display:none}}</style></head><body>
-  <div class="hdr">
-    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
-    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
-  </div>
-  <div class="gold-bar"></div>
-  <div class="title">Fee Payment Receipt</div>
+  @media print{.doc-body{padding:10px}.no-print{display:none}}</style></head><body>
+  ${schoolPrintHeaderHtml('Fee Payment Receipt')}
+  <div class="doc-body">
   <div class="grid">
     <div class="field"><label>Invoice No.</label><div class="val">${fee.invoiceNo}</div></div>
     <div class="field"><label>Date of Payment</label><div class="val">${formatDate(fee.paidDate)}</div></div>
@@ -1721,6 +1685,7 @@ window.printFeeReceipt = function(feeId) {
   <div class="sig-row">
     <div><div class="sig-line"></div><div class="sig-label">Parent / Guardian</div></div>
     <div><div class="sig-line"></div><div class="sig-label">School Authorised Signatory</div></div>
+  </div>
   </div>
   <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''} &bull; ${meta.schoolWebsite || ''}<br>This is a computer-generated receipt. No signature required.</div>
   <script>window.onload=function(){window.print();};<\/script></body></html>`;
@@ -2384,33 +2349,25 @@ window.printAdmitCard = function(childId) {
   const cls = DB.getClass(child.classId);
   const exams = DB.getExams(child.classId);
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Admit Card – ${child.name}</title>
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:24px;color:#0F1E3D;background:#fff}
-  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px;margin-bottom:0}
-  .logo{width:56px;height:56px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
-  .school-name{font-size:19px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
-  .gold-bar{height:4px;background:#E8B020;margin-bottom:0}
-  .doc-title{background:#E8B020;color:#0F1E3D;text-align:center;padding:9px;font-size:14px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>Admit Card – ${child.name}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:0;color:#0F1E3D;background:#fff}
+  .doc-body{padding:24px}
+  .doc-title{background:#141b4d;color:#d8a13e;text-align:center;padding:9px;font-size:14px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
   .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;border:1px solid #DCE1EF;border-radius:8px;padding:14px;background:#F8F9FB}
   .field label{font-size:10px;color:#6B7A9D;text-transform:uppercase;letter-spacing:.04em}
   .field .val{font-size:13px;font-weight:700;margin-top:3px}
-  .photo-box{width:80px;height:96px;border:2px dashed #DCE1EF;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8;text-align:center;margin-left:auto}
   table{width:100%;border-collapse:collapse;border:1px solid #DCE1EF;border-radius:8px;overflow:hidden;margin-bottom:14px}
-  th{background:#0F2050;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:left}
+  th{background:#141b4d;color:#fff;padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:left}
   td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12px}
-  .notice{background:#FEF7E0;border:1px solid #E8B020;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px}
+  .notice{background:#FEF7E0;border:1px solid #d8a13e;border-radius:6px;padding:10px;font-size:11px;color:#9A6A00;margin-bottom:14px}
   .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px}
   .sig-line{height:44px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
   .sig-label{font-size:11px;font-weight:700;text-align:center}
   .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:14px}
-  @media print{body{padding:6px}.no-print{display:none}}</style></head><body>
-  <div class="hdr">
-    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
-    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
-    <div class="photo-box" style="margin-left:auto">Photo<br>Here</div>
-  </div>
-  <div class="gold-bar"></div>
-  <div class="doc-title">Admit Card – ${getAcademicYear ? getAcademicYear() : '2025-26'}</div>
+  @media print{.doc-body{padding:6px}.no-print{display:none}}</style></head><body>
+  ${schoolPrintHeaderHtml('Admit Card')}
+  <div class="doc-body">
+  <div class="doc-title">Academic Year ${getAcademicYear ? getAcademicYear() : '2025-26'}</div>
   <div class="info-grid">
     <div class="field"><label>Student Name</label><div class="val">${child.name}</div></div>
     <div class="field"><label>Roll No.</label><div class="val">${child.rollNo}</div></div>
@@ -2429,6 +2386,7 @@ window.printAdmitCard = function(childId) {
     <div><div class="sig-line"></div><div class="sig-label">Student's Signature</div></div>
     <div><div class="sig-line"></div><div class="sig-label">Principal's Signature</div></div>
   </div>
+  </div>
   <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated admit card.</div>
   <script>window.onload=function(){window.print();};<\/script></body></html>`;
 
@@ -2444,25 +2402,19 @@ window.printBonafide = function(childId) {
   const cls = DB.getClass(child.classId);
   const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Bonafide Certificate</title>
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
-  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px;margin-bottom:0}
-  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
-  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
-  .gold-bar{height:4px;background:#E8B020;margin-bottom:20px}
-  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #0F2050;padding-bottom:10px}
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>Bonafide Certificate</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:0;color:#0F1E3D;background:#fff}
+  .doc-body{padding:30px}
+  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #141b4d;padding-bottom:10px;color:#141b4d}
   .body{font-size:14px;line-height:2;color:#0F1E3D;margin-bottom:20px}
   .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
   .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
   .sig-label{font-size:12px;font-weight:700;text-align:center}
   .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:20px}
   .seal{width:90px;height:90px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}
-  @media print{body{padding:10px}}</style></head><body>
-  <div class="hdr">
-    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
-    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
-  </div>
-  <div class="gold-bar"></div>
+  @media print{.doc-body{padding:10px}}</style></head><body>
+  ${schoolPrintHeaderHtml('Bonafide Certificate')}
+  <div class="doc-body">
   <div class="doc-title">Bonafide Certificate</div>
   <p class="body">
     This is to certify that <strong>${child.name}</strong>, son/daughter of (Parent/Guardian), bearing Roll No. <strong>${child.rollNo}</strong>,
@@ -2477,6 +2429,7 @@ window.printBonafide = function(childId) {
   <div class="sig-row">
     <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div>
     <div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div>
+  </div>
   </div>
   <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated certificate.</div>
   <script>window.onload=function(){window.print();};<\/script></body></html>`;
@@ -2493,25 +2446,19 @@ window.printCharacterCert = function(childId) {
   const cls = DB.getClass(child.classId);
   const today = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Character Certificate</title>
-  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:30px;color:#0F1E3D;background:#fff}
-  .hdr{background:#0F2050;color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:14px}
-  .logo{width:60px;height:60px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain}
-  .school-name{font-size:20px;font-weight:900}.school-sub{font-size:10px;color:#90C4E0}
-  .gold-bar{height:4px;background:#C4893A;margin-bottom:20px}
-  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #C4893A;padding-bottom:10px;color:#C4893A}
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>${SCHOOL_PRINT_FONTS_HTML}<title>Character Certificate</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:0;color:#0F1E3D;background:#fff}
+  .doc-body{padding:30px}
+  .doc-title{text-align:center;font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;border-bottom:2px solid #141b4d;padding-bottom:10px;color:#141b4d}
   .body{font-size:14px;line-height:2;color:#0F1E3D;margin-bottom:20px}
   .sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
   .sig-line{height:50px;border-bottom:1.5px solid #0F1E3D;margin-bottom:6px}
   .sig-label{font-size:12px;font-weight:700;text-align:center}
   .footer{font-size:10px;color:#6B7A9D;text-align:center;border-top:1px solid #DCE1EF;padding-top:10px;margin-top:20px}
   .seal{width:90px;height:90px;border-radius:50%;border:2px dashed #DCE1EF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8;text-align:center;margin-left:auto}
-  @media print{body{padding:10px}}</style></head><body>
-  <div class="hdr">
-    <img src="${meta.schoolLogo || '/static/school-logo.png'}" class="logo" onerror="this.style.background='#1e3a6b'"/>
-    <div><div class="school-name">${meta.schoolName}</div><div class="school-sub">${meta.schoolAddress || ''}</div></div>
-  </div>
-  <div class="gold-bar"></div>
+  @media print{.doc-body{padding:10px}}</style></head><body>
+  ${schoolPrintHeaderHtml('Character Certificate')}
+  <div class="doc-body">
   <div class="doc-title">Character Certificate</div>
   <p class="body">
     This is to certify that <strong>${child.name}</strong>, Roll No. <strong>${child.rollNo}</strong>, studied in
@@ -2526,6 +2473,7 @@ window.printCharacterCert = function(childId) {
   <div class="sig-row">
     <div><div class="sig-line"></div><div class="sig-label">Class Teacher</div></div>
     <div style="text-align:right"><div class="seal">SCHOOL<br>SEAL</div><div class="sig-line" style="margin-top:8px"></div><div class="sig-label">Principal</div></div>
+  </div>
   </div>
   <div class="footer">${meta.schoolName} &bull; ${meta.schoolAddress || ''}<br>This is a computer-generated certificate.</div>
   <script>window.onload=function(){window.print();};<\/script></body></html>`;

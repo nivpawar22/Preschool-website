@@ -845,59 +845,27 @@ function printAdmForm() {
   var fd=_admFormData||{}; if(!fd.studentName){showToast('Load an admission first','warning');return;}
   var meta=DB.get().meta;
   var schoolName=meta.schoolName||'SuperKids India Preschool';
-  var _rA=meta.schoolAddress||''; var schoolAddr=(_rA.indexOf('\n')!==-1)?_rA:'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
-  var logoUrl=meta.schoolLogo||'/static/school-logo.png';
-  var phone1=meta.schoolPhone||'';
-  var phone2=meta.schoolPhone2||'';
-  var email=meta.schoolEmail||'';
+  var _rA=meta.schoolAddress||''; var schoolAddr=(_rA.indexOf('\n')!==-1)?_rA:'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
   var website=meta.schoolWebsite||'https://superkidsindia.com';
   var principal=meta.principalName||'Principal';
-  var addrHtml=schoolAddr.replace(/\n/g,'<br>');
   var win=window.open('','_blank','width=900,height=700');
   var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Admission Form</title><style>' +
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' + SCHOOL_PRINT_FONTS_HTML + '<title>Admission Form</title><style>' +
     '@page{margin:6mm}' +
     'body{font-family:Arial,sans-serif;font-size:12px;color:#0F1E3D;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050}' +
-    '.hdr-top{display:flex;align-items:center;padding:10px 18px;gap:12px}' +
-    '.hdr-top img{width:58px;height:58px;border-radius:50%;border:2px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
-    '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
-    '.hdr-sub{font-size:8px;color:#E8B020;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;margin-top:2px}' +
-    '.hdr-bar{background-color:#dcad92;padding:6px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#0F2050;color:#fff;font-size:6px;flex-shrink:0;margin-right:3px}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:10px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
-    '.ft{text-align:center;font-size:13px;font-weight:bold;border:2px solid #0F2050;padding:6px;margin:8px 14px;background-color:#E8EDF5}' +
+    '.ft{text-align:center;font-size:13px;font-weight:bold;border:2px solid #141b4d;padding:6px;margin:8px 14px;background-color:#E8EDF5}' +
     '.sec{margin:0 14px 8px;border:1px solid #ddd;border-radius:4px}' +
-    '.sh{background-color:#0F2050;color:#fff;padding:5px 12px;font-weight:bold;font-size:12px}' +
+    '.sh{background-color:#141b4d;color:#fff;padding:5px 12px;font-weight:bold;font-size:12px}' +
     '.sb{padding:9px 12px;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px}' +
     '.fl{font-size:9px;color:#666;text-transform:uppercase}.fv{font-weight:700;padding:2px 0;border-bottom:1px solid #ddd;min-height:17px;font-size:12px}' +
-    '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 14px 0}.sl{text-align:center;font-size:11px;font-weight:bold;color:#0F2050;height:56px;display:flex;align-items:flex-end;justify-content:center}.sl-name{border-top:2px solid #0F2050;padding-top:4px;width:100%;text-align:center}' +
+    '.sigs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:14px 14px 0}.sl{text-align:center;font-size:11px;font-weight:bold;color:#141b4d;height:56px;display:flex;align-items:flex-end;justify-content:center}.sl-name{border-top:2px solid #141b4d;padding-top:4px;width:100%;text-align:center}' +
     '.footer{text-align:center;font-size:9px;color:#555;padding:4px 14px;margin-top:3px}' +
-    '.pborder{box-sizing:border-box}' +
     '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.sh{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-  '</style></head><body><div class="pborder">'+
-    '<div class="hdr">' +
-      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official Admission Record</div></div></div>' +
-      '<div class="hdr-bar">' +
-        '<div class="hdr-bl">'+
-          (phone1?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>'+phone1+'</div>':'')+
-          (phone2?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>'+phone2+'</div>':'')+
-          (email?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>'+email+'</div>':'')+
-          '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
-        '</div>'+
-        '<div class="hdr-br">'+
-          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
-            '<div>'+addrHtml+'</div>'+
-        '</div>'+
-      '</div>' +
-    '</div>'+
-    '<div class="ft">STUDENT ADMISSION FORM — Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
+    '.sh{background-color:#141b4d!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
+    '.ft{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+  '</style></head><body>'+
+    schoolPrintHeaderHtml('Student Admission Form') +
+    '<div class="ft">Academic Year '+((_adm.academicConfig&&_adm.academicConfig.currentYear)||getAcademicYear())+'</div>'+
     '<div class="sec"><div class="sh">Student Information</div>'+
       '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px">'+
         '<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:5px 12px">'+
@@ -905,7 +873,7 @@ function printAdmForm() {
         '</div>'+
         (fd.studentPhotoUrl?
           '<div style="width:86px;flex-shrink:0;text-align:center">'+
-            '<div style="width:78px;height:78px;border-radius:50%;overflow:hidden;border:2px solid #0F2050;margin:0 auto;background:#F8F9FB">'+
+            '<div style="width:78px;height:78px;border-radius:50%;overflow:hidden;border:2px solid #141b4d;margin:0 auto;background:#F8F9FB">'+
               '<img src="'+(fd.studentPhotoUrl.startsWith('http')?fd.studentPhotoUrl:'/r2/'+fd.studentPhotoUrl)+'" style="width:100%;height:100%;object-fit:cover;transform-origin:center;transform:'+_afPhotoTransform(fd)+'">'+
             '</div>'+
             '<div style="font-size:8px;color:#666;margin-top:3px;font-weight:700">STUDENT PHOTO</div>'+
@@ -927,8 +895,7 @@ function printAdmForm() {
     '<div style="background:#f9f9f9;border:1px solid #ddd;padding:7px 14px;border-radius:4px;font-size:11px;margin:0 14px 8px"><strong>Declaration:</strong> I/We declare that all information furnished is true and correct. I/We agree to abide by the rules and regulations of '+schoolName+'.</div>'+
     '<div class="sigs"><div class="sl"><div class="sl-name">Parent / Guardian Signature</div></div><div class="sl"><div class="sl-name">Admission Admin</div></div><div class="sl"><div class="sl-name">'+principal+'</div></div></div>'+
     '<div style="text-align:right;font-size:9px;color:#aaa;padding:4px 14px">Date: '+now+'</div>'+
-  '</div>'+
-  '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
+  '<div class="footer">'+schoolName+' | '+schoolAddr.replace(/\n/g, ', ')+(website?' | '+website:'')+'</div>'+
   '</body></html>');
   win.document.close(); setTimeout(function(){win.print();},500);
 }
@@ -1142,29 +1109,15 @@ function printReceipt(payId) {
     var d=r.item.data?JSON.parse(r.item.data):{};
     var meta=DB.get().meta;
     var schoolName=meta.schoolName||'SuperKids India Preschool';
-    var _rB=meta.schoolAddress||''; var schoolAddr=(_rB.indexOf('\n')!==-1)?_rB:'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
-    var logoUrl=meta.schoolLogo||'/static/school-logo.png';
-    var phone1=meta.schoolPhone||'';
-    var phone2=meta.schoolPhone2||'';
-    var email=meta.schoolEmail||'';
+    var _rB=meta.schoolAddress||''; var schoolAddr=(_rB.indexOf('\n')!==-1)?_rB:'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
     var website=meta.schoolWebsite||'https://superkidsindia.com';
     var principal=meta.principalName||'Principal';
-    var addrHtml=schoolAddr.replace(/\n/g,'<br>');
     var now=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
     var win=window.open('','_blank','width=700,height=620');
-    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Receipt '+(d.receiptNo||'')+'</title><style>' +
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' + SCHOOL_PRINT_FONTS_HTML + '<title>Receipt '+(d.receiptNo||'')+'</title><style>' +
       '@page{margin:6mm}' +
       'body{font-family:Arial,sans-serif;font-size:13px;color:#0F1E3D;padding:0;max-width:600px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-      '.hdr{background-color:#0F2050}' +
-      '.hdr-top{display:flex;align-items:center;padding:14px 18px;gap:14px}' +
-      '.hdr-top img{width:62px;height:62px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
-      '.hdr-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-0.3px}' +
-      '.hdr-sub{font-size:9px;color:#E8B020;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:3px}' +
-      '.hdr-bar{background-color:#dcad92;padding:7px 18px;display:flex;justify-content:space-between;align-items:flex-start}' +
-      '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
-      '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
-      '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
-      '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#0F2050;border-bottom:3px solid #0F2050}' +
+      '.rt{text-align:center;padding:8px;font-size:14px;font-weight:800;letter-spacing:0.5px;background-color:#E8EDF5;color:#141b4d;border-bottom:3px solid #141b4d}' +
       '.ig{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #ddd}' +
       '.ic{padding:8px 12px;border-bottom:1px solid #eee;border-right:1px solid #eee}' +
       '.il{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em}' +
@@ -1173,35 +1126,17 @@ function printReceipt(payId) {
       '.ft th{background-color:#F8F9FB;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#666;border-bottom:1px solid #ddd}' +
       '.tr{background-color:#F0FFF8;font-weight:900;font-size:15px;color:#059669}' +
       '.ftr{background-color:#F8F9FB;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;text-align:center}' +
-      '.sl{height:40px;border-bottom:2px solid #0F2050;margin-bottom:5px}' +
-      '.slbl{font-size:11px;font-weight:700;color:#0F2050}' +
-      '.stmp{border:2px dashed #0F2050;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.3}' +
+      '.sl{height:40px;border-bottom:2px solid #141b4d;margin-bottom:5px}' +
+      '.slbl{font-size:11px;font-weight:700;color:#141b4d}' +
+      '.stmp{border:2px dashed #141b4d;border-radius:50%;width:68px;height:68px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:8px;font-weight:700;color:#141b4d;text-align:center;line-height:1.3}' +
       '.footer{text-align:center;font-size:10px;color:#555;padding:6px 18px;margin-top:6px}' +
-      '.pborder{box-sizing:border-box}' +
       '@media print{body{padding:0;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-      '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.rt{background-color:#E8EDF5!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.tr{background-color:#F0FFF8!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
       '.ft th{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.ftr{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-      '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-    '</style></head><body><div class="pborder">'+
-      '<div class="hdr">' +
-        '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Fee Payment Receipt</div></div></div>' +
-        '<div class="hdr-bar">' +
-          '<div class="hdr-bl">'+
-            (phone1?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>'+phone1+'</div>':'')+
-            (phone2?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>'+phone2+'</div>':'')+
-            (email?'<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>'+email+'</div>':'')+
-            '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>'+
-          '</div>'+
-          '<div class="hdr-br">'+
-            '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>'+
-            '<div>'+addrHtml+'</div>'+
-          '</div>'+
-        '</div>' +
-      '</div>'+
+      '.ftr{background-color:#F8F9FB!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+    '</style></head><body>'+
+      schoolPrintHeaderHtml('Fee Payment Receipt') +
       '<div class="rt">PAYMENT RECEIPT</div>'+
       '<div class="ig">'+
         [['Receipt No.',d.receiptNo||'–'],['Payment Date',d.paymentDate||'–'],['Student Name',d.studentName||'–'],['Admission No.',d.admissionNo||'–'],['Class / Program',d.classId||'–'],['Payment Mode',d.paymentMode||'–'],['Transaction ID',d.transactionId||'–'],['Academic Year',d.academicYear||'']].map(function(f){return '<div class="ic"><div class="il">'+f[0]+'</div><div class="iv">'+f[1]+'</div></div>';}).join('')+
@@ -1213,8 +1148,7 @@ function printReceipt(payId) {
       '</tbody></table>'+
       '<div class="ftr"><div><div class="sl"></div><div class="slbl">Accountant Signature</div></div><div><div class="stmp"></div></div><div><div class="sl"></div><div class="slbl">'+principal+'</div></div></div>'+
       '<div style="text-align:center;font-size:10px;color:#aaa;padding:6px">Computer-generated receipt. Printed: '+now+'</div>'+
-    '</div>'+
-    '<div class="footer">'+schoolName+' | '+schoolAddr+(website?' | '+website:'')+'</div>'+
+    '<div class="footer">'+schoolName+' | '+schoolAddr.replace(/\n/g, ', ')+(website?' | '+website:'')+'</div>'+
     '</body></html>');
     win.document.close(); setTimeout(function(){win.print();},500);
   }).catch(function(){showToast('Failed to load receipt','error');});

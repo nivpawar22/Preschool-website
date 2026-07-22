@@ -2917,15 +2917,10 @@ function saveFeeStructure() {
 window.printFeeStructure = function() {
   if (!_feeCfg) { showToast('Fee structure still loading, please wait', 'warning'); return; }
   var meta = DB.get().meta || {};
-  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
-  var _rawAddr = meta.schoolAddress || '';
-  var address = (_rawAddr.indexOf('\n') !== -1) ? _rawAddr : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
-  var addrHtml = address.replace(/\n/g, '<br>');
-  var phone1 = meta.schoolPhone || '';
-  var phone2 = meta.schoolPhone2 || '';
-  var email = meta.schoolEmail || '';
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
+  var rawAddr = meta.schoolAddress || '';
+  var address = (rawAddr.indexOf('\n') !== -1) ? rawAddr : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
   var board = _feeCfg.board || 'CBSE';
   var year = _feeCfg.currentYear || getAcademicYear();
   var admissionsOpen = _feeCfg.admissionOpen;
@@ -2941,50 +2936,23 @@ window.printFeeStructure = function() {
   }).join('');
 
   var win = window.open('', '_blank', 'width=900,height=750');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Class-wise Fee Structure – ' + schoolName + '</title><style>' +
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' + SCHOOL_PRINT_FONTS_HTML + '<title>Class-wise Fee Structure – ' + schoolName + '</title><style>' +
     '@page{margin:6mm}' +
-    'body{font-family:Georgia,serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:900px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050}' +
-    '.hdr-top{display:flex;align-items:center;padding:18px 28px;gap:18px}' +
-    '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
-    '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
-    '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
-    '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
+    'body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:900px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.admission-banner{text-align:center;padding:12px 20px 4px}' +
-    '.admission-badge{display:inline-block;padding:8px 26px;background:#0F2050;color:#E8B020;font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.12em;border-radius:8px;border:2px solid #E8B020;text-transform:uppercase}' +
-    '.year-line{text-align:center;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#0F2050;margin-top:8px}' +
-    '.board-title{text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;background:#0F2050;padding:8px;margin:16px 28px 0;border-radius:6px;text-transform:uppercase;letter-spacing:0.08em}' +
+    '.admission-badge{display:inline-block;padding:8px 26px;background:#141b4d;color:#d8a13e;font-family:Arial,sans-serif;font-size:16px;font-weight:900;letter-spacing:0.12em;border-radius:8px;border:2px solid #d8a13e;text-transform:uppercase}' +
+    '.year-line{text-align:center;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#141b4d;margin-top:8px}' +
+    '.board-title{text-align:center;font-family:Arial,sans-serif;font-size:14px;font-weight:800;color:#fff;background:#141b4d;padding:8px;margin:16px 28px 0;border-radius:6px;text-transform:uppercase;letter-spacing:0.08em}' +
     '.body{padding:16px 28px 28px}' +
     'table{width:100%;border-collapse:collapse}' +
     'th,td{border:1px solid #DCE1EF;padding:8px 10px;font-family:Arial,sans-serif;font-size:12px;text-align:center}' +
-    'th{background:#F8F9FB;font-weight:700;color:#0F2050;text-transform:uppercase;font-size:10px;letter-spacing:0.04em}' +
+    'th{background:#F8F9FB;font-weight:700;color:#141b4d;text-transform:uppercase;font-size:10px;letter-spacing:0.04em}' +
     'tbody tr:nth-child(even){background:#F8F9FB}' +
     '.footer{text-align:center;font-size:10px;color:#555;padding:6px 28px;margin-top:10px;font-family:Arial,sans-serif}' +
-    '.pborder{box-sizing:border-box}' +
     '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.board-title{background:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-  '</style></head><body><div class="pborder">' +
-    '<div class="hdr">' +
-      '<div class="hdr-top"><img src="' + logoUrl + '" alt="Logo"/><div style="flex:1"><div class="hdr-name">' + schoolName + '</div><div class="hdr-sub">Class-wise Fee Structure</div></div></div>' +
-      '<div class="hdr-bar">' +
-        '<div class="hdr-bl">' +
-          (phone1 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>' + phone1 + '</div>' : '') +
-          (phone2 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>' + phone2 + '</div>' : '') +
-          (email ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>' + email + '</div>' : '') +
-          '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>' + website + '</div>' +
-        '</div>' +
-        '<div class="hdr-br">' +
-          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>' + schoolName + '</div>' +
-          '<div>' + addrHtml + '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
+    '.board-title{background:#141b4d!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
+  '</style></head><body>' +
+    schoolPrintHeaderHtml('Class-wise Fee Structure') +
     (admissionsOpen
       ? '<div class="admission-banner"><span class="admission-badge">Admissions Open</span><div class="year-line">Academic Year ' + year + '</div></div>'
       : '<div class="year-line" style="padding-top:12px">Academic Year ' + year + '</div>') +
@@ -2993,7 +2961,6 @@ window.printFeeStructure = function() {
       '<table><thead><tr><th style="text-align:left">Class</th>' + FEE_COLS.map(function(c) { return '<th>' + c.label + '</th>'; }).join('') + '</tr></thead>' +
       '<tbody>' + rowsHtml + '</tbody></table>' +
     '</div>' +
-  '</div>' +
   '<div class="footer">' + schoolName + ' | ' + address.replace(/\n/g, ', ') + (website ? ' | ' + website : '') + '</div>' +
   '</body></html>');
   win.document.close();
@@ -3373,56 +3340,24 @@ window.printLetterhead = function() {
     signatureOffsetY: (meta.letterhead||{}).signatureOffsetY || 0,
     signatureOffsetX: (meta.letterhead||{}).signatureOffsetX || 0,
   };
-  var logoUrl = meta.schoolLogo || '/static/school-logo.png';
   var schoolName = meta.schoolName || 'SuperKids India Preschool';
-  var _rawAddr = meta.schoolAddress || '';
-  var address = (_rawAddr.indexOf('\n') !== -1) ? _rawAddr : 'Matoshri Apartment,Plot Number 51,\nSector No 10,Bhosari Pradhikaran,\nPin:411026';
-  var phone1 = meta.schoolPhone || '';
-  var phone2 = meta.schoolPhone2 || '';
-  var email = meta.schoolEmail || '';
+  var rawAddr = meta.schoolAddress || '';
+  var address = (rawAddr.indexOf('\n') !== -1) ? rawAddr : 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026';
   var website = meta.schoolWebsite || 'https://superkidsindia.com';
   var principal = meta.principalName || 'Principal';
   var today = new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
-  var addrHtml = address.replace(/\n/g,'<br>');
 
   var win = window.open('', '_blank', 'width=820,height=700');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"><title>Letter Head – '+schoolName+'</title><style>' +
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">' + SCHOOL_PRINT_FONTS_HTML + '<title>Letter Head – '+schoolName+'</title><style>' +
     '@page{margin:6mm}' +
-    'body{font-family:Georgia,serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050}' +
-    '.hdr-top{display:flex;align-items:center;padding:18px 28px;gap:18px}' +
-    '.hdr-top img{width:72px;height:72px;border-radius:50%;border:3px solid #E8B020;background:#fff;object-fit:contain;flex-shrink:0}' +
-    '.hdr-name{font-size:22px;font-weight:900;color:#fff;font-family:Arial,sans-serif;letter-spacing:-0.3px}' +
-    '.hdr-sub{font-size:10px;color:#E8B020;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px}' +
-    '.hdr-bar{background-color:#dcad92;padding:7px 28px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.ico-badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#0F2050;color:#fff;font-size:7px;flex-shrink:0;margin-right:4px}' +
-    '.hdr-bl{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45}' +
-    '.hdr-br{font-family:Arial,sans-serif;font-size:11px;color:#0F2050;font-weight:600;line-height:1.45;text-align:right;max-width:48%}' +
+    'body{font-family:Arial,sans-serif;font-size:13px;color:#1a1a2e;margin:0;padding:0;max-width:800px;margin:0 auto;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
     '.body{padding:28px}' +
-    '.sig-line{height:50px;border-bottom:1.5px solid #0F2050;width:180px;margin-bottom:5px}' +
-    '.stamp{width:72px;height:72px;border:2px dashed #0F2050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0F2050;text-align:center;line-height:1.4}' +
+    '.sig-line{height:50px;border-bottom:1.5px solid #141b4d;width:180px;margin-bottom:5px}' +
+    '.stamp{width:72px;height:72px;border:2px dashed #141b4d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#141b4d;text-align:center;line-height:1.4}' +
     '.footer{text-align:center;font-size:10px;color:#555;padding:6px 28px;margin-top:6px}' +
-    '.pborder{box-sizing:border-box}' +
-    '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}' +
-    '.hdr{background-color:#0F2050!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.hdr-bar{background-color:#dcad92!important;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}' +
-    '.pborder{border:1pt solid #0F2050!important;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important;color-adjust:exact!important}}' +
-  '</style></head><body><div class="pborder">' +
-    '<div class="hdr">' +
-      '<div class="hdr-top"><img src="'+logoUrl+'" alt="Logo"/><div style="flex:1"><div class="hdr-name">'+schoolName+'</div><div class="hdr-sub">Official School Correspondence</div></div></div>' +
-      '<div class="hdr-bar">' +
-        '<div class="hdr-bl">' +
-          (phone1 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-phone"></i></span>'+phone1+'</div>' : '') +
-          (phone2 ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-mobile-alt"></i></span>'+phone2+'</div>' : '') +
-          (email ? '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-envelope"></i></span>'+email+'</div>' : '') +
-          '<div style="display:flex;align-items:center"><span class="ico-badge"><i class="fas fa-globe"></i></span>'+website+'</div>' +
-        '</div>' +
-        '<div class="hdr-br">' +
-          '<div style="font-weight:800;margin-bottom:2px"><span class="ico-badge"><i class="fas fa-home"></i></span>'+schoolName+'</div>' +
-          '<div>'+addrHtml+'</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
+    '@media print{body{max-width:100%;print-color-adjust:exact;-webkit-print-color-adjust:exact;color-adjust:exact}}' +
+  '</style></head><body>' +
+    schoolPrintHeaderHtml('Official School Correspondence') +
     '<div class="body">' +
       '<div style="text-align:right;font-size:12px;color:#555;margin-bottom:20px">Date: '+today+'</div>' +
       '<div style="margin-bottom:18px;font-weight:600">'+lh.salutation+'</div>' +
@@ -3431,14 +3366,13 @@ window.printLetterhead = function() {
       '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div>' +
           (lh.signatureUrl ? '<img src="'+lh.signatureUrl+'" style="width:'+(lh.signatureWidth||120)+'px;height:auto;object-fit:contain;display:block;margin-top:'+(lh.signatureOffsetY||0)+'px;margin-left:'+(lh.signatureOffsetX||0)+'px;margin-bottom:5px"/>' : '<div class="sig-line"></div>') +
-          '<div style="font-weight:800;color:#0F2050">'+principal+'</div>' +
+          '<div style="font-weight:800;color:#141b4d">'+principal+'</div>' +
           '<div style="font-size:11px;color:#666">Principal — '+schoolName+'</div>' +
         '</div>' +
         '<div class="stamp"></div>' +
       '</div>' +
     '</div>' +
-  '</div>' +
-  '<div class="footer">'+schoolName+' | '+address+(website ? ' | '+website : '')+'</div>' +
+  '<div class="footer">'+schoolName+' | '+address.replace(/\n/g, ', ')+(website ? ' | '+website : '')+'</div>' +
   '</body></html>');
   win.document.close();
   setTimeout(function(){ win.print(); }, 500);

@@ -930,9 +930,18 @@ function renderGrades() {
   renderLayout('grades', content, 'Grades');
 }
 
-function openAddGradeModal(studentId, classId) {
+// Subjects for grading a class come from that class's Syllabus (kept in
+// sync with Syllabus Management) and fall back to the class's default
+// subject list only if no syllabus has been added yet.
+function _classSubjects(classId) {
+  const fromSyllabus = [...new Set(DB.getSyllabus(classId).map(s => s.subject))];
+  if (fromSyllabus.length) return fromSyllabus;
   const cls = DB.getClass(classId);
-  const subjects = cls ? cls.subjects : ['Mathematics', 'English', 'Science'];
+  return cls ? (cls.subjects || []) : ['Mathematics', 'English', 'Science'];
+}
+
+function openAddGradeModal(studentId, classId) {
+  const subjects = _classSubjects(classId);
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -1075,8 +1084,7 @@ function openBulkGradeModal() {
   const user = Session.current();
   const myClassId = user.role === 'subadmin' ? user.assignedClass : gradesClassFilter;
   const students = DB.getStudents(myClassId || null);
-  const cls = DB.getClass(myClassId);
-  const subjects = cls ? cls.subjects : ['Mathematics', 'English'];
+  const subjects = _classSubjects(myClassId);
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';

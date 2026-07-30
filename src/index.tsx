@@ -2081,6 +2081,7 @@ app.get('/contact', (c) => {
 // ================================================================
 type AssignClass = { id: string; name: string; age: string; color: string; level: number }
 type AssignSubject = { id: string; name: string; emoji: string; color: string }
+type Category = { key: string; count: number }
 
 const ASSIGNMENT_CLASSES: AssignClass[] = [
   { id: 'playgroup', name: 'Play Group', age: '1.5–2.5 yrs', color: '#E4572E', level: 1 },
@@ -2098,10 +2099,75 @@ const ASSIGNMENT_SUBJECTS: AssignSubject[] = [
   { id: 'hindi',   name: 'Hindi / Marathi',  emoji: '📖', color: '#7C3AED' },
 ]
 
-const SETS_PER_SUBJECT = 18 // 6 subjects x 18 sets = 108 worksheets per class
-
 function findAssignClass(id: string): AssignClass | undefined { return ASSIGNMENT_CLASSES.find(x => x.id === id) }
 function findAssignSubject(id: string): AssignSubject | undefined { return ASSIGNMENT_SUBJECTS.find(x => x.id === id) }
+
+// ── Category helpers (dynamic per-subject, per-class sheet counts) ─
+function categoryTotal(categories: Category[]): number { return categories.reduce((s, c) => s + c.count, 0) }
+function resolveCategory(num: number, categories: Category[]): { key: string; idx: number } {
+  let acc = 0
+  for (const c of categories) {
+    if (num <= acc + c.count) return { key: c.key, idx: num - acc - 1 }
+    acc += c.count
+  }
+  return { key: categories[categories.length - 1].key, idx: 0 }
+}
+
+const MATH_TOTAL_NUMS: Record<number, number> = { 1: 10, 2: 20, 3: 30, 4: 50 }
+const MATH_ROWS_PER_SHEET: Record<number, number> = { 1: 3, 2: 4, 3: 4, 4: 5 }
+const MATH_COUNT_MAX: Record<number, number> = { 1: 5, 2: 8, 3: 12, 4: 16 }
+const ENGLISH_ROWS_PER_SHEET: Record<number, number> = { 1: 3, 2: 4, 3: 5, 4: 5 }
+
+function getMathCategories(level: number): Category[] {
+  return [
+    { key: 'numtrace', count: MATH_TOTAL_NUMS[level] },
+    { key: 'count', count: 6 },
+    { key: 'pattern', count: 6 },
+    { key: 'shapes', count: 3 },
+    { key: 'ops', count: 6 },
+    { key: 'missing', count: 4 },
+    { key: 'size', count: 4 },
+  ]
+}
+function getEnglishCategories(_level: number): Category[] {
+  return [
+    { key: 'alpha', count: 26 },
+    { key: 'word', count: 20 },
+    { key: 'sentence', count: 6 },
+    { key: 'beginsound', count: 6 },
+    { key: 'rhymewords', count: 4 },
+  ]
+}
+function getEvsCategories(_level: number): Category[] {
+  return [
+    { key: 'vocab', count: 18 },
+    { key: 'oddoneout', count: 6 },
+  ]
+}
+function getRhymesCategories(_level: number): Category[] {
+  return [{ key: 'rhyme', count: 18 }]
+}
+function getArtCategories(_level: number): Category[] {
+  return [{ key: 'art', count: 24 }]
+}
+function getHindiCategories(level: number): Category[] {
+  return level <= 2
+    ? [{ key: 'letter', count: 7 }, { key: 'word', count: 5 }]
+    : [{ key: 'letter', count: 17 }, { key: 'word', count: 5 }]
+}
+function getCategoriesFor(subjectId: string, level: number): Category[] {
+  switch (subjectId) {
+    case 'english': return getEnglishCategories(level)
+    case 'math': return getMathCategories(level)
+    case 'evs': return getEvsCategories(level)
+    case 'rhymes': return getRhymesCategories(level)
+    case 'art': return getArtCategories(level)
+    default: return getHindiCategories(level)
+  }
+}
+function getSubjectSetCount(subjectId: string, level: number): number {
+  return categoryTotal(getCategoriesFor(subjectId, level))
+}
 
 // ── Content pools ───────────────────────────────────────────────
 const ALPHABET_WORDS: { ch: string; word: string; emoji: string }[] = [
@@ -2128,32 +2194,57 @@ const CVC_WORDS: { w: string; e: string }[] = [
   {w:'Owl',e:'🦉'}, {w:'Bus',e:'🚌'}, {w:'Kite',e:'🪁'}, {w:'Star',e:'⭐'},
 ]
 
-const TRACE_SENTENCES: string[] = [
-  'I am happy.',
-  'I like my mom.',
-  'The cat is fat.',
-  'I can run and jump.',
+const SENTENCES_BY_LEVEL: Record<number, string[]> = {
+  1: ['I am happy.', 'I see a cat.', 'I like milk.', 'Go up.', 'Sit down.', 'I love mom.'],
+  2: ['I am happy.', 'I like my mom.', 'The cat is fat.', 'I see a red bus.', 'I can hop.', 'The sun is hot.'],
+  3: ['I can run and jump.', 'The dog can bark.', 'I see a big tree.', 'We play in the park.', 'The sun is bright today.', 'I like to read books.'],
+  4: ['I can run and jump very fast.', 'The little dog likes to play outside.', 'We visited the zoo last Sunday.', 'My family enjoys reading books together.', 'The bright sun makes me feel happy.', 'I want to grow up and help others.'],
+}
+
+const BEGIN_SOUND_ITEMS: { e: string; word: string; letter: string }[] = [
+  {e:'🍎',word:'Apple',letter:'A'}, {e:'🐶',word:'Dog',letter:'D'}, {e:'🐟',word:'Fish',letter:'F'},
+  {e:'🐘',word:'Elephant',letter:'E'}, {e:'⚽',word:'Ball',letter:'B'}, {e:'🐱',word:'Cat',letter:'C'},
+  {e:'🎩',word:'Hat',letter:'H'}, {e:'🦁',word:'Lion',letter:'L'}, {e:'🌙',word:'Moon',letter:'M'},
+  {e:'🐷',word:'Pig',letter:'P'}, {e:'☀️',word:'Sun',letter:'S'}, {e:'🌳',word:'Tree',letter:'T'},
+  {e:'🚐',word:'Van',letter:'V'}, {e:'🦓',word:'Zebra',letter:'Z'}, {e:'🪁',word:'Kite',letter:'K'},
+  {e:'🧃',word:'Juice',letter:'J'}, {e:'🍇',word:'Grapes',letter:'G'}, {e:'☂️',word:'Umbrella',letter:'U'},
+]
+
+const RHYMING_PAIRS: { a: { w: string; e: string }; b: { w: string; e: string }; distractor: { w: string; e: string } }[] = [
+  { a:{w:'Cat',e:'🐱'}, b:{w:'Hat',e:'🎩'}, distractor:{w:'Dog',e:'🐶'} },
+  { a:{w:'Sun',e:'☀️'}, b:{w:'Bun',e:'🍞'}, distractor:{w:'Moon',e:'🌙'} },
+  { a:{w:'Star',e:'⭐'}, b:{w:'Car',e:'🚗'}, distractor:{w:'Tree',e:'🌳'} },
+  { a:{w:'Fox',e:'🦊'}, b:{w:'Box',e:'📦'}, distractor:{w:'Bee',e:'🐝'} },
 ]
 
 const EVS_TOPICS: { title: string; items: { e: string; label: string }[] }[] = [
-  { title: 'My Body Parts', items: [{e:'👁️',label:'Eye'},{e:'👃',label:'Nose'},{e:'👂',label:'Ear'},{e:'👄',label:'Mouth'},{e:'🦷',label:'Teeth'},{e:'🖐️',label:'Hand'}] },
-  { title: 'Wild Animals', items: [{e:'🦁',label:'Lion'},{e:'🐯',label:'Tiger'},{e:'🐘',label:'Elephant'},{e:'🦒',label:'Giraffe'},{e:'🦓',label:'Zebra'},{e:'🐒',label:'Monkey'}] },
-  { title: 'Domestic Animals', items: [{e:'🐶',label:'Dog'},{e:'🐱',label:'Cat'},{e:'🐄',label:'Cow'},{e:'🐐',label:'Goat'},{e:'🐑',label:'Sheep'},{e:'🐎',label:'Horse'}] },
-  { title: 'Birds', items: [{e:'🐦',label:'Sparrow'},{e:'🦜',label:'Parrot'},{e:'🦚',label:'Peacock'},{e:'🦢',label:'Swan'},{e:'🦉',label:'Owl'},{e:'🐓',label:'Hen'}] },
-  { title: 'Fruits', items: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🍇',label:'Grapes'},{e:'🍊',label:'Orange'},{e:'🍉',label:'Watermelon'},{e:'🍓',label:'Strawberry'}] },
-  { title: 'Vegetables', items: [{e:'🥕',label:'Carrot'},{e:'🥦',label:'Broccoli'},{e:'🍆',label:'Brinjal'},{e:'🥔',label:'Potato'},{e:'🌽',label:'Corn'},{e:'🧅',label:'Onion'}] },
-  { title: 'Land Transport', items: [{e:'🚗',label:'Car'},{e:'🚌',label:'Bus'},{e:'🚲',label:'Bicycle'},{e:'🚂',label:'Train'},{e:'🏍️',label:'Bike'},{e:'🚕',label:'Taxi'}] },
-  { title: 'Water & Air Transport', items: [{e:'⛵',label:'Boat'},{e:'🚤',label:'Speedboat'},{e:'🛳️',label:'Ship'},{e:'✈️',label:'Airplane'},{e:'🚁',label:'Helicopter'},{e:'🛶',label:'Canoe'}] },
-  { title: 'My Family', items: [{e:'👨',label:'Father'},{e:'👩',label:'Mother'},{e:'👦',label:'Brother'},{e:'👧',label:'Sister'},{e:'👴',label:'Grandpa'},{e:'👵',label:'Grandma'}] },
-  { title: 'Good Habits', items: [{e:'🪥',label:'Brush Teeth'},{e:'🛁',label:'Bathe Daily'},{e:'🙏',label:'Say Thanks'},{e:'📚',label:'Read Books'},{e:'🥗',label:'Eat Healthy'},{e:'😴',label:'Sleep Early'}] },
-  { title: 'Community Helpers', items: [{e:'👮',label:'Police'},{e:'🧑‍🚒',label:'Firefighter'},{e:'👨‍⚕️',label:'Doctor'},{e:'👨‍🏫',label:'Teacher'},{e:'👨‍🌾',label:'Farmer'},{e:'📮',label:'Postman'}] },
-  { title: 'Festivals of India', items: [{e:'🪔',label:'Diwali'},{e:'🎨',label:'Holi'},{e:'🎊',label:'Eid'},{e:'🌟',label:'Christmas'},{e:'🪁',label:'Makar Sankranti'},{e:'🙏',label:'Ganesh Chaturthi'}] },
-  { title: 'National Symbols', items: [{e:'🇮🇳',label:'National Flag'},{e:'🦚',label:'National Bird'},{e:'🐯',label:'National Animal'},{e:'🌸',label:'National Flower'},{e:'🏏',label:'National Sport'},{e:'🌾',label:'National Fruit'}] },
-  { title: 'Seasons', items: [{e:'☀️',label:'Summer'},{e:'🌧️',label:'Monsoon'},{e:'❄️',label:'Winter'},{e:'🍂',label:'Autumn'},{e:'🌸',label:'Spring'},{e:'🌤️',label:'Pleasant Day'}] },
-  { title: 'Days of the Week', items: [{e:'1️⃣',label:'Monday'},{e:'2️⃣',label:'Tuesday'},{e:'3️⃣',label:'Wednesday'},{e:'4️⃣',label:'Thursday'},{e:'5️⃣',label:'Friday'},{e:'6️⃣',label:'Saturday'}] },
-  { title: 'Colors Around Us', items: [{e:'🔴',label:'Red'},{e:'🔵',label:'Blue'},{e:'🟡',label:'Yellow'},{e:'🟢',label:'Green'},{e:'🟠',label:'Orange'},{e:'🟣',label:'Purple'}] },
-  { title: 'Water Animals', items: [{e:'🐟',label:'Fish'},{e:'🐠',label:'Tropical Fish'},{e:'🐬',label:'Dolphin'},{e:'🐳',label:'Whale'},{e:'🐢',label:'Turtle'},{e:'🦀',label:'Crab'}] },
-  { title: 'My Senses', items: [{e:'👀',label:'Sight'},{e:'👃',label:'Smell'},{e:'👂',label:'Hearing'},{e:'👅',label:'Taste'},{e:'🖐️',label:'Touch'},{e:'🧠',label:'Think'}] },
+  { title: 'My Body Parts', items: [{e:'👁️',label:'Eye'},{e:'👃',label:'Nose'},{e:'👂',label:'Ear'},{e:'👄',label:'Mouth'},{e:'🦷',label:'Teeth'},{e:'🖐️',label:'Hand'},{e:'🦶',label:'Foot'},{e:'💇',label:'Hair'}] },
+  { title: 'Wild Animals', items: [{e:'🦁',label:'Lion'},{e:'🐯',label:'Tiger'},{e:'🐘',label:'Elephant'},{e:'🦒',label:'Giraffe'},{e:'🦓',label:'Zebra'},{e:'🐒',label:'Monkey'},{e:'🐊',label:'Crocodile'},{e:'🦍',label:'Gorilla'}] },
+  { title: 'Domestic Animals', items: [{e:'🐶',label:'Dog'},{e:'🐱',label:'Cat'},{e:'🐄',label:'Cow'},{e:'🐐',label:'Goat'},{e:'🐑',label:'Sheep'},{e:'🐎',label:'Horse'},{e:'🐖',label:'Pig'},{e:'🐇',label:'Rabbit'}] },
+  { title: 'Birds', items: [{e:'🐦',label:'Sparrow'},{e:'🦜',label:'Parrot'},{e:'🦚',label:'Peacock'},{e:'🦢',label:'Swan'},{e:'🦉',label:'Owl'},{e:'🐓',label:'Hen'},{e:'🦩',label:'Flamingo'},{e:'🦆',label:'Duck'}] },
+  { title: 'Fruits', items: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🍇',label:'Grapes'},{e:'🍊',label:'Orange'},{e:'🍉',label:'Watermelon'},{e:'🍓',label:'Strawberry'},{e:'🥭',label:'Mango'},{e:'🍍',label:'Pineapple'}] },
+  { title: 'Vegetables', items: [{e:'🥕',label:'Carrot'},{e:'🥦',label:'Broccoli'},{e:'🍆',label:'Brinjal'},{e:'🥔',label:'Potato'},{e:'🌽',label:'Corn'},{e:'🧅',label:'Onion'},{e:'🥒',label:'Cucumber'},{e:'🍅',label:'Tomato'}] },
+  { title: 'Land Transport', items: [{e:'🚗',label:'Car'},{e:'🚌',label:'Bus'},{e:'🚲',label:'Bicycle'},{e:'🚂',label:'Train'},{e:'🏍️',label:'Bike'},{e:'🚕',label:'Taxi'},{e:'🚚',label:'Truck'},{e:'🛺',label:'Auto'}] },
+  { title: 'Water & Air Transport', items: [{e:'⛵',label:'Boat'},{e:'🚤',label:'Speedboat'},{e:'🛳️',label:'Ship'},{e:'✈️',label:'Airplane'},{e:'🚁',label:'Helicopter'},{e:'🛶',label:'Canoe'},{e:'⚓',label:'Anchor'},{e:'🚀',label:'Rocket'}] },
+  { title: 'My Family', items: [{e:'👨',label:'Father'},{e:'👩',label:'Mother'},{e:'👦',label:'Brother'},{e:'👧',label:'Sister'},{e:'👴',label:'Grandpa'},{e:'👵',label:'Grandma'},{e:'👶',label:'Baby'},{e:'👪',label:'Family'}] },
+  { title: 'Good Habits', items: [{e:'🪥',label:'Brush Teeth'},{e:'🛁',label:'Bathe Daily'},{e:'🙏',label:'Say Thanks'},{e:'📚',label:'Read Books'},{e:'🥗',label:'Eat Healthy'},{e:'😴',label:'Sleep Early'},{e:'🧹',label:'Keep Clean'},{e:'🚰',label:'Wash Hands'}] },
+  { title: 'Community Helpers', items: [{e:'👮',label:'Police'},{e:'🧑‍🚒',label:'Firefighter'},{e:'👨‍⚕️',label:'Doctor'},{e:'👨‍🏫',label:'Teacher'},{e:'👨‍🌾',label:'Farmer'},{e:'📮',label:'Postman'},{e:'👷',label:'Builder'},{e:'🧑‍🍳',label:'Cook'}] },
+  { title: 'Festivals of India', items: [{e:'🪔',label:'Diwali'},{e:'🎨',label:'Holi'},{e:'🎊',label:'Eid'},{e:'🌟',label:'Christmas'},{e:'🪁',label:'Makar Sankranti'},{e:'🙏',label:'Ganesh Chaturthi'},{e:'🎆',label:'New Year'},{e:'🌾',label:'Pongal'}] },
+  { title: 'National Symbols', items: [{e:'🇮🇳',label:'National Flag'},{e:'🦚',label:'National Bird'},{e:'🐯',label:'National Animal'},{e:'🌸',label:'National Flower'},{e:'🏏',label:'National Sport'},{e:'🌾',label:'National Fruit'},{e:'🎵',label:'National Anthem'},{e:'🏛️',label:'National Emblem'}] },
+  { title: 'Seasons', items: [{e:'☀️',label:'Summer'},{e:'🌧️',label:'Monsoon'},{e:'❄️',label:'Winter'},{e:'🍂',label:'Autumn'},{e:'🌸',label:'Spring'},{e:'🌤️',label:'Pleasant Day'},{e:'⛄',label:'Snowfall'},{e:'🌡️',label:'Weather'}] },
+  { title: 'Days of the Week', items: [{e:'1️⃣',label:'Monday'},{e:'2️⃣',label:'Tuesday'},{e:'3️⃣',label:'Wednesday'},{e:'4️⃣',label:'Thursday'},{e:'5️⃣',label:'Friday'},{e:'6️⃣',label:'Saturday'},{e:'7️⃣',label:'Sunday'},{e:'📅',label:'Week'}] },
+  { title: 'Colors Around Us', items: [{e:'🔴',label:'Red'},{e:'🔵',label:'Blue'},{e:'🟡',label:'Yellow'},{e:'🟢',label:'Green'},{e:'🟠',label:'Orange'},{e:'🟣',label:'Purple'},{e:'⚪',label:'White'},{e:'⚫',label:'Black'}] },
+  { title: 'Water Animals', items: [{e:'🐟',label:'Fish'},{e:'🐠',label:'Tropical Fish'},{e:'🐬',label:'Dolphin'},{e:'🐳',label:'Whale'},{e:'🐢',label:'Turtle'},{e:'🦀',label:'Crab'},{e:'🦑',label:'Squid'},{e:'🐡',label:'Pufferfish'}] },
+  { title: 'My Senses', items: [{e:'👀',label:'Sight'},{e:'👃',label:'Smell'},{e:'👂',label:'Hearing'},{e:'👅',label:'Taste'},{e:'🖐️',label:'Touch'},{e:'🧠',label:'Think'},{e:'❤️',label:'Feel'},{e:'🗣️',label:'Speak'}] },
+]
+
+const ODD_ONE_OUT: { items: { e: string; label: string }[]; oddIdx: number; hint: string }[] = [
+  { items: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🍇',label:'Grapes'},{e:'🚗',label:'Car'}], oddIdx: 3, hint: 'Find the one that is not a fruit!' },
+  { items: [{e:'🐶',label:'Dog'},{e:'🐱',label:'Cat'},{e:'🐄',label:'Cow'},{e:'✈️',label:'Airplane'}], oddIdx: 3, hint: 'Find the one that is not an animal!' },
+  { items: [{e:'🔴',label:'Red'},{e:'🔵',label:'Blue'},{e:'🟡',label:'Yellow'},{e:'🐟',label:'Fish'}], oddIdx: 3, hint: 'Find the one that is not a color!' },
+  { items: [{e:'🚗',label:'Car'},{e:'🚌',label:'Bus'},{e:'🚲',label:'Bicycle'},{e:'🍕',label:'Pizza'}], oddIdx: 3, hint: 'Find the one that is not a vehicle!' },
+  { items: [{e:'☀️',label:'Sun'},{e:'🌙',label:'Moon'},{e:'⭐',label:'Star'},{e:'🐕',label:'Dog'}], oddIdx: 3, hint: 'Find the one that is not in the sky!' },
+  { items: [{e:'👁️',label:'Eye'},{e:'👃',label:'Nose'},{e:'👂',label:'Ear'},{e:'🍪',label:'Cookie'}], oddIdx: 3, hint: 'Find the one that is not a body part!' },
 ]
 
 const RHYMES: { title: string; lines: string[]; emoji: string }[] = [
@@ -2177,50 +2268,57 @@ const RHYMES: { title: string; lines: string[]; emoji: string }[] = [
   { title: 'Little Miss Muffet', emoji: '🕸️', lines: ['Little Miss Muffet sat on a tuffet,', 'Eating her curds and whey.', 'Along came a spider, who sat down beside her,', 'And frightened Miss Muffet away.'] },
 ]
 
-const ART_PROMPTS: { name: string; emoji: string }[] = [
-  {name:'Sun', emoji:'☀️'}, {name:'Tree', emoji:'🌳'}, {name:'Apple', emoji:'🍎'}, {name:'Butterfly', emoji:'🦋'},
-  {name:'Flower', emoji:'🌸'}, {name:'Umbrella', emoji:'☂️'}, {name:'House', emoji:'🏠'}, {name:'Fish', emoji:'🐟'},
-  {name:'Boat', emoji:'⛵'}, {name:'Kite', emoji:'🪁'}, {name:'Balloon', emoji:'🎈'}, {name:'Star', emoji:'⭐'},
-  {name:'Heart', emoji:'❤️'}, {name:'Ice Cream', emoji:'🍦'}, {name:'Car', emoji:'🚗'}, {name:'Rainbow', emoji:'🌈'},
-  {name:'Cake', emoji:'🎂'}, {name:'Bird', emoji:'🐦'},
+// ── Art & Craft: detailed multi-part SVG line-art (trace + color) ──
+type ArtPrompt = { name: string; emoji: string; hint: string; svg: string }
+const ART_PROMPTS: ArtPrompt[] = [
+  { name:'Sun', emoji:'☀️', hint:'Color it yellow & orange!', svg:`<circle cx="60" cy="60" r="22"/><line x1="60" y1="18" x2="60" y2="4"/><line x1="60" y1="102" x2="60" y2="116"/><line x1="18" y1="60" x2="4" y2="60"/><line x1="102" y1="60" x2="116" y2="60"/><line x1="30" y1="30" x2="20" y2="20"/><line x1="90" y1="30" x2="100" y2="20"/><line x1="30" y1="90" x2="20" y2="100"/><line x1="90" y1="90" x2="100" y2="100"/>` },
+  { name:'Tree', emoji:'🌳', hint:'Color the leaves green & trunk brown!', svg:`<rect x="50" y="80" width="20" height="32"/><circle cx="60" cy="55" r="36"/><circle cx="34" cy="70" r="20"/><circle cx="86" cy="70" r="20"/>` },
+  { name:'Apple', emoji:'🍎', hint:'Color it red!', svg:`<path d="M60,40 C40,20 10,35 14,62 C18,90 42,110 60,105 C78,110 102,90 106,62 C110,35 80,20 60,40 Z"/><path d="M60,40 C58,30 56,24 60,16"/><path d="M60,20 C68,10 80,14 78,24"/>` },
+  { name:'Butterfly', emoji:'🦋', hint:'Color the wings with bright colors!', svg:`<ellipse cx="34" cy="42" rx="26" ry="18"/><ellipse cx="34" cy="76" rx="20" ry="14"/><ellipse cx="86" cy="42" rx="26" ry="18"/><ellipse cx="86" cy="76" rx="20" ry="14"/><line x1="60" y1="30" x2="60" y2="94"/><line x1="60" y1="30" x2="50" y2="14"/><line x1="60" y1="30" x2="70" y2="14"/>` },
+  { name:'Flower', emoji:'🌸', hint:'Color the petals pink!', svg:`<circle cx="60" cy="60" r="12"/><ellipse cx="60" cy="30" rx="14" ry="20"/><ellipse cx="60" cy="90" rx="14" ry="20"/><ellipse cx="30" cy="60" rx="20" ry="14"/><ellipse cx="90" cy="60" rx="20" ry="14"/><line x1="60" y1="72" x2="60" y2="112"/><ellipse cx="70" cy="100" rx="12" ry="6"/>` },
+  { name:'Umbrella', emoji:'☂️', hint:'Color the canopy any color you like!', svg:`<path d="M14,60 A46,46 0 0,1 106,60"/><line x1="14" y1="60" x2="14" y2="66"/><line x1="42" y1="60" x2="42" y2="66"/><line x1="60" y1="60" x2="60" y2="110"/><line x1="78" y1="60" x2="78" y2="66"/><line x1="106" y1="60" x2="106" y2="66"/><path d="M60,110 C50,110 48,100 56,98"/>` },
+  { name:'House', emoji:'🏠', hint:'Color the roof and walls!', svg:`<polygon points="60,16 108,54 12,54"/><rect x="20" y="54" width="80" height="50"/><rect x="50" y="72" width="20" height="32"/><rect x="26" y="62" width="16" height="16"/><rect x="78" y="62" width="16" height="16"/>` },
+  { name:'Fish', emoji:'🐟', hint:'Color it blue or orange!', svg:`<ellipse cx="52" cy="60" rx="38" ry="24"/><polygon points="90,60 112,42 112,78"/><circle cx="34" cy="52" r="4"/><path d="M40,60 Q52,50 64,60 Q52,70 40,60 Z"/>` },
+  { name:'Boat', emoji:'⛵', hint:'Color the sail and boat!', svg:`<polygon points="20,80 100,80 88,100 32,100"/><line x1="60" y1="80" x2="60" y2="18"/><polygon points="60,20 60,78 24,78"/><path d="M8,100 Q60,112 112,100"/>` },
+  { name:'Kite', emoji:'🪁', hint:'Color each section a different color!', svg:`<polygon points="60,10 100,55 60,110 20,55"/><line x1="20" y1="55" x2="100" y2="55"/><line x1="60" y1="10" x2="60" y2="110"/><path d="M60,110 Q66,116 60,122 Q54,128 60,134"/>` },
+  { name:'Balloon', emoji:'🎈', hint:'Color it your favorite color!', svg:`<ellipse cx="60" cy="46" rx="30" ry="36"/><polygon points="52,80 68,80 60,90"/><path d="M60,90 Q50,100 60,110 Q70,120 62,128"/>` },
+  { name:'Star', emoji:'⭐', hint:'Color it golden yellow!', svg:`<polygon points="60,8 74,44 112,44 82,66 94,104 60,80 26,104 38,66 8,44 46,44"/>` },
+  { name:'Heart', emoji:'❤️', hint:'Color it red or pink!', svg:`<path d="M60,104 C10,70 10,26 40,20 C52,18 60,30 60,38 C60,30 68,18 80,20 C110,26 110,70 60,104 Z"/>` },
+  { name:'Ice Cream', emoji:'🍦', hint:'Color the scoop pink and cone brown!', svg:`<polygon points="42,58 78,58 60,110"/><circle cx="60" cy="42" r="26"/><line x1="42" y1="70" x2="78" y2="70"/><line x1="46" y1="82" x2="74" y2="82"/>` },
+  { name:'Car', emoji:'🚗', hint:'Color the body your favorite color!', svg:`<rect x="14" y="60" width="92" height="26" rx="6"/><path d="M30,60 L42,34 L78,34 L90,60"/><circle cx="36" cy="90" r="12"/><circle cx="84" cy="90" r="12"/><line x1="52" y1="34" x2="52" y2="60"/>` },
+  { name:'Rainbow', emoji:'🌈', hint:'Color each arc a different color!', svg:`<path d="M10,100 A50,50 0 0,1 110,100"/><path d="M26,100 A34,34 0 0,1 94,100"/><path d="M42,100 A18,18 0 0,1 78,100"/><ellipse cx="14" cy="102" rx="14" ry="8"/><ellipse cx="106" cy="102" rx="14" ry="8"/>` },
+  { name:'Cake', emoji:'🎂', hint:'Color the layers and candle!', svg:`<rect x="24" y="66" width="72" height="34"/><rect x="34" y="42" width="52" height="24"/><line x1="60" y1="42" x2="60" y2="24"/><ellipse cx="60" cy="20" rx="5" ry="8"/><line x1="24" y1="82" x2="96" y2="82"/>` },
+  { name:'Bird', emoji:'🐦', hint:'Color the body and wing!', svg:`<ellipse cx="56" cy="64" rx="34" ry="24"/><circle cx="94" cy="46" r="14"/><polygon points="106,44 120,48 106,52"/><ellipse cx="46" cy="70" rx="16" ry="10"/><line x1="30" y1="88" x2="20" y2="100"/><line x1="46" y1="88" x2="46" y2="102"/>` },
+  { name:'Elephant', emoji:'🐘', hint:'Color it grey!', svg:`<ellipse cx="56" cy="66" rx="34" ry="26"/><circle cx="94" cy="46" r="20"/><ellipse cx="110" cy="38" rx="14" ry="18"/><path d="M78,50 Q68,80 78,100"/><rect x="34" y="88" width="10" height="20"/><rect x="70" y="88" width="10" height="20"/>` },
+  { name:'Duck', emoji:'🦆', hint:'Color it yellow!', svg:`<ellipse cx="56" cy="66" rx="32" ry="26"/><circle cx="94" cy="44" r="18"/><polygon points="108,44 122,40 122,50"/><ellipse cx="50" cy="60" rx="16" ry="10"/>` },
+  { name:'Snowman', emoji:'⛄', hint:'Leave it white, color the buttons & nose!', svg:`<circle cx="60" cy="90" r="26"/><circle cx="60" cy="52" r="19"/><circle cx="60" cy="22" r="13"/><polygon points="60,26 78,30 60,34"/><circle cx="60" cy="82" r="3"/><circle cx="60" cy="94" r="3"/><line x1="41" y1="50" x2="20" y2="40"/><line x1="79" y1="50" x2="100" y2="40"/>` },
+  { name:'Train', emoji:'🚂', hint:'Color the engine your favorite color!', svg:`<rect x="14" y="50" width="40" height="36"/><rect x="58" y="34" width="48" height="52"/><circle cx="70" cy="30" r="10"/><circle cx="30" cy="98" r="10"/><circle cx="90" cy="98" r="10"/>` },
+  { name:'Cloud', emoji:'☁️', hint:'Leave it white or color it light grey!', svg:`<circle cx="40" cy="66" r="20"/><circle cx="68" cy="52" r="26"/><circle cx="94" cy="66" r="18"/><rect x="32" y="66" width="70" height="24" rx="12"/>` },
+  { name:'Ladybug', emoji:'🐞', hint:'Color it red with black spots!', svg:`<ellipse cx="60" cy="64" rx="36" ry="30"/><line x1="60" y1="34" x2="60" y2="94"/><circle cx="46" cy="52" r="5"/><circle cx="74" cy="52" r="5"/><circle cx="46" cy="78" r="5"/><circle cx="74" cy="78" r="5"/><circle cx="60" cy="20" r="12"/><line x1="52" y1="12" x2="46" y2="4"/><line x1="68" y1="12" x2="74" y2="4"/>` },
 ]
 
+const HINDI_VOWELS: string[] = ['अ','आ','इ','ई','उ','ऊ','ऋ','ए','ऐ','ओ','औ','अं','अः']
 const HINDI_LETTERS: string[] = [
-  'अ','आ','इ','ई','उ','ऊ','ऋ','ए','ऐ','ओ','औ','अं','अः',
+  ...HINDI_VOWELS,
   'क','ख','ग','घ','ङ','च','छ','ज','झ','ञ','ट','ठ','ड','ढ','ण',
   'त','थ','द','ध','न','प','फ','ब','भ','म','य','र','ल','व',
   'श','ष','स','ह','ळ','क्ष','त्र','ज्ञ','श्र',
 ]
-const HINDI_BONUS_WORDS: string[] = ['माँ', 'पापा', 'घर', 'पानी', 'आम']
+const HINDI_WORDS_SIMPLE: string[] = ['घर', 'आम', 'माँ', 'गाय', 'नल']
+const HINDI_WORDS_ADVANCED: string[] = ['पानी', 'केला', 'सूरज', 'किताब', 'दरवाज़ा']
 
-// ── Reusable box builders ───────────────────────────────────────
-function alphabetBox(ch: string, word: string, emoji: string): string {
-  const lower = ch.toLowerCase()
+// ── Reusable box / row builders ──────────────────────────────────
+function practiceSheet(bigModel: string, traceUnit: string, rows: number, wordLine: string): string {
+  const rowsHtml = Array.from({ length: rows }, () => `<div class="ps-row">${traceUnit.repeat(6)}</div>`).join('')
   return `
-    <div class="abc-box">
-      <div class="abc-big">${ch}${lower}</div>
-      <div class="abc-trace-row">${(ch + lower + ' ').repeat(3)}</div>
-      <div class="abc-word">${emoji} <b>${ch}</b> is for <b>${esc(word)}</b></div>
-    </div>`
+    <div class="ps-model">${bigModel}</div>
+    ${wordLine ? `<div class="ps-wordline">${wordLine}</div>` : ''}
+    <div class="ps-rows">${rowsHtml}</div>`
 }
 
-function wordTraceBox(word: string, emoji: string): string {
-  return `
-    <div class="abc-box">
-      <div class="word-big">${esc(word)}</div>
-      <div class="abc-trace-row">${(word + ' ').repeat(3)}</div>
-      <div class="abc-word">${emoji} <b>${esc(word)}</b></div>
-    </div>`
-}
-
-function numberBox(n: number): string {
-  const dots = '●'.repeat(n)
-  return `
-    <div class="num-box">
-      <div class="num-big">${n}</div>
-      <div class="num-dots">${dots}</div>
-      <div class="num-trace-row">${(String(n) + ' ').repeat(4)}</div>
-    </div>`
+function numberBox(n: number, rows: number): string {
+  const dots = '●'.repeat(Math.min(n, 20))
+  return practiceSheet(`${n}`, `${n} `, rows, `<span class="ps-dots">${dots}</span>`)
 }
 
 function countRow(n: number, emoji: string): string {
@@ -2247,12 +2345,23 @@ function shapeBox(name: string, shapeHtml: string, emoji: string): string {
 }
 
 function mathRow(a: number, b: number, op: '+' | '-', emoji: string): string {
-  const aIcons = emoji.repeat(a)
-  const bIcons = emoji.repeat(b)
   return `
     <div class="mr-row">
-      <span class="mr-icons">${aIcons}</span><span class="mr-op">${op}</span><span class="mr-icons">${bIcons}</span>
+      <span class="mr-icons">${emoji.repeat(a)}</span><span class="mr-op">${op}</span><span class="mr-icons">${emoji.repeat(b)}</span>
       <span class="mr-eq">=</span><span class="mr-blank">?</span>
+    </div>`
+}
+
+function missingNumberRow(seq: (number | null)[]): string {
+  return `<div class="pat-row">${seq.map(n => n === null ? `<span class="pat-blank">?</span>` : `<span class="pat-item" style="font-size:1.6rem;font-weight:800;color:#0F2050">${n}</span>`).join('')}</div>`
+}
+
+function sizeCompareRow(label: string, a: { e: string; big: boolean }, b: { e: string; big: boolean }): string {
+  return `
+    <div class="sc-row">
+      <div class="sc-label">${esc(label)}</div>
+      <span class="sc-item" style="font-size:${a.big ? '3rem' : '1.6rem'}">${a.e}</span>
+      <span class="sc-item" style="font-size:${b.big ? '3rem' : '1.6rem'}">${b.e}</span>
     </div>`
 }
 
@@ -2265,6 +2374,7 @@ const SHAPE_POOL: { name: string; emoji: string; html: string }[] = [
   {name:'Diamond',   emoji:'💎', html:`<div style="width:64px;height:64px;border:3px dashed #0F2050;transform:rotate(45deg)"></div>`},
   {name:'Oval',      emoji:'🥚', html:`<div style="width:90px;height:64px;border-radius:50%;border:3px dashed #0F2050"></div>`},
   {name:'Pentagon',  emoji:'🏠', html:`<svg width="72" height="68" viewBox="0 0 72 68"><polygon points="36,4 68,28 56,64 16,64 4,28" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+  {name:'Hexagon',   emoji:'🍯', html:`<svg width="72" height="68" viewBox="0 0 72 68"><polygon points="20,4 52,4 68,34 52,64 20,64 4,34" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
 ]
 
 const COUNT_EMOJI = ['🍓','🚗','🐟','🌸','⭐','🎈','🍪','🦋','🐝','🍇','🎁','🐬']
@@ -2281,134 +2391,213 @@ const PATTERN_POOL_ADV: string[][] = [
   ['🔵','🔴','🔴','🔵','🔴','?'],
 ]
 
-const CLASS_MATH_RANGE: Record<number, number> = { 1: 6, 2: 12, 3: 18, 4: 24 }
-const CLASS_COUNT_MAX: Record<number, number> = { 1: 5, 2: 8, 3: 11, 4: 14 }
-
-// ── Per-subject worksheet generator ────────────────────────────
+// ================================================================
+// ── Per-subject worksheet content generator ─────────────────────
+// ================================================================
 function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: number): { title: string; instructions: string; bodyHtml: string; extraStyle: string } {
   const level = classInfo.level
+  const categories = getCategoriesFor(subjectId, level)
+  const { key, idx } = resolveCategory(num, categories)
 
   if (subjectId === 'english') {
-    if (num <= 9) {
-      const letters = ALPHABET_WORDS.slice((num - 1) * 3, (num - 1) * 3 + 3)
-      const range = letters.length > 1 ? `${letters[0].ch}–${letters[letters.length - 1].ch}` : letters[0].ch
+    const rows = ENGLISH_ROWS_PER_SHEET[level]
+    if (key === 'alpha') {
+      const l = ALPHABET_WORDS[idx]
+      const lower = l.ch.toLowerCase()
       return {
-        title: `Alphabet Tracing (${range})`,
-        instructions: 'Trace each big letter with your finger, then with a pencil or crayon. Say the word out loud!',
-        bodyHtml: `<div class="abc-grid">${letters.map(l => alphabetBox(l.ch, l.word, l.emoji)).join('')}</div>`,
-        extraStyle: ABC_STYLE,
+        title: `Letter ${l.ch}${lower}`,
+        instructions: `Trace the big letter, then trace it ${rows} more times on the lines below. Say: "${l.ch} is for ${l.word}!"`,
+        bodyHtml: practiceSheet(`${l.ch}${lower}`, `${l.ch}${lower} `, rows, `${l.emoji} <b>${l.ch}</b> is for <b>${esc(l.word)}</b>`),
+        extraStyle: PRACTICE_STYLE,
       }
     }
-    if (num <= 14) {
-      const idx = num - 10
-      const words = CVC_WORDS.slice(idx * 4, idx * 4 + 4)
+    if (key === 'word') {
+      const w = CVC_WORDS[idx]
       return {
-        title: `Word Tracing — Set ${idx + 1}`,
-        instructions: 'Say each word out loud, then trace it with a pencil or crayon.',
-        bodyHtml: `<div class="abc-grid">${words.map(w => wordTraceBox(w.w, w.e)).join('')}</div>`,
-        extraStyle: ABC_STYLE,
+        title: `Word: ${w.w}`,
+        instructions: `Say the word out loud, then trace it ${rows} times on the lines below.`,
+        bodyHtml: practiceSheet(w.w, `${w.w} `, rows, `${w.e} <b>${esc(w.w)}</b>`),
+        extraStyle: PRACTICE_STYLE,
       }
     }
-    const idx = num - 15
-    const sentence = TRACE_SENTENCES[idx]
+    if (key === 'sentence') {
+      const s = SENTENCES_BY_LEVEL[level][idx]
+      return {
+        title: `Sentence Practice ${idx + 1}`,
+        instructions: 'Read the sentence, then trace it neatly on each line below.',
+        bodyHtml: practiceSheet(s, `${s}  `, rows, ''),
+        extraStyle: PRACTICE_STYLE,
+      }
+    }
+    if (key === 'beginsound') {
+      const items = [0,1,2,3].map(o => BEGIN_SOUND_ITEMS[(idx * 4 + o) % BEGIN_SOUND_ITEMS.length])
+      return {
+        title: `Beginning Sounds — Set ${idx + 1}`,
+        instructions: level <= 2
+          ? 'Say each picture\'s name, listen for the first sound, then trace its letter.'
+          : 'Say each picture\'s name, sound out its first letter, then trace the letter it starts with.',
+        bodyHtml: `<div class="bs-grid">${items.map(it => `
+          <div class="bs-box"><div class="bs-emoji">${it.e}</div><div class="bs-word">${esc(it.word)}</div><div class="bs-letter">${it.letter}${it.letter.toLowerCase()}</div></div>
+        `).join('')}</div>`,
+        extraStyle: BS_STYLE,
+      }
+    }
+    // rhymewords
+    const pair = RHYMING_PAIRS[idx % RHYMING_PAIRS.length]
+    const otherDistractor = RHYMING_PAIRS[(idx + 2) % RHYMING_PAIRS.length].distractor
+    const options = [pair.b, pair.distractor, otherDistractor]
     return {
-      title: `Sentence Tracing — Set ${idx + 1}`,
-      instructions: 'Read the sentence, then trace it neatly with a pencil.',
-      bodyHtml: `<div class="abc-grid" style="grid-template-columns:1fr"><div class="abc-box"><div class="word-big" style="font-size:1.8rem">${esc(sentence)}</div><div class="abc-trace-row" style="font-size:1.5rem">${(sentence + '   ').repeat(3)}</div></div></div>`,
-      extraStyle: ABC_STYLE,
+      title: `Rhyming Words — Set ${idx + 1}`,
+      instructions: `"${pair.a.w}" rhymes with one of the words below. Circle the word that rhymes with "${pair.a.w}".`,
+      bodyHtml: `
+        <div class="rw-target">${pair.a.e} <b>${esc(pair.a.w)}</b></div>
+        <div class="bs-grid">${options.map(o => `
+          <div class="bs-box"><div class="bs-emoji">${o.e}</div><div class="bs-word">${esc(o.w)}</div></div>
+        `).join('')}</div>`,
+      extraStyle: BS_STYLE + `.rw-target{text-align:center;font-size:1.4rem;margin-bottom:16px;color:#0F2050}`,
     }
   }
 
   if (subjectId === 'math') {
-    const perSet = level
-    const totalNums = CLASS_MATH_RANGE[level]
-    if (num <= 6) {
-      const start = (num - 1) * perSet + 1
-      const nums = Array.from({ length: perSet }, (_, i) => start + i).filter(n => n <= totalNums)
+    const rows = MATH_ROWS_PER_SHEET[level]
+    if (key === 'numtrace') {
+      const n = idx + 1
       return {
-        title: `Number Tracing (${nums[0]}–${nums[nums.length - 1]})`,
-        instructions: 'Count the dots, then trace each number with a pencil or crayon.',
-        bodyHtml: `<div class="num-grid">${nums.map(n => numberBox(n)).join('')}</div>`,
-        extraStyle: NUM_STYLE,
+        title: `Number ${n}`,
+        instructions: `Count the dots, then trace the number ${rows} more times on the lines below.`,
+        bodyHtml: numberBox(n, rows),
+        extraStyle: PRACTICE_STYLE,
       }
     }
-    if (num <= 10) {
-      const setIdx = num - 7
-      const maxCount = CLASS_COUNT_MAX[level]
-      const rows = Array.from({ length: 3 }, (_, r) => {
-        const n = ((setIdx * 3 + r) % maxCount) + 1
-        const e = COUNT_EMOJI[(setIdx * 3 + r) % COUNT_EMOJI.length]
+    if (key === 'count') {
+      const maxCount = MATH_COUNT_MAX[level]
+      const rows3 = Array.from({ length: 3 }, (_, r) => {
+        const n = ((idx * 3 + r) % maxCount) + 1
+        const e = COUNT_EMOJI[(idx * 3 + r) % COUNT_EMOJI.length]
         return countRow(n, e)
       })
       return {
-        title: `Count and Circle — Set ${setIdx + 1}`,
+        title: `Count and Circle — Set ${idx + 1}`,
         instructions: 'Count the pictures in each row, then draw a circle around the correct number.',
-        bodyHtml: `<div class="cm-grid">${rows.join('')}</div>`,
+        bodyHtml: `<div class="cm-grid">${rows3.join('')}</div>`,
         extraStyle: CM_STYLE,
       }
     }
-    if (num <= 14) {
-      const setIdx = num - 11
+    if (key === 'pattern') {
       const pool = level <= 2 ? PATTERN_POOL_AB : [...PATTERN_POOL_AB, ...PATTERN_POOL_ADV]
-      const p1 = pool[(setIdx * 2) % pool.length]
-      const p2 = pool[(setIdx * 2 + 1) % pool.length]
+      const p1 = pool[(idx * 2) % pool.length]
+      const p2 = pool[(idx * 2 + 1) % pool.length]
       return {
-        title: `Patterns — Set ${setIdx + 1}`,
+        title: `Patterns — Set ${idx + 1}`,
         instructions: 'Look at the pattern in each row. Draw or write what comes next in the box.',
         bodyHtml: `<div class="pat-grid">${patternRow(p1)}${patternRow(p2)}</div>`,
         extraStyle: PAT_STYLE,
       }
     }
-    if (num <= 16) {
-      const setIdx = num - 15
+    if (key === 'shapes') {
       const pool = level >= 3 ? SHAPE_POOL : SHAPE_POOL.slice(0, 6)
-      const half = Math.ceil(pool.length / 2)
-      const shapes = setIdx === 0 ? pool.slice(0, half) : pool.slice(half)
+      const per = Math.ceil(pool.length / 3)
+      const shapes = pool.slice(idx * per, idx * per + per)
       return {
-        title: `Shapes — Set ${setIdx + 1}`,
+        title: `Shapes — Set ${idx + 1}`,
         instructions: 'Trace the outline of each shape with a pencil, say its name, then find something at home shaped like it.',
         bodyHtml: `<div class="shapes-grid">${shapes.map(s => shapeBox(s.name, s.html, s.emoji)).join('')}</div>`,
         extraStyle: SHAPES_STYLE,
       }
     }
-    // 17-18: addition / subtraction
-    const setIdx = num - 17
-    const emoji = COUNT_EMOJI[setIdx % COUNT_EMOJI.length]
-    let rows: string[] = []
-    if (level <= 2) {
-      rows = Array.from({ length: 4 }, (_, r) => mathRow(r + 1, 1, '+', emoji))
-    } else if (level === 3) {
-      const pairs = [[2,1],[1,2],[3,1],[2,2]]
-      rows = pairs.map(([a,b]) => mathRow(a, b, '+', emoji))
-    } else {
-      const pairs: [number, number, '+' | '-'][] = [[3,2,'+'],[5,3,'+'],[6,2,'-'],[9,4,'-']]
-      rows = pairs.map(([a,b,op]) => mathRow(a, b, op, emoji))
+    if (key === 'ops') {
+      const emoji = COUNT_EMOJI[idx % COUNT_EMOJI.length]
+      let title = ''
+      let mathRows: string[] = []
+      if (level === 1) {
+        title = `One More! — Set ${idx + 1}`
+        mathRows = [mathRow(idx + 1, 1, '+', emoji)]
+      } else if (level === 2) {
+        title = `Count On — Set ${idx + 1}`
+        mathRows = [mathRow(idx + 1, 1, '+', emoji), mathRow(idx + 1, 2, '+', emoji)]
+      } else if (level === 3) {
+        const pairs: [number, number][] = [[2,1],[1,2],[3,1],[2,2],[4,1],[3,2]]
+        const [a, b] = pairs[idx]
+        title = `Addition — Set ${idx + 1}`
+        mathRows = [mathRow(a, b, '+', emoji)]
+      } else {
+        const pairs: [number, number, '+' | '-'][] = [[8,5,'+'],[9,6,'+'],[7,4,'+'],[12,5,'-'],[15,7,'-'],[18,9,'-']]
+        const [a, b, op] = pairs[idx]
+        title = `Addition & Subtraction — Set ${idx + 1}`
+        mathRows = [mathRow(a, b, op, emoji)]
+      }
+      return {
+        title,
+        instructions: 'Count the pictures, then write the answer in the blank box.',
+        bodyHtml: `<div class="mr-grid">${mathRows.join('')}</div>`,
+        extraStyle: MR_STYLE,
+      }
     }
+    if (key === 'missing') {
+      const total = MATH_TOTAL_NUMS[level]
+      const start = 1 + idx * Math.floor(total / 4)
+      const seq: (number | null)[] = [start, start + 1, null, start + 3, start + 4]
+      return {
+        title: `Missing Numbers — Set ${idx + 1}`,
+        instructions: 'Look at the number sequence. Write the missing number in the empty box.',
+        bodyHtml: `<div class="pat-grid">${missingNumberRow(seq)}</div>`,
+        extraStyle: PAT_STYLE,
+      }
+    }
+    // size
+    const comparisons = [
+      { label: 'Which is BIGGER? Circle it.', a: { e: '🐘', big: true }, b: { e: '🐭', big: false } },
+      { label: 'Which is TALLER? Circle it.', a: { e: '🌳', big: true }, b: { e: '🌱', big: false } },
+      { label: 'Which has MORE? Circle it.', a: { e: '🍎🍎🍎', big: true }, b: { e: '🍎', big: false } },
+      { label: 'Which is SMALLER? Circle it.', a: { e: '🐜', big: false }, b: { e: '🐻', big: true } },
+    ]
+    const c = comparisons[idx % comparisons.length]
     return {
-      title: level <= 2 ? `One More! — Set ${setIdx + 1}` : `Addition & Subtraction — Set ${setIdx + 1}`,
-      instructions: 'Count the pictures, then write the answer in the blank box.',
-      bodyHtml: `<div class="mr-grid">${rows.join('')}</div>`,
-      extraStyle: MR_STYLE,
+      title: `Big or Small — Set ${idx + 1}`,
+      instructions: 'Look at each pair of pictures, then circle the one the question asks for.',
+      bodyHtml: `<div class="sc-grid">${sizeCompareRow(c.label, c.a, c.b)}</div>`,
+      extraStyle: SC_STYLE,
     }
   }
 
   if (subjectId === 'evs') {
-    const topic = EVS_TOPICS[(num - 1) % EVS_TOPICS.length]
+    if (key === 'vocab') {
+      const itemCount = level === 1 ? 4 : level === 2 ? 6 : 8
+      const rotated = EVS_TOPICS[(idx + (level - 1) * 3) % EVS_TOPICS.length]
+      const items = rotated.items.slice(0, itemCount)
+      return {
+        title: rotated.title,
+        instructions: level <= 2 ? 'Look at each picture and say the word out loud.' : 'Look at each picture, say the word out loud, then tick your favorites.',
+        bodyHtml: `<div class="wg-grid">${items.map(it => `
+          <div class="wg-box"><div class="wg-emoji">${it.e}</div><div class="wg-label">${esc(it.label)}</div>${level >= 2 ? `<div class="wg-check"></div>` : ''}</div>
+        `).join('')}</div>`,
+        extraStyle: WG_STYLE,
+      }
+    }
+    // oddoneout
+    const grp = ODD_ONE_OUT[idx % ODD_ONE_OUT.length]
     return {
-      title: topic.title,
-      instructions: `Look at each picture, say the word out loud, then tick your 3 favorites.`,
-      bodyHtml: `<div class="wg-grid">${topic.items.map(it => `
-        <div class="wg-box"><div class="wg-emoji">${it.e}</div><div class="wg-label">${esc(it.label)}</div><div class="wg-check"></div></div>
+      title: `Odd One Out — Set ${idx + 1}`,
+      instructions: grp.hint,
+      bodyHtml: `<div class="wg-grid">${grp.items.map(it => `
+        <div class="wg-box"><div class="wg-emoji">${it.e}</div><div class="wg-label">${esc(it.label)}</div></div>
       `).join('')}</div>`,
       extraStyle: WG_STYLE,
     }
   }
 
   if (subjectId === 'rhymes') {
-    const rhyme = RHYMES[(num - 1) % RHYMES.length]
+    const rhyme = RHYMES[idx % RHYMES.length]
+    const activity = level === 1
+      ? 'Listen to the rhyme with a grown-up, then color a picture about it in the box below.'
+      : level === 2
+      ? 'Read the rhyme with a grown-up, trace the title, then draw a picture about it below.'
+      : level === 3
+      ? 'Read the rhyme, circle the main character\'s picture, then draw a scene from the rhyme below.'
+      : 'Read the rhyme aloud, then draw a picture and write one sentence about it below.'
     return {
       title: rhyme.title,
-      instructions: 'Read (or listen to) the rhyme with a grown-up, then draw a picture about it in the box below.',
+      instructions: activity,
       bodyHtml: `
         <div class="rhyme-box">
           <div class="rhyme-title">${rhyme.emoji} ${esc(rhyme.title)}</div>
@@ -2421,24 +2610,25 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
   }
 
   if (subjectId === 'art') {
-    const prompt = ART_PROMPTS[(num - 1) % ART_PROMPTS.length]
+    const prompt = ART_PROMPTS[(idx + (level - 1) * 6) % ART_PROMPTS.length]
     return {
-      title: `Draw & Color: ${prompt.name}`,
-      instructions: `Look at the picture, then draw and color your own ${prompt.name.toLowerCase()} in the box below!`,
+      title: `Trace & Color: ${prompt.name}`,
+      instructions: `Trace the outline of the ${prompt.name.toLowerCase()} with a pencil or crayon, then color it in. ${prompt.hint}`,
       bodyHtml: `
-        <div class="art-preview">${prompt.emoji}</div>
-        <div class="art-name">${esc(prompt.name)}</div>
-        <div class="draw-box" style="height:320px">Draw &amp; color your ${esc(prompt.name)} here!</div>
+        <div class="art-trace"><svg viewBox="0 0 120 120" class="art-svg">${prompt.svg}</svg></div>
+        <div class="art-name">${prompt.emoji} ${esc(prompt.name)}</div>
       `,
-      extraStyle: RHYME_STYLE,
+      extraStyle: ART_STYLE,
     }
   }
 
   // hindi
-  if (num <= 17) {
-    const letters = HINDI_LETTERS.slice((num - 1) * 3, (num - 1) * 3 + 3)
+  if (key === 'letter') {
+    const pool = level <= 2 ? HINDI_VOWELS : HINDI_LETTERS
+    const perSheet = level <= 2 ? 2 : 3
+    const letters = pool.slice(idx * perSheet, idx * perSheet + perSheet)
     return {
-      title: `Hindi Varnamala — Set ${num}`,
+      title: `Hindi Varnamala — Set ${idx + 1}`,
       instructions: 'Say each letter out loud, then trace it with a pencil or crayon.',
       bodyHtml: `<div class="hi-grid">${letters.map(l => `
         <div class="hi-box"><div class="hi-big">${l}</div><div class="hi-trace-row">${(l + ' ').repeat(3)}</div></div>
@@ -2446,32 +2636,22 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
       extraStyle: HI_STYLE,
     }
   }
+  const words = level <= 2 ? HINDI_WORDS_SIMPLE : HINDI_WORDS_ADVANCED
+  const word = words[idx % words.length]
   return {
-    title: 'Common Words Practice',
-    instructions: 'Say each word out loud, then trace it with a pencil or crayon.',
-    bodyHtml: `<div class="hi-grid">${HINDI_BONUS_WORDS.map(w => `
-      <div class="hi-box"><div class="hi-big" style="font-size:2.2rem">${w}</div><div class="hi-trace-row">${(w + ' ').repeat(3)}</div></div>
-    `).join('')}</div>`,
+    title: `Hindi Word: ${word}`,
+    instructions: 'Say the word out loud, then trace it with a pencil or crayon.',
+    bodyHtml: `<div class="hi-grid" style="grid-template-columns:1fr"><div class="hi-box"><div class="hi-big" style="font-size:2.6rem">${word}</div><div class="hi-trace-row">${(word + '   ').repeat(3)}</div></div></div>`,
     extraStyle: HI_STYLE,
   }
 }
 
-const ABC_STYLE = `
-  .abc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .abc-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 8px;text-align:center;background:#fff}
-  .abc-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.6rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050;letter-spacing:4px}
-  .word-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050}
-  .abc-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:3px;margin:6px 0;word-spacing:8px}
-  .abc-word{font-size:0.82rem;color:#2A3B60;margin-top:4px}
-  @media(max-width:700px){.abc-grid{grid-template-columns:repeat(2,1fr)}}
-`
-const NUM_STYLE = `
-  .num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-  .num-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 6px;text-align:center;background:#fff}
-  .num-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.8rem;line-height:1;color:transparent;-webkit-text-stroke:2px #1AA6CA}
-  .num-dots{color:#E8B020;font-size:0.9rem;letter-spacing:2px;margin:6px 0;min-height:1.2em;word-break:break-all}
-  .num-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:4px}
-  @media(max-width:700px){.num-grid{grid-template-columns:repeat(3,1fr)}}
+const PRACTICE_STYLE = `
+  .ps-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:3.4rem;line-height:1;color:transparent;-webkit-text-stroke:2.5px #0F2050;text-align:center;margin-bottom:6px;word-break:break-word}
+  .ps-wordline{text-align:center;font-size:0.95rem;color:#2A3B60;margin-bottom:14px}
+  .ps-dots{color:#E8B020;font-size:1rem;letter-spacing:3px}
+  .ps-rows{display:flex;flex-direction:column;gap:16px}
+  .ps-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:8px 0;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.8rem;color:transparent;-webkit-text-stroke:1.4px #9CA9C7;letter-spacing:4px;white-space:nowrap;overflow:hidden}
 `
 const CM_STYLE = `
   .cm-grid{display:flex;flex-direction:column;gap:10px}
@@ -2502,21 +2682,38 @@ const MR_STYLE = `
   .mr-eq{font-weight:900;color:#0F2050}
   .mr-blank{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid #0F2050;border-radius:10px;font-weight:800;color:#0F2050}
 `
+const SC_STYLE = `
+  .sc-grid{display:flex;flex-direction:column;gap:14px}
+  .sc-row{display:flex;align-items:center;gap:24px;border:2px dashed #DCE1EF;border-radius:14px;padding:18px 22px;background:#fff;flex-wrap:wrap}
+  .sc-label{font-weight:800;color:#0F2050;font-size:0.95rem;flex-basis:100%}
+  .sc-item{display:inline-flex}
+`
 const WG_STYLE = `
-  .wg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .wg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .wg-box{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 8px;text-align:center;background:#fff}
   .wg-emoji{font-size:2.4rem}
   .wg-label{font-weight:800;margin-top:6px;font-size:0.85rem;color:#2A3B60}
   .wg-check{width:22px;height:22px;border:2px solid #0F2050;border-radius:6px;margin:10px auto 0}
   @media(max-width:700px){.wg-grid{grid-template-columns:repeat(2,1fr)}}
 `
+const BS_STYLE = `
+  .bs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .bs-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
+  .bs-emoji{font-size:2.6rem}
+  .bs-word{font-weight:700;color:#2A3B60;margin-top:6px;font-size:0.95rem}
+  .bs-letter{font-family:'Nunito',sans-serif;font-weight:900;font-size:2rem;color:transparent;-webkit-text-stroke:2px #0F2050;margin-top:8px}
+`
 const RHYME_STYLE = `
   .rhyme-box{border:2px dashed #DCE1EF;border-radius:14px;padding:22px 26px;background:#FEF8F0}
   .rhyme-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem;margin-bottom:12px;text-align:center}
   .rhyme-lines{font-size:1.05rem;line-height:2;color:#2A3B60;text-align:center;font-style:italic}
-  .art-preview{text-align:center;font-size:5rem;margin-bottom:10px}
-  .art-name{text-align:center;font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem;margin-bottom:14px}
   .draw-box{margin-top:20px;border:2px dashed #9CA9C7;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:#9CA9C7;font-size:0.9rem;text-align:center;padding:0 20px}
+`
+const ART_STYLE = `
+  .art-trace{display:flex;justify-content:center;margin-bottom:14px}
+  .art-svg{width:280px;height:280px}
+  .art-svg *{fill:none;stroke:#0F2050;stroke-width:2.5;stroke-dasharray:6,4;stroke-linecap:round;stroke-linejoin:round}
+  .art-name{text-align:center;font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem}
 `
 const HI_STYLE = `
   .hi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -2527,7 +2724,7 @@ const HI_STYLE = `
 `
 
 // ── School letterhead banner (logo + name in bordered box) ─────
-function schoolBannerHtml(opts: { tag?: string; classInfo?: AssignClass; subjectInfo?: AssignSubject; bottomHref?: string }): string {
+function schoolBannerHtml(opts: { tag?: string; classInfo?: AssignClass; subjectInfo?: AssignSubject }): string {
   const { tag, classInfo, subjectInfo } = opts
   return `
   <style>${SK_BANNER_STYLE}</style>
@@ -2540,17 +2737,11 @@ function schoolBannerHtml(opts: { tag?: string; classInfo?: AssignClass; subject
       </div>
       ${tag ? `<div class="sk-banner-tag">${esc(tag)}</div>` : ''}
     </div>
-    ${classInfo ? `
     <div class="sk-banner-pills">
       ${ASSIGNMENT_CLASSES.map(cl => `
-        <a href="/assignments/${cl.id}" class="sk-pill ${cl.id === classInfo.id ? 'sk-pill-active' : ''}" style="background:${cl.id === classInfo.id ? cl.color : cl.color + '18'};color:${cl.id === classInfo.id ? '#fff' : cl.color}">${esc(cl.name)}</a>
+        <a href="/assignments/${cl.id}" class="sk-pill ${classInfo && cl.id === classInfo.id ? 'sk-pill-active' : ''}" style="background:${classInfo && cl.id === classInfo.id ? cl.color : cl.color + '18'};color:${classInfo && cl.id === classInfo.id ? '#fff' : cl.color}">${esc(cl.name)}</a>
       `).join('')}
-    </div>` : `
-    <div class="sk-banner-pills">
-      ${ASSIGNMENT_CLASSES.map(cl => `
-        <a href="/assignments/${cl.id}" class="sk-pill" style="background:${cl.color}18;color:${cl.color}">${esc(cl.name)}</a>
-      `).join('')}
-    </div>`}
+    </div>
     <div class="sk-banner-bar">
       <span>${subjectInfo ? `${subjectInfo.emoji} ${esc(subjectInfo.name)}` : 'Free Printable Worksheets'}</span>
       <span>superkidsindia.com</span>
@@ -2607,7 +2798,7 @@ function printWorksheetPage(classInfo: AssignClass, subjectInfo: AssignSubject, 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@400;600;700;800;900${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px${needsDevanagari ? `;` : ''}}
+body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
 ${needsDevanagari ? `.hi-big,.hi-trace-row{font-family:'Noto Sans Devanagari','Nunito',sans-serif}` : ''}
 .toolbar{max-width:850px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .toolbar a, .toolbar button{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;letter-spacing:0.5px;text-decoration:none;border-radius:50px;padding:10px 22px;cursor:pointer;border:none}
@@ -2648,6 +2839,125 @@ ${extraStyle}
 </html>`
 }
 
+// ================================================================
+// ── Custom Tracing Sheet Generator (public tool) ────────────────
+// ================================================================
+function customTracingPage(rawText: string, linesParam: string, caseParam: string): string {
+  const text = (rawText || '').slice(0, 40).trim()
+  const lines = Math.min(12, Math.max(1, parseInt(linesParam, 10) || 6))
+  let displayText = text
+  if (caseParam === 'upper') displayText = text.toUpperCase()
+  else if (caseParam === 'lower') displayText = text.toLowerCase()
+  else if (caseParam === 'title') displayText = text.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase())
+
+  const hasText = displayText.length > 0
+  const rowsHtml = hasText ? Array.from({ length: lines }, () => `<div class="ct-row">${(displayText + '   ').repeat(6)}</div>`).join('') : ''
+
+  const content = `
+  ${Navbar('assignments')}
+  <section style="padding:3rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Custom Tool</div>
+      <div class="section-accent" style="margin:0 auto 1rem"></div>
+      <h1 class="section-title" style="color:#1AA6CA;font-size:clamp(2.1rem,5vw,3.2rem);text-align:center">Custom Tracing Sheet</h1>
+      <p style="color:#6B7A9D;font-size:1rem;line-height:1.8;margin-top:1rem;text-align:center;max-width:600px;margin-left:auto;margin-right:auto">
+        Type any letter, word, or short sentence below and instantly generate a printable multi-line tracing worksheet — perfect for names, spellings, or extra practice.
+      </p>
+    </div>
+  </section>
+  <section class="no-print" style="padding:0 0 3rem;background:#F8F9FB">
+    <div class="max-w-3xl mx-auto px-4">
+      <form method="GET" action="/assignments/custom-tracing" class="card" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;padding:2rem">
+        <div style="flex:2;min-width:220px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Text to trace</label>
+          <input type="text" name="text" maxlength="40" value="${esc(text)}" placeholder="e.g. A, cat, or I am happy" class="form-input" required>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Letter case</label>
+          <select name="case" class="form-input">
+            <option value="asis" ${caseParam === 'asis' || !caseParam ? 'selected' : ''}>As typed</option>
+            <option value="upper" ${caseParam === 'upper' ? 'selected' : ''}>UPPERCASE</option>
+            <option value="lower" ${caseParam === 'lower' ? 'selected' : ''}>lowercase</option>
+            <option value="title" ${caseParam === 'title' ? 'selected' : ''}>Title Case</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Practice lines</label>
+          <select name="lines" class="form-input">
+            ${[3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${lines === n ? 'selected' : ''}>${n} lines</option>`).join('')}
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" style="padding:14px 32px">Generate Sheet</button>
+      </form>
+    </div>
+  </section>
+  ${hasText ? `
+  <section style="padding:0 0 5rem;background:#F8F9FB">
+    <div class="max-w-4xl mx-auto px-4">
+      <div class="toolbar no-print" style="max-width:100%;margin:0 0 16px;display:flex;justify-content:flex-end">
+        <button class="print-btn" onclick="window.print()" style="color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);border:none;border-radius:50px;padding:12px 28px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">🖨️ Print / Save as PDF</button>
+      </div>
+      <div class="sheet ct-sheet">
+        <div class="sk-banner sk-banner-compact">
+          <div class="sk-banner-inner">
+            <img src="/static/logo.png" alt="SuperKids India Preschool" class="sk-banner-logo" style="height:56px;width:56px">
+            <div class="sk-banner-title">
+              <div class="sk-banner-line1" style="font-size:1.4rem">SuperKids India</div>
+              <div class="sk-banner-line2" style="font-size:1rem">Preschool</div>
+            </div>
+            <div style="text-align:right">
+              <div class="worksheet-title">✏️ Custom Tracing Sheet</div>
+              <div class="worksheet-tag">Practice Worksheet</div>
+            </div>
+          </div>
+          <div class="sk-banner-bar">
+            <span>Name: ________________</span>
+            <span>Date: ________________</span>
+          </div>
+        </div>
+        <div class="sheet-body" style="padding:22px 36px 28px">
+          <div class="instructions">📌 Trace the big model, then trace it on every line below with a pencil or crayon.</div>
+          <div class="ct-model">${esc(displayText)}</div>
+          <div class="ct-rows">${rowsHtml}</div>
+          <div class="sheet-footer">SuperKids India Preschool &middot; Free printable worksheet for home practice &middot; superkidsindia.com</div>
+        </div>
+      </div>
+    </div>
+  </section>` : ''}
+  <style>
+    .sk-banner{border:4px solid #0F2050;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 6px 24px rgba(15,32,80,0.14)}
+    .sk-banner-inner{display:flex;align-items:center;gap:18px;padding:16px 24px;flex-wrap:wrap}
+    .sk-banner-logo{object-fit:contain;flex-shrink:0}
+    .sk-banner-title{flex:1;min-width:180px}
+    .sk-banner-line1{font-family:'Playfair Display',serif;font-weight:900;color:#0F2050;text-transform:uppercase;letter-spacing:1px;line-height:1.1}
+    .sk-banner-line2{font-family:'Playfair Display',serif;font-weight:900;color:#0F2050;text-transform:uppercase;letter-spacing:3px;line-height:1.1}
+    .worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem}
+    .worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+    .sk-banner-bar{background:#0F2050;color:#fff;padding:10px 24px;display:flex;justify-content:space-between;font-size:0.8rem;font-weight:700;flex-wrap:wrap;gap:6px}
+    .sheet{max-width:100%;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);overflow:hidden}
+    .instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
+    .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
+    .ct-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:3rem;line-height:1.1;color:transparent;-webkit-text-stroke:2.5px #0F2050;text-align:center;margin-bottom:20px;word-break:break-word}
+    .ct-rows{display:flex;flex-direction:column;gap:16px}
+    .ct-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:8px 0;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.6rem;color:transparent;-webkit-text-stroke:1.4px #9CA9C7;letter-spacing:2px;white-space:nowrap;overflow:hidden}
+    @media print{
+      @page{size:A4;margin:12mm}
+      .no-print{display:none !important}
+      .sheet{box-shadow:none;border-radius:0}
+    }
+  </style>
+  ${Footer()}
+  `
+  return Layout({ children: content, title: 'Custom Tracing Sheet Generator – SuperKids India Preschool', description: 'Create and print a custom multi-line tracing worksheet for any letter, word, or sentence — free and instant, no login needed.', canonical: 'https://superkidsindia.com/assignments/custom-tracing' })
+}
+
+app.get('/assignments/custom-tracing', (c) => {
+  const text = c.req.query('text') || ''
+  const lines = c.req.query('lines') || '6'
+  const caseParam = c.req.query('case') || 'asis'
+  return c.html(customTracingPage(text, lines, caseParam))
+})
+
 app.get('/assignments', (c) => {
   const content = `
   ${Navbar('assignments')}
@@ -2657,18 +2967,23 @@ app.get('/assignments', (c) => {
       <p style="color:#6B7A9D;font-size:1.05rem;line-height:1.8;margin-top:2rem;text-align:center;max-width:640px;margin-left:auto;margin-right:auto">
         Choose your child's class below to see 100+ print-at-home worksheets across English, Math, EVS, Rhymes &amp; Stories, Art &amp; Craft, and Hindi / Marathi. No login needed!
       </p>
+      <div style="text-align:center;margin-top:1.5rem">
+        <a href="/assignments/custom-tracing" class="btn-secondary" style="display:inline-flex;align-items:center;gap:8px">✏️ Try the Custom Tracing Sheet Generator</a>
+      </div>
     </div>
   </section>
   <section style="padding:2rem 0 5rem;background:#F8F9FB">
     <div class="max-w-6xl mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        ${ASSIGNMENT_CLASSES.map(cl => `
+        ${ASSIGNMENT_CLASSES.map(cl => {
+          const total = ASSIGNMENT_SUBJECTS.reduce((s, sub) => s + getSubjectSetCount(sub.id, cl.level), 0)
+          return `
           <a href="/assignments/${cl.id}" class="card fade-in" style="border-color:${cl.color}33;text-decoration:none;display:block">
             <div class="badge mb-3" style="background:${cl.color}14;color:${cl.color};border:1px solid ${cl.color}33">${esc(cl.age)}</div>
             <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:${cl.color};font-weight:800;margin-bottom:0.5rem">${esc(cl.name)}</h3>
-            <p style="color:#2A3B60;font-size:0.9rem;line-height:1.6">${ASSIGNMENT_SUBJECTS.length} subjects &middot; ${ASSIGNMENT_SUBJECTS.length * SETS_PER_SUBJECT}+ worksheets</p>
-          </a>
-        `).join('')}
+            <p style="color:#2A3B60;font-size:0.9rem;line-height:1.6">${ASSIGNMENT_SUBJECTS.length} subjects &middot; ${total}+ worksheets</p>
+          </a>`
+        }).join('')}
       </div>
     </div>
   </section>
@@ -2697,7 +3012,7 @@ app.get('/assignments/:classId', (c) => {
           <a href="/assignments/${cl.id}/${s.id}" class="card fade-in" style="border-color:${s.color}33;text-decoration:none;display:block">
             <div style="font-size:2.6rem;margin-bottom:0.75rem">${s.emoji}</div>
             <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:${s.color};font-weight:800;margin-bottom:0.4rem">${esc(s.name)}</h3>
-            <p style="color:#2A3B60;font-size:0.9rem">${SETS_PER_SUBJECT} worksheets</p>
+            <p style="color:#2A3B60;font-size:0.9rem">${getSubjectSetCount(s.id, cl.level)} worksheets</p>
           </a>
         `).join('')}
       </div>
@@ -2712,7 +3027,8 @@ app.get('/assignments/:classId/:subjectId', (c) => {
   const cl = findAssignClass(c.req.param('classId'))
   const subj = findAssignSubject(c.req.param('subjectId'))
   if (!cl || !subj) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
-  const items = Array.from({ length: SETS_PER_SUBJECT }, (_, i) => {
+  const count = getSubjectSetCount(subj.id, cl.level)
+  const items = Array.from({ length: count }, (_, i) => {
     const num = i + 1
     const { title, instructions } = getAssignmentContent(cl, subj.id, num)
     return { num, title, instructions }
@@ -2747,14 +3063,15 @@ app.get('/assignments/:classId/:subjectId', (c) => {
   </section>
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: `${cl.name} ${subj.name} Worksheets – SuperKids India Preschool`, description: `${SETS_PER_SUBJECT} free printable ${subj.name} worksheets for ${cl.name}.`, canonical: `https://superkidsindia.com/assignments/${cl.id}/${subj.id}` }))
+  return c.html(Layout({ children: content, title: `${cl.name} ${subj.name} Worksheets – SuperKids India Preschool`, description: `${count} free printable ${subj.name} worksheets for ${cl.name}.`, canonical: `https://superkidsindia.com/assignments/${cl.id}/${subj.id}` }))
 })
 
 app.get('/assignments/:classId/:subjectId/:num', (c) => {
   const cl = findAssignClass(c.req.param('classId'))
   const subj = findAssignSubject(c.req.param('subjectId'))
   const num = parseInt(c.req.param('num'), 10)
-  if (!cl || !subj || !Number.isInteger(num) || num < 1 || num > SETS_PER_SUBJECT) {
+  const count = cl && subj ? getSubjectSetCount(subj.id, cl.level) : 0
+  if (!cl || !subj || !Number.isInteger(num) || num < 1 || num > count) {
     return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Worksheet not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
   }
   return c.html(printWorksheetPage(cl, subj, num))

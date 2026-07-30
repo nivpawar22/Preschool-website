@@ -779,8 +779,8 @@ const Navbar = (active: string) => `
           <a href="/about" class="nav-link ${active === 'about' ? 'active' : ''}" style="color:${active === 'about' ? '#0F2050' : '#2A3B60'}">About</a>
           <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#0F2050' : '#2A3B60'}">Programs</a>
           <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#0F2050' : '#2A3B60'}">Gallery</a>
-          <a href="/daily-assignments" class="nav-link ${active === 'daily-assignments' ? 'active' : ''}" style="color:${active === 'daily-assignments' ? '#0F2050' : '#2A3B60'}">Daily Assignment</a>
           <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#0F2050' : '#2A3B60'}">Contact</a>
+          <a href="/assignments" class="nav-link ${active === 'assignments' ? 'active' : ''}" style="color:${active === 'assignments' ? '#0F2050' : '#2A3B60'}">Assignment</a>
           <a href="/contact" class="btn-primary ml-3" style="font-size:0.82rem;padding:10px 22px;letter-spacing:1px">Enroll Now</a>
           <a href="/parent-portal" class="nav-link ${active === 'portal' ? 'active' : ''}" style="color:#0F2050;border:1.5px solid #0F2050;border-radius:8px;padding:7px 13px;margin-left:6px">
             <i class="fas fa-shield-alt mr-1" style="font-size:0.8rem"></i>Parent Portal
@@ -807,8 +807,8 @@ const Navbar = (active: string) => `
       <a href="/about" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">About Us</a>
       <a href="/programs" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Programs</a>
       <a href="/gallery" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Gallery</a>
-      <a href="/daily-assignments" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">📝 Daily Assignment</a>
       <a href="/contact" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Contact</a>
+      <a href="/assignments" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">📝 Assignment</a>
       <a href="/contact" class="btn-primary" style="text-align:center;margin-top:8px;display:block">Enroll Now</a>
       <a href="/parent-portal" style="color:#0F2050;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none;border:1.5px solid #0F2050;margin-top:6px" onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background=''">🛡️ Parent Portal</a>
     </div>
@@ -845,6 +845,7 @@ const Footer = () => `
             {label:'Programs',href:'/programs'},
             {label:'Gallery',href:'/gallery'},
             {label:'Contact',href:'/contact'},
+            {label:'Assignment',href:'/assignments'},
           ].map(l =>
             `<a href="${l.href}" style="color:#7B90B5;text-decoration:none;font-size:0.9rem;transition:color 0.3s"
               onmouseover="this.style.color='#1AA6CA'" onmouseout="this.style.color='#7B90B5'">
@@ -2076,21 +2077,33 @@ app.get('/contact', (c) => {
 })
 
 // ================================================================
-// ── Daily Assignment (printable Kindergarten worksheets) ──────
+// ── Assignment (printable worksheets by Class & Subject) ───────
 // ================================================================
-type DailyAssignment = { slug: string; title: string; category: string; emoji: string; color: string; desc: string }
+type AssignClass = { id: string; name: string; age: string; color: string; level: number }
+type AssignSubject = { id: string; name: string; emoji: string; color: string }
 
-const DAILY_ASSIGNMENTS: DailyAssignment[] = [
-  { slug: 'abc-tracing-a-m', title: 'Trace the Alphabet (A–M)', category: 'Alphabet & Phonics', emoji: '🔤', color: '#0F2050', desc: 'Trace big bubble letters A to M and learn a word for each letter.' },
-  { slug: 'abc-tracing-n-z', title: 'Trace the Alphabet (N–Z)', category: 'Alphabet & Phonics', emoji: '🔠', color: '#C4893A', desc: 'Trace big bubble letters N to Z and learn a word for each letter.' },
-  { slug: 'trace-numbers',   title: 'Trace Numbers 1–10',       category: 'Numbers & Math',      emoji: '🔢', color: '#1AA6CA', desc: 'Practice writing numbers 1 to 10 using the dot-count guides.' },
-  { slug: 'count-and-match', title: 'Count and Circle',         category: 'Numbers & Math',      emoji: '🍎', color: '#E8B020', desc: 'Count the pictures in every row and circle the correct number.' },
-  { slug: 'patterns-next',   title: 'What Comes Next?',         category: 'Numbers & Math',      emoji: '🧩', color: '#0F2050', desc: 'Look closely at each pattern and work out what comes next.' },
-  { slug: 'shapes-around',   title: 'Shapes All Around',        category: 'Shapes & Colors',      emoji: '🔷', color: '#1AA6CA', desc: 'Trace six everyday shapes and match them to real objects.' },
-  { slug: 'match-colors',    title: 'Match the Colors',         category: 'Shapes & Colors',      emoji: '🎨', color: '#C4893A', desc: 'Read the color word inside each shape, then color it in.' },
-  { slug: 'prewriting-lines',title: 'Pre-Writing: Lines & Curves', category: 'Pre-Writing & Fine Motor', emoji: '✏️', color: '#E8B020', desc: 'Trace straight, zigzag, wavy, and curvy lines to build pencil control.' },
+const ASSIGNMENT_CLASSES: AssignClass[] = [
+  { id: 'playgroup', name: 'Play Group', age: '1.5–2.5 yrs', color: '#E4572E', level: 1 },
+  { id: 'nursery',   name: 'Nursery',    age: '2.5–3.5 yrs', color: '#1AA6CA', level: 2 },
+  { id: 'jrkg',      name: 'Jr. KG',     age: '3.5–4.5 yrs', color: '#E8B020', level: 3 },
+  { id: 'srkg',      name: 'Sr. KG',     age: '4.5–5.5 yrs', color: '#0F2050', level: 4 },
 ]
 
+const ASSIGNMENT_SUBJECTS: AssignSubject[] = [
+  { id: 'english', name: 'English',          emoji: '🔤', color: '#0F2050' },
+  { id: 'math',    name: 'Math',             emoji: '🔢', color: '#1AA6CA' },
+  { id: 'evs',     name: 'EVS',              emoji: '🌎', color: '#10B981' },
+  { id: 'rhymes',  name: 'Rhymes & Stories', emoji: '🎵', color: '#C4893A' },
+  { id: 'art',     name: 'Art & Craft',      emoji: '🎨', color: '#E8B020' },
+  { id: 'hindi',   name: 'Hindi / Marathi',  emoji: '📖', color: '#7C3AED' },
+]
+
+const SETS_PER_SUBJECT = 18 // 6 subjects x 18 sets = 108 worksheets per class
+
+function findAssignClass(id: string): AssignClass | undefined { return ASSIGNMENT_CLASSES.find(x => x.id === id) }
+function findAssignSubject(id: string): AssignSubject | undefined { return ASSIGNMENT_SUBJECTS.find(x => x.id === id) }
+
+// ── Content pools ───────────────────────────────────────────────
 const ALPHABET_WORDS: { ch: string; word: string; emoji: string }[] = [
   { ch: 'A', word: 'Apple',    emoji: '🍎' }, { ch: 'B', word: 'Ball',     emoji: '⚽' },
   { ch: 'C', word: 'Cat',      emoji: '🐱' }, { ch: 'D', word: 'Dog',      emoji: '🐶' },
@@ -2107,6 +2120,80 @@ const ALPHABET_WORDS: { ch: string; word: string; emoji: string }[] = [
   { ch: 'Y', word: 'Yo-yo',    emoji: '🪀' }, { ch: 'Z', word: 'Zebra',    emoji: '🦓' },
 ]
 
+const CVC_WORDS: { w: string; e: string }[] = [
+  {w:'Cat',e:'🐱'}, {w:'Dog',e:'🐶'}, {w:'Sun',e:'☀️'}, {w:'Hat',e:'🎩'},
+  {w:'Pen',e:'🖊️'}, {w:'Cup',e:'☕'}, {w:'Bed',e:'🛏️'}, {w:'Fox',e:'🦊'},
+  {w:'Map',e:'🗺️'}, {w:'Net',e:'🥅'}, {w:'Pig',e:'🐷'}, {w:'Top',e:'🎯'},
+  {w:'Van',e:'🚐'}, {w:'Box',e:'📦'}, {w:'Jam',e:'🍯'}, {w:'Egg',e:'🥚'},
+  {w:'Owl',e:'🦉'}, {w:'Bus',e:'🚌'}, {w:'Kite',e:'🪁'}, {w:'Star',e:'⭐'},
+]
+
+const TRACE_SENTENCES: string[] = [
+  'I am happy.',
+  'I like my mom.',
+  'The cat is fat.',
+  'I can run and jump.',
+]
+
+const EVS_TOPICS: { title: string; items: { e: string; label: string }[] }[] = [
+  { title: 'My Body Parts', items: [{e:'👁️',label:'Eye'},{e:'👃',label:'Nose'},{e:'👂',label:'Ear'},{e:'👄',label:'Mouth'},{e:'🦷',label:'Teeth'},{e:'🖐️',label:'Hand'}] },
+  { title: 'Wild Animals', items: [{e:'🦁',label:'Lion'},{e:'🐯',label:'Tiger'},{e:'🐘',label:'Elephant'},{e:'🦒',label:'Giraffe'},{e:'🦓',label:'Zebra'},{e:'🐒',label:'Monkey'}] },
+  { title: 'Domestic Animals', items: [{e:'🐶',label:'Dog'},{e:'🐱',label:'Cat'},{e:'🐄',label:'Cow'},{e:'🐐',label:'Goat'},{e:'🐑',label:'Sheep'},{e:'🐎',label:'Horse'}] },
+  { title: 'Birds', items: [{e:'🐦',label:'Sparrow'},{e:'🦜',label:'Parrot'},{e:'🦚',label:'Peacock'},{e:'🦢',label:'Swan'},{e:'🦉',label:'Owl'},{e:'🐓',label:'Hen'}] },
+  { title: 'Fruits', items: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🍇',label:'Grapes'},{e:'🍊',label:'Orange'},{e:'🍉',label:'Watermelon'},{e:'🍓',label:'Strawberry'}] },
+  { title: 'Vegetables', items: [{e:'🥕',label:'Carrot'},{e:'🥦',label:'Broccoli'},{e:'🍆',label:'Brinjal'},{e:'🥔',label:'Potato'},{e:'🌽',label:'Corn'},{e:'🧅',label:'Onion'}] },
+  { title: 'Land Transport', items: [{e:'🚗',label:'Car'},{e:'🚌',label:'Bus'},{e:'🚲',label:'Bicycle'},{e:'🚂',label:'Train'},{e:'🏍️',label:'Bike'},{e:'🚕',label:'Taxi'}] },
+  { title: 'Water & Air Transport', items: [{e:'⛵',label:'Boat'},{e:'🚤',label:'Speedboat'},{e:'🛳️',label:'Ship'},{e:'✈️',label:'Airplane'},{e:'🚁',label:'Helicopter'},{e:'🛶',label:'Canoe'}] },
+  { title: 'My Family', items: [{e:'👨',label:'Father'},{e:'👩',label:'Mother'},{e:'👦',label:'Brother'},{e:'👧',label:'Sister'},{e:'👴',label:'Grandpa'},{e:'👵',label:'Grandma'}] },
+  { title: 'Good Habits', items: [{e:'🪥',label:'Brush Teeth'},{e:'🛁',label:'Bathe Daily'},{e:'🙏',label:'Say Thanks'},{e:'📚',label:'Read Books'},{e:'🥗',label:'Eat Healthy'},{e:'😴',label:'Sleep Early'}] },
+  { title: 'Community Helpers', items: [{e:'👮',label:'Police'},{e:'🧑‍🚒',label:'Firefighter'},{e:'👨‍⚕️',label:'Doctor'},{e:'👨‍🏫',label:'Teacher'},{e:'👨‍🌾',label:'Farmer'},{e:'📮',label:'Postman'}] },
+  { title: 'Festivals of India', items: [{e:'🪔',label:'Diwali'},{e:'🎨',label:'Holi'},{e:'🎊',label:'Eid'},{e:'🌟',label:'Christmas'},{e:'🪁',label:'Makar Sankranti'},{e:'🙏',label:'Ganesh Chaturthi'}] },
+  { title: 'National Symbols', items: [{e:'🇮🇳',label:'National Flag'},{e:'🦚',label:'National Bird'},{e:'🐯',label:'National Animal'},{e:'🌸',label:'National Flower'},{e:'🏏',label:'National Sport'},{e:'🌾',label:'National Fruit'}] },
+  { title: 'Seasons', items: [{e:'☀️',label:'Summer'},{e:'🌧️',label:'Monsoon'},{e:'❄️',label:'Winter'},{e:'🍂',label:'Autumn'},{e:'🌸',label:'Spring'},{e:'🌤️',label:'Pleasant Day'}] },
+  { title: 'Days of the Week', items: [{e:'1️⃣',label:'Monday'},{e:'2️⃣',label:'Tuesday'},{e:'3️⃣',label:'Wednesday'},{e:'4️⃣',label:'Thursday'},{e:'5️⃣',label:'Friday'},{e:'6️⃣',label:'Saturday'}] },
+  { title: 'Colors Around Us', items: [{e:'🔴',label:'Red'},{e:'🔵',label:'Blue'},{e:'🟡',label:'Yellow'},{e:'🟢',label:'Green'},{e:'🟠',label:'Orange'},{e:'🟣',label:'Purple'}] },
+  { title: 'Water Animals', items: [{e:'🐟',label:'Fish'},{e:'🐠',label:'Tropical Fish'},{e:'🐬',label:'Dolphin'},{e:'🐳',label:'Whale'},{e:'🐢',label:'Turtle'},{e:'🦀',label:'Crab'}] },
+  { title: 'My Senses', items: [{e:'👀',label:'Sight'},{e:'👃',label:'Smell'},{e:'👂',label:'Hearing'},{e:'👅',label:'Taste'},{e:'🖐️',label:'Touch'},{e:'🧠',label:'Think'}] },
+]
+
+const RHYMES: { title: string; lines: string[]; emoji: string }[] = [
+  { title: 'Twinkle Twinkle Little Star', emoji: '⭐', lines: ['Twinkle, twinkle, little star,', 'How I wonder what you are!', 'Up above the world so high,', 'Like a diamond in the sky.'] },
+  { title: 'Baa Baa Black Sheep', emoji: '🐑', lines: ['Baa, baa, black sheep,', 'Have you any wool?', 'Yes sir, yes sir,', 'Three bags full.'] },
+  { title: 'Johny Johny Yes Papa', emoji: '👶', lines: ['Johny Johny, yes papa,', 'Eating sugar? No papa.', 'Telling lies? No papa,', 'Open your mouth, ha ha ha!'] },
+  { title: 'Rain Rain Go Away', emoji: '🌧️', lines: ['Rain, rain, go away,', 'Come again another day.', 'Little children want to play,', 'Rain, rain, go away.'] },
+  { title: 'Humpty Dumpty', emoji: '🥚', lines: ['Humpty Dumpty sat on a wall,', 'Humpty Dumpty had a great fall.', 'All the king\'s horses and all the king\'s men,', 'Couldn\'t put Humpty together again.'] },
+  { title: 'Jack and Jill', emoji: '⛰️', lines: ['Jack and Jill went up the hill,', 'To fetch a pail of water.', 'Jack fell down and broke his crown,', 'And Jill came tumbling after.'] },
+  { title: 'Row Row Row Your Boat', emoji: '🚣', lines: ['Row, row, row your boat,', 'Gently down the stream.', 'Merrily, merrily, merrily, merrily,', 'Life is but a dream.'] },
+  { title: 'Old MacDonald Had a Farm', emoji: '🚜', lines: ['Old MacDonald had a farm,', 'E-I-E-I-O!', 'And on that farm he had a cow,', 'E-I-E-I-O!'] },
+  { title: 'Itsy Bitsy Spider', emoji: '🕷️', lines: ['The itsy bitsy spider climbed up the water spout.', 'Down came the rain and washed the spider out.', 'Out came the sun and dried up all the rain,', 'And the itsy bitsy spider climbed up again.'] },
+  { title: 'Hickory Dickory Dock', emoji: '🐭', lines: ['Hickory dickory dock,', 'The mouse ran up the clock.', 'The clock struck one,', 'The mouse ran down, hickory dickory dock.'] },
+  { title: 'Mary Had a Little Lamb', emoji: '🐑', lines: ['Mary had a little lamb,', 'Its fleece was white as snow.', 'And everywhere that Mary went,', 'The lamb was sure to go.'] },
+  { title: 'The Wheels on the Bus', emoji: '🚌', lines: ['The wheels on the bus go round and round,', 'Round and round, round and round.', 'The wheels on the bus go round and round,', 'All through the town.'] },
+  { title: 'Are You Sleeping', emoji: '🔔', lines: ['Are you sleeping, are you sleeping,', 'Brother John, Brother John?', 'Morning bells are ringing,', 'Ding, ding, dong.'] },
+  { title: 'Five Little Monkeys', emoji: '🐒', lines: ['Five little monkeys jumping on the bed,', 'One fell off and bumped his head.', 'Mama called the doctor and the doctor said,', 'No more monkeys jumping on the bed!'] },
+  { title: 'If You\'re Happy and You Know It', emoji: '👏', lines: ['If you\'re happy and you know it, clap your hands.', 'If you\'re happy and you know it, clap your hands.', 'If you\'re happy and you know it, and you really want to show it,', 'If you\'re happy and you know it, clap your hands.'] },
+  { title: 'One Two Buckle My Shoe', emoji: '👞', lines: ['One, two, buckle my shoe,', 'Three, four, knock at the door,', 'Five, six, pick up sticks,', 'Seven, eight, lay them straight.'] },
+  { title: 'Ring a Ring o\' Roses', emoji: '🌹', lines: ['Ring a ring o\' roses,', 'A pocket full of posies.', 'A-tishoo! A-tishoo!', 'We all fall down.'] },
+  { title: 'Little Miss Muffet', emoji: '🕸️', lines: ['Little Miss Muffet sat on a tuffet,', 'Eating her curds and whey.', 'Along came a spider, who sat down beside her,', 'And frightened Miss Muffet away.'] },
+]
+
+const ART_PROMPTS: { name: string; emoji: string }[] = [
+  {name:'Sun', emoji:'☀️'}, {name:'Tree', emoji:'🌳'}, {name:'Apple', emoji:'🍎'}, {name:'Butterfly', emoji:'🦋'},
+  {name:'Flower', emoji:'🌸'}, {name:'Umbrella', emoji:'☂️'}, {name:'House', emoji:'🏠'}, {name:'Fish', emoji:'🐟'},
+  {name:'Boat', emoji:'⛵'}, {name:'Kite', emoji:'🪁'}, {name:'Balloon', emoji:'🎈'}, {name:'Star', emoji:'⭐'},
+  {name:'Heart', emoji:'❤️'}, {name:'Ice Cream', emoji:'🍦'}, {name:'Car', emoji:'🚗'}, {name:'Rainbow', emoji:'🌈'},
+  {name:'Cake', emoji:'🎂'}, {name:'Bird', emoji:'🐦'},
+]
+
+const HINDI_LETTERS: string[] = [
+  'अ','आ','इ','ई','उ','ऊ','ऋ','ए','ऐ','ओ','औ','अं','अः',
+  'क','ख','ग','घ','ङ','च','छ','ज','झ','ञ','ट','ठ','ड','ढ','ण',
+  'त','थ','द','ध','न','प','फ','ब','भ','म','य','र','ल','व',
+  'श','ष','स','ह','ळ','क्ष','त्र','ज्ञ','श्र',
+]
+const HINDI_BONUS_WORDS: string[] = ['माँ', 'पापा', 'घर', 'पानी', 'आम']
+
+// ── Reusable box builders ───────────────────────────────────────
 function alphabetBox(ch: string, word: string, emoji: string): string {
   const lower = ch.toLowerCase()
   return `
@@ -2114,6 +2201,15 @@ function alphabetBox(ch: string, word: string, emoji: string): string {
       <div class="abc-big">${ch}${lower}</div>
       <div class="abc-trace-row">${(ch + lower + ' ').repeat(3)}</div>
       <div class="abc-word">${emoji} <b>${ch}</b> is for <b>${esc(word)}</b></div>
+    </div>`
+}
+
+function wordTraceBox(word: string, emoji: string): string {
+  return `
+    <div class="abc-box">
+      <div class="word-big">${esc(word)}</div>
+      <div class="abc-trace-row">${(word + ' ').repeat(3)}</div>
+      <div class="abc-word">${emoji} <b>${esc(word)}</b></div>
     </div>`
 }
 
@@ -2128,7 +2224,7 @@ function numberBox(n: number): string {
 }
 
 function countRow(n: number, emoji: string): string {
-  const options = Array.from(new Set([n - 1, n, n + 1].filter(x => x >= 1 && x <= 12)))
+  const options = Array.from(new Set([n - 1, n, n + 1].filter(x => x >= 1)))
   while (options.length < 3) options.push(options[options.length - 1] + 1)
   return `
     <div class="cm-row">
@@ -2150,250 +2246,498 @@ function shapeBox(name: string, shapeHtml: string, emoji: string): string {
     </div>`
 }
 
-function colorBox(name: string, hex: string, shapeHtml: string): string {
+function mathRow(a: number, b: number, op: '+' | '-', emoji: string): string {
+  const aIcons = emoji.repeat(a)
+  const bIcons = emoji.repeat(b)
   return `
-    <div class="shape-box">
-      <div class="shape-outline" style="border-color:${hex}">${shapeHtml}</div>
-      <div class="shape-name" style="color:${hex}">${esc(name)}</div>
+    <div class="mr-row">
+      <span class="mr-icons">${aIcons}</span><span class="mr-op">${op}</span><span class="mr-icons">${bIcons}</span>
+      <span class="mr-eq">=</span><span class="mr-blank">?</span>
     </div>`
 }
 
-function buildAssignmentBody(slug: string): { instructions: string; bodyHtml: string; extraStyle: string } {
-  if (slug === 'abc-tracing-a-m' || slug === 'abc-tracing-n-z') {
-    const letters = slug === 'abc-tracing-a-m' ? ALPHABET_WORDS.slice(0, 13) : ALPHABET_WORDS.slice(13)
+const SHAPE_POOL: { name: string; emoji: string; html: string }[] = [
+  {name:'Circle',    emoji:'⚽', html:`<div style="width:70px;height:70px;border-radius:50%;border:3px dashed #0F2050"></div>`},
+  {name:'Square',    emoji:'📦', html:`<div style="width:70px;height:70px;border:3px dashed #0F2050"></div>`},
+  {name:'Triangle',  emoji:'🍕', html:`<svg width="72" height="64" viewBox="0 0 72 64"><polygon points="36,4 68,60 4,60" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+  {name:'Rectangle', emoji:'📱', html:`<div style="width:90px;height:56px;border:3px dashed #0F2050"></div>`},
+  {name:'Star',      emoji:'⭐', html:`<svg width="72" height="72" viewBox="0 0 72 72"><polygon points="36,4 44,26 68,26 48,40 56,64 36,50 16,64 24,40 4,26 28,26" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+  {name:'Diamond',   emoji:'💎', html:`<div style="width:64px;height:64px;border:3px dashed #0F2050;transform:rotate(45deg)"></div>`},
+  {name:'Oval',      emoji:'🥚', html:`<div style="width:90px;height:64px;border-radius:50%;border:3px dashed #0F2050"></div>`},
+  {name:'Pentagon',  emoji:'🏠', html:`<svg width="72" height="68" viewBox="0 0 72 68"><polygon points="36,4 68,28 56,64 16,64 4,28" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+]
+
+const COUNT_EMOJI = ['🍓','🚗','🐟','🌸','⭐','🎈','🍪','🦋','🐝','🍇','🎁','🐬']
+const PATTERN_POOL_AB: string[][] = [
+  ['🔴','🔵','🔴','🔵','🔴','?'],
+  ['🟩','🟦','🟩','🟦','🟩','?'],
+  ['🔺','🔻','🔺','🔻','🔺','?'],
+  ['🐝','🦋','🐝','🦋','🐝','?'],
+]
+const PATTERN_POOL_ADV: string[][] = [
+  ['⭐','⭐','🌙','⭐','⭐','?'],
+  ['🍎','🍎','🍌','🍎','🍎','?'],
+  ['🐝','🐝','🦋','🐝','🐝','?'],
+  ['🔵','🔴','🔴','🔵','🔴','?'],
+]
+
+const CLASS_MATH_RANGE: Record<number, number> = { 1: 6, 2: 12, 3: 18, 4: 24 }
+const CLASS_COUNT_MAX: Record<number, number> = { 1: 5, 2: 8, 3: 11, 4: 14 }
+
+// ── Per-subject worksheet generator ────────────────────────────
+function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: number): { title: string; instructions: string; bodyHtml: string; extraStyle: string } {
+  const level = classInfo.level
+
+  if (subjectId === 'english') {
+    if (num <= 9) {
+      const letters = ALPHABET_WORDS.slice((num - 1) * 3, (num - 1) * 3 + 3)
+      const range = letters.length > 1 ? `${letters[0].ch}–${letters[letters.length - 1].ch}` : letters[0].ch
+      return {
+        title: `Alphabet Tracing (${range})`,
+        instructions: 'Trace each big letter with your finger, then with a pencil or crayon. Say the word out loud!',
+        bodyHtml: `<div class="abc-grid">${letters.map(l => alphabetBox(l.ch, l.word, l.emoji)).join('')}</div>`,
+        extraStyle: ABC_STYLE,
+      }
+    }
+    if (num <= 14) {
+      const idx = num - 10
+      const words = CVC_WORDS.slice(idx * 4, idx * 4 + 4)
+      return {
+        title: `Word Tracing — Set ${idx + 1}`,
+        instructions: 'Say each word out loud, then trace it with a pencil or crayon.',
+        bodyHtml: `<div class="abc-grid">${words.map(w => wordTraceBox(w.w, w.e)).join('')}</div>`,
+        extraStyle: ABC_STYLE,
+      }
+    }
+    const idx = num - 15
+    const sentence = TRACE_SENTENCES[idx]
     return {
-      instructions: 'Trace each big letter with your finger, then with a pencil or crayon. Say the word out loud!',
-      bodyHtml: `<div class="abc-grid">${letters.map(l => alphabetBox(l.ch, l.word, l.emoji)).join('')}</div>`,
-      extraStyle: `
-        .abc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-        .abc-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 8px;text-align:center;background:#fff}
-        .abc-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.6rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050;letter-spacing:4px}
-        .abc-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:3px;margin:6px 0;word-spacing:8px}
-        .abc-word{font-size:0.82rem;color:#2A3B60;margin-top:4px}
-        @media(max-width:700px){.abc-grid{grid-template-columns:repeat(2,1fr)}}
-      `
+      title: `Sentence Tracing — Set ${idx + 1}`,
+      instructions: 'Read the sentence, then trace it neatly with a pencil.',
+      bodyHtml: `<div class="abc-grid" style="grid-template-columns:1fr"><div class="abc-box"><div class="word-big" style="font-size:1.8rem">${esc(sentence)}</div><div class="abc-trace-row" style="font-size:1.5rem">${(sentence + '   ').repeat(3)}</div></div></div>`,
+      extraStyle: ABC_STYLE,
     }
   }
-  if (slug === 'trace-numbers') {
-    const nums = Array.from({length:10}, (_,i) => i+1)
+
+  if (subjectId === 'math') {
+    const perSet = level
+    const totalNums = CLASS_MATH_RANGE[level]
+    if (num <= 6) {
+      const start = (num - 1) * perSet + 1
+      const nums = Array.from({ length: perSet }, (_, i) => start + i).filter(n => n <= totalNums)
+      return {
+        title: `Number Tracing (${nums[0]}–${nums[nums.length - 1]})`,
+        instructions: 'Count the dots, then trace each number with a pencil or crayon.',
+        bodyHtml: `<div class="num-grid">${nums.map(n => numberBox(n)).join('')}</div>`,
+        extraStyle: NUM_STYLE,
+      }
+    }
+    if (num <= 10) {
+      const setIdx = num - 7
+      const maxCount = CLASS_COUNT_MAX[level]
+      const rows = Array.from({ length: 3 }, (_, r) => {
+        const n = ((setIdx * 3 + r) % maxCount) + 1
+        const e = COUNT_EMOJI[(setIdx * 3 + r) % COUNT_EMOJI.length]
+        return countRow(n, e)
+      })
+      return {
+        title: `Count and Circle — Set ${setIdx + 1}`,
+        instructions: 'Count the pictures in each row, then draw a circle around the correct number.',
+        bodyHtml: `<div class="cm-grid">${rows.join('')}</div>`,
+        extraStyle: CM_STYLE,
+      }
+    }
+    if (num <= 14) {
+      const setIdx = num - 11
+      const pool = level <= 2 ? PATTERN_POOL_AB : [...PATTERN_POOL_AB, ...PATTERN_POOL_ADV]
+      const p1 = pool[(setIdx * 2) % pool.length]
+      const p2 = pool[(setIdx * 2 + 1) % pool.length]
+      return {
+        title: `Patterns — Set ${setIdx + 1}`,
+        instructions: 'Look at the pattern in each row. Draw or write what comes next in the box.',
+        bodyHtml: `<div class="pat-grid">${patternRow(p1)}${patternRow(p2)}</div>`,
+        extraStyle: PAT_STYLE,
+      }
+    }
+    if (num <= 16) {
+      const setIdx = num - 15
+      const pool = level >= 3 ? SHAPE_POOL : SHAPE_POOL.slice(0, 6)
+      const half = Math.ceil(pool.length / 2)
+      const shapes = setIdx === 0 ? pool.slice(0, half) : pool.slice(half)
+      return {
+        title: `Shapes — Set ${setIdx + 1}`,
+        instructions: 'Trace the outline of each shape with a pencil, say its name, then find something at home shaped like it.',
+        bodyHtml: `<div class="shapes-grid">${shapes.map(s => shapeBox(s.name, s.html, s.emoji)).join('')}</div>`,
+        extraStyle: SHAPES_STYLE,
+      }
+    }
+    // 17-18: addition / subtraction
+    const setIdx = num - 17
+    const emoji = COUNT_EMOJI[setIdx % COUNT_EMOJI.length]
+    let rows: string[] = []
+    if (level <= 2) {
+      rows = Array.from({ length: 4 }, (_, r) => mathRow(r + 1, 1, '+', emoji))
+    } else if (level === 3) {
+      const pairs = [[2,1],[1,2],[3,1],[2,2]]
+      rows = pairs.map(([a,b]) => mathRow(a, b, '+', emoji))
+    } else {
+      const pairs: [number, number, '+' | '-'][] = [[3,2,'+'],[5,3,'+'],[6,2,'-'],[9,4,'-']]
+      rows = pairs.map(([a,b,op]) => mathRow(a, b, op, emoji))
+    }
     return {
-      instructions: 'Count the dots, then trace each number with a pencil or crayon.',
-      bodyHtml: `<div class="num-grid">${nums.map(n => numberBox(n)).join('')}</div>`,
-      extraStyle: `
-        .num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-        .num-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 6px;text-align:center;background:#fff}
-        .num-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.8rem;line-height:1;color:transparent;-webkit-text-stroke:2px #1AA6CA}
-        .num-dots{color:#E8B020;font-size:0.95rem;letter-spacing:3px;margin:6px 0;min-height:1.2em}
-        .num-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:4px}
-        @media(max-width:700px){.num-grid{grid-template-columns:repeat(3,1fr)}}
-      `
+      title: level <= 2 ? `One More! — Set ${setIdx + 1}` : `Addition & Subtraction — Set ${setIdx + 1}`,
+      instructions: 'Count the pictures, then write the answer in the blank box.',
+      bodyHtml: `<div class="mr-grid">${rows.join('')}</div>`,
+      extraStyle: MR_STYLE,
     }
   }
-  if (slug === 'count-and-match') {
-    const rows = [
-      {n:1,e:'🍓'}, {n:2,e:'🚗'}, {n:3,e:'🐟'}, {n:4,e:'🌸'}, {n:5,e:'⭐'},
-      {n:6,e:'🎈'}, {n:7,e:'🍪'}, {n:8,e:'🦋'}, {n:9,e:'🐝'}, {n:10,e:'🍇'},
-    ]
+
+  if (subjectId === 'evs') {
+    const topic = EVS_TOPICS[(num - 1) % EVS_TOPICS.length]
     return {
-      instructions: 'Count the pictures in each row, then draw a circle around the correct number.',
-      bodyHtml: `<div class="cm-grid">${rows.map(r => countRow(r.n, r.e)).join('')}</div>`,
-      extraStyle: `
-        .cm-grid{display:flex;flex-direction:column;gap:10px}
-        .cm-row{display:flex;align-items:center;justify-content:space-between;border:2px dashed #DCE1EF;border-radius:14px;padding:12px 16px;background:#fff;gap:10px;flex-wrap:wrap}
-        .cm-objects{font-size:1.5rem;letter-spacing:4px;flex:1;min-width:180px}
-        .cm-options{display:flex;gap:10px}
-        .cm-opt{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:2px solid #0F2050;border-radius:50%;font-weight:800;font-size:1.1rem;color:#0F2050}
-      `
+      title: topic.title,
+      instructions: `Look at each picture, say the word out loud, then tick your 3 favorites.`,
+      bodyHtml: `<div class="wg-grid">${topic.items.map(it => `
+        <div class="wg-box"><div class="wg-emoji">${it.e}</div><div class="wg-label">${esc(it.label)}</div><div class="wg-check"></div></div>
+      `).join('')}</div>`,
+      extraStyle: WG_STYLE,
     }
   }
-  if (slug === 'patterns-next') {
-    const patterns = [
-      ['🔴','🔵','🔴','🔵','🔴','?'],
-      ['⭐','⭐','🌙','⭐','⭐','?'],
-      ['🟩','🟦','🟩','🟦','🟩','?'],
-      ['🍎','🍎','🍌','🍎','🍎','?'],
-      ['🔺','🔻','🔺','🔻','🔺','?'],
-      ['🐝','🐝','🦋','🐝','🐝','?'],
-    ]
+
+  if (subjectId === 'rhymes') {
+    const rhyme = RHYMES[(num - 1) % RHYMES.length]
     return {
-      instructions: 'Look at the pattern in each row. Draw or write what comes next in the box.',
-      bodyHtml: `<div class="pat-grid">${patterns.map(p => patternRow(p)).join('')}</div>`,
-      extraStyle: `
-        .pat-grid{display:flex;flex-direction:column;gap:14px}
-        .pat-row{display:flex;align-items:center;gap:10px;border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff}
-        .pat-item{font-size:1.8rem}
-        .pat-blank{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid #E8B020;border-radius:10px;font-weight:800;color:#E8B020;font-size:1.3rem}
-      `
+      title: rhyme.title,
+      instructions: 'Read (or listen to) the rhyme with a grown-up, then draw a picture about it in the box below.',
+      bodyHtml: `
+        <div class="rhyme-box">
+          <div class="rhyme-title">${rhyme.emoji} ${esc(rhyme.title)}</div>
+          <div class="rhyme-lines">${rhyme.lines.map(l => esc(l)).join('<br>')}</div>
+        </div>
+        <div class="draw-box">Draw &amp; color a picture about this rhyme here!</div>
+      `,
+      extraStyle: RHYME_STYLE,
     }
   }
-  if (slug === 'shapes-around') {
-    const shapes = [
-      {name:'Circle',    emoji:'⚽', html:`<div style="width:70px;height:70px;border-radius:50%;border:3px dashed #0F2050"></div>`},
-      {name:'Square',    emoji:'📦', html:`<div style="width:70px;height:70px;border:3px dashed #0F2050"></div>`},
-      {name:'Triangle',  emoji:'🍕', html:`<svg width="72" height="64" viewBox="0 0 72 64"><polygon points="36,4 68,60 4,60" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
-      {name:'Rectangle', emoji:'📱', html:`<div style="width:90px;height:56px;border:3px dashed #0F2050"></div>`},
-      {name:'Star',      emoji:'⭐', html:`<svg width="72" height="72" viewBox="0 0 72 72"><polygon points="36,4 44,26 68,26 48,40 56,64 36,50 16,64 24,40 4,26 28,26" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
-      {name:'Diamond',   emoji:'💎', html:`<div style="width:64px;height:64px;border:3px dashed #0F2050;transform:rotate(45deg)"></div>`},
-    ]
+
+  if (subjectId === 'art') {
+    const prompt = ART_PROMPTS[(num - 1) % ART_PROMPTS.length]
     return {
-      instructions: 'Trace the outline of each shape with a pencil, say its name, then find something at home shaped like it.',
-      bodyHtml: `<div class="shapes-grid">${shapes.map(s => shapeBox(s.name, s.html, s.emoji)).join('')}</div>`,
-      extraStyle: `
-        .shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-        .shape-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
-        .shape-outline{display:flex;align-items:center;justify-content:center;height:90px;margin-bottom:8px}
-        .shape-name{font-weight:800;color:#0F2050;font-size:1rem}
-        .shape-example{font-size:1.6rem;margin-top:4px}
-        @media(max-width:700px){.shapes-grid{grid-template-columns:repeat(2,1fr)}}
-      `
+      title: `Draw & Color: ${prompt.name}`,
+      instructions: `Look at the picture, then draw and color your own ${prompt.name.toLowerCase()} in the box below!`,
+      bodyHtml: `
+        <div class="art-preview">${prompt.emoji}</div>
+        <div class="art-name">${esc(prompt.name)}</div>
+        <div class="draw-box" style="height:320px">Draw &amp; color your ${esc(prompt.name)} here!</div>
+      `,
+      extraStyle: RHYME_STYLE,
     }
   }
-  if (slug === 'match-colors') {
-    const colors: {name:string,hex:string}[] = [
-      {name:'Red',    hex:'#E4572E'}, {name:'Blue',   hex:'#1AA6CA'},
-      {name:'Yellow', hex:'#E8B020'}, {name:'Green',  hex:'#10B981'},
-      {name:'Orange', hex:'#C4893A'}, {name:'Purple', hex:'#7C3AED'},
-    ]
+
+  // hindi
+  if (num <= 17) {
+    const letters = HINDI_LETTERS.slice((num - 1) * 3, (num - 1) * 3 + 3)
     return {
-      instructions: 'Read the color word inside each shape out loud, then color the shape using that color.',
-      bodyHtml: `<div class="shapes-grid">${colors.map(cc => colorBox(cc.name, cc.hex, `<div style="width:76px;height:76px;border-radius:50%;border:3px dashed ${cc.hex};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;color:${cc.hex};text-transform:uppercase">${cc.name}</div>`)).join('')}</div>`,
-      extraStyle: `
-        .shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-        .shape-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
-        .shape-outline{display:flex;align-items:center;justify-content:center;height:90px;margin-bottom:8px}
-        .shape-name{font-weight:800;font-size:1rem}
-        @media(max-width:700px){.shapes-grid{grid-template-columns:repeat(2,1fr)}}
-      `
+      title: `Hindi Varnamala — Set ${num}`,
+      instructions: 'Say each letter out loud, then trace it with a pencil or crayon.',
+      bodyHtml: `<div class="hi-grid">${letters.map(l => `
+        <div class="hi-box"><div class="hi-big">${l}</div><div class="hi-trace-row">${(l + ' ').repeat(3)}</div></div>
+      `).join('')}</div>`,
+      extraStyle: HI_STYLE,
     }
   }
-  // prewriting-lines
-  const lineRow = (label: string, path: string) => `
-    <div class="pw-row">
-      <div class="pw-label">${esc(label)}</div>
-      <svg viewBox="0 0 600 60" class="pw-svg" preserveAspectRatio="none">
-        <circle cx="10" cy="30" r="6" fill="#10B981"/>
-        <path d="${path}" fill="none" stroke="#9CA9C7" stroke-width="2.5" stroke-dasharray="8,7" stroke-linecap="round"/>
-      </svg>
-    </div>`
   return {
-    instructions: 'Start at the green dot. Trace each line slowly with a pencil or crayon, left to right.',
-    bodyHtml: `<div class="pw-grid">
-      ${lineRow('Straight Line', 'M10,30 L590,30')}
-      ${lineRow('Zigzag Line', 'M10,30 L90,10 L170,50 L250,10 L330,50 L410,10 L490,50 L590,10')}
-      ${lineRow('Wavy Line', 'M10,30 C 60,0 110,60 160,30 C 210,0 260,60 310,30 C 360,0 410,60 460,30 C 510,0 560,60 590,30')}
-      ${lineRow('Curvy Line', 'M10,30 C 10,10 50,10 50,30 C 50,50 90,50 90,30 C 90,10 130,10 130,30 C 130,50 170,50 170,30 C 170,10 210,10 210,30 C 210,50 250,50 250,30 C 250,10 290,10 290,30 C 290,50 330,50 330,30 C 330,10 370,10 370,30 C 370,50 410,50 410,30 C 410,10 450,10 450,30 C 450,50 490,50 490,30 C 490,10 530,10 530,30 C 530,50 570,50 570,30')}
-    </div>`,
-    extraStyle: `
-      .pw-grid{display:flex;flex-direction:column;gap:22px}
-      .pw-row{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff}
-      .pw-label{font-weight:800;color:#0F2050;font-size:0.9rem;margin-bottom:6px}
-      .pw-svg{width:100%;height:60px}
-    `
+    title: 'Common Words Practice',
+    instructions: 'Say each word out loud, then trace it with a pencil or crayon.',
+    bodyHtml: `<div class="hi-grid">${HINDI_BONUS_WORDS.map(w => `
+      <div class="hi-box"><div class="hi-big" style="font-size:2.2rem">${w}</div><div class="hi-trace-row">${(w + ' ').repeat(3)}</div></div>
+    `).join('')}</div>`,
+    extraStyle: HI_STYLE,
   }
 }
 
-function printWorksheetPage(a: DailyAssignment): string {
-  const { instructions, bodyHtml, extraStyle } = buildAssignmentBody(a.slug)
+const ABC_STYLE = `
+  .abc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .abc-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 8px;text-align:center;background:#fff}
+  .abc-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.6rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050;letter-spacing:4px}
+  .word-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050}
+  .abc-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:3px;margin:6px 0;word-spacing:8px}
+  .abc-word{font-size:0.82rem;color:#2A3B60;margin-top:4px}
+  @media(max-width:700px){.abc-grid{grid-template-columns:repeat(2,1fr)}}
+`
+const NUM_STYLE = `
+  .num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .num-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 6px;text-align:center;background:#fff}
+  .num-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.8rem;line-height:1;color:transparent;-webkit-text-stroke:2px #1AA6CA}
+  .num-dots{color:#E8B020;font-size:0.9rem;letter-spacing:2px;margin:6px 0;min-height:1.2em;word-break:break-all}
+  .num-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:4px}
+  @media(max-width:700px){.num-grid{grid-template-columns:repeat(3,1fr)}}
+`
+const CM_STYLE = `
+  .cm-grid{display:flex;flex-direction:column;gap:10px}
+  .cm-row{display:flex;align-items:center;justify-content:space-between;border:2px dashed #DCE1EF;border-radius:14px;padding:12px 16px;background:#fff;gap:10px;flex-wrap:wrap}
+  .cm-objects{font-size:1.5rem;letter-spacing:4px;flex:1;min-width:180px}
+  .cm-options{display:flex;gap:10px}
+  .cm-opt{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:2px solid #0F2050;border-radius:50%;font-weight:800;font-size:1.1rem;color:#0F2050}
+`
+const PAT_STYLE = `
+  .pat-grid{display:flex;flex-direction:column;gap:14px}
+  .pat-row{display:flex;align-items:center;gap:10px;border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff}
+  .pat-item{font-size:1.8rem}
+  .pat-blank{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid #E8B020;border-radius:10px;font-weight:800;color:#E8B020;font-size:1.3rem}
+`
+const SHAPES_STYLE = `
+  .shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .shape-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
+  .shape-outline{display:flex;align-items:center;justify-content:center;height:90px;margin-bottom:8px}
+  .shape-name{font-weight:800;color:#0F2050;font-size:1rem}
+  .shape-example{font-size:1.6rem;margin-top:4px}
+  @media(max-width:700px){.shapes-grid{grid-template-columns:repeat(2,1fr)}}
+`
+const MR_STYLE = `
+  .mr-grid{display:flex;flex-direction:column;gap:12px}
+  .mr-row{display:flex;align-items:center;gap:14px;border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff;font-size:1.6rem;flex-wrap:wrap}
+  .mr-icons{letter-spacing:2px}
+  .mr-op{font-weight:900;color:#E8B020}
+  .mr-eq{font-weight:900;color:#0F2050}
+  .mr-blank{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid #0F2050;border-radius:10px;font-weight:800;color:#0F2050}
+`
+const WG_STYLE = `
+  .wg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .wg-box{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 8px;text-align:center;background:#fff}
+  .wg-emoji{font-size:2.4rem}
+  .wg-label{font-weight:800;margin-top:6px;font-size:0.85rem;color:#2A3B60}
+  .wg-check{width:22px;height:22px;border:2px solid #0F2050;border-radius:6px;margin:10px auto 0}
+  @media(max-width:700px){.wg-grid{grid-template-columns:repeat(2,1fr)}}
+`
+const RHYME_STYLE = `
+  .rhyme-box{border:2px dashed #DCE1EF;border-radius:14px;padding:22px 26px;background:#FEF8F0}
+  .rhyme-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem;margin-bottom:12px;text-align:center}
+  .rhyme-lines{font-size:1.05rem;line-height:2;color:#2A3B60;text-align:center;font-style:italic}
+  .art-preview{text-align:center;font-size:5rem;margin-bottom:10px}
+  .art-name{text-align:center;font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem;margin-bottom:14px}
+  .draw-box{margin-top:20px;border:2px dashed #9CA9C7;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:#9CA9C7;font-size:0.9rem;text-align:center;padding:0 20px}
+`
+const HI_STYLE = `
+  .hi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .hi-box{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 8px;text-align:center;background:#fff}
+  .hi-big{font-size:3.6rem;line-height:1;color:transparent;-webkit-text-stroke:2.5px #7C3AED}
+  .hi-trace-row{font-size:2rem;color:transparent;-webkit-text-stroke:1.4px #9CA9C7;letter-spacing:10px;margin-top:10px}
+  @media(max-width:700px){.hi-grid{grid-template-columns:repeat(2,1fr)}}
+`
+
+// ── School letterhead banner (logo + name in bordered box) ─────
+function schoolBannerHtml(opts: { tag?: string; classInfo?: AssignClass; subjectInfo?: AssignSubject; bottomHref?: string }): string {
+  const { tag, classInfo, subjectInfo } = opts
+  return `
+  <style>${SK_BANNER_STYLE}</style>
+  <div class="sk-banner">
+    <div class="sk-banner-inner">
+      <img src="/static/logo.png" alt="SuperKids India Preschool" class="sk-banner-logo">
+      <div class="sk-banner-title">
+        <div class="sk-banner-line1">SuperKids India</div>
+        <div class="sk-banner-line2">Preschool</div>
+      </div>
+      ${tag ? `<div class="sk-banner-tag">${esc(tag)}</div>` : ''}
+    </div>
+    ${classInfo ? `
+    <div class="sk-banner-pills">
+      ${ASSIGNMENT_CLASSES.map(cl => `
+        <a href="/assignments/${cl.id}" class="sk-pill ${cl.id === classInfo.id ? 'sk-pill-active' : ''}" style="background:${cl.id === classInfo.id ? cl.color : cl.color + '18'};color:${cl.id === classInfo.id ? '#fff' : cl.color}">${esc(cl.name)}</a>
+      `).join('')}
+    </div>` : `
+    <div class="sk-banner-pills">
+      ${ASSIGNMENT_CLASSES.map(cl => `
+        <a href="/assignments/${cl.id}" class="sk-pill" style="background:${cl.color}18;color:${cl.color}">${esc(cl.name)}</a>
+      `).join('')}
+    </div>`}
+    <div class="sk-banner-bar">
+      <span>${subjectInfo ? `${subjectInfo.emoji} ${esc(subjectInfo.name)}` : 'Free Printable Worksheets'}</span>
+      <span>superkidsindia.com</span>
+    </div>
+  </div>`
+}
+
+const SK_BANNER_STYLE = `
+  .sk-banner{border:4px solid #0F2050;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 6px 24px rgba(15,32,80,0.14)}
+  .sk-banner-inner{display:flex;align-items:center;gap:18px;padding:20px 28px;flex-wrap:wrap}
+  .sk-banner-logo{height:72px;width:72px;object-fit:contain;flex-shrink:0}
+  .sk-banner-title{flex:1;min-width:200px}
+  .sk-banner-line1{font-family:'Playfair Display',serif;font-weight:900;font-size:2rem;color:#0F2050;text-transform:uppercase;letter-spacing:1px;line-height:1.1}
+  .sk-banner-line2{font-family:'Playfair Display',serif;font-weight:900;font-size:1.4rem;color:#0F2050;text-transform:uppercase;letter-spacing:3px;line-height:1.1}
+  .sk-banner-tag{font-family:'Playfair Display',serif;font-weight:800;color:#1AA6CA;font-size:1.1rem;text-align:right}
+  .sk-banner-pills{display:flex;flex-wrap:wrap;gap:8px;padding:0 28px 18px}
+  .sk-pill{padding:7px 18px;border-radius:50px;font-weight:800;font-size:0.8rem;text-decoration:none;text-transform:uppercase;letter-spacing:0.5px;transition:transform 0.2s}
+  .sk-pill:hover{transform:scale(1.05)}
+  .sk-banner-bar{background:#0F2050;color:#fff;padding:10px 28px;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;font-weight:700;flex-wrap:wrap;gap:6px}
+  @media(max-width:600px){.sk-banner-inner{padding:16px 18px}.sk-banner-pills{padding:0 18px 14px}.sk-banner-bar{padding:10px 18px}}
+`
+
+// ── Print worksheet letterhead (compact) ────────────────────────
+function worksheetLetterheadHtml(classInfo: AssignClass, subjectInfo: AssignSubject, title: string): string {
+  return `
+  <div class="sk-banner sk-banner-compact">
+    <div class="sk-banner-inner">
+      <img src="/static/logo.png" alt="SuperKids India Preschool" class="sk-banner-logo" style="height:56px;width:56px">
+      <div class="sk-banner-title">
+        <div class="sk-banner-line1" style="font-size:1.4rem">SuperKids India</div>
+        <div class="sk-banner-line2" style="font-size:1rem">Preschool</div>
+      </div>
+      <div style="text-align:right">
+        <div class="worksheet-title">${subjectInfo.emoji} ${esc(title)}</div>
+        <div class="worksheet-tag">${esc(classInfo.name)} • ${esc(subjectInfo.name)}</div>
+      </div>
+    </div>
+    <div class="sk-banner-bar">
+      <span>Name: ________________</span>
+      <span>Date: ________________</span>
+    </div>
+  </div>`
+}
+
+function printWorksheetPage(classInfo: AssignClass, subjectInfo: AssignSubject, num: number): string {
+  const { title, instructions, bodyHtml, extraStyle } = getAssignmentContent(classInfo, subjectInfo.id, num)
+  const needsDevanagari = subjectInfo.id === 'hindi'
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(a.title)} – Daily Assignment – SuperKids India Preschool</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<title>${esc(title)} – ${esc(classInfo.name)} ${esc(subjectInfo.name)} – SuperKids India Preschool</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@400;600;700;800;900${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
+body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px${needsDevanagari ? `;` : ''}}
+${needsDevanagari ? `.hi-big,.hi-trace-row{font-family:'Noto Sans Devanagari','Nunito',sans-serif}` : ''}
 .toolbar{max-width:850px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .toolbar a, .toolbar button{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;letter-spacing:0.5px;text-decoration:none;border-radius:50px;padding:10px 22px;cursor:pointer;border:none}
 .back-link{color:#0F2050;background:#fff;border:2px solid #0F2050 !important}
 .print-btn{color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);box-shadow:0 4px 16px rgba(15,32,80,0.25)}
-.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:32px 36px 28px}
-.sheet-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0F2050;padding-bottom:14px;margin-bottom:6px;gap:12px;flex-wrap:wrap}
-.brand{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.15rem}
-.brand-sub{font-size:0.72rem;color:#C4893A;font-weight:800;letter-spacing:1px;text-transform:uppercase}
-.worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.7rem;text-align:right}
-.worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:right}
-.name-date{display:flex;gap:24px;margin:14px 0 8px;font-size:0.85rem;color:#2A3B60;flex-wrap:wrap}
-.name-date span{border-bottom:1.5px solid #9CA9C7;padding-bottom:2px;min-width:180px;display:inline-block}
-.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:12px 0 20px}
+.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:0 0 28px;overflow:hidden}
+.sheet-body{padding:22px 36px 0}
+${SK_BANNER_STYLE}
+.sk-banner-compact{border-radius:0;border-left:none;border-right:none;border-top:none}
+.worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.5rem}
+.worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
 .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
 ${extraStyle}
 @media print{
   @page{size:A4;margin:12mm}
   body{background:#fff;padding:0}
   .toolbar{display:none}
-  .sheet{box-shadow:none;border-radius:0;max-width:100%;padding:0}
+  .sheet{box-shadow:none;border-radius:0;max-width:100%}
+  .sk-banner{border-radius:0}
 }
 </style>
 </head>
 <body>
   <div class="toolbar">
-    <a href="/daily-assignments" class="back-link">&larr; Back to Daily Assignments</a>
+    <a href="/assignments/${classInfo.id}/${subjectInfo.id}" class="back-link">&larr; Back to ${esc(subjectInfo.name)}</a>
     <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
   </div>
   <div class="sheet">
-    <div class="sheet-header">
-      <div>
-        <div class="brand">SuperKids India Preschool</div>
-        <div class="brand-sub">Daily Assignment • Kindergarten</div>
-      </div>
-      <div>
-        <div class="worksheet-title">${a.emoji} ${esc(a.title)}</div>
-        <div class="worksheet-tag">${esc(a.category)}</div>
-      </div>
+    ${worksheetLetterheadHtml(classInfo, subjectInfo, title)}
+    <div class="sheet-body">
+      <div class="instructions">📌 ${esc(instructions)}</div>
+      ${bodyHtml}
+      <div class="sheet-footer">SuperKids India Preschool &middot; Free printable worksheet for home practice &middot; superkidsindia.com</div>
     </div>
-    <div class="name-date">
-      <span>Name: ________________</span>
-      <span>Date: ________________</span>
-    </div>
-    <div class="instructions">📌 ${esc(instructions)}</div>
-    ${bodyHtml}
-    <div class="sheet-footer">SuperKids India Preschool &middot; Free printable worksheet for home practice &middot; superkidsindia.com</div>
   </div>
 </body>
 </html>`
 }
 
-app.get('/daily-assignments', (c) => {
-  const categories = Array.from(new Set(DAILY_ASSIGNMENTS.map(a => a.category)))
+app.get('/assignments', (c) => {
   const content = `
-  ${Navbar('daily-assignments')}
-
-  <section style="padding:6rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0);position:relative;overflow:hidden">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Free Printable Worksheets</div>
-      <div class="section-accent" style="margin:0 auto 1rem"></div>
-      <h1 class="section-title" style="color:#1AA6CA;font-size:clamp(2.3rem,5.5vw,4rem)">Daily Assignment</h1>
-      <p style="color:#6B7A9D;font-size:1.1rem;line-height:1.8;margin-top:1.5rem;max-width:640px;margin-left:auto;margin-right:auto">
-        Fun, print-at-home Kindergarten worksheets covering the alphabet, numbers, shapes, colors, and pre-writing skills. No login needed — just pick a worksheet and print!
+  ${Navbar('assignments')}
+  <section style="padding:3rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+    <div class="max-w-5xl mx-auto px-4">
+      ${schoolBannerHtml({ tag: 'Free Printable Worksheets' })}
+      <p style="color:#6B7A9D;font-size:1.05rem;line-height:1.8;margin-top:2rem;text-align:center;max-width:640px;margin-left:auto;margin-right:auto">
+        Choose your child's class below to see 100+ print-at-home worksheets across English, Math, EVS, Rhymes &amp; Stories, Art &amp; Craft, and Hindi / Marathi. No login needed!
       </p>
     </div>
   </section>
-
-  <section style="padding:2rem 0;background:#ffffff;border-bottom:1.5px solid #DCE1EF">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex flex-wrap justify-center gap-3">
-        ${['All', ...categories].map((cat, i) => `
-          <button class="age-tab da-tab ${i === 0 ? 'active' : ''}" data-target="${cat === 'All' ? 'all' : esc(cat)}"
-            style="padding:10px 20px;border-radius:50px;border:2px solid #DCE1EF;background:${i===0?'#0F2050':'transparent'};color:${i===0?'#ffffff':'#2A3B60'};font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.3s">
-            ${cat}
-          </button>
+  <section style="padding:2rem 0 5rem;background:#F8F9FB">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        ${ASSIGNMENT_CLASSES.map(cl => `
+          <a href="/assignments/${cl.id}" class="card fade-in" style="border-color:${cl.color}33;text-decoration:none;display:block">
+            <div class="badge mb-3" style="background:${cl.color}14;color:${cl.color};border:1px solid ${cl.color}33">${esc(cl.age)}</div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:${cl.color};font-weight:800;margin-bottom:0.5rem">${esc(cl.name)}</h3>
+            <p style="color:#2A3B60;font-size:0.9rem;line-height:1.6">${ASSIGNMENT_SUBJECTS.length} subjects &middot; ${ASSIGNMENT_SUBJECTS.length * SETS_PER_SUBJECT}+ worksheets</p>
+          </a>
         `).join('')}
       </div>
     </div>
   </section>
+  ${Footer()}
+  `
+  return c.html(Layout({ children: content, title: 'Assignment – Free Printable Worksheets by Class – SuperKids India Preschool', description: 'Free printable worksheets for Play Group, Nursery, Jr. KG, and Sr. KG covering English, Math, EVS, Rhymes & Stories, Art & Craft, and Hindi / Marathi. Print at home for daily learning.', canonical: 'https://superkidsindia.com/assignments' }))
+})
 
-  <section style="padding:5rem 0;background:#F8F9FB">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="da-grid">
-        ${DAILY_ASSIGNMENTS.map(a => `
-          <div class="card fade-in da-card" data-cat="${esc(a.category)}" style="border-color:${a.color}33">
-            <div style="font-size:2.8rem;margin-bottom:1rem">${a.emoji}</div>
-            <div class="badge mb-2" style="background:${a.color}14;color:${a.color};border:1px solid ${a.color}33;font-size:0.68rem">${esc(a.category)}</div>
-            <h3 style="font-family:'Playfair Display',serif;font-size:1.35rem;color:${a.color};font-weight:700;margin-bottom:0.5rem">${esc(a.title)}</h3>
-            <p style="color:#2A3B60;font-size:0.9rem;line-height:1.7;margin-bottom:1.5rem">${esc(a.desc)}</p>
-            <a href="/daily-assignments/${a.slug}" class="btn-primary" style="display:block;text-align:center;font-size:0.85rem;padding:12px">
+app.get('/assignments/:classId', (c) => {
+  const cl = findAssignClass(c.req.param('classId'))
+  if (!cl) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Class not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
+  const content = `
+  ${Navbar('assignments')}
+  <section style="padding:3rem 0 2.5rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+    <div class="max-w-5xl mx-auto px-4">
+      ${schoolBannerHtml({ tag: cl.name, classInfo: cl })}
+      <p style="color:#6B7A9D;font-size:0.95rem;margin-top:1.5rem;text-align:center">
+        <a href="/assignments" style="color:#1AA6CA;font-weight:700;text-decoration:none">Assignments</a> &rsaquo; <b style="color:${cl.color}">${esc(cl.name)}</b>
+      </p>
+    </div>
+  </section>
+  <section style="padding:1rem 0 5rem;background:#F8F9FB">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        ${ASSIGNMENT_SUBJECTS.map(s => `
+          <a href="/assignments/${cl.id}/${s.id}" class="card fade-in" style="border-color:${s.color}33;text-decoration:none;display:block">
+            <div style="font-size:2.6rem;margin-bottom:0.75rem">${s.emoji}</div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:${s.color};font-weight:800;margin-bottom:0.4rem">${esc(s.name)}</h3>
+            <p style="color:#2A3B60;font-size:0.9rem">${SETS_PER_SUBJECT} worksheets</p>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+  ${Footer()}
+  `
+  return c.html(Layout({ children: content, title: `${cl.name} Assignments – SuperKids India Preschool`, description: `Free printable ${cl.name} worksheets across English, Math, EVS, Rhymes & Stories, Art & Craft, and Hindi / Marathi.`, canonical: `https://superkidsindia.com/assignments/${cl.id}` }))
+})
+
+app.get('/assignments/:classId/:subjectId', (c) => {
+  const cl = findAssignClass(c.req.param('classId'))
+  const subj = findAssignSubject(c.req.param('subjectId'))
+  if (!cl || !subj) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
+  const items = Array.from({ length: SETS_PER_SUBJECT }, (_, i) => {
+    const num = i + 1
+    const { title, instructions } = getAssignmentContent(cl, subj.id, num)
+    return { num, title, instructions }
+  })
+  const content = `
+  ${Navbar('assignments')}
+  <section style="padding:3rem 0 2.5rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+    <div class="max-w-5xl mx-auto px-4">
+      ${schoolBannerHtml({ tag: `${cl.name} • ${subj.name}`, classInfo: cl, subjectInfo: subj })}
+      <p style="color:#6B7A9D;font-size:0.95rem;margin-top:1.5rem;text-align:center">
+        <a href="/assignments" style="color:#1AA6CA;font-weight:700;text-decoration:none">Assignments</a> &rsaquo;
+        <a href="/assignments/${cl.id}" style="color:${cl.color};font-weight:700;text-decoration:none">${esc(cl.name)}</a> &rsaquo;
+        <b style="color:${subj.color}">${esc(subj.name)}</b>
+      </p>
+    </div>
+  </section>
+  <section style="padding:1rem 0 5rem;background:#F8F9FB">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ${items.map(it => `
+          <div class="card fade-in" style="border-color:${subj.color}33">
+            <div class="badge mb-2" style="background:${subj.color}14;color:${subj.color};border:1px solid ${subj.color}33;font-size:0.68rem">Worksheet ${it.num}</div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:${subj.color};font-weight:700;margin-bottom:0.5rem">${esc(it.title)}</h3>
+            <p style="color:#2A3B60;font-size:0.85rem;line-height:1.6;margin-bottom:1.2rem">${esc(it.instructions)}</p>
+            <a href="/assignments/${cl.id}/${subj.id}/${it.num}" class="btn-primary" style="display:block;text-align:center;font-size:0.8rem;padding:11px">
               <i class="fas fa-print mr-2"></i>View &amp; Print
             </a>
           </div>
@@ -2401,49 +2745,19 @@ app.get('/daily-assignments', (c) => {
       </div>
     </div>
   </section>
-
-  <section style="padding:3rem 0 5rem;background:#ffffff">
-    <div class="max-w-3xl mx-auto px-4 text-center fade-in">
-      <div class="card" style="border-color:#0F205033;padding:2.5rem">
-        <div style="font-size:2.2rem;margin-bottom:0.75rem">🖨️</div>
-        <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:#0F2050;font-weight:800;margin-bottom:0.75rem">How to Use These Worksheets</h2>
-        <p style="color:#6B7A9D;font-size:0.95rem;line-height:1.8">
-          Click <b>View &amp; Print</b> on any worksheet, then use your browser's <b>Print</b> button (or "Save as PDF") to print it at home.
-          Each sheet has space for your child's name and the date — a great way to build a daily learning routine!
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <script>
-    document.querySelectorAll('.da-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.da-tab').forEach(t => {
-          t.classList.remove('active');
-          t.style.background = 'transparent';
-          t.style.color = '#2A3B60';
-        });
-        tab.classList.add('active');
-        tab.style.background = '#0F2050';
-        tab.style.color = '#ffffff';
-        const target = tab.dataset.target;
-        document.querySelectorAll('.da-card').forEach(card => {
-          card.style.display = (target === 'all' || card.dataset.cat === target) ? '' : 'none';
-        });
-      });
-    });
-  </script>
-
   ${Footer()}
   `
-  return c.html(Layout({ children: content, title: 'Daily Assignment – Free Printable Kindergarten Worksheets – SuperKids India Preschool', description: 'Free printable Kindergarten worksheets: alphabet tracing, number tracing, counting, shapes, colors, and pre-writing practice. Print at home for daily learning.', canonical: 'https://superkidsindia.com/daily-assignments' }))
+  return c.html(Layout({ children: content, title: `${cl.name} ${subj.name} Worksheets – SuperKids India Preschool`, description: `${SETS_PER_SUBJECT} free printable ${subj.name} worksheets for ${cl.name}.`, canonical: `https://superkidsindia.com/assignments/${cl.id}/${subj.id}` }))
 })
 
-app.get('/daily-assignments/:slug', (c) => {
-  const slug = c.req.param('slug')
-  const a = DAILY_ASSIGNMENTS.find(x => x.slug === slug)
-  if (!a) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Worksheet not found</h2><a href="/daily-assignments">&larr; Back to Daily Assignments</a></div>', 404)
-  return c.html(printWorksheetPage(a))
+app.get('/assignments/:classId/:subjectId/:num', (c) => {
+  const cl = findAssignClass(c.req.param('classId'))
+  const subj = findAssignSubject(c.req.param('subjectId'))
+  const num = parseInt(c.req.param('num'), 10)
+  if (!cl || !subj || !Number.isInteger(num) || num < 1 || num > SETS_PER_SUBJECT) {
+    return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Worksheet not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
+  }
+  return c.html(printWorksheetPage(cl, subj, num))
 })
 
 // ================================================================

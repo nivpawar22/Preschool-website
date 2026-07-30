@@ -2312,18 +2312,27 @@ const HINDI_WORDS_ADVANCED: string[] = ['पानी', 'केला', 'सू�
 // ── Reusable box / row builders ──────────────────────────────────
 function dottedRow(unit: string, fontSizePx: number, color: string): string {
   const W = 760
-  const H = Math.round(fontSizePx * 1.35)
+  const H = Math.round(fontSizePx * 1.55)
   const charW = fontSizePx * 0.62
-  const gapPx = fontSizePx * 0.9
-  const itemW = unit.length * charW + gapPx
+  const itemW = unit.length * charW * 1.3
   const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
-  const full = Array(repeats).fill(unit).join('   ')
-  const naturalWidth = full.length * charW
-  const textLen = Math.min(W - 10, Math.max(naturalWidth, W * 0.4))
+  const slotW = W / repeats
+  const topY = Math.round(fontSizePx * 0.2)
+  const midY = Math.round(fontSizePx * 0.82)
+  const baseY = Math.round(fontSizePx * 1.22)
   const strokeW = Math.max(1.3, fontSizePx * 0.045)
   const dashLen = Math.max(1.4, fontSizePx * 0.05)
   const gapLen = Math.max(2.2, fontSizePx * 0.08)
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" class="dotted-row" style="height:${H}px"><text x="0" y="${Math.round(H * 0.78)}" textLength="${textLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="900" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(full)}</text></svg>`
+  const itemTextLen = Math.min(slotW - 12, unit.length * charW)
+  const glyphs = Array.from({ length: repeats }, (_, i) => {
+    const x = Math.round(i * slotW + (slotW - itemTextLen) / 2)
+    const opacity = repeats > 1 ? (1 - i * (0.72 / (repeats - 1))).toFixed(2) : '1'
+    return `<text x="${x}" y="${baseY}" textLength="${itemTextLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="900" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-opacity="${opacity}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(unit)}</text>`
+  }).join('')
+  const rule = `<line x1="0" y1="${topY}" x2="${W}" y2="${topY}" stroke="#C7CEDB" stroke-width="1.5"/>` +
+    `<line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="#B7C0D1" stroke-width="1.5" stroke-dasharray="6,5"/>` +
+    `<line x1="0" y1="${baseY}" x2="${W}" y2="${baseY}" stroke="#C7CEDB" stroke-width="1.5"/>`
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" class="dotted-row" style="height:${H}px">${rule}${glyphs}</svg>`
 }
 
 function practiceSheet(bigModel: string, traceUnit: string, rows: number, wordLine: string): string {
@@ -2720,8 +2729,8 @@ const PRACTICE_STYLE = `
   .ps-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:4.6rem;line-height:1.1;color:#0F2050;text-align:center;margin-bottom:10px;word-break:break-word}
   .ps-wordline{text-align:center;font-size:1rem;color:#2A3B60;margin-bottom:18px}
   .ps-dots{color:#E8B020;font-size:1.1rem;letter-spacing:4px}
-  .ps-rows{display:flex;flex-direction:column;gap:14px}
-  .ps-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:6px 0}
+  .ps-rows{display:flex;flex-direction:column;gap:10px}
+  .ps-row{padding:2px 0}
   .dotted-row{display:block;width:100%}
 `
 const CM_STYLE = `

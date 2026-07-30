@@ -102,6 +102,26 @@ app.delete('/api/upload', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Public image upload — no login required. Used by the public Custom Assignment
+// tool, so it's restricted to plain image types and a modest size cap.
+app.post('/api/upload-public', async (c) => {
+  try {
+    const form = await c.req.formData()
+    const file = form.get('file') as File | null
+    if (!file) return c.json({ error: 'No file provided' }, 400)
+    if (file.size > 6 * 1024 * 1024) return c.json({ error: 'File too large (max 6MB)' }, 400)
+    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase()
+    const EXT_MIME: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' }
+    const mimeType = file.type || EXT_MIME[ext] || ''
+    const PUBLIC_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+    if (!PUBLIC_IMAGE_MIME.has(mimeType)) return c.json({ error: 'Only JPG, PNG, GIF, or WEBP images are allowed' }, 400)
+    const folder = (c.req.query('folder') || 'custom-assignments').replace(/[^a-z0-9_-]/gi, '')
+    const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: mimeType } })
+    return c.json({ ok: true, key })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 // Download endpoint — streams R2 object as attachment (same-origin, bypasses cross-origin download restriction)
 app.get('/api/download', async (c) => {
   const key = c.req.query('key')
@@ -295,7 +315,7 @@ const Layout = ({ children, title = 'SuperKids India Preschool', description = '
   ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -2102,6 +2122,15 @@ const ASSIGNMENT_SUBJECTS: AssignSubject[] = [
 function findAssignClass(id: string): AssignClass | undefined { return ASSIGNMENT_CLASSES.find(x => x.id === id) }
 function findAssignSubject(id: string): AssignSubject | undefined { return ASSIGNMENT_SUBJECTS.find(x => x.id === id) }
 
+// ── Custom Assignments (user-uploaded, class/subject-tagged) ────
+async function ensureCustomAssignmentTable(db: any) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS custom_assignments (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, subject_id TEXT NOT NULL, title TEXT NOT NULL, image_key TEXT NOT NULL, zoom REAL DEFAULT 1, pan_x REAL DEFAULT 0, pan_y REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+}
+type CustomAssignmentRow = { id: string; class_id: string; subject_id: string; title: string; image_key: string; zoom: number; pan_x: number; pan_y: number; created_at: string }
+function caTransform(row: CustomAssignmentRow): string {
+  return `translate(${row.pan_x}%,${row.pan_y}%) scale(${row.zoom})`
+}
+
 // ── Category helpers (dynamic per-subject, per-class sheet counts) ─
 function categoryTotal(categories: Category[]): number { return categories.reduce((s, c) => s + c.count, 0) }
 function resolveCategory(num: number, categories: Category[]): { key: string; idx: number } {
@@ -2312,25 +2341,28 @@ const HINDI_WORDS_ADVANCED: string[] = ['पानी', 'केला', 'सू�
 // ── Reusable box / row builders ──────────────────────────────────
 function dottedRow(unit: string, fontSizePx: number, color: string): string {
   const W = 760
-  const H = Math.round(fontSizePx * 1.55)
   const charW = fontSizePx * 0.62
   const itemW = unit.length * charW * 1.3
   const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
   const slotW = W / repeats
-  const topY = Math.round(fontSizePx * 0.2)
-  const midY = Math.round(fontSizePx * 0.82)
-  const baseY = Math.round(fontSizePx * 1.22)
-  const strokeW = Math.max(1.3, fontSizePx * 0.045)
-  const dashLen = Math.max(1.4, fontSizePx * 0.05)
-  const gapLen = Math.max(2.2, fontSizePx * 0.08)
+  const capHeight = fontSizePx * 0.72
+  const xHeight = fontSizePx * 0.52
+  const descent = fontSizePx * 0.22
+  const topY = Math.round(fontSizePx * 0.06)
+  const baseY = Math.round(topY + capHeight)
+  const midY = Math.round(topY + (capHeight - xHeight))
+  const H = Math.round(baseY + descent + fontSizePx * 0.12)
+  const strokeW = Math.max(1.3, fontSizePx * 0.058)
+  const dashLen = Math.max(1, fontSizePx * 0.032)
+  const gapLen = Math.max(2.4, fontSizePx * 0.085)
   const itemTextLen = Math.min(slotW - 12, unit.length * charW)
   const glyphs = Array.from({ length: repeats }, (_, i) => {
     const x = Math.round(i * slotW + (slotW - itemTextLen) / 2)
     const opacity = repeats > 1 ? (1 - i * (0.72 / (repeats - 1))).toFixed(2) : '1'
-    return `<text x="${x}" y="${baseY}" textLength="${itemTextLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="900" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-opacity="${opacity}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(unit)}</text>`
+    return `<text x="${x}" y="${baseY}" textLength="${itemTextLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="200" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-opacity="${opacity}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(unit)}</text>`
   }).join('')
   const rule = `<line x1="0" y1="${topY}" x2="${W}" y2="${topY}" stroke="#C7CEDB" stroke-width="1.5"/>` +
-    `<line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="#B7C0D1" stroke-width="1.5" stroke-dasharray="6,5"/>` +
+    `<line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="#B7C0D1" stroke-width="1.5" stroke-dasharray="4,4"/>` +
     `<line x1="0" y1="${baseY}" x2="${W}" y2="${baseY}" stroke="#C7CEDB" stroke-width="1.5"/>`
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" class="dotted-row" style="height:${H}px">${rule}${glyphs}</svg>`
 }
@@ -2821,6 +2853,7 @@ function schoolBannerHtml(opts: { tag?: string; classInfo?: AssignClass; subject
       ${ASSIGNMENT_CLASSES.map(cl => `
         <a href="/assignments/${cl.id}" class="sk-pill ${classInfo && cl.id === classInfo.id ? 'sk-pill-active' : ''}" style="background:${classInfo && cl.id === classInfo.id ? cl.color : cl.color + '18'};color:${classInfo && cl.id === classInfo.id ? '#fff' : cl.color}">${esc(cl.name)}</a>
       `).join('')}
+      <a href="/assignments/custom-assignment" class="sk-pill" style="background:#7C3AED18;color:#7C3AED;border:1.5px dashed #7C3AED">+ Custom Assignment</a>
     </div>
     <div class="sk-banner-bar">
       <span>${subjectInfo ? `${subjectInfo.emoji} ${esc(subjectInfo.name)}` : 'Free Printable Worksheets'}</span>
@@ -2842,10 +2875,15 @@ const SK_BANNER_STYLE = `
   .sk-pill:hover{transform:scale(1.05)}
   .sk-banner-bar{background:#0F2050;color:#fff;padding:10px 28px;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;font-weight:700;flex-wrap:wrap;gap:6px}
   @media(max-width:600px){.sk-banner-inner{padding:16px 18px}.sk-banner-pills{padding:0 18px 14px}.sk-banner-bar{padding:10px 18px}}
+  .sk-namedate-bar{background:#fff;color:#0F2050;padding:14px 28px;display:flex;gap:32px;align-items:center;font-size:0.95rem;font-weight:800;border-top:2px solid #0F2050;flex-wrap:wrap}
+  .sk-namedate-bar .nd-field{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}
+  .sk-namedate-bar .nd-field-date{flex:0.6;min-width:160px}
+  .sk-namedate-bar .nd-line{flex:1;border-bottom:1.5px solid #0F2050;height:1px;min-width:60px}
+  @media(max-width:600px){.sk-namedate-bar{padding:12px 18px}}
 `
 
 // ── Print worksheet letterhead (compact) ────────────────────────
-function worksheetLetterheadHtml(classInfo: AssignClass, subjectInfo: AssignSubject, title: string): string {
+function worksheetLetterheadHtml(classInfo: AssignClass, subjectInfo: AssignSubject, title: string, extraThumbHtml?: string): string {
   return `
   <div class="sk-banner sk-banner-compact">
     <div class="sk-banner-inner">
@@ -2854,14 +2892,15 @@ function worksheetLetterheadHtml(classInfo: AssignClass, subjectInfo: AssignSubj
         <div class="sk-banner-line1" style="font-size:1.4rem">SuperKids India</div>
         <div class="sk-banner-line2" style="font-size:1rem">Preschool</div>
       </div>
+      ${extraThumbHtml || ''}
       <div style="text-align:right">
         <div class="worksheet-title">${subjectInfo.emoji} ${esc(title)}</div>
         <div class="worksheet-tag">${esc(classInfo.name)} • ${esc(subjectInfo.name)}</div>
       </div>
     </div>
-    <div class="sk-banner-bar">
-      <span>Name: ________________</span>
-      <span>Date: ________________</span>
+    <div class="sk-namedate-bar">
+      <div class="nd-field"><span>Name:</span><span class="nd-line"></span></div>
+      <div class="nd-field nd-field-date"><span>Date:</span><span class="nd-line"></span></div>
     </div>
   </div>`
 }
@@ -2875,7 +2914,7 @@ function printWorksheetPage(classInfo: AssignClass, subjectInfo: AssignSubject, 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} – ${esc(classInfo.name)} ${esc(subjectInfo.name)} – SuperKids India Preschool</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@400;600;700;800;900${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@200;300;400;600;700;800;900${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
@@ -2931,7 +2970,8 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
   else if (caseParam === 'title') displayText = text.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase())
 
   const hasText = displayText.length > 0
-  const rowsHtml = hasText ? Array.from({ length: lines }, () => `<div class="ct-row">${(displayText + '   ').repeat(6)}</div>`).join('') : ''
+  const ctFontSize = displayText.length <= 3 ? 46 : displayText.length <= 8 ? 34 : 24
+  const rowsHtml = hasText ? Array.from({ length: lines }, () => `<div class="ct-row">${dottedRow(displayText, ctFontSize, '#0F2050')}</div>`).join('') : ''
 
   const content = `
   ${Navbar('assignments')}
@@ -2990,9 +3030,9 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
               <div class="worksheet-tag">Practice Worksheet</div>
             </div>
           </div>
-          <div class="sk-banner-bar">
-            <span>Name: ________________</span>
-            <span>Date: ________________</span>
+          <div class="sk-namedate-bar">
+            <div class="nd-field"><span>Name:</span><span class="nd-line"></span></div>
+            <div class="nd-field nd-field-date"><span>Date:</span><span class="nd-line"></span></div>
           </div>
         </div>
         <div class="sheet-body" style="padding:22px 36px 28px">
@@ -3013,13 +3053,17 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
     .sk-banner-line2{font-family:'Playfair Display',serif;font-weight:900;color:#0F2050;text-transform:uppercase;letter-spacing:3px;line-height:1.1}
     .worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem}
     .worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
-    .sk-banner-bar{background:#0F2050;color:#fff;padding:10px 24px;display:flex;justify-content:space-between;font-size:0.8rem;font-weight:700;flex-wrap:wrap;gap:6px}
+    .sk-namedate-bar{background:#fff;color:#0F2050;padding:14px 24px;display:flex;gap:32px;align-items:center;font-size:0.95rem;font-weight:800;border-top:2px solid #0F2050;flex-wrap:wrap}
+    .sk-namedate-bar .nd-field{display:flex;align-items:center;gap:10px;flex:1;min-width:220px}
+    .sk-namedate-bar .nd-field-date{flex:0.6;min-width:160px}
+    .sk-namedate-bar .nd-line{flex:1;border-bottom:1.5px solid #0F2050;height:1px;min-width:60px}
     .sheet{max-width:100%;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);overflow:hidden}
     .instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
     .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
-    .ct-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:3rem;line-height:1.1;color:transparent;-webkit-text-stroke:2.5px #0F2050;text-align:center;margin-bottom:20px;word-break:break-word}
-    .ct-rows{display:flex;flex-direction:column;gap:16px}
-    .ct-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:8px 0;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.6rem;color:transparent;-webkit-text-stroke:1.4px #9CA9C7;letter-spacing:2px;white-space:nowrap;overflow:hidden}
+    .ct-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:3rem;line-height:1.1;color:#0F2050;text-align:center;margin-bottom:20px;word-break:break-word}
+    .ct-rows{display:flex;flex-direction:column;gap:10px}
+    .ct-row{padding:2px 0}
+    .dotted-row{display:block;width:100%}
     @media print{
       @page{size:A4;margin:12mm}
       .no-print{display:none !important}
@@ -3036,6 +3080,230 @@ app.get('/assignments/custom-tracing', (c) => {
   const lines = c.req.query('lines') || '6'
   const caseParam = c.req.query('case') || 'asis'
   return c.html(customTracingPage(text, lines, caseParam))
+})
+
+// ================================================================
+// ── Custom Assignment (public upload tool) ──────────────────────
+// ================================================================
+app.post('/api/custom-assignments', async (c) => {
+  try {
+    await ensureCustomAssignmentTable(c.env.DB)
+    const body = await c.req.json()
+    const cl = findAssignClass(String(body.classId || ''))
+    const subj = findAssignSubject(String(body.subjectId || ''))
+    const title = String(body.title || '').trim().slice(0, 80)
+    const imageKey = String(body.imageKey || '').trim()
+    if (!cl || !subj || !title || !imageKey) return c.json({ error: 'Missing or invalid fields' }, 400)
+    const zoom = Math.min(5, Math.max(0.5, parseFloat(body.zoom) || 1))
+    const panX = Math.min(60, Math.max(-60, parseFloat(body.panX) || 0))
+    const panY = Math.min(60, Math.max(-60, parseFloat(body.panY) || 0))
+    const id = `ca_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    await c.env.DB.prepare('INSERT INTO custom_assignments (id,class_id,subject_id,title,image_key,zoom,pan_x,pan_y) VALUES (?,?,?,?,?,?,?,?)')
+      .bind(id, cl.id, subj.id, title, imageKey, zoom, panX, panY).run()
+    return c.json({ ok: true, id, classId: cl.id, subjectId: subj.id })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+function customAssignmentFormPage(): string {
+  const content = `
+  ${Navbar('assignments')}
+  <section style="padding:3rem 0 3rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+    <div class="max-w-3xl mx-auto px-4">
+      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Custom Tool</div>
+      <div class="section-accent" style="margin:0 auto 1rem"></div>
+      <h1 class="section-title" style="color:#1AA6CA;font-size:clamp(2.1rem,5vw,3.2rem);text-align:center">Custom Assignment</h1>
+      <p style="color:#6B7A9D;font-size:1rem;line-height:1.8;margin-top:1rem;text-align:center;max-width:560px;margin-left:auto;margin-right:auto">
+        Upload a picture, pick the class and subject, and save — it will appear right there in that class's worksheet list, ready to view and print.
+      </p>
+    </div>
+  </section>
+  <section style="padding:0 0 5rem;background:#F8F9FB">
+    <div class="max-w-3xl mx-auto px-4">
+      <div class="card" style="padding:2rem">
+        <div style="margin-bottom:16px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Assignment Name</label>
+          <input type="text" id="ca-title" maxlength="80" placeholder="e.g. Fruit Coloring Sheet" class="form-input">
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="margin-bottom:16px">
+          <div>
+            <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Class</label>
+            <select id="ca-class" class="form-input">
+              ${ASSIGNMENT_CLASSES.map(cl => `<option value="${cl.id}">${esc(cl.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Subject</label>
+            <select id="ca-subject" class="form-input">
+              ${ASSIGNMENT_SUBJECTS.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Upload Image</label>
+          <input type="file" id="ca-file" accept="image/*" class="form-input">
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:10px">Adjust the Image</label>
+          <div class="ca-cropbox" id="ca-cropbox">
+            <img id="ca-preview-img" style="display:none" alt="Preview">
+            <div id="ca-placeholder">No image selected yet</div>
+          </div>
+          <div class="ca-sliders">
+            <label>Zoom <input type="range" id="ca-zoom" min="0.5" max="3" step="0.05" value="1"></label>
+            <label>Horizontal <input type="range" id="ca-panx" min="-60" max="60" step="1" value="0"></label>
+            <label>Vertical <input type="range" id="ca-pany" min="-60" max="60" step="1" value="0"></label>
+          </div>
+        </div>
+        <button type="button" class="btn-primary" style="width:100%;padding:14px" onclick="saveCustomAssignment()">Save Assignment</button>
+        <div id="ca-status" style="margin-top:12px;text-align:center;font-size:0.9rem;color:#0F2050;font-weight:700"></div>
+      </div>
+    </div>
+  </section>
+  <style>
+    .ca-cropbox{width:100%;max-width:320px;aspect-ratio:4/5;margin:0 auto 16px;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
+    .ca-cropbox img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+    #ca-placeholder{color:#9CA9C7;font-size:0.85rem;text-align:center;padding:0 20px}
+    .ca-sliders{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
+    .ca-sliders label{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#2A3B60;font-weight:700}
+    .ca-sliders input[type=range]{flex:1}
+  </style>
+  <script>
+    let caFile = null;
+    const caImg = document.getElementById('ca-preview-img');
+    const caPlaceholder = document.getElementById('ca-placeholder');
+    document.getElementById('ca-file').addEventListener('change', function(e){
+      const f = e.target.files[0];
+      if (!f) return;
+      caFile = f;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        caImg.src = ev.target.result;
+        caImg.style.display = 'block';
+        caPlaceholder.style.display = 'none';
+        document.getElementById('ca-zoom').value = 1;
+        document.getElementById('ca-panx').value = 0;
+        document.getElementById('ca-pany').value = 0;
+        caApplyTransform();
+      };
+      reader.readAsDataURL(f);
+    });
+    function caApplyTransform(){
+      const z = document.getElementById('ca-zoom').value;
+      const x = document.getElementById('ca-panx').value;
+      const y = document.getElementById('ca-pany').value;
+      caImg.style.transform = 'translate(' + x + '%,' + y + '%) scale(' + z + ')';
+    }
+    ['ca-zoom','ca-panx','ca-pany'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', caApplyTransform);
+    });
+    async function saveCustomAssignment(){
+      const status = document.getElementById('ca-status');
+      const title = document.getElementById('ca-title').value.trim();
+      const classId = document.getElementById('ca-class').value;
+      const subjectId = document.getElementById('ca-subject').value;
+      if (!title) { status.textContent = 'Please enter an assignment name.'; return; }
+      if (!caFile) { status.textContent = 'Please choose an image.'; return; }
+      status.textContent = 'Uploading...';
+      try {
+        const fd = new FormData();
+        fd.append('file', caFile);
+        const upRes = await fetch('/api/upload-public?folder=custom-assignments', { method: 'POST', body: fd });
+        const upJson = await upRes.json();
+        if (!upJson.ok) { status.textContent = 'Upload failed: ' + (upJson.error || ''); return; }
+        status.textContent = 'Saving...';
+        const payload = {
+          classId: classId, subjectId: subjectId, title: title, imageKey: upJson.key,
+          zoom: document.getElementById('ca-zoom').value,
+          panX: document.getElementById('ca-panx').value,
+          panY: document.getElementById('ca-pany').value,
+        };
+        const res = await fetch('/api/custom-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const json = await res.json();
+        if (json.ok) {
+          status.textContent = 'Saved! Redirecting...';
+          window.location.href = '/assignments/' + classId + '/' + subjectId;
+        } else {
+          status.textContent = 'Save failed: ' + (json.error || '');
+        }
+      } catch (err) {
+        status.textContent = 'Something went wrong. Please try again.';
+      }
+    }
+  </script>
+  ${Footer()}
+  `
+  return Layout({ children: content, title: 'Custom Assignment – SuperKids India Preschool', description: 'Upload your own picture, tag it to a class and subject, and it will appear in that worksheet list — free and instant, no login needed.', canonical: 'https://superkidsindia.com/assignments/custom-assignment' })
+}
+
+app.get('/assignments/custom-assignment', (c) => c.html(customAssignmentFormPage()))
+
+function printCustomAssignmentPage(classInfo: AssignClass, subjectInfo: AssignSubject, row: CustomAssignmentRow): string {
+  const transform = caTransform(row)
+  const thumbHtml = `<div class="ca-thumb"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt=""></div>`
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(row.title)} – ${esc(classInfo.name)} ${esc(subjectInfo.name)} – SuperKids India Preschool</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
+.toolbar{max-width:850px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.toolbar a, .toolbar button{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;letter-spacing:0.5px;text-decoration:none;border-radius:50px;padding:10px 22px;cursor:pointer;border:none}
+.back-link{color:#0F2050;background:#fff;border:2px solid #0F2050 !important}
+.print-btn{color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);box-shadow:0 4px 16px rgba(15,32,80,0.25)}
+.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:0 0 28px;overflow:hidden}
+.sheet-body{padding:22px 36px 0}
+${SK_BANNER_STYLE}
+.sk-banner-compact{border-radius:0;border-left:none;border-right:none;border-top:none}
+.worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.5rem}
+.worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
+.sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
+.ca-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid #0F2050;flex-shrink:0;background:#F0F2F7}
+.ca-thumb img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+.ca-image-wrap{width:100%;max-width:600px;aspect-ratio:4/5;margin:0 auto;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#F8F9FB;display:flex;align-items:center;justify-content:center}
+.ca-image-wrap img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;padding:0}
+  .toolbar{display:none}
+  .sheet{box-shadow:none;border-radius:0;max-width:100%}
+  .sk-banner{border-radius:0}
+}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="/assignments/${classInfo.id}/${subjectInfo.id}" class="back-link">&larr; Back to ${esc(subjectInfo.name)}</a>
+    <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
+  </div>
+  <div class="sheet">
+    ${worksheetLetterheadHtml(classInfo, subjectInfo, row.title, thumbHtml)}
+    <div class="sheet-body">
+      <div class="instructions">📌 Follow the picture above to complete this assignment.</div>
+      <div class="ca-image-wrap"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt="${esc(row.title)}"></div>
+      <div class="sheet-footer">SuperKids India Preschool &middot; Custom assignment &middot; superkidsindia.com</div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+app.get('/assignments/custom/:id', async (c) => {
+  try {
+    await ensureCustomAssignmentTable(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM custom_assignments WHERE id=?').bind(c.req.param('id')).first<CustomAssignmentRow>()
+    if (!row) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Assignment not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
+    const cl = findAssignClass(row.class_id)
+    const subj = findAssignSubject(row.subject_id)
+    if (!cl || !subj) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Assignment not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
+    return c.html(printCustomAssignmentPage(cl, subj, row))
+  } catch (e: any) {
+    return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Error loading assignment</h2></div>', 500)
+  }
 })
 
 app.get('/assignments', (c) => {
@@ -3103,7 +3371,7 @@ app.get('/assignments/:classId', (c) => {
   return c.html(Layout({ children: content, title: `${cl.name} Assignments – SuperKids India Preschool`, description: `Free printable ${cl.name} worksheets across English, Math, EVS, Rhymes & Stories, Art & Craft, and Hindi / Marathi.`, canonical: `https://superkidsindia.com/assignments/${cl.id}` }))
 })
 
-app.get('/assignments/:classId/:subjectId', (c) => {
+app.get('/assignments/:classId/:subjectId', async (c) => {
   const cl = findAssignClass(c.req.param('classId'))
   const subj = findAssignSubject(c.req.param('subjectId'))
   if (!cl || !subj) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Not found</h2><a href="/assignments">&larr; Back to Assignments</a></div>', 404)
@@ -3113,6 +3381,12 @@ app.get('/assignments/:classId/:subjectId', (c) => {
     const { title, instructions } = getAssignmentContent(cl, subj.id, num)
     return { num, title, instructions }
   })
+  let customItems: CustomAssignmentRow[] = []
+  try {
+    await ensureCustomAssignmentTable(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM custom_assignments WHERE class_id=? AND subject_id=? ORDER BY created_at DESC').bind(cl.id, subj.id).all()
+    customItems = rows.results || []
+  } catch { /* no custom assignments yet */ }
   const content = `
   ${Navbar('assignments')}
   <section style="padding:3rem 0 2.5rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
@@ -3128,6 +3402,18 @@ app.get('/assignments/:classId/:subjectId', (c) => {
   <section style="padding:1rem 0 5rem;background:#F8F9FB">
     <div class="max-w-6xl mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ${customItems.map(row => `
+          <div class="card fade-in" style="border-color:#7C3AED33">
+            <div class="badge mb-2" style="background:#7C3AED14;color:#7C3AED;border:1px solid #7C3AED33;font-size:0.68rem">Custom</div>
+            <div style="width:100%;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#F0F2F7;margin-bottom:0.75rem">
+              <img src="/r2/${esc(row.image_key)}" alt="${esc(row.title)}" style="width:100%;height:100%;object-fit:contain;transform:${caTransform(row)};transform-origin:center center">
+            </div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#7C3AED;font-weight:700;margin-bottom:0.75rem">${esc(row.title)}</h3>
+            <a href="/assignments/custom/${row.id}" class="btn-primary" style="display:block;text-align:center;font-size:0.8rem;padding:11px">
+              <i class="fas fa-print mr-2"></i>View &amp; Print
+            </a>
+          </div>
+        `).join('')}
         ${items.map(it => `
           <div class="card fade-in" style="border-color:${subj.color}33">
             <div class="badge mb-2" style="background:${subj.color}14;color:${subj.color};border:1px solid ${subj.color}33;font-size:0.68rem">Worksheet ${it.num}</div>

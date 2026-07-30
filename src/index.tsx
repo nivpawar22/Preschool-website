@@ -2114,9 +2114,10 @@ function resolveCategory(num: number, categories: Category[]): { key: string; id
 }
 
 const MATH_TOTAL_NUMS: Record<number, number> = { 1: 10, 2: 20, 3: 30, 4: 50 }
-const MATH_ROWS_PER_SHEET: Record<number, number> = { 1: 3, 2: 4, 3: 4, 4: 5 }
+const MATH_ROWS_PER_SHEET: Record<number, number> = { 1: 6, 2: 6, 3: 7, 4: 8 }
 const MATH_COUNT_MAX: Record<number, number> = { 1: 5, 2: 8, 3: 12, 4: 16 }
-const ENGLISH_ROWS_PER_SHEET: Record<number, number> = { 1: 3, 2: 4, 3: 5, 4: 5 }
+const ENGLISH_ROWS_PER_SHEET: Record<number, number> = { 1: 6, 2: 6, 3: 7, 4: 8 }
+const LINE_ROWS_PER_SHEET: Record<number, number> = { 1: 6, 2: 6, 3: 7, 4: 8 }
 
 function getMathCategories(level: number): Category[] {
   return [
@@ -2132,6 +2133,7 @@ function getMathCategories(level: number): Category[] {
 function getEnglishCategories(_level: number): Category[] {
   return [
     { key: 'alpha', count: 26 },
+    { key: 'lines', count: 6 },
     { key: 'word', count: 20 },
     { key: 'sentence', count: 6 },
     { key: 'beginsound', count: 6 },
@@ -2308,17 +2310,34 @@ const HINDI_WORDS_SIMPLE: string[] = ['घर', 'आम', 'माँ', 'गा�
 const HINDI_WORDS_ADVANCED: string[] = ['पानी', 'केला', 'सूरज', 'किताब', 'दरवाज़ा']
 
 // ── Reusable box / row builders ──────────────────────────────────
+function dottedRow(unit: string, fontSizePx: number, color: string): string {
+  const W = 760
+  const H = Math.round(fontSizePx * 1.35)
+  const charW = fontSizePx * 0.62
+  const gapPx = fontSizePx * 0.9
+  const itemW = unit.length * charW + gapPx
+  const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
+  const full = Array(repeats).fill(unit).join('   ')
+  const naturalWidth = full.length * charW
+  const textLen = Math.min(W - 10, Math.max(naturalWidth, W * 0.4))
+  const strokeW = Math.max(1.3, fontSizePx * 0.045)
+  const dashLen = Math.max(1.4, fontSizePx * 0.05)
+  const gapLen = Math.max(2.2, fontSizePx * 0.08)
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" class="dotted-row" style="height:${H}px"><text x="0" y="${Math.round(H * 0.78)}" textLength="${textLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="900" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(full)}</text></svg>`
+}
+
 function practiceSheet(bigModel: string, traceUnit: string, rows: number, wordLine: string): string {
-  const rowsHtml = Array.from({ length: rows }, () => `<div class="ps-row">${traceUnit.repeat(6)}</div>`).join('')
+  const fontSize = traceUnit.length <= 3 ? 46 : traceUnit.length <= 8 ? 34 : 24
+  const rowsHtml = Array.from({ length: rows }, () => `<div class="ps-row">${dottedRow(traceUnit, fontSize, '#0F2050')}</div>`).join('')
   return `
-    <div class="ps-model">${bigModel}</div>
+    <div class="ps-model">${esc(bigModel)}</div>
     ${wordLine ? `<div class="ps-wordline">${wordLine}</div>` : ''}
     <div class="ps-rows">${rowsHtml}</div>`
 }
 
 function numberBox(n: number, rows: number): string {
   const dots = '●'.repeat(Math.min(n, 20))
-  return practiceSheet(`${n}`, `${n} `, rows, `<span class="ps-dots">${dots}</span>`)
+  return practiceSheet(`${n}`, `${n}`, rows, `<span class="ps-dots">${dots}</span>`)
 }
 
 function countRow(n: number, emoji: string): string {
@@ -2391,6 +2410,46 @@ const PATTERN_POOL_ADV: string[][] = [
   ['🔵','🔴','🔴','🔵','🔴','?'],
 ]
 
+// ── Pre-writing line patterns (standing, sleeping, slanting, zigzag, curvy) ──
+type LinePattern = { name: string; kind: 'vertical' | 'slantLeft' | 'slantRight' | 'path'; path?: string }
+const LINE_PATTERNS: LinePattern[] = [
+  { name: 'Standing Line', kind: 'vertical' },
+  { name: 'Sleeping Line', kind: 'path', path: 'M13,30 L747,30' },
+  { name: 'Slanting Line (Left to Right)', kind: 'slantRight' },
+  { name: 'Slanting Line (Right to Left)', kind: 'slantLeft' },
+  { name: 'Zigzag Line', kind: 'path', path: 'M13,30 L114,10 L215,50 L317,10 L418,50 L519,10 L621,50 L747,10' },
+  { name: 'Curvy Line', kind: 'path', path: 'M13,30 C 76,0 139,60 203,30 C 266,0 329,60 393,30 C 456,0 519,60 583,30 C 646,0 709,60 747,30' },
+]
+
+function lineRowSvg(pattern: LinePattern): string {
+  if (pattern.kind === 'path') {
+    return `<svg viewBox="0 0 760 60" preserveAspectRatio="xMinYMid meet" class="pw-svg">
+      <circle cx="13" cy="30" r="6" fill="#10B981"/>
+      <path d="${pattern.path}" fill="none" stroke="#9CA9C7" stroke-width="2.5" stroke-dasharray="8,7" stroke-linecap="round"/>
+    </svg>`
+  }
+  const strokesCount = 8
+  const spacing = 760 / (strokesCount + 1)
+  let marks = ''
+  for (let i = 1; i <= strokesCount; i++) {
+    const x = spacing * i
+    if (pattern.kind === 'vertical') {
+      marks += `<circle cx="${x}" cy="6" r="5" fill="#10B981"/><line x1="${x}" y1="10" x2="${x}" y2="54"/>`
+    } else if (pattern.kind === 'slantRight') {
+      marks += `<circle cx="${x - 10}" cy="10" r="5" fill="#10B981"/><line x1="${x - 10}" y1="10" x2="${x + 10}" y2="54"/>`
+    } else {
+      marks += `<circle cx="${x + 10}" cy="10" r="5" fill="#10B981"/><line x1="${x + 10}" y1="10" x2="${x - 10}" y2="54"/>`
+    }
+  }
+  return `<svg viewBox="0 0 760 60" preserveAspectRatio="xMinYMid meet" class="pw-svg"><g stroke="#9CA9C7" stroke-width="2.5" stroke-dasharray="8,7" stroke-linecap="round" fill="none">${marks}</g></svg>`
+}
+
+const LINE_STYLE = `
+  .pw-grid{display:flex;flex-direction:column;gap:14px}
+  .pw-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:6px 0}
+  .pw-svg{width:100%;height:56px;display:block}
+`
+
 // ================================================================
 // ── Per-subject worksheet content generator ─────────────────────
 // ================================================================
@@ -2407,8 +2466,19 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
       return {
         title: `Letter ${l.ch}${lower}`,
         instructions: `Trace the big letter, then trace it ${rows} more times on the lines below. Say: "${l.ch} is for ${l.word}!"`,
-        bodyHtml: practiceSheet(`${l.ch}${lower}`, `${l.ch}${lower} `, rows, `${l.emoji} <b>${l.ch}</b> is for <b>${esc(l.word)}</b>`),
+        bodyHtml: practiceSheet(`${l.ch}${lower}`, `${l.ch}${lower}`, rows, `${l.emoji} <b>${l.ch}</b> is for <b>${esc(l.word)}</b>`),
         extraStyle: PRACTICE_STYLE,
+      }
+    }
+    if (key === 'lines') {
+      const pattern = LINE_PATTERNS[idx % LINE_PATTERNS.length]
+      const lineRows = LINE_ROWS_PER_SHEET[level]
+      const rowsHtml = Array.from({ length: lineRows }, () => `<div class="pw-row">${lineRowSvg(pattern)}</div>`).join('')
+      return {
+        title: pattern.name,
+        instructions: 'Start at the green dot. Trace each line slowly with a pencil or crayon, left to right.',
+        bodyHtml: `<div class="pw-grid">${rowsHtml}</div>`,
+        extraStyle: LINE_STYLE,
       }
     }
     if (key === 'word') {
@@ -2416,7 +2486,7 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
       return {
         title: `Word: ${w.w}`,
         instructions: `Say the word out loud, then trace it ${rows} times on the lines below.`,
-        bodyHtml: practiceSheet(w.w, `${w.w} `, rows, `${w.e} <b>${esc(w.w)}</b>`),
+        bodyHtml: practiceSheet(w.w, w.w, rows, `${w.e} <b>${esc(w.w)}</b>`),
         extraStyle: PRACTICE_STYLE,
       }
     }
@@ -2425,7 +2495,7 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
       return {
         title: `Sentence Practice ${idx + 1}`,
         instructions: 'Read the sentence, then trace it neatly on each line below.',
-        bodyHtml: practiceSheet(s, `${s}  `, rows, ''),
+        bodyHtml: practiceSheet(s, s, rows, ''),
         extraStyle: PRACTICE_STYLE,
       }
     }
@@ -2647,11 +2717,12 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
 }
 
 const PRACTICE_STYLE = `
-  .ps-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:3.4rem;line-height:1;color:transparent;-webkit-text-stroke:2.5px #0F2050;text-align:center;margin-bottom:6px;word-break:break-word}
-  .ps-wordline{text-align:center;font-size:0.95rem;color:#2A3B60;margin-bottom:14px}
-  .ps-dots{color:#E8B020;font-size:1rem;letter-spacing:3px}
-  .ps-rows{display:flex;flex-direction:column;gap:16px}
-  .ps-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:8px 0;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.8rem;color:transparent;-webkit-text-stroke:1.4px #9CA9C7;letter-spacing:4px;white-space:nowrap;overflow:hidden}
+  .ps-model{font-family:'Nunito',sans-serif;font-weight:900;font-size:4.6rem;line-height:1.1;color:#0F2050;text-align:center;margin-bottom:10px;word-break:break-word}
+  .ps-wordline{text-align:center;font-size:1rem;color:#2A3B60;margin-bottom:18px}
+  .ps-dots{color:#E8B020;font-size:1.1rem;letter-spacing:4px}
+  .ps-rows{display:flex;flex-direction:column;gap:14px}
+  .ps-row{border-top:1.5px solid #DCE1EF;border-bottom:1.5px dashed #DCE1EF;padding:6px 0}
+  .dotted-row{display:block;width:100%}
 `
 const CM_STYLE = `
   .cm-grid{display:flex;flex-direction:column;gap:10px}

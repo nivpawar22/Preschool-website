@@ -2289,6 +2289,52 @@ async function ensureAdmTables(db: any) {
   await db.exec(`CREATE TABLE IF NOT EXISTS inquiries (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT DEFAULT 'new', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
   await db.exec(`CREATE TABLE IF NOT EXISTS admissions (id TEXT PRIMARY KEY, data TEXT NOT NULL, status TEXT DEFAULT 'application_submitted', academic_year TEXT, class_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
   await db.exec(`CREATE TABLE IF NOT EXISTS payments (id TEXT PRIMARY KEY, admission_id TEXT, data TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  await db.exec(`CREATE TABLE IF NOT EXISTS expenses (id TEXT PRIMARY KEY, data TEXT NOT NULL, source TEXT DEFAULT 'manual', created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+}
+
+// ── Minimal RFC4180 CSV parser (handles quoted fields, escaped quotes,
+// commas/newlines inside quotes) — used to import Google Sheet exports.
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++ }
+        else { inQuotes = false }
+      } else {
+        field += ch
+      }
+    } else if (ch === '"') {
+      inQuotes = true
+    } else if (ch === ',') {
+      row.push(field); field = ''
+    } else if (ch === '\n') {
+      row.push(field); rows.push(row); row = []; field = ''
+    } else if (ch === '\r') {
+      // skip — \n handles the row break
+    } else {
+      field += ch
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row) }
+  return rows.filter((r) => r.some((v) => v !== ''))
+}
+
+// Google Sheets CSV export renders dates per the sheet's locale (commonly
+// M/D/YYYY or D/M/YYYY) — normalize to YYYY-MM-DD to match the app's format.
+function normalizeSheetDate(raw: string): string {
+  const s = (raw || '').trim()
+  if (!s) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s)
+  if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`
+  const d = new Date(s)
+  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+  return s
 }
 
 async function nextCounter(db: any, key: string, prefix: string, year: string) {
@@ -2538,6 +2584,131 @@ app.delete('/api/payments/:id', async (c) => {
     await ensureAdmTables(c.env.DB)
     await c.env.DB.prepare('DELETE FROM payments WHERE id=?').bind(c.req.param('id')).run()
     return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Expenses ─────────────────────────────────────────────────
+// Visible/editable by the Accounting role and Super Admin only.
+function canManageExpenses(sess: {role:string} | null): boolean {
+  return !!sess && (sess.role === 'accounting' || sess.role === 'superadmin')
+}
+
+app.get('/api/expenses', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM expenses ORDER BY created_at DESC').all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/expenses', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    const { data } = await c.req.json()
+    const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`
+    const now = new Date().toISOString()
+    await c.env.DB.prepare('INSERT INTO expenses (id,data,source,created_at,updated_at) VALUES (?,?,?,?,?)').bind(id, JSON.stringify(data), 'manual', now, now).run()
+    return c.json({ ok: true, id })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/expenses/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    await c.env.DB.prepare('DELETE FROM expenses WHERE id=?').bind(c.req.param('id')).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// Returns the last-used Google Sheet URL so the sync modal can pre-fill it.
+app.get('/api/expenses/sheet-config', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('expense_sheet_url').first<{value:string}>()
+    return c.json({ sheetUrl: row ? row.value : '' })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// Pulls the expense rows from a Google Sheet (must be shared "Anyone with
+// the link — Viewer") via its CSV export and replaces all previously
+// sheet-synced expense records with the current sheet content. Manually
+// added expenses (source='manual') are left untouched.
+app.post('/api/expenses/sync-sheet', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureAdmTables(c.env.DB)
+    const body = await c.req.json().catch(() => ({} as any))
+    let sheetUrl = (body.sheetUrl || '').trim()
+    if (!sheetUrl) {
+      const row = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('expense_sheet_url').first<{value:string}>()
+      sheetUrl = row ? row.value : ''
+    }
+    if (!sheetUrl) return c.json({ error: 'No Google Sheet URL provided' }, 400)
+
+    const idMatch = /\/d\/([a-zA-Z0-9-_]+)/.exec(sheetUrl)
+    if (!idMatch) return c.json({ error: 'Could not find a spreadsheet ID in that URL' }, 400)
+    const gidMatch = /[?#&]gid=(\d+)/.exec(sheetUrl)
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv&gid=${gidMatch ? gidMatch[1] : '0'}`
+
+    const resp = await fetch(csvUrl, { redirect: 'follow' })
+    if (!resp.ok) {
+      return c.json({ error: `Could not fetch the sheet (HTTP ${resp.status}). Make sure it's shared as "Anyone with the link" – Viewer.` }, 502)
+    }
+    const csvText = await resp.text()
+    if (/^\s*<(!doctype|html)/i.test(csvText)) {
+      return c.json({ error: 'The sheet is not publicly viewable. In Google Sheets, use Share → "Anyone with the link" → Viewer, then try again.' }, 502)
+    }
+
+    const rows = parseCsv(csvText)
+    if (rows.length < 2) return c.json({ error: 'The sheet has no data rows' }, 400)
+
+    const header = rows[0].map((h) => h.trim().toLowerCase())
+    const findCol = (...names: string[]) => header.findIndex((h) => names.some((n) => h.includes(n)))
+    const colDate = findCol('date')
+    const colCategory = findCol('categ')
+    const colDescription = findCol('description', 'particular', 'item', 'purpose')
+    const colPayee = findCol('payee', 'vendor', 'paid to', 'paid by')
+    const colAmount = findCol('amount', 'cost', 'price', 'total')
+    const colNotes = findCol('note', 'remark')
+
+    const now = new Date().toISOString()
+    const imported: any[] = []
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i]
+      if (!r || r.every((v) => !v || !v.trim())) continue
+      const rawAmount = colAmount >= 0 ? (r[colAmount] || '') : ''
+      const amount = parseFloat(rawAmount.replace(/[^0-9.-]/g, '')) || 0
+      const description = colDescription >= 0 ? (r[colDescription] || '').trim() : ''
+      if (!description && !amount) continue
+      imported.push({
+        category: (colCategory >= 0 ? (r[colCategory] || '').trim() : '') || 'Other',
+        description,
+        payee: colPayee >= 0 ? (r[colPayee] || '').trim() : '',
+        amount,
+        date: normalizeSheetDate(colDate >= 0 ? (r[colDate] || '') : ''),
+        notes: colNotes >= 0 ? (r[colNotes] || '').trim() : '',
+        createdAt: now,
+        createdBy: sess!.user_id
+      })
+    }
+
+    await c.env.DB.prepare(`DELETE FROM expenses WHERE source='sheet'`).run()
+    for (let i = 0; i < imported.length; i++) {
+      await c.env.DB.prepare('INSERT INTO expenses (id,data,source,created_at,updated_at) VALUES (?,?,?,?,?)')
+        .bind(`sheet_${i}_${Date.now()}`, JSON.stringify(imported[i]), 'sheet', now, now).run()
+    }
+    await c.env.DB.prepare('INSERT OR REPLACE INTO app_data (key,value,updated_at) VALUES (?,?,?)').bind('expense_sheet_url', sheetUrl, now).run()
+
+    return c.json({ ok: true, imported: imported.length })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

@@ -213,7 +213,6 @@ const DB = (() => {
     ],
     activityLog: [],
     purchaseOrders: [],
-    expenses: [],
     staffAttendance: [],
     staffLeaves: [],
     salaryPayments: [],
@@ -385,7 +384,6 @@ const DB = (() => {
         }
       });
       if (!_data.purchaseOrders) { _data.purchaseOrders = []; mergeChanged = true; }
-      if (!_data.expenses) { _data.expenses = []; mergeChanged = true; }
       if (!_data.staffAttendance) { _data.staffAttendance = []; mergeChanged = true; }
       if (!_data.staffLeaves) { _data.staffLeaves = []; mergeChanged = true; }
       if (!_data.salaryPayments) { _data.salaryPayments = []; mergeChanged = true; }
@@ -671,27 +669,6 @@ const DB = (() => {
   function deletePurchaseOrder(id) {
     if (!_data.purchaseOrders) return;
     _data.purchaseOrders = _data.purchaseOrders.filter(p => p.id !== id);
-    commit();
-  }
-
-  // ---- Expenses ----
-  function getExpenses(category) {
-    const expenses = _data.expenses || [];
-    return expenses
-      .filter(e => !category || e.category === category)
-      .slice()
-      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  }
-
-  function addExpense(expense) {
-    if (!_data.expenses) _data.expenses = [];
-    _data.expenses.unshift(expense);
-    commit();
-  }
-
-  function deleteExpense(id) {
-    if (!_data.expenses) return;
-    _data.expenses = _data.expenses.filter(e => e.id !== id);
     commit();
   }
 
@@ -1036,7 +1013,6 @@ const DB = (() => {
     getGallery, addGalleryItem, deleteGalleryItem,
     getEvents, addEvent, deleteEvent,
     getPurchaseOrders, addPurchaseOrder, deletePurchaseOrder,
-    getExpenses, addExpense, deleteExpense,
     updateUser,
     getStaffAttendance, addStaffAttendance, updateStaffAttendance, deleteStaffAttendance,
     getStaffLeaves, addStaffLeave, updateStaffLeave, deleteStaffLeave, getLeaveBalance,

@@ -11,16 +11,7 @@ function renderAccDashboard() {
   if (!user || user.role !== 'accounting') { renderLogin(); return; }
 
   const data = DB.get();
-  const expenses = DB.getExpenses();
   const purchaseOrders = DB.getPurchaseOrders();
-
-  // Calculate monthly expenses
-  const now = new Date();
-  const thisMonth = now.toISOString().slice(0, 7); // YYYY-MM
-  const thisYear = now.getFullYear().toString();
-
-  const monthlyExpenses = expenses.filter(e => (e.date || '').startsWith(thisMonth));
-  const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
   const pendingPOs = purchaseOrders.filter(po => po.status === 'Pending');
 
@@ -46,7 +37,7 @@ function renderAccDashboard() {
             </div>
             <div>
               <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Expenses This Month</div>
-              <div style="font-size:24px;font-weight:900;color:#0F2050">₹${totalMonthlyExpenses.toLocaleString('en-IN')}</div>
+              <div id="acc-dash-exp-month" style="font-size:24px;font-weight:900;color:#0F2050">Loading...</div>
             </div>
           </div>
         </div>
@@ -68,7 +59,7 @@ function renderAccDashboard() {
             </div>
             <div>
               <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Total Expenses</div>
-              <div style="font-size:24px;font-weight:900;color:#0F2050">${expenses.length}</div>
+              <div id="acc-dash-exp-count" style="font-size:24px;font-weight:900;color:#0F2050">Loading...</div>
             </div>
           </div>
         </div>
@@ -79,25 +70,9 @@ function renderAccDashboard() {
           <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
             <i class="fas fa-calculator" style="color:#8b5cf6;margin-right:8px"></i>Recent Expenses
           </h3>
-          ${expenses.slice(0, 5).length === 0
-            ? '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px"><i class="fas fa-inbox" style="display:block;font-size:28px;margin-bottom:8px"></i>No expenses yet</div>'
-            : `<table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead><tr style="border-bottom:2px solid #e2e8f0">
-                  <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Date</th>
-                  <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Category</th>
-                  <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Description</th>
-                  <th style="text-align:right;padding:8px 4px;color:#64748b;font-weight:700">Amount</th>
-                </tr></thead>
-                <tbody>
-                  ${expenses.slice(0, 5).map(e => `
-                    <tr style="border-bottom:1px solid #f1f5f9">
-                      <td style="padding:8px 4px;color:#475569">${formatDate(e.date)}</td>
-                      <td style="padding:8px 4px"><span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">${e.category || ''}</span></td>
-                      <td style="padding:8px 4px;color:#374151;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.description || ''}</td>
-                      <td style="padding:8px 4px;text-align:right;font-weight:700;color:#ef4444">₹${parseFloat(e.amount || 0).toLocaleString('en-IN')}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>`}
+          <div id="acc-dash-recent-exp">
+            <div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px"><i class="fas fa-spinner fa-spin" style="display:block;font-size:24px;margin-bottom:8px"></i>Loading...</div>
+          </div>
           <div style="margin-top:12px;text-align:right">
             <button class="btn btn-secondary btn-sm" onclick="navigate('acc-expenses')">View All Expenses →</button>
           </div>
@@ -165,6 +140,61 @@ function renderAccDashboard() {
       if (feeEl) feeEl.textContent = '₹0';
       const recentEl = document.getElementById('acc-dash-recent-fees');
       if (recentEl) recentEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:16px;font-size:13px">Unable to load payment data</div>';
+    });
+
+  // Fetch expenses asynchronously
+  fetch('/api/expenses', {headers: _accAuthHdr()})
+    .then(r => r.ok ? r.json() : { items: [] })
+    .then(function(res) {
+      const items = res.items || [];
+      const expenses = items.map(function(row) {
+        var d = {};
+        try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}); } catch(e) {}
+        return Object.assign({ id: row.id }, d);
+      });
+
+      const now = new Date();
+      const thisMonth = now.toISOString().slice(0, 7);
+      const monthlyExpenses = expenses.filter(e => (e.date || '').startsWith(thisMonth));
+      const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+      const monthEl = document.getElementById('acc-dash-exp-month');
+      if (monthEl) monthEl.textContent = '₹' + totalMonthlyExpenses.toLocaleString('en-IN');
+      const countEl = document.getElementById('acc-dash-exp-count');
+      if (countEl) countEl.textContent = expenses.length;
+
+      const recentEl = document.getElementById('acc-dash-recent-exp');
+      if (!recentEl) return;
+      const recent = expenses.slice(0, 5);
+      if (recent.length === 0) {
+        recentEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px"><i class="fas fa-inbox" style="display:block;font-size:28px;margin-bottom:8px"></i>No expenses yet</div>';
+      } else {
+        recentEl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="border-bottom:2px solid #e2e8f0">
+            <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Date</th>
+            <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Category</th>
+            <th style="text-align:left;padding:8px 4px;color:#64748b;font-weight:700">Description</th>
+            <th style="text-align:right;padding:8px 4px;color:#64748b;font-weight:700">Amount</th>
+          </tr></thead>
+          <tbody>
+            ${recent.map(e => `
+              <tr style="border-bottom:1px solid #f1f5f9">
+                <td style="padding:8px 4px;color:#475569">${formatDate(e.date)}</td>
+                <td style="padding:8px 4px"><span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">${e.category || ''}</span></td>
+                <td style="padding:8px 4px;color:#374151;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.description || ''}</td>
+                <td style="padding:8px 4px;text-align:right;font-weight:700;color:#ef4444">₹${parseFloat(e.amount || 0).toLocaleString('en-IN')}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+      }
+    })
+    .catch(function() {
+      const monthEl = document.getElementById('acc-dash-exp-month');
+      if (monthEl) monthEl.textContent = '₹0';
+      const countEl = document.getElementById('acc-dash-exp-count');
+      if (countEl) countEl.textContent = '0';
+      const recentEl = document.getElementById('acc-dash-recent-exp');
+      if (recentEl) recentEl.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:16px;font-size:13px">Unable to load expense data</div>';
     });
 }
 
@@ -466,6 +496,34 @@ function renderAccExpenses() {
   const user = Session.current();
   if (!user || user.role !== 'accounting') { renderLogin(); return; }
 
+  const content = '<div id="acc-exp-wrap"><div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px"><i class="fas fa-spinner fa-spin" style="display:block;font-size:32px;margin-bottom:12px"></i>Loading expenses...</div></div>';
+  renderLayout('acc-expenses', content, 'Expenses', 'Accounting / Expenses');
+  loadAccExpenses();
+}
+
+function loadAccExpenses() {
+  const wrap = document.getElementById('acc-exp-wrap');
+  if (!wrap) return;
+  fetch('/api/expenses', {headers: _accAuthHdr()})
+    .then(function(r) { return r.ok ? r.json() : { items: [] }; })
+    .then(function(res) {
+      const items = res.items || [];
+      window._accExpCache = items.map(function(row) {
+        var d = {};
+        try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}); } catch(e) {}
+        return Object.assign({ id: row.id, source: row.source || 'manual' }, d);
+      });
+      renderAccExpensesTable();
+    })
+    .catch(function() {
+      wrap.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px">Unable to load expense data</div>';
+    });
+}
+
+function renderAccExpensesTable() {
+  const wrap = document.getElementById('acc-exp-wrap');
+  if (!wrap) return;
+
   const categories = ['All', 'Salary', 'Supplies', 'Maintenance', 'Utilities', 'Transport', 'Other'];
   const activeFilter = window._accExpFilter || 'All';
 
@@ -473,7 +531,7 @@ function renderAccExpenses() {
   const thisMonth = now.toISOString().slice(0, 7);
   const thisYear = now.getFullYear().toString();
 
-  const allExpenses = DB.getExpenses();
+  const allExpenses = window._accExpCache || [];
   const filtered = activeFilter === 'All' ? allExpenses : allExpenses.filter(function(e) { return e.category === activeFilter; });
 
   const monthTotal = allExpenses
@@ -499,12 +557,15 @@ function renderAccExpenses() {
       '</tr></thead>' +
       '<tbody>' +
         list.map(function(e) {
+          const sourceBadge = e.source === 'sheet'
+            ? ' <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700"><i class="fas fa-table"></i> Sheet</span>'
+            : '';
           return '<tr style="border-bottom:1px solid #f1f5f9" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
             '<td style="padding:10px 12px;color:#475569">' + formatDate(e.date) + '</td>' +
             '<td style="padding:10px 12px">' +
               '<span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700">' + (e.category || '') + '</span>' +
             '</td>' +
-            '<td style="padding:10px 12px;color:#374151;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.description || '') + '</td>' +
+            '<td style="padding:10px 12px;color:#374151;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.description || '') + sourceBadge + '</td>' +
             '<td style="padding:10px 12px;color:#64748b">' + (e.payee || '') + '</td>' +
             '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#ef4444">₹' + parseFloat(e.amount || 0).toLocaleString('en-IN') + '</td>' +
             '<td style="padding:10px 12px;text-align:center">' +
@@ -515,7 +576,7 @@ function renderAccExpenses() {
       '</tbody></table></div>';
   }
 
-  const content = `
+  wrap.innerHTML = `
     <div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
         <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #ef4444">
@@ -535,9 +596,14 @@ function renderAccExpenses() {
             return '<button class="btn btn-sm ' + (active ? 'btn-primary' : 'btn-secondary') + '" onclick="accSetExpFilter(\'' + cat + '\')">' + cat + '</button>';
           }).join('')}
         </div>
-        <button class="btn btn-primary" onclick="accShowExpenseModal()">
-          <i class="fas fa-plus"></i> Add Expense
-        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="accShowSheetSyncModal()">
+            <i class="fas fa-sync"></i> Sync from Google Sheet
+          </button>
+          <button class="btn btn-primary" onclick="accShowExpenseModal()">
+            <i class="fas fa-plus"></i> Add Expense
+          </button>
+        </div>
       </div>
 
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
@@ -548,20 +614,24 @@ function renderAccExpenses() {
         ${buildExpTable(filtered)}
       </div>
     </div>`;
-
-  renderLayout('acc-expenses', content, 'Expenses', 'Accounting / Expenses');
 }
 
 window.accSetExpFilter = function(cat) {
   window._accExpFilter = cat;
-  renderAccExpenses();
+  renderAccExpensesTable();
 };
 
 window.accDeleteExpense = function(id) {
   confirmDialog('Delete this expense record?', function() {
-    DB.deleteExpense(id);
-    showToast('Expense deleted', 'success');
-    renderAccExpenses();
+    fetch('/api/expenses/' + id, { method: 'DELETE', headers: _accAuthHdr() })
+      .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+      .then(function() {
+        showToast('Expense deleted', 'success');
+        loadAccExpenses();
+      })
+      .catch(function(e) {
+        showToast('Failed to delete expense: ' + e.message, 'error');
+      });
   });
 };
 
@@ -637,7 +707,6 @@ window.accSaveExpense = function() {
   if (amount <= 0) { showToast('Amount must be greater than 0', 'error'); return; }
 
   const expense = {
-    id: 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     category: category,
     description: description,
     payee: payee,
@@ -648,11 +717,82 @@ window.accSaveExpense = function() {
     createdBy: user ? user.id : ''
   };
 
-  DB.addExpense(expense);
-  const modal = document.getElementById('acc-exp-modal');
-  if (modal) modal.remove();
-  showToast('Expense saved!', 'success');
-  renderAccExpenses();
+  fetch('/api/expenses', {
+    method: 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _accAuthHdr()),
+    body: JSON.stringify({ data: expense })
+  })
+    .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+    .then(function() {
+      const modal = document.getElementById('acc-exp-modal');
+      if (modal) modal.remove();
+      showToast('Expense saved!', 'success');
+      loadAccExpenses();
+    })
+    .catch(function(e) {
+      showToast('Failed to save expense: ' + e.message, 'error');
+    });
+};
+
+window.accShowSheetSyncModal = function() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'acc-exp-sync-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:520px;width:100%">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-sync" style="color:#1AA6CA;margin-right:8px"></i>Sync Expenses from Google Sheet</h3>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('acc-exp-sync-modal').remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:24px">
+        <p style="font-size:13px;color:#64748b;margin:0 0 12px">Paste the Google Sheet link. Make sure it's shared as <b>"Anyone with the link — Viewer"</b>. Expected columns: Date, Category, Description, Payee, Amount, Notes.</p>
+        <label class="form-label">Google Sheet URL</label>
+        <input id="acc-exp-sheet-url" class="form-control" type="text" placeholder="https://docs.google.com/spreadsheets/d/..."/>
+        <div id="acc-exp-sync-status" style="margin-top:10px;font-size:13px;color:#64748b"></div>
+      </div>
+      <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">
+        <button class="btn btn-secondary" onclick="document.getElementById('acc-exp-sync-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" id="acc-exp-sync-btn" onclick="accSyncExpenseSheet()"><i class="fas fa-sync"></i> Sync Now</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+
+  fetch('/api/expenses/sheet-config', {headers: _accAuthHdr()})
+    .then(function(r) { return r.ok ? r.json() : {}; })
+    .then(function(res) {
+      const input = document.getElementById('acc-exp-sheet-url');
+      if (input && res.sheetUrl) input.value = res.sheetUrl;
+    })
+    .catch(function() {});
+};
+
+window.accSyncExpenseSheet = function() {
+  const url = (document.getElementById('acc-exp-sheet-url').value || '').trim();
+  if (!url) { showToast('Please paste a Google Sheet URL', 'error'); return; }
+  const statusEl = document.getElementById('acc-exp-sync-status');
+  const btn = document.getElementById('acc-exp-sync-btn');
+  if (statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+  if (btn) btn.disabled = true;
+
+  fetch('/api/expenses/sync-sheet', {
+    method: 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _accAuthHdr()),
+    body: JSON.stringify({ sheetUrl: url })
+  })
+    .then(function(r) { return r.json().then(function(j) { if (!r.ok) throw new Error(j.error || ('Server error ' + r.status)); return j; }); })
+    .then(function(res) {
+      showToast('Synced ' + res.imported + ' expense record(s) from the sheet.', 'success');
+      const modal = document.getElementById('acc-exp-sync-modal');
+      if (modal) modal.remove();
+      loadAccExpenses();
+    })
+    .catch(function(e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444">' + e.message + '</span>';
+      if (btn) btn.disabled = false;
+    });
 };
 
 // ---- Staff Payroll ----

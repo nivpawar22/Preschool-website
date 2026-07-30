@@ -27,6 +27,7 @@ function renderManagement() {
       { id: 'feeconfig', label: 'Fee Structure', icon: 'fa-rupee-sign' },
       { id: 'adm-mgmt', label: 'Admissions', icon: 'fa-user-check' },
       { id: 'receipts', label: 'Receipts', icon: 'fa-receipt' },
+      { id: 'expenses', label: 'Expenses', icon: 'fa-calculator' },
       { id: 'adm-reports', label: 'Reports', icon: 'fa-chart-bar' },
       { id: 'letterhead', label: 'Letter Head', icon: 'fa-file-alt' },
       { id: 'documents', label: 'Documents', icon: 'fa-file-alt' },
@@ -54,6 +55,7 @@ function renderManagement() {
     feeconfig: renderFeeConfigTab(),
     'adm-mgmt': renderAdmissionsManagementTab(),
     receipts: renderReceiptsTab(),
+    expenses: renderExpensesMgmtTab(),
     'adm-reports': renderAdmReportsTab(),
     letterhead: renderLetterheadTab(),
     documents: renderDocumentsTab(),
@@ -93,6 +95,7 @@ function renderManagement() {
   if (mgmtTab === 'documents') setTimeout(loadDocumentsTab, 50);
   if (mgmtTab === 'adm-mgmt') setTimeout(loadAdmissionsManagement, 50);
   if (mgmtTab === 'receipts') setTimeout(loadReceiptsManagement, 50);
+  if (mgmtTab === 'expenses') setTimeout(loadExpensesManagement, 50);
   if (mgmtTab === 'fee-manager') setTimeout(_loadAdmReceiptsForFeeManager, 50);
 }
 
@@ -3425,6 +3428,231 @@ window.deleteReceipt = function(id) {
         showToast('Failed to delete receipt: ' + e.message, 'error');
       });
   }, 'Delete Receipt', true);
+};
+
+// ── Expenses Tab (Super Admin) ───────────────────────────────────────────────
+var MGMT_EXP_CATEGORIES = ['All', 'Salary', 'Supplies', 'Maintenance', 'Utilities', 'Transport', 'Other'];
+
+function renderExpensesMgmtTab() {
+  return '<div id="expenses-mgmt-wrap"><div style="text-align:center;padding:40px;color:#888"><i class="fas fa-spinner fa-spin fa-2x"></i></div></div>';
+}
+
+function loadExpensesManagement() {
+  var wrap = document.getElementById('expenses-mgmt-wrap');
+  if (!wrap) return;
+  var _exTok = localStorage.getItem('sk_session_token');
+  fetch('/api/expenses', {headers: _exTok ? {'Authorization':'Bearer '+_exTok} : {}})
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var items = data.items || [];
+      window._mgmtExpCache = items.map(function(row) {
+        var d = {};
+        try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}); } catch(e) {}
+        return Object.assign({ id: row.id, source: row.source || 'manual' }, d);
+      }).sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); });
+      renderExpensesMgmtTable();
+    })
+    .catch(function(e) {
+      wrap.innerHTML = '<div style="padding:32px;color:#c0392b">Failed to load expenses: ' + e.message + '</div>';
+    });
+}
+
+function renderExpensesMgmtTable() {
+  var wrap = document.getElementById('expenses-mgmt-wrap');
+  if (!wrap) return;
+  var expenses = window._mgmtExpCache || [];
+  var activeFilter = window._mgmtExpFilter || 'All';
+  var filtered = activeFilter === 'All' ? expenses : expenses.filter(function(e){ return e.category === activeFilter; });
+
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0, 7);
+  var thisYear = now.getFullYear().toString();
+  var monthTotal = expenses.filter(function(e){ return (e.date||'').startsWith(thisMonth); }).reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+  var yearTotal = expenses.filter(function(e){ return (e.date||'').startsWith(thisYear); }).reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+
+  var rows = filtered.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No expenses found.</td></tr>'
+    : filtered.map(function(e, i) {
+        var bg = i % 2 === 0 ? '#fff' : '#f8f5f0';
+        var sourceBadge = e.source === 'sheet'
+          ? ' <span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">Sheet</span>'
+          : '';
+        return '<tr style="background:' + bg + ';border-bottom:1px solid #e0d6c8">' +
+          '<td style="padding:9px 8px">' + (e.date || '-') + '</td>' +
+          '<td style="padding:9px 8px"><span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + _mgEsc(e.category || '') + '</span></td>' +
+          '<td style="padding:9px 8px">' + _mgEsc(e.description || '') + sourceBadge + '</td>' +
+          '<td style="padding:9px 8px">' + _mgEsc(e.payee || '') + '</td>' +
+          '<td style="padding:9px 8px;text-align:right;font-weight:700;color:#c0392b">&#8377;' + (parseFloat(e.amount||0)).toLocaleString('en-IN') + '</td>' +
+          '<td style="padding:9px 8px;text-align:center">' +
+            '<button onclick="mgmtDeleteExpense(\'' + e.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i></button>' +
+          '</td></tr>';
+      }).join('');
+
+  wrap.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+      '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #c0392b">' +
+        '<div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase">This Month</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + monthTotal.toLocaleString('en-IN') + '</div>' +
+      '</div>' +
+      '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8e44ad">' +
+        '<div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase">This Year</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + yearTotal.toLocaleString('en-IN') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        MGMT_EXP_CATEGORIES.map(function(cat) {
+          var active = cat === activeFilter;
+          return '<button class="btn btn-sm ' + (active?'btn-primary':'btn-secondary') + '" onclick="window._mgmtExpFilter=\'' + cat + '\';renderExpensesMgmtTable()">' + cat + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-secondary btn-sm" onclick="mgmtShowSheetSyncModal()"><i class="fas fa-sync"></i> Sync from Google Sheet</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="mgmtShowExpenseModal()"><i class="fas fa-plus"></i> Add Expense</button>' +
+      '</div>' +
+    '</div>' +
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
+      '<thead><tr style="background:#0F2050;color:#fff">' +
+        '<th style="padding:10px 8px;text-align:left">Date</th>' +
+        '<th style="padding:10px 8px;text-align:left">Category</th>' +
+        '<th style="padding:10px 8px;text-align:left">Description</th>' +
+        '<th style="padding:10px 8px;text-align:left">Payee</th>' +
+        '<th style="padding:10px 8px;text-align:right">Amount</th>' +
+        '<th style="padding:10px 8px;text-align:center">Action</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+window.mgmtDeleteExpense = function(id) {
+  confirmDialog('Delete this expense record? This cannot be undone.', function() {
+    var _tok = localStorage.getItem('sk_session_token');
+    fetch('/api/expenses/' + id, { method: 'DELETE', headers: _tok ? {'Authorization':'Bearer '+_tok} : {} })
+      .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+      .then(function() { showToast('Expense deleted.'); loadExpensesManagement(); })
+      .catch(function(e) { showToast('Failed to delete expense: ' + e.message, 'error'); });
+  }, 'Delete Expense', true);
+};
+
+window.mgmtShowExpenseModal = function() {
+  var today = new Date().toISOString().split('T')[0];
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'mgmt-exp-modal';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:500px;width:100%">' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title"><i class="fas fa-calculator" style="color:#c0392b;margin-right:8px"></i>Add Expense</h3>' +
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'mgmt-exp-modal\').remove()"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+      '<div class="modal-body" style="padding:24px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+          '<div><label class="form-label">Category *</label><select id="mgmt-exp-category" class="form-control">' +
+            ['Salary','Supplies','Maintenance','Utilities','Transport','Other'].map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('') +
+          '</select></div>' +
+          '<div><label class="form-label">Date *</label><input id="mgmt-exp-date" class="form-control" type="date" value="' + today + '"/></div>' +
+          '<div style="grid-column:1/-1"><label class="form-label">Description *</label><input id="mgmt-exp-desc" class="form-control" type="text" placeholder="e.g. Teacher salary - April 2025"/></div>' +
+          '<div><label class="form-label">Payee Name *</label><input id="mgmt-exp-payee" class="form-control" type="text" placeholder="Teacher / Staff / Vendor name"/></div>' +
+          '<div><label class="form-label">Amount (₹) *</label><input id="mgmt-exp-amount" class="form-control" type="number" min="0" step="0.01" placeholder="0.00"/></div>' +
+          '<div style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="mgmt-exp-notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">' +
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'mgmt-exp-modal\').remove()">Cancel</button>' +
+        '<button class="btn btn-primary" onclick="mgmtSaveExpense()"><i class="fas fa-save"></i> Save Expense</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+window.mgmtSaveExpense = function() {
+  var category = document.getElementById('mgmt-exp-category').value;
+  var description = (document.getElementById('mgmt-exp-desc').value || '').trim();
+  var payee = (document.getElementById('mgmt-exp-payee').value || '').trim();
+  var amount = parseFloat(document.getElementById('mgmt-exp-amount').value) || 0;
+  var date = document.getElementById('mgmt-exp-date').value;
+  var notes = (document.getElementById('mgmt-exp-notes').value || '').trim();
+
+  if (!description) { showToast('Description is required', 'error'); return; }
+  if (!payee) { showToast('Payee name is required', 'error'); return; }
+  if (!date) { showToast('Date is required', 'error'); return; }
+  if (amount <= 0) { showToast('Amount must be greater than 0', 'error'); return; }
+
+  var user = Session.current();
+  var expense = { category: category, description: description, payee: payee, amount: amount, date: date, notes: notes, createdAt: new Date().toISOString(), createdBy: user ? user.id : '' };
+  var _tok = localStorage.getItem('sk_session_token');
+  fetch('/api/expenses', {
+    method: 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _tok ? {'Authorization':'Bearer '+_tok} : {}),
+    body: JSON.stringify({ data: expense })
+  })
+    .then(function(r) { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+    .then(function() {
+      var modal = document.getElementById('mgmt-exp-modal');
+      if (modal) modal.remove();
+      showToast('Expense saved!');
+      loadExpensesManagement();
+    })
+    .catch(function(e) { showToast('Failed to save expense: ' + e.message, 'error'); });
+};
+
+window.mgmtShowSheetSyncModal = function() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'mgmt-exp-sync-modal';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:520px;width:100%">' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title"><i class="fas fa-sync" style="color:#1AA6CA;margin-right:8px"></i>Sync Expenses from Google Sheet</h3>' +
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'mgmt-exp-sync-modal\').remove()"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+      '<div class="modal-body" style="padding:24px">' +
+        '<p style="font-size:13px;color:#64748b;margin:0 0 12px">Paste the Google Sheet link. Make sure it is shared as <b>"Anyone with the link — Viewer"</b>. Expected columns: Date, Category, Description, Payee, Amount, Notes.</p>' +
+        '<label class="form-label">Google Sheet URL</label>' +
+        '<input id="mgmt-exp-sheet-url" class="form-control" type="text" placeholder="https://docs.google.com/spreadsheets/d/..."/>' +
+        '<div id="mgmt-exp-sync-status" style="margin-top:10px;font-size:13px;color:#64748b"></div>' +
+      '</div>' +
+      '<div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">' +
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'mgmt-exp-sync-modal\').remove()">Cancel</button>' +
+        '<button class="btn btn-primary" id="mgmt-exp-sync-btn" onclick="mgmtSyncExpenseSheet()"><i class="fas fa-sync"></i> Sync Now</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+
+  var _tok = localStorage.getItem('sk_session_token');
+  fetch('/api/expenses/sheet-config', {headers: _tok ? {'Authorization':'Bearer '+_tok} : {}})
+    .then(function(r){ return r.ok ? r.json() : {}; })
+    .then(function(res) {
+      var input = document.getElementById('mgmt-exp-sheet-url');
+      if (input && res.sheetUrl) input.value = res.sheetUrl;
+    })
+    .catch(function() {});
+};
+
+window.mgmtSyncExpenseSheet = function() {
+  var url = (document.getElementById('mgmt-exp-sheet-url').value || '').trim();
+  if (!url) { showToast('Please paste a Google Sheet URL', 'error'); return; }
+  var statusEl = document.getElementById('mgmt-exp-sync-status');
+  var btn = document.getElementById('mgmt-exp-sync-btn');
+  if (statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+  if (btn) btn.disabled = true;
+  var _tok = localStorage.getItem('sk_session_token');
+  fetch('/api/expenses/sync-sheet', {
+    method: 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, _tok ? {'Authorization':'Bearer '+_tok} : {}),
+    body: JSON.stringify({ sheetUrl: url })
+  })
+    .then(function(r) { return r.json().then(function(j) { if (!r.ok) throw new Error(j.error || ('Server error ' + r.status)); return j; }); })
+    .then(function(res) {
+      showToast('Synced ' + res.imported + ' expense record(s) from the sheet.');
+      var modal = document.getElementById('mgmt-exp-sync-modal');
+      if (modal) modal.remove();
+      loadExpensesManagement();
+    })
+    .catch(function(e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#c0392b">' + e.message + '</span>';
+      if (btn) btn.disabled = false;
+    });
 };
 
 // ── Admissions Management Tab ────────────────────────────────────────────────

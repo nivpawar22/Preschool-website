@@ -779,6 +779,7 @@ const Navbar = (active: string) => `
           <a href="/about" class="nav-link ${active === 'about' ? 'active' : ''}" style="color:${active === 'about' ? '#0F2050' : '#2A3B60'}">About</a>
           <a href="/programs" class="nav-link ${active === 'programs' ? 'active' : ''}" style="color:${active === 'programs' ? '#0F2050' : '#2A3B60'}">Programs</a>
           <a href="/gallery" class="nav-link ${active === 'gallery' ? 'active' : ''}" style="color:${active === 'gallery' ? '#0F2050' : '#2A3B60'}">Gallery</a>
+          <a href="/daily-assignments" class="nav-link ${active === 'daily-assignments' ? 'active' : ''}" style="color:${active === 'daily-assignments' ? '#0F2050' : '#2A3B60'}">Daily Assignment</a>
           <a href="/contact" class="nav-link ${active === 'contact' ? 'active' : ''}" style="color:${active === 'contact' ? '#0F2050' : '#2A3B60'}">Contact</a>
           <a href="/contact" class="btn-primary ml-3" style="font-size:0.82rem;padding:10px 22px;letter-spacing:1px">Enroll Now</a>
           <a href="/parent-portal" class="nav-link ${active === 'portal' ? 'active' : ''}" style="color:#0F2050;border:1.5px solid #0F2050;border-radius:8px;padding:7px 13px;margin-left:6px">
@@ -806,6 +807,7 @@ const Navbar = (active: string) => `
       <a href="/about" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">About Us</a>
       <a href="/programs" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Programs</a>
       <a href="/gallery" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Gallery</a>
+      <a href="/daily-assignments" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">📝 Daily Assignment</a>
       <a href="/contact" style="color:#2A3B60;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none" onmouseover="this.style.background='#E8EDF5';this.style.color='#0F2050'" onmouseout="this.style.background='';this.style.color='#2A3B60'">Contact</a>
       <a href="/contact" class="btn-primary" style="text-align:center;margin-top:8px;display:block">Enroll Now</a>
       <a href="/parent-portal" style="color:#0F2050;padding:10px 12px;font-weight:700;border-radius:8px;display:block;text-decoration:none;border:1.5px solid #0F2050;margin-top:6px" onmouseover="this.style.background='#E8EDF5'" onmouseout="this.style.background=''">🛡️ Parent Portal</a>
@@ -2071,6 +2073,377 @@ app.get('/contact', (c) => {
   ${Footer()}
   `
   return c.html(Layout({ children: content, title: 'Contact & Enroll – SuperKids India Preschool, Bhosari Pune', description: 'Contact SuperKids India Preschool to book a visit or enroll your child. Located at Matoshri Apartment, Sector 10, Bhosari Pradhikaran, Pune 411026. Call: 9822-977-644.', canonical: 'https://superkidsindia.com/contact' }))
+})
+
+// ================================================================
+// ── Daily Assignment (printable Kindergarten worksheets) ──────
+// ================================================================
+type DailyAssignment = { slug: string; title: string; category: string; emoji: string; color: string; desc: string }
+
+const DAILY_ASSIGNMENTS: DailyAssignment[] = [
+  { slug: 'abc-tracing-a-m', title: 'Trace the Alphabet (A–M)', category: 'Alphabet & Phonics', emoji: '🔤', color: '#0F2050', desc: 'Trace big bubble letters A to M and learn a word for each letter.' },
+  { slug: 'abc-tracing-n-z', title: 'Trace the Alphabet (N–Z)', category: 'Alphabet & Phonics', emoji: '🔠', color: '#C4893A', desc: 'Trace big bubble letters N to Z and learn a word for each letter.' },
+  { slug: 'trace-numbers',   title: 'Trace Numbers 1–10',       category: 'Numbers & Math',      emoji: '🔢', color: '#1AA6CA', desc: 'Practice writing numbers 1 to 10 using the dot-count guides.' },
+  { slug: 'count-and-match', title: 'Count and Circle',         category: 'Numbers & Math',      emoji: '🍎', color: '#E8B020', desc: 'Count the pictures in every row and circle the correct number.' },
+  { slug: 'patterns-next',   title: 'What Comes Next?',         category: 'Numbers & Math',      emoji: '🧩', color: '#0F2050', desc: 'Look closely at each pattern and work out what comes next.' },
+  { slug: 'shapes-around',   title: 'Shapes All Around',        category: 'Shapes & Colors',      emoji: '🔷', color: '#1AA6CA', desc: 'Trace six everyday shapes and match them to real objects.' },
+  { slug: 'match-colors',    title: 'Match the Colors',         category: 'Shapes & Colors',      emoji: '🎨', color: '#C4893A', desc: 'Read the color word inside each shape, then color it in.' },
+  { slug: 'prewriting-lines',title: 'Pre-Writing: Lines & Curves', category: 'Pre-Writing & Fine Motor', emoji: '✏️', color: '#E8B020', desc: 'Trace straight, zigzag, wavy, and curvy lines to build pencil control.' },
+]
+
+const ALPHABET_WORDS: { ch: string; word: string; emoji: string }[] = [
+  { ch: 'A', word: 'Apple',    emoji: '🍎' }, { ch: 'B', word: 'Ball',     emoji: '⚽' },
+  { ch: 'C', word: 'Cat',      emoji: '🐱' }, { ch: 'D', word: 'Dog',      emoji: '🐶' },
+  { ch: 'E', word: 'Elephant', emoji: '🐘' }, { ch: 'F', word: 'Fish',     emoji: '🐟' },
+  { ch: 'G', word: 'Grapes',   emoji: '🍇' }, { ch: 'H', word: 'Hat',      emoji: '🎩' },
+  { ch: 'I', word: 'Ice Cream',emoji: '🍦' }, { ch: 'J', word: 'Juice',    emoji: '🧃' },
+  { ch: 'K', word: 'Kite',     emoji: '🪁' }, { ch: 'L', word: 'Lion',     emoji: '🦁' },
+  { ch: 'M', word: 'Moon',     emoji: '🌙' }, { ch: 'N', word: 'Nest',     emoji: '🪺' },
+  { ch: 'O', word: 'Orange',   emoji: '🍊' }, { ch: 'P', word: 'Pig',      emoji: '🐷' },
+  { ch: 'Q', word: 'Queen',    emoji: '👑' }, { ch: 'R', word: 'Rainbow',  emoji: '🌈' },
+  { ch: 'S', word: 'Sun',      emoji: '☀️' }, { ch: 'T', word: 'Tree',     emoji: '🌳' },
+  { ch: 'U', word: 'Umbrella', emoji: '☂️' }, { ch: 'V', word: 'Van',      emoji: '🚐' },
+  { ch: 'W', word: 'Watermelon',emoji:'🍉' }, { ch: 'X', word: 'X-ray',    emoji: '🩻' },
+  { ch: 'Y', word: 'Yo-yo',    emoji: '🪀' }, { ch: 'Z', word: 'Zebra',    emoji: '🦓' },
+]
+
+function alphabetBox(ch: string, word: string, emoji: string): string {
+  const lower = ch.toLowerCase()
+  return `
+    <div class="abc-box">
+      <div class="abc-big">${ch}${lower}</div>
+      <div class="abc-trace-row">${(ch + lower + ' ').repeat(3)}</div>
+      <div class="abc-word">${emoji} <b>${ch}</b> is for <b>${esc(word)}</b></div>
+    </div>`
+}
+
+function numberBox(n: number): string {
+  const dots = '●'.repeat(n)
+  return `
+    <div class="num-box">
+      <div class="num-big">${n}</div>
+      <div class="num-dots">${dots}</div>
+      <div class="num-trace-row">${(String(n) + ' ').repeat(4)}</div>
+    </div>`
+}
+
+function countRow(n: number, emoji: string): string {
+  const options = Array.from(new Set([n - 1, n, n + 1].filter(x => x >= 1 && x <= 12)))
+  while (options.length < 3) options.push(options[options.length - 1] + 1)
+  return `
+    <div class="cm-row">
+      <div class="cm-objects">${emoji.repeat(n)}</div>
+      <div class="cm-options">${options.map(o => `<span class="cm-opt">${o}</span>`).join('')}</div>
+    </div>`
+}
+
+function patternRow(seq: string[]): string {
+  return `<div class="pat-row">${seq.map(s => s === '?' ? `<span class="pat-blank">?</span>` : `<span class="pat-item">${s}</span>`).join('')}</div>`
+}
+
+function shapeBox(name: string, shapeHtml: string, emoji: string): string {
+  return `
+    <div class="shape-box">
+      <div class="shape-outline">${shapeHtml}</div>
+      <div class="shape-name">${esc(name)}</div>
+      <div class="shape-example">${emoji}</div>
+    </div>`
+}
+
+function colorBox(name: string, hex: string, shapeHtml: string): string {
+  return `
+    <div class="shape-box">
+      <div class="shape-outline" style="border-color:${hex}">${shapeHtml}</div>
+      <div class="shape-name" style="color:${hex}">${esc(name)}</div>
+    </div>`
+}
+
+function buildAssignmentBody(slug: string): { instructions: string; bodyHtml: string; extraStyle: string } {
+  if (slug === 'abc-tracing-a-m' || slug === 'abc-tracing-n-z') {
+    const letters = slug === 'abc-tracing-a-m' ? ALPHABET_WORDS.slice(0, 13) : ALPHABET_WORDS.slice(13)
+    return {
+      instructions: 'Trace each big letter with your finger, then with a pencil or crayon. Say the word out loud!',
+      bodyHtml: `<div class="abc-grid">${letters.map(l => alphabetBox(l.ch, l.word, l.emoji)).join('')}</div>`,
+      extraStyle: `
+        .abc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+        .abc-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 8px;text-align:center;background:#fff}
+        .abc-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.6rem;line-height:1;color:transparent;-webkit-text-stroke:2px #0F2050;letter-spacing:4px}
+        .abc-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.3rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:3px;margin:6px 0;word-spacing:8px}
+        .abc-word{font-size:0.82rem;color:#2A3B60;margin-top:4px}
+        @media(max-width:700px){.abc-grid{grid-template-columns:repeat(2,1fr)}}
+      `
+    }
+  }
+  if (slug === 'trace-numbers') {
+    const nums = Array.from({length:10}, (_,i) => i+1)
+    return {
+      instructions: 'Count the dots, then trace each number with a pencil or crayon.',
+      bodyHtml: `<div class="num-grid">${nums.map(n => numberBox(n)).join('')}</div>`,
+      extraStyle: `
+        .num-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+        .num-box{border:2px dashed #DCE1EF;border-radius:14px;padding:10px 6px;text-align:center;background:#fff}
+        .num-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.8rem;line-height:1;color:transparent;-webkit-text-stroke:2px #1AA6CA}
+        .num-dots{color:#E8B020;font-size:0.95rem;letter-spacing:3px;margin:6px 0;min-height:1.2em}
+        .num-trace-row{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:transparent;-webkit-text-stroke:1.2px #9CA9C7;letter-spacing:4px}
+        @media(max-width:700px){.num-grid{grid-template-columns:repeat(3,1fr)}}
+      `
+    }
+  }
+  if (slug === 'count-and-match') {
+    const rows = [
+      {n:1,e:'🍓'}, {n:2,e:'🚗'}, {n:3,e:'🐟'}, {n:4,e:'🌸'}, {n:5,e:'⭐'},
+      {n:6,e:'🎈'}, {n:7,e:'🍪'}, {n:8,e:'🦋'}, {n:9,e:'🐝'}, {n:10,e:'🍇'},
+    ]
+    return {
+      instructions: 'Count the pictures in each row, then draw a circle around the correct number.',
+      bodyHtml: `<div class="cm-grid">${rows.map(r => countRow(r.n, r.e)).join('')}</div>`,
+      extraStyle: `
+        .cm-grid{display:flex;flex-direction:column;gap:10px}
+        .cm-row{display:flex;align-items:center;justify-content:space-between;border:2px dashed #DCE1EF;border-radius:14px;padding:12px 16px;background:#fff;gap:10px;flex-wrap:wrap}
+        .cm-objects{font-size:1.5rem;letter-spacing:4px;flex:1;min-width:180px}
+        .cm-options{display:flex;gap:10px}
+        .cm-opt{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:2px solid #0F2050;border-radius:50%;font-weight:800;font-size:1.1rem;color:#0F2050}
+      `
+    }
+  }
+  if (slug === 'patterns-next') {
+    const patterns = [
+      ['🔴','🔵','🔴','🔵','🔴','?'],
+      ['⭐','⭐','🌙','⭐','⭐','?'],
+      ['🟩','🟦','🟩','🟦','🟩','?'],
+      ['🍎','🍎','🍌','🍎','🍎','?'],
+      ['🔺','🔻','🔺','🔻','🔺','?'],
+      ['🐝','🐝','🦋','🐝','🐝','?'],
+    ]
+    return {
+      instructions: 'Look at the pattern in each row. Draw or write what comes next in the box.',
+      bodyHtml: `<div class="pat-grid">${patterns.map(p => patternRow(p)).join('')}</div>`,
+      extraStyle: `
+        .pat-grid{display:flex;flex-direction:column;gap:14px}
+        .pat-row{display:flex;align-items:center;gap:10px;border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff}
+        .pat-item{font-size:1.8rem}
+        .pat-blank{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid #E8B020;border-radius:10px;font-weight:800;color:#E8B020;font-size:1.3rem}
+      `
+    }
+  }
+  if (slug === 'shapes-around') {
+    const shapes = [
+      {name:'Circle',    emoji:'⚽', html:`<div style="width:70px;height:70px;border-radius:50%;border:3px dashed #0F2050"></div>`},
+      {name:'Square',    emoji:'📦', html:`<div style="width:70px;height:70px;border:3px dashed #0F2050"></div>`},
+      {name:'Triangle',  emoji:'🍕', html:`<svg width="72" height="64" viewBox="0 0 72 64"><polygon points="36,4 68,60 4,60" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+      {name:'Rectangle', emoji:'📱', html:`<div style="width:90px;height:56px;border:3px dashed #0F2050"></div>`},
+      {name:'Star',      emoji:'⭐', html:`<svg width="72" height="72" viewBox="0 0 72 72"><polygon points="36,4 44,26 68,26 48,40 56,64 36,50 16,64 24,40 4,26 28,26" fill="none" stroke="#0F2050" stroke-width="3" stroke-dasharray="6,4"/></svg>`},
+      {name:'Diamond',   emoji:'💎', html:`<div style="width:64px;height:64px;border:3px dashed #0F2050;transform:rotate(45deg)"></div>`},
+    ]
+    return {
+      instructions: 'Trace the outline of each shape with a pencil, say its name, then find something at home shaped like it.',
+      bodyHtml: `<div class="shapes-grid">${shapes.map(s => shapeBox(s.name, s.html, s.emoji)).join('')}</div>`,
+      extraStyle: `
+        .shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+        .shape-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
+        .shape-outline{display:flex;align-items:center;justify-content:center;height:90px;margin-bottom:8px}
+        .shape-name{font-weight:800;color:#0F2050;font-size:1rem}
+        .shape-example{font-size:1.6rem;margin-top:4px}
+        @media(max-width:700px){.shapes-grid{grid-template-columns:repeat(2,1fr)}}
+      `
+    }
+  }
+  if (slug === 'match-colors') {
+    const colors: {name:string,hex:string}[] = [
+      {name:'Red',    hex:'#E4572E'}, {name:'Blue',   hex:'#1AA6CA'},
+      {name:'Yellow', hex:'#E8B020'}, {name:'Green',  hex:'#10B981'},
+      {name:'Orange', hex:'#C4893A'}, {name:'Purple', hex:'#7C3AED'},
+    ]
+    return {
+      instructions: 'Read the color word inside each shape out loud, then color the shape using that color.',
+      bodyHtml: `<div class="shapes-grid">${colors.map(cc => colorBox(cc.name, cc.hex, `<div style="width:76px;height:76px;border-radius:50%;border:3px dashed ${cc.hex};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;color:${cc.hex};text-transform:uppercase">${cc.name}</div>`)).join('')}</div>`,
+      extraStyle: `
+        .shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+        .shape-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
+        .shape-outline{display:flex;align-items:center;justify-content:center;height:90px;margin-bottom:8px}
+        .shape-name{font-weight:800;font-size:1rem}
+        @media(max-width:700px){.shapes-grid{grid-template-columns:repeat(2,1fr)}}
+      `
+    }
+  }
+  // prewriting-lines
+  const lineRow = (label: string, path: string) => `
+    <div class="pw-row">
+      <div class="pw-label">${esc(label)}</div>
+      <svg viewBox="0 0 600 60" class="pw-svg" preserveAspectRatio="none">
+        <circle cx="10" cy="30" r="6" fill="#10B981"/>
+        <path d="${path}" fill="none" stroke="#9CA9C7" stroke-width="2.5" stroke-dasharray="8,7" stroke-linecap="round"/>
+      </svg>
+    </div>`
+  return {
+    instructions: 'Start at the green dot. Trace each line slowly with a pencil or crayon, left to right.',
+    bodyHtml: `<div class="pw-grid">
+      ${lineRow('Straight Line', 'M10,30 L590,30')}
+      ${lineRow('Zigzag Line', 'M10,30 L90,10 L170,50 L250,10 L330,50 L410,10 L490,50 L590,10')}
+      ${lineRow('Wavy Line', 'M10,30 C 60,0 110,60 160,30 C 210,0 260,60 310,30 C 360,0 410,60 460,30 C 510,0 560,60 590,30')}
+      ${lineRow('Curvy Line', 'M10,30 C 10,10 50,10 50,30 C 50,50 90,50 90,30 C 90,10 130,10 130,30 C 130,50 170,50 170,30 C 170,10 210,10 210,30 C 210,50 250,50 250,30 C 250,10 290,10 290,30 C 290,50 330,50 330,30 C 330,10 370,10 370,30 C 370,50 410,50 410,30 C 410,10 450,10 450,30 C 450,50 490,50 490,30 C 490,10 530,10 530,30 C 530,50 570,50 570,30')}
+    </div>`,
+    extraStyle: `
+      .pw-grid{display:flex;flex-direction:column;gap:22px}
+      .pw-row{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 18px;background:#fff}
+      .pw-label{font-weight:800;color:#0F2050;font-size:0.9rem;margin-bottom:6px}
+      .pw-svg{width:100%;height:60px}
+    `
+  }
+}
+
+function printWorksheetPage(a: DailyAssignment): string {
+  const { instructions, bodyHtml, extraStyle } = buildAssignmentBody(a.slug)
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(a.title)} – Daily Assignment – SuperKids India Preschool</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
+.toolbar{max-width:850px;margin:0 auto 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.toolbar a, .toolbar button{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;letter-spacing:0.5px;text-decoration:none;border-radius:50px;padding:10px 22px;cursor:pointer;border:none}
+.back-link{color:#0F2050;background:#fff;border:2px solid #0F2050 !important}
+.print-btn{color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);box-shadow:0 4px 16px rgba(15,32,80,0.25)}
+.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:32px 36px 28px}
+.sheet-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0F2050;padding-bottom:14px;margin-bottom:6px;gap:12px;flex-wrap:wrap}
+.brand{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.15rem}
+.brand-sub{font-size:0.72rem;color:#C4893A;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.7rem;text-align:right}
+.worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:right}
+.name-date{display:flex;gap:24px;margin:14px 0 8px;font-size:0.85rem;color:#2A3B60;flex-wrap:wrap}
+.name-date span{border-bottom:1.5px solid #9CA9C7;padding-bottom:2px;min-width:180px;display:inline-block}
+.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:12px 0 20px}
+.sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
+${extraStyle}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;padding:0}
+  .toolbar{display:none}
+  .sheet{box-shadow:none;border-radius:0;max-width:100%;padding:0}
+}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="/daily-assignments" class="back-link">&larr; Back to Daily Assignments</a>
+    <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
+  </div>
+  <div class="sheet">
+    <div class="sheet-header">
+      <div>
+        <div class="brand">SuperKids India Preschool</div>
+        <div class="brand-sub">Daily Assignment • Kindergarten</div>
+      </div>
+      <div>
+        <div class="worksheet-title">${a.emoji} ${esc(a.title)}</div>
+        <div class="worksheet-tag">${esc(a.category)}</div>
+      </div>
+    </div>
+    <div class="name-date">
+      <span>Name: ________________</span>
+      <span>Date: ________________</span>
+    </div>
+    <div class="instructions">📌 ${esc(instructions)}</div>
+    ${bodyHtml}
+    <div class="sheet-footer">SuperKids India Preschool &middot; Free printable worksheet for home practice &middot; superkidsindia.com</div>
+  </div>
+</body>
+</html>`
+}
+
+app.get('/daily-assignments', (c) => {
+  const categories = Array.from(new Set(DAILY_ASSIGNMENTS.map(a => a.category)))
+  const content = `
+  ${Navbar('daily-assignments')}
+
+  <section style="padding:6rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0);position:relative;overflow:hidden">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Free Printable Worksheets</div>
+      <div class="section-accent" style="margin:0 auto 1rem"></div>
+      <h1 class="section-title" style="color:#1AA6CA;font-size:clamp(2.3rem,5.5vw,4rem)">Daily Assignment</h1>
+      <p style="color:#6B7A9D;font-size:1.1rem;line-height:1.8;margin-top:1.5rem;max-width:640px;margin-left:auto;margin-right:auto">
+        Fun, print-at-home Kindergarten worksheets covering the alphabet, numbers, shapes, colors, and pre-writing skills. No login needed — just pick a worksheet and print!
+      </p>
+    </div>
+  </section>
+
+  <section style="padding:2rem 0;background:#ffffff;border-bottom:1.5px solid #DCE1EF">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-wrap justify-center gap-3">
+        ${['All', ...categories].map((cat, i) => `
+          <button class="age-tab da-tab ${i === 0 ? 'active' : ''}" data-target="${cat === 'All' ? 'all' : esc(cat)}"
+            style="padding:10px 20px;border-radius:50px;border:2px solid #DCE1EF;background:${i===0?'#0F2050':'transparent'};color:${i===0?'#ffffff':'#2A3B60'};font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.3s">
+            ${cat}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:5rem 0;background:#F8F9FB">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="da-grid">
+        ${DAILY_ASSIGNMENTS.map(a => `
+          <div class="card fade-in da-card" data-cat="${esc(a.category)}" style="border-color:${a.color}33">
+            <div style="font-size:2.8rem;margin-bottom:1rem">${a.emoji}</div>
+            <div class="badge mb-2" style="background:${a.color}14;color:${a.color};border:1px solid ${a.color}33;font-size:0.68rem">${esc(a.category)}</div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.35rem;color:${a.color};font-weight:700;margin-bottom:0.5rem">${esc(a.title)}</h3>
+            <p style="color:#2A3B60;font-size:0.9rem;line-height:1.7;margin-bottom:1.5rem">${esc(a.desc)}</p>
+            <a href="/daily-assignments/${a.slug}" class="btn-primary" style="display:block;text-align:center;font-size:0.85rem;padding:12px">
+              <i class="fas fa-print mr-2"></i>View &amp; Print
+            </a>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:3rem 0 5rem;background:#ffffff">
+    <div class="max-w-3xl mx-auto px-4 text-center fade-in">
+      <div class="card" style="border-color:#0F205033;padding:2.5rem">
+        <div style="font-size:2.2rem;margin-bottom:0.75rem">🖨️</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:#0F2050;font-weight:800;margin-bottom:0.75rem">How to Use These Worksheets</h2>
+        <p style="color:#6B7A9D;font-size:0.95rem;line-height:1.8">
+          Click <b>View &amp; Print</b> on any worksheet, then use your browser's <b>Print</b> button (or "Save as PDF") to print it at home.
+          Each sheet has space for your child's name and the date — a great way to build a daily learning routine!
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll('.da-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.da-tab').forEach(t => {
+          t.classList.remove('active');
+          t.style.background = 'transparent';
+          t.style.color = '#2A3B60';
+        });
+        tab.classList.add('active');
+        tab.style.background = '#0F2050';
+        tab.style.color = '#ffffff';
+        const target = tab.dataset.target;
+        document.querySelectorAll('.da-card').forEach(card => {
+          card.style.display = (target === 'all' || card.dataset.cat === target) ? '' : 'none';
+        });
+      });
+    });
+  </script>
+
+  ${Footer()}
+  `
+  return c.html(Layout({ children: content, title: 'Daily Assignment – Free Printable Kindergarten Worksheets – SuperKids India Preschool', description: 'Free printable Kindergarten worksheets: alphabet tracing, number tracing, counting, shapes, colors, and pre-writing practice. Print at home for daily learning.', canonical: 'https://superkidsindia.com/daily-assignments' }))
+})
+
+app.get('/daily-assignments/:slug', (c) => {
+  const slug = c.req.param('slug')
+  const a = DAILY_ASSIGNMENTS.find(x => x.slug === slug)
+  if (!a) return c.html('<div style="font-family:sans-serif;text-align:center;margin-top:80px;color:#555"><h2>Worksheet not found</h2><a href="/daily-assignments">&larr; Back to Daily Assignments</a></div>', 404)
+  return c.html(printWorksheetPage(a))
 })
 
 // ================================================================

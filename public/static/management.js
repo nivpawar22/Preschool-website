@@ -2765,6 +2765,7 @@ function loadFeeConfig() {
     var ac = results[1].config || {};
     _feeCfg = {
       classWise: fc.classWiseFees || {},
+      dueDates: fc.dueDates || {},
       kit: (fc.kitItems||[]).length > 0 ? fc.kitItems : [
         {id:'bag',name:'School Bag'},{id:'uniform',name:'Uniform (Set of 2)'},
         {id:'books',name:'Book Set'},{id:'stationery',name:'Stationery Kit'},
@@ -2813,6 +2814,11 @@ function renderFeeConfigUI() {
             '</th>';
           }).join('') +
         '</tr></thead><tbody>' +
+          '<tr style="border-bottom:1px solid #F1F5F9;background:#FEF8F0"><td style="padding:10px 12px;font-weight:700;color:#7A4E1D"><i class="fas fa-calendar-alt" style="margin-right:6px;color:#C4893A"></i>Due Dates</td>' +
+            FEE_COLS.map(function(c){
+              return '<td style="padding:5px 6px"><input type="text" class="fee-duedate-inp" data-col="'+c.id+'" value="'+_escH((cfg.dueDates||{})[c.id]||'')+'" placeholder="e.g. 15 June 2026" style="width:120px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:12px;text-align:center;box-sizing:border-box"></td>';
+            }).join('') +
+          '</tr>' +
           cfg.classes.map(function(cls) {
             var fees = cfg.classWise[cls.name] || {};
             return '<tr style="border-bottom:1px solid #F1F5F9"><td style="padding:10px 12px;font-weight:700;color:#0F1E3D">'+cls.name+'</td>' +
@@ -2905,7 +2911,14 @@ function saveFeeStructure() {
     if (v > 0) classWiseFees[cls][col] = v;
   });
   _feeCfg.classWise = classWiseFees;
-  var cfg = {classWiseFees: classWiseFees, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var dueDates = {};
+  document.querySelectorAll('.fee-duedate-inp').forEach(function(inp) {
+    var col = inp.getAttribute('data-col');
+    var v = (inp.value || '').trim();
+    if (v) dueDates[col] = v;
+  });
+  _feeCfg.dueDates = dueDates;
+  var cfg = {classWiseFees: classWiseFees, dueDates: dueDates, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
   var _fsTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config', {
     method:'POST',
@@ -2928,7 +2941,13 @@ window.printFeeStructure = function() {
   var year = _feeCfg.currentYear || getAcademicYear();
   var admissionsOpen = _feeCfg.admissionOpen;
 
-  var rowsHtml = _feeCfg.classes.map(function(cls) {
+  var dueDates = _feeCfg.dueDates || {};
+  var hasDueDates = FEE_COLS.some(function(c) { return dueDates[c.id]; });
+  var dueDatesRowHtml = !hasDueDates ? '' : '<tr style="background:#FEF8F0"><td style="font-weight:700;text-align:left">Due Dates</td>' +
+    FEE_COLS.map(function(c) { return '<td>' + (dueDates[c.id] || '—') + '</td>'; }).join('') +
+  '</tr>';
+
+  var rowsHtml = dueDatesRowHtml + _feeCfg.classes.map(function(cls) {
     var fees = _feeCfg.classWise[cls.name] || {};
     return '<tr><td style="font-weight:700;text-align:left">' + cls.name + '</td>' +
       FEE_COLS.map(function(c) {
@@ -2972,7 +2991,7 @@ window.printFeeStructure = function() {
 
 function saveActivities() {
   if (!_feeCfg) return;
-  var cfg = {classWiseFees: _feeCfg.classWise, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var cfg = {classWiseFees: _feeCfg.classWise, dueDates: _feeCfg.dueDates||{}, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
   var _actTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config', {
     method:'POST',
@@ -3034,7 +3053,7 @@ window.removeKitItem = function(i) {
 
 window.saveKitItems = function() {
   if (!_feeCfg) return;
-  var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
+  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
   var _kiTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config',{
     method:'POST',
@@ -3059,7 +3078,7 @@ function saveKitPrices() {
     if (v > 0) classPrices[k.id] = v;
   });
   _feeCfg.classWiseKit[className] = classPrices;
-  var cfg = {classWiseFees:_feeCfg.classWise, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
+  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
   var _kpTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config',{
     method:'POST',

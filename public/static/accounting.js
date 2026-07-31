@@ -846,15 +846,18 @@ function renderAccPayroll() {
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Name</th>
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Designation</th>
                 <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Base Salary</th>
+                <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">UPI ID</th>
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Last Paid</th>
                 <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>
               </tr></thead>
               <tbody>
                 ${teachers.map(function(t) {
+                  var hasQr = (t.documents||[]).some(function(d){return d.type==='UPI QR Code';});
                   return '<tr style="border-bottom:1px solid #f1f5f9" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'">' +
                     '<td style="padding:10px 12px"><div style="font-weight:700;color:#0F2050">' + (t.name||'') + '</div><div style="font-size:11px;color:#94a3b8">' + (t.username||'') + '</div></td>' +
                     '<td style="padding:10px 12px;color:#64748b">' + (t.designation||'Class Teacher') + '</td>' +
                     '<td style="padding:10px 12px;text-align:right;font-weight:700;color:#374151">₹' + parseFloat(t.baseSalary||0).toLocaleString('en-IN') + '</td>' +
+                    '<td style="padding:10px 12px;color:#64748b">' + (t.upiId ? '<span style="font-weight:600;color:#0F2050">'+t.upiId+'</span>' + (hasQr ? ' <i class="fas fa-qrcode" style="color:#10b981;margin-left:4px" title="QR code on file"></i>' : '') : '<span style="color:#cbd5e1">—</span>') + '</td>' +
                     '<td style="padding:10px 12px;color:#64748b">' + getLastPaid(t.id) + '</td>' +
                     '<td style="padding:10px 12px;text-align:center">' +
                       '<button class="btn btn-primary btn-sm" onclick="accProcessSalary(\'' + t.id + '\')"><i class="fas fa-money-check-alt"></i> Process Salary</button>' +
@@ -915,6 +918,21 @@ window.accProcessSalary = function(teacherId) {
   const thisMonth = new Date().toISOString().slice(0, 7);
   const baseSalary = parseFloat(teacher.baseSalary || 0);
 
+  const qrDoc = (teacher.documents || []).find(function(d) { return d.type === 'UPI QR Code'; });
+  const hasBankInfo = teacher.bankName || teacher.bankAccount || teacher.ifsc || teacher.upiId || qrDoc;
+  const paymentDetailsHtml = !hasBankInfo ? '' : `
+    <div style="grid-column:1/-1;border:1.5px dashed #cbd5e1;border-radius:10px;padding:14px 16px;background:#f8fafc;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;font-size:12px;color:#374151;line-height:1.9">
+        <div style="font-weight:800;color:#0F2050;font-size:13px;margin-bottom:6px"><i class="fas fa-university" style="color:#10b981;margin-right:6px"></i>Payment Details</div>
+        ${teacher.bankAccountHolder ? '<div><b>Holder:</b> ' + teacher.bankAccountHolder + '</div>' : ''}
+        ${teacher.bankName ? '<div><b>Bank:</b> ' + teacher.bankName + '</div>' : ''}
+        ${teacher.bankAccount ? '<div><b>A/C No.:</b> ' + teacher.bankAccount + '</div>' : ''}
+        ${teacher.ifsc ? '<div><b>IFSC:</b> ' + teacher.ifsc + '</div>' : ''}
+        ${teacher.upiId ? '<div><b>UPI ID:</b> ' + teacher.upiId + '</div>' : ''}
+      </div>
+      ${qrDoc ? '<div style="text-align:center"><img src="/r2/' + qrDoc.r2Key + '" alt="UPI QR Code" style="width:120px;height:120px;object-fit:contain;border:1px solid #e2e8f0;border-radius:8px;background:#fff"/><div style="font-size:10px;color:#64748b;margin-top:4px">Scan to pay</div></div>' : ''}
+    </div>`;
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.id = 'acc-payroll-modal';
@@ -926,6 +944,7 @@ window.accProcessSalary = function(teacherId) {
       </div>
       <div class="modal-body" style="padding:24px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          ${paymentDetailsHtml}
           <div style="grid-column:1/-1">
             <label class="form-label">Pay Month *</label>
             <input id="pr-month" class="form-control" type="month" value="${thisMonth}"/>

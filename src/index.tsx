@@ -317,7 +317,7 @@ const Layout = ({ children, title = 'SuperKids India Preschool', description = '
   ${jsonLd ? `<script type="application/ld+json">${jsonLd}</script>` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@200;300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Nunito:wght@200;300;400;600;700;800;900&family=Raleway+Dots&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -2354,20 +2354,18 @@ function dottedRow(unit: string, fontSizePx: number, color: string): string {
   const itemW = unit.length * charW * 1.3
   const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
   const slotW = W / repeats
-  const capHeight = fontSizePx * 0.72
-  const descent = fontSizePx * 0.22
+  // Raleway Dots glyph metrics (measured): caps/digits ~0.68em tall, descenders ~0.32em below baseline.
+  const capHeight = fontSizePx * 0.68
+  const descent = fontSizePx * 0.32
   const topY = Math.round(fontSizePx * 0.06)
   const baseY = Math.round(topY + capHeight)
   const midY = Math.round((topY + baseY) / 2)
-  const H = Math.round(baseY + descent + fontSizePx * 0.12)
-  const strokeW = Math.max(1.6, fontSizePx * 0.07)
-  const dashLen = Math.max(1, strokeW * 0.35)
-  const gapLen = Math.max(3.2, strokeW * 2.3)
+  const H = Math.round(baseY + descent + fontSizePx * 0.1)
   const itemTextLen = Math.min(slotW - 12, unit.length * charW)
   const glyphs = Array.from({ length: repeats }, (_, i) => {
     const x = Math.round(i * slotW + (slotW - itemTextLen) / 2)
     const opacity = repeats > 1 ? (1 - i * (0.72 / (repeats - 1))).toFixed(2) : '1'
-    return `<text x="${x}" y="${baseY}" textLength="${itemTextLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Nunito',sans-serif" font-weight="200" font-size="${fontSizePx}" fill="none" stroke="${color}" stroke-opacity="${opacity}" stroke-width="${strokeW.toFixed(1)}" stroke-dasharray="${dashLen.toFixed(1)},${gapLen.toFixed(1)}" stroke-linecap="round">${esc(unit)}</text>`
+    return `<text x="${x}" y="${baseY}" textLength="${itemTextLen.toFixed(0)}" lengthAdjust="spacing" font-family="'Raleway Dots',cursive" font-size="${fontSizePx}" fill="${color}" fill-opacity="${opacity}" stroke="none">${esc(unit)}</text>`
   }).join('')
   const rule = `<line x1="0" y1="${topY}" x2="${W}" y2="${topY}" stroke="#C7CEDB" stroke-width="1.5"/>` +
     `<line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="#B7C0D1" stroke-width="1.5" stroke-dasharray="4,4"/>` +
@@ -2922,7 +2920,7 @@ function printWorksheetPage(classInfo: AssignClass, subjectInfo: AssignSubject, 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} – ${esc(classInfo.name)} ${esc(subjectInfo.name)} – SuperKids India Preschool</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@200;300;400;600;700;800;900${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@200;300;400;600;700;800;900&family=Raleway+Dots${needsDevanagari ? '&family=Noto+Sans+Devanagari:wght@600;800' : ''}&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}

@@ -3096,10 +3096,15 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
     .ct-row{padding:2px 0}
     .dotted-row{display:block;width:100%}
     @media print{
-      @page{size:A4;margin:12mm}
+      @page{size:A4;margin:10mm}
       .no-print{display:none !important}
       .sheet{box-shadow:none;border-radius:0}
       .ct-sheet-section{padding:0;background:#fff}
+      .sheet-body{padding:14px 24px 16px !important}
+      .instructions{margin:10px 0 14px !important}
+      .ct-model{margin-bottom:12px !important}
+      .ct-rows{gap:6px !important}
+      .sheet-footer{margin-top:10px !important;padding-top:8px !important}
       nav, footer, #whatsapp-btn, #wa-tooltip{display:none !important}
       body{padding:0}
     }
@@ -3217,7 +3222,7 @@ function customAssignmentFormPage(): string {
           <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:10px">Adjust</label>
           <div class="ca-cropbox" id="ca-cropbox">
             <img id="ca-preview-img" style="display:none" alt="Preview">
-            <iframe id="ca-preview-pdf" style="display:none" title="PDF Preview"></iframe>
+            <canvas id="ca-preview-pdf" style="display:none"></canvas>
             <div id="ca-placeholder">No file selected yet</div>
           </div>
           <div class="ca-sliders">
@@ -3235,8 +3240,7 @@ function customAssignmentFormPage(): string {
   </section>
   <style>
     .ca-cropbox{width:100%;max-width:320px;aspect-ratio:4/5;margin:0 auto 16px;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
-    .ca-cropbox img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
-    .ca-cropbox iframe{width:100%;height:100%;border:none;background:#fff;transform-origin:center center}
+    .ca-cropbox img, .ca-cropbox canvas{width:100%;height:100%;object-fit:contain;transform-origin:center center}
     #ca-placeholder{color:#9CA9C7;font-size:0.85rem;text-align:center;padding:0 20px}
     .ca-sliders{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
     .ca-sliders label{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#2A3B60;font-weight:700}
@@ -3295,32 +3299,64 @@ function customAssignmentFormPage(): string {
       }
     }
 
+    let pdfjsLoadPromise = null;
+    function loadPdfJs(){
+      if (pdfjsLoadPromise) return pdfjsLoadPromise;
+      pdfjsLoadPromise = new Promise(function(resolve, reject){
+        const s = document.createElement('script');
+        s.src = '/static/pdfjs/pdf.min.js';
+        s.onload = function(){ pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdfjs/pdf.worker.min.js'; resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return pdfjsLoadPromise;
+    }
+
     document.getElementById('ca-file').addEventListener('change', function(e){
       const f = e.target.files[0];
       if (!f) return;
       caFile = f;
       caIsPdf = f.type === 'application/pdf';
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        caPlaceholder.style.display = 'none';
-        if (caIsPdf) {
-          caImg.style.display = 'none';
-          caPdf.src = ev.target.result;
-          caPdf.style.display = 'block';
-        } else {
-          caPdf.style.display = 'none';
-          caPdf.src = '';
+      document.getElementById('ca-pdf-hint').style.display = caIsPdf ? 'block' : 'none';
+      document.getElementById('ca-zoom').value = 1;
+      document.getElementById('ca-panx').value = 0;
+      document.getElementById('ca-pany').value = 0;
+      document.getElementById('ca-rotation').value = 0;
+      caPlaceholder.style.display = 'none';
+      if (caIsPdf) {
+        caImg.style.display = 'none';
+        caPdf.style.display = 'block';
+        const reader = new FileReader();
+        reader.onload = async function(ev){
+          try {
+            await loadPdfJs();
+            const typedArray = new Uint8Array(ev.target.result);
+            const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+            const page = await pdf.getPage(1);
+            const baseViewport = page.getViewport({ scale: 1 });
+            const targetWidth = caPdf.clientWidth || 320;
+            const scale = (targetWidth / baseViewport.width) * 2;
+            const viewport = page.getViewport({ scale: scale });
+            caPdf.width = viewport.width;
+            caPdf.height = viewport.height;
+            const ctx = caPdf.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            caApplyTransform();
+          } catch (err) {
+            document.getElementById('ca-status').textContent = 'Could not preview this PDF, but it can still be saved.';
+          }
+        };
+        reader.readAsArrayBuffer(f);
+      } else {
+        caPdf.style.display = 'none';
+        caImg.style.display = 'block';
+        const reader = new FileReader();
+        reader.onload = function(ev){
           caImg.src = ev.target.result;
-          caImg.style.display = 'block';
-        }
-        document.getElementById('ca-pdf-hint').style.display = caIsPdf ? 'block' : 'none';
-        document.getElementById('ca-zoom').value = 1;
-        document.getElementById('ca-panx').value = 0;
-        document.getElementById('ca-pany').value = 0;
-        document.getElementById('ca-rotation').value = 0;
-        caApplyTransform();
-      };
-      reader.readAsDataURL(f);
+          caApplyTransform();
+        };
+        reader.readAsDataURL(f);
+      }
     });
     function caApplyTransform(){
       const z = document.getElementById('ca-zoom').value;
@@ -3383,7 +3419,7 @@ function printCustomAssignmentPage(classInfo: AssignClass, subjectInfo: AssignSu
   const isPdf = row.file_type === 'pdf'
   const transform = caTransform(row)
   const bodyMedia = isPdf
-    ? `<iframe src="/r2/${esc(row.image_key)}" style="transform:${transform}" title="${esc(row.title)}"></iframe>`
+    ? `<div id="ca-pdf-pages"><div id="ca-pdf-loading">Loading document…</div></div>`
     : `<img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt="${esc(row.title)}">`
   return `<!DOCTYPE html>
 <html lang="en">
@@ -3392,6 +3428,7 @@ function printCustomAssignmentPage(classInfo: AssignClass, subjectInfo: AssignSu
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(row.title)} – ${esc(classInfo.name)} ${esc(subjectInfo.name)} – SuperKids India Preschool</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+${isPdf ? `<script src="/static/pdfjs/pdf.min.js"></script>` : ''}
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24px 16px}
@@ -3400,23 +3437,27 @@ body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24
 .back-link{color:#0F2050;background:#fff;border:2px solid #0F2050 !important}
 .print-btn{color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);box-shadow:0 4px 16px rgba(15,32,80,0.25)}
 .delete-btn{color:#fff;background:#D64545;display:none}
-.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:0 0 28px;overflow:hidden}
-.sheet-body{padding:22px 36px 0}
+.sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:0 0 20px;overflow:hidden}
+.sheet-body{padding:16px 24px 0}
 ${SK_BANNER_STYLE}
 .sk-banner-compact{border-radius:0;border-left:none;border-right:none;border-top:none}
 .worksheet-title{font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.5rem}
 .worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
-.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
-.sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
-.ca-image-wrap{width:100%;max-width:600px;aspect-ratio:4/5;margin:0 auto;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#F8F9FB;display:flex;align-items:center;justify-content:center}
-.ca-image-wrap img, .ca-image-wrap iframe{width:100%;height:100%;object-fit:contain;transform-origin:center center;border:none}
-.ca-pdf-note{max-width:600px;margin:10px auto 0;text-align:center;font-size:0.78rem;color:#6B7A9D}
+.instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:8px 16px;font-size:0.85rem;color:#7A4E1D;margin:12px 0 14px}
+.sheet-footer{margin-top:14px;padding-top:10px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
+.ca-image-wrap{width:100%;margin:0 auto;border:1px solid #DCE1EF;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center}
+.ca-image-wrap img{width:100%;height:auto;max-height:78vh;object-fit:contain;transform-origin:center center}
+#ca-pdf-pages{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
+#ca-pdf-loading{padding:40px;color:#9CA9C7;font-size:0.9rem}
+.ca-pdf-page{max-width:100%;border:1px solid #DCE1EF;border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
+.ca-pdf-page canvas{display:block;max-width:100%;height:auto;transform-origin:center center}
 @media print{
-  @page{size:A4;margin:12mm}
+  @page{size:A4;margin:10mm}
   body{background:#fff;padding:0}
   .toolbar{display:none}
   .sheet{box-shadow:none;border-radius:0;max-width:100%}
   .sk-banner{border-radius:0}
+  .ca-image-wrap img{max-height:190mm}
 }
 </style>
 </head>
@@ -3425,9 +3466,7 @@ ${SK_BANNER_STYLE}
     <a href="/assignments/${classInfo.id}/${subjectInfo.id}" class="back-link">&larr; Back to ${esc(subjectInfo.name)}</a>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="delete-btn" id="ca-delete-btn" onclick="caDeleteAssignment()">🗑️ Delete</button>
-      ${isPdf
-        ? `<a class="print-btn" href="/r2/${esc(row.image_key)}" target="_blank" rel="noopener"><i>🖨️</i> Open &amp; Print PDF</a>`
-        : `<button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>`}
+      <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
     </div>
   </div>
   <div class="sheet">
@@ -3435,7 +3474,6 @@ ${SK_BANNER_STYLE}
     <div class="sheet-body">
       <div class="instructions">📌 Follow the ${isPdf ? 'document' : 'picture'} above to complete this assignment.</div>
       <div class="ca-image-wrap">${bodyMedia}</div>
-      ${isPdf ? `<div class="ca-pdf-note">📄 This is a preview. If the file has multiple pages, use <b>Open &amp; Print PDF</b> above to view and print every page in sequence.</div>` : ''}
       <div class="sheet-footer">SuperKids India Preschool &middot; Custom assignment &middot; superkidsindia.com</div>
     </div>
   </div>
@@ -3464,6 +3502,35 @@ ${SK_BANNER_STYLE}
         }
       } catch (e) { alert('Something went wrong. Please try again.'); }
     }
+    ${isPdf ? `
+    (async function caRenderPdf(){
+      const container = document.getElementById('ca-pdf-pages');
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdfjs/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument('/r2/${esc(row.image_key)}').promise;
+        container.innerHTML = '';
+        const targetWidth = Math.min(container.clientWidth || 760, 760);
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const baseViewport = page.getViewport({ scale: 1 });
+          const scale = targetWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale: scale * 2 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = (viewport.width / 2) + 'px';
+          canvas.style.transform = '${transform}';
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+          const wrap = document.createElement('div');
+          wrap.className = 'ca-pdf-page';
+          wrap.appendChild(canvas);
+          container.appendChild(wrap);
+        }
+      } catch (e) {
+        container.innerHTML = '<div style="padding:30px;text-align:center;color:#D64545;font-size:0.9rem">Could not preview this PDF. <a href="/r2/${esc(row.image_key)}" target="_blank" rel="noopener">Open it directly</a> instead.</div>';
+      }
+    })();` : ''}
   </script>
 </body>
 </html>`

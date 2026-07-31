@@ -3458,6 +3458,8 @@ ${SK_BANNER_STYLE}
   .sheet{box-shadow:none;border-radius:0;max-width:100%}
   .sk-banner{border-radius:0}
   .ca-image-wrap img{max-height:190mm}
+  .ca-pdf-page canvas{max-height:190mm !important;width:auto !important;max-width:100%}
+  .ca-pdf-page:first-child{page-break-before:avoid}
 }
 </style>
 </head>

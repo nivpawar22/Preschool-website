@@ -2348,11 +2348,11 @@ const HINDI_WORDS_SIMPLE: string[] = ['घर', 'आम', 'माँ', 'गा�
 const HINDI_WORDS_ADVANCED: string[] = ['पानी', 'केला', 'सूरज', 'किताब', 'दरवाज़ा']
 
 // ── Reusable box / row builders ──────────────────────────────────
-function dottedRow(unit: string, fontSizePx: number, color: string): string {
+function dottedRow(unit: string, fontSizePx: number, color: string, forceRepeats?: number): string {
   const W = 760
   const charW = fontSizePx * 0.62
   const itemW = unit.length * charW * 1.3
-  const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
+  const repeats = forceRepeats ? Math.max(1, Math.min(8, forceRepeats)) : Math.max(1, Math.min(5, Math.floor(W / itemW)))
   const slotW = W / repeats
   // Raleway Dots glyph metrics (measured): caps/digits ~0.68em tall, descenders ~0.32em below baseline.
   const capHeight = fontSizePx * 0.68
@@ -2967,7 +2967,7 @@ ${extraStyle}
 // ================================================================
 // ── Custom Tracing Sheet Generator (public tool) ────────────────
 // ================================================================
-function customTracingPage(rawText: string, linesParam: string, caseParam: string): string {
+function customTracingPage(rawText: string, linesParam: string, caseParam: string, fontSizeParam?: string, colsParam?: string): string {
   const text = (rawText || '').slice(0, 40).trim()
   const lines = Math.min(12, Math.max(1, parseInt(linesParam, 10) || 6))
   let displayText = text
@@ -2976,12 +2976,17 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
   else if (caseParam === 'title') displayText = text.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase())
 
   const hasText = displayText.length > 0
-  const ctFontSize = displayText.length <= 3 ? 46 : displayText.length <= 8 ? 34 : 24
-  const rowsHtml = hasText ? Array.from({ length: lines }, () => `<div class="ct-row">${dottedRow(displayText, ctFontSize, '#0F2050')}</div>`).join('') : ''
+  const autoFontSize = displayText.length <= 3 ? 46 : displayText.length <= 8 ? 34 : 24
+  const allowedFontSizes = [22, 28, 34, 40, 46, 54, 62]
+  const fontSizeNum = parseInt(fontSizeParam || '', 10)
+  const ctFontSize = allowedFontSizes.includes(fontSizeNum) ? fontSizeNum : autoFontSize
+  const colsNum = parseInt(colsParam || '', 10)
+  const forceCols = colsParam && colsParam !== 'auto' && colsNum >= 1 && colsNum <= 8 ? colsNum : undefined
+  const rowsHtml = hasText ? Array.from({ length: lines }, () => `<div class="ct-row">${dottedRow(displayText, ctFontSize, '#0F2050', forceCols)}</div>`).join('') : ''
 
   const content = `
   ${Navbar('assignments')}
-  <section style="padding:3rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
+  <section class="no-print" style="padding:3rem 0 4rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
     <div class="max-w-4xl mx-auto px-4">
       <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Custom Tool</div>
       <div class="section-accent" style="margin:0 auto 1rem"></div>
@@ -3008,9 +3013,29 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
           </select>
         </div>
         <div style="flex:1;min-width:140px">
-          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Practice lines</label>
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Practice lines (rows)</label>
           <select name="lines" class="form-input">
             ${[3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${lines === n ? 'selected' : ''}>${n} lines</option>`).join('')}
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Font size</label>
+          <select name="fontSize" class="form-input">
+            <option value="auto" ${!fontSizeParam || fontSizeParam === 'auto' ? 'selected' : ''}>Auto</option>
+            <option value="22" ${fontSizeParam === '22' ? 'selected' : ''}>Small</option>
+            <option value="28" ${fontSizeParam === '28' ? 'selected' : ''}>Small-Medium</option>
+            <option value="34" ${fontSizeParam === '34' ? 'selected' : ''}>Medium</option>
+            <option value="40" ${fontSizeParam === '40' ? 'selected' : ''}>Medium-Large</option>
+            <option value="46" ${fontSizeParam === '46' ? 'selected' : ''}>Large</option>
+            <option value="54" ${fontSizeParam === '54' ? 'selected' : ''}>Extra Large</option>
+            <option value="62" ${fontSizeParam === '62' ? 'selected' : ''}>Huge</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Columns per line</label>
+          <select name="cols" class="form-input">
+            <option value="auto" ${!colsParam || colsParam === 'auto' ? 'selected' : ''}>Auto</option>
+            ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${colsParam === String(n) ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         </div>
         <button type="submit" class="btn-primary" style="padding:14px 32px">Generate Sheet</button>
@@ -3018,7 +3043,7 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
     </div>
   </section>
   ${hasText ? `
-  <section style="padding:0 0 5rem;background:#F8F9FB">
+  <section class="ct-sheet-section" style="padding:0 0 5rem;background:#F8F9FB">
     <div class="max-w-4xl mx-auto px-4">
       <div class="toolbar no-print" style="max-width:100%;margin:0 0 16px;display:flex;justify-content:flex-end">
         <button class="print-btn" onclick="window.print()" style="color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);border:none;border-radius:50px;padding:12px 28px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">🖨️ Print / Save as PDF</button>
@@ -3074,6 +3099,9 @@ function customTracingPage(rawText: string, linesParam: string, caseParam: strin
       @page{size:A4;margin:12mm}
       .no-print{display:none !important}
       .sheet{box-shadow:none;border-radius:0}
+      .ct-sheet-section{padding:0;background:#fff}
+      nav, footer, #whatsapp-btn, #wa-tooltip{display:none !important}
+      body{padding:0}
     }
   </style>
   ${Footer()}
@@ -3085,7 +3113,9 @@ app.get('/assignments/custom-tracing', (c) => {
   const text = c.req.query('text') || ''
   const lines = c.req.query('lines') || '6'
   const caseParam = c.req.query('case') || 'asis'
-  return c.html(customTracingPage(text, lines, caseParam))
+  const fontSizeParam = c.req.query('fontSize') || 'auto'
+  const colsParam = c.req.query('cols') || 'auto'
+  return c.html(customTracingPage(text, lines, caseParam, fontSizeParam, colsParam))
 })
 
 // ================================================================
@@ -3146,8 +3176,19 @@ function customAssignmentFormPage(): string {
       <div id="ca-login-gate" class="card" style="padding:2.5rem;text-align:center;display:none">
         <div style="font-size:2.4rem;margin-bottom:0.75rem">🔒</div>
         <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:#0F2050;font-weight:800;margin-bottom:0.5rem">Staff Login Required</h3>
-        <p style="color:#6B7A9D;font-size:0.9rem;margin-bottom:1.25rem">Creating or removing a custom assignment is restricted to school staff. Please log in with your staff username and password.</p>
-        <a href="/parent-portal" class="btn-primary" style="display:inline-block;padding:12px 28px">Go to Login</a>
+        <p style="color:#6B7A9D;font-size:0.9rem;margin-bottom:1.25rem">Creating or removing a custom assignment is restricted to school staff. Log in below to continue — you'll stay right here on this page.</p>
+        <form style="max-width:320px;margin:0 auto;text-align:left" onsubmit="event.preventDefault();caStaffLogin();return false">
+          <div style="margin-bottom:12px">
+            <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Username</label>
+            <input type="text" id="ca-login-username" class="form-input" autocomplete="username">
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Password</label>
+            <input type="password" id="ca-login-password" class="form-input" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%;padding:12px">Log In</button>
+          <div id="ca-login-status" style="margin-top:10px;text-align:center;font-size:0.85rem;font-weight:700"></div>
+        </form>
       </div>
       <div id="ca-form-wrap" class="card" style="padding:2rem;display:none">
         <div style="margin-bottom:16px">
@@ -3185,6 +3226,7 @@ function customAssignmentFormPage(): string {
             <label id="ca-pany-row">Vertical <input type="range" id="ca-pany" min="-60" max="60" step="1" value="0"></label>
             <label id="ca-rotation-row">Tilt / Rotate <input type="range" id="ca-rotation" min="-180" max="180" step="1" value="0"></label>
           </div>
+          <div id="ca-pdf-hint" style="display:none;font-size:0.78rem;color:#6B7A9D;text-align:center;margin-top:10px;max-width:320px;margin-left:auto;margin-right:auto">📄 This preview shows page 1 only. Zoom/pan/tilt adjust how it displays, but printing will still include every page of the PDF in sequence.</div>
         </div>
         <button type="button" class="btn-primary" style="width:100%;padding:14px" onclick="saveCustomAssignment()">Save Assignment</button>
         <div id="ca-status" style="margin-top:12px;text-align:center;font-size:0.9rem;color:#0F2050;font-weight:700"></div>
@@ -3207,7 +3249,7 @@ function customAssignmentFormPage(): string {
     const caPdf = document.getElementById('ca-preview-pdf');
     const caPlaceholder = document.getElementById('ca-placeholder');
 
-    (async function caCheckStaffLogin(){
+    async function caCheckStaffLogin(){
       const token = localStorage.getItem('sk_session_token');
       let ok = false;
       if (token) {
@@ -3217,8 +3259,41 @@ function customAssignmentFormPage(): string {
           ok = !!(json.ok && json.user && json.user.role !== 'parent');
         } catch (e) { ok = false; }
       }
-      document.getElementById(ok ? 'ca-form-wrap' : 'ca-login-gate').style.display = 'block';
-    })();
+      document.getElementById('ca-form-wrap').style.display = ok ? 'block' : 'none';
+      document.getElementById('ca-login-gate').style.display = ok ? 'none' : 'block';
+      return ok;
+    }
+    caCheckStaffLogin();
+
+    async function caStaffLogin(){
+      const status = document.getElementById('ca-login-status');
+      const username = document.getElementById('ca-login-username').value.trim();
+      const password = document.getElementById('ca-login-password').value;
+      if (!username || !password) { status.style.color = '#D64545'; status.textContent = 'Please enter username and password.'; return; }
+      status.style.color = '#0F2050';
+      status.textContent = 'Logging in...';
+      try {
+        const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+        const json = await res.json();
+        if (!json.ok || !json.token) {
+          status.style.color = '#D64545';
+          status.textContent = json.error || 'Invalid username or password.';
+          return;
+        }
+        if (json.user && json.user.role === 'parent') {
+          status.style.color = '#D64545';
+          status.textContent = 'Parent accounts cannot create or delete custom assignments.';
+          return;
+        }
+        localStorage.setItem('sk_session_token', json.token);
+        status.style.color = '#1AA6CA';
+        status.textContent = 'Logged in!';
+        await caCheckStaffLogin();
+      } catch (e) {
+        status.style.color = '#D64545';
+        status.textContent = 'Something went wrong. Please try again.';
+      }
+    }
 
     document.getElementById('ca-file').addEventListener('change', function(e){
       const f = e.target.files[0];
@@ -3238,9 +3313,7 @@ function customAssignmentFormPage(): string {
           caImg.src = ev.target.result;
           caImg.style.display = 'block';
         }
-        ['ca-zoom-row','ca-panx-row','ca-pany-row'].forEach(function(id){
-          document.getElementById(id).style.display = caIsPdf ? 'none' : 'flex';
-        });
+        document.getElementById('ca-pdf-hint').style.display = caIsPdf ? 'block' : 'none';
         document.getElementById('ca-zoom').value = 1;
         document.getElementById('ca-panx').value = 0;
         document.getElementById('ca-pany').value = 0;
@@ -3254,9 +3327,7 @@ function customAssignmentFormPage(): string {
       const x = document.getElementById('ca-panx').value;
       const y = document.getElementById('ca-pany').value;
       const r = document.getElementById('ca-rotation').value;
-      const t = caIsPdf
-        ? 'rotate(' + r + 'deg)'
-        : 'translate(' + x + '%,' + y + '%) scale(' + z + ') rotate(' + r + 'deg)';
+      const t = 'translate(' + x + '%,' + y + '%) scale(' + z + ') rotate(' + r + 'deg)';
       caImg.style.transform = t;
       caPdf.style.transform = t;
     }
@@ -3310,10 +3381,7 @@ app.get('/assignments/custom-assignment', (c) => c.html(customAssignmentFormPage
 
 function printCustomAssignmentPage(classInfo: AssignClass, subjectInfo: AssignSubject, row: CustomAssignmentRow): string {
   const isPdf = row.file_type === 'pdf'
-  const transform = isPdf ? `rotate(${row.rotation || 0}deg)` : caTransform(row)
-  const thumbHtml = isPdf
-    ? `<div class="ca-thumb ca-thumb-pdf">📄</div>`
-    : `<div class="ca-thumb"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt=""></div>`
+  const transform = caTransform(row)
   const bodyMedia = isPdf
     ? `<iframe src="/r2/${esc(row.image_key)}" style="transform:${transform}" title="${esc(row.title)}"></iframe>`
     : `<img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt="${esc(row.title)}">`
@@ -3340,11 +3408,9 @@ ${SK_BANNER_STYLE}
 .worksheet-tag{font-size:0.75rem;color:#1AA6CA;font-weight:800;text-transform:uppercase;letter-spacing:1px}
 .instructions{background:#FEF8F0;border:1.5px solid #C4893A33;border-radius:10px;padding:10px 16px;font-size:0.85rem;color:#7A4E1D;margin:16px 0 20px}
 .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
-.ca-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid #0F2050;flex-shrink:0;background:#F0F2F7}
-.ca-thumb img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
-.ca-thumb-pdf{display:flex;align-items:center;justify-content:center;font-size:1.8rem}
 .ca-image-wrap{width:100%;max-width:600px;aspect-ratio:4/5;margin:0 auto;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#F8F9FB;display:flex;align-items:center;justify-content:center}
 .ca-image-wrap img, .ca-image-wrap iframe{width:100%;height:100%;object-fit:contain;transform-origin:center center;border:none}
+.ca-pdf-note{max-width:600px;margin:10px auto 0;text-align:center;font-size:0.78rem;color:#6B7A9D}
 @media print{
   @page{size:A4;margin:12mm}
   body{background:#fff;padding:0}
@@ -3359,14 +3425,17 @@ ${SK_BANNER_STYLE}
     <a href="/assignments/${classInfo.id}/${subjectInfo.id}" class="back-link">&larr; Back to ${esc(subjectInfo.name)}</a>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="delete-btn" id="ca-delete-btn" onclick="caDeleteAssignment()">🗑️ Delete</button>
-      <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
+      ${isPdf
+        ? `<a class="print-btn" href="/r2/${esc(row.image_key)}" target="_blank" rel="noopener"><i>🖨️</i> Open &amp; Print PDF</a>`
+        : `<button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>`}
     </div>
   </div>
   <div class="sheet">
-    ${worksheetLetterheadHtml(classInfo, subjectInfo, row.title, thumbHtml)}
+    ${worksheetLetterheadHtml(classInfo, subjectInfo, row.title)}
     <div class="sheet-body">
       <div class="instructions">📌 Follow the ${isPdf ? 'document' : 'picture'} above to complete this assignment.</div>
       <div class="ca-image-wrap">${bodyMedia}</div>
+      ${isPdf ? `<div class="ca-pdf-note">📄 This is a preview. If the file has multiple pages, use <b>Open &amp; Print PDF</b> above to view and print every page in sequence.</div>` : ''}
       <div class="sheet-footer">SuperKids India Preschool &middot; Custom assignment &middot; superkidsindia.com</div>
     </div>
   </div>

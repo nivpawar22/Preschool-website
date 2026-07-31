@@ -216,6 +216,10 @@ window.openTeacherDetail = function(teacherId) {
         row('Account Number', _escH(t.bankAccount))+
         row('IFSC Code', _escH(t.ifsc))+
         row('UPI ID', _escH(t.upiId))+
+        (function(){
+          var qr = (t.documents||[]).find(function(d){return d.type==='UPI QR Code';});
+          return row('UPI QR Code', qr ? '<img src="/r2/'+qr.r2Key+'" style="width:100px;height:100px;object-fit:contain;border:1px solid #e2e8f0;border-radius:8px;background:#fff" alt="UPI QR Code">' : '<span style="color:#94a3b8">Not uploaded</span>');
+        })()+
       '</div>'+
 
       // Employment tab
@@ -347,10 +351,12 @@ window.openAccPayrollForTeacher = function(teacherId) {
 };
 
 // ==================== ONBOARDING DOC UPLOAD HELPERS ====================
-function _tobDocWidget(docType, label, existingDocs) {
+function _tobDocWidget(docType, label, existingDocs, acceptOverride) {
   var docs = existingDocs || [];
   var existing = docs.find(function(d) { return d.type === docType; });
   var domKey = docType.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  var accept = acceptOverride || 'image/*,application/pdf';
+  var chooseLabel = acceptOverride === 'image/*' ? 'Choose image...' : 'Choose PDF or image...';
   var previewHtml;
   if (existing) {
     var viewLink = existing.r2Key
@@ -369,8 +375,8 @@ function _tobDocWidget(docType, label, existingDocs) {
       previewHtml+
       '<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;margin:0">'+
         '<i class="fas fa-paperclip" style="color:#6366f1;font-size:13px;flex-shrink:0"></i>'+
-        '<span id="tob-label-'+domKey+'" style="flex:1">'+( existing ? 'Replace file...' : 'Choose PDF or image...')+'</span>'+
-        '<input type="file" id="tob-doc-'+domKey+'" accept="image/*,application/pdf" onchange="_tobDocSelect(\''+domKey+'\',\''+docType+'\',this)" style="display:none">'+
+        '<span id="tob-label-'+domKey+'" style="flex:1">'+( existing ? 'Replace file...' : chooseLabel)+'</span>'+
+        '<input type="file" id="tob-doc-'+domKey+'" accept="'+accept+'" onchange="_tobDocSelect(\''+domKey+'\',\''+docType+'\',this)" style="display:none">'+
       '</label>'+
     '</div>'+
   '</div>';
@@ -545,6 +551,7 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div><label class="form-label">IFSC Code</label><input id="tob-ifsc" class="form-control" type="text" value="'+_escH(t.ifsc||'')+'" placeholder="e.g. HDFC0001234"/></div>'+
           '<div><label class="form-label">UPI ID (Optional)</label><input id="tob-upi" class="form-control" type="text" value="'+_escH(t.upiId||'')+'" placeholder="mobile@upi"/></div>'+
           '<div>'+_tobDocWidget('Cancelled Cheque','Cancelled Cheque / Bank Passbook',t.documents)+'</div>'+
+          '<div>'+_tobDocWidget('UPI QR Code','Upload UPI QR Code (Image) — shown in Staff Payroll for scan-to-pay',t.documents,'image/*')+'</div>'+
         '</div>'+
       '</div>'+
 

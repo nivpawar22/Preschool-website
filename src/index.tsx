@@ -102,23 +102,25 @@ app.delete('/api/upload', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
-// Public image upload — no login required. Used by the public Custom Assignment
-// tool, so it's restricted to plain image types and a modest size cap.
-app.post('/api/upload-public', async (c) => {
+// Custom Assignment file upload — staff-only (any logged-in role except parent).
+// Accepts images and PDFs; images get zoom/pan/rotation, PDFs get rotation only.
+app.post('/api/custom-assignments/upload', async (c) => {
+  const sess = await getSession(c)
+  if (!isNonParentStaff(sess)) return c.json({ error: 'Staff login required' }, 401)
   try {
     const form = await c.req.formData()
     const file = form.get('file') as File | null
     if (!file) return c.json({ error: 'No file provided' }, 400)
-    if (file.size > 6 * 1024 * 1024) return c.json({ error: 'File too large (max 6MB)' }, 400)
+    if (file.size > 10 * 1024 * 1024) return c.json({ error: 'File too large (max 10MB)' }, 400)
     const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase()
-    const EXT_MIME: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' }
+    const EXT_MIME: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', pdf: 'application/pdf' }
     const mimeType = file.type || EXT_MIME[ext] || ''
-    const PUBLIC_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
-    if (!PUBLIC_IMAGE_MIME.has(mimeType)) return c.json({ error: 'Only JPG, PNG, GIF, or WEBP images are allowed' }, 400)
-    const folder = (c.req.query('folder') || 'custom-assignments').replace(/[^a-z0-9_-]/gi, '')
-    const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'])
+    if (!ALLOWED.has(mimeType)) return c.json({ error: 'Only JPG, PNG, GIF, WEBP, or PDF files are allowed' }, 400)
+    const fileType = mimeType === 'application/pdf' ? 'pdf' : 'image'
+    const key = `custom-assignments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     await c.env.MEDIA.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: mimeType } })
-    return c.json({ ok: true, key })
+    return c.json({ ok: true, key, fileType })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
@@ -2125,10 +2127,17 @@ function findAssignSubject(id: string): AssignSubject | undefined { return ASSIG
 // ── Custom Assignments (user-uploaded, class/subject-tagged) ────
 async function ensureCustomAssignmentTable(db: any) {
   await db.exec(`CREATE TABLE IF NOT EXISTS custom_assignments (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, subject_id TEXT NOT NULL, title TEXT NOT NULL, image_key TEXT NOT NULL, zoom REAL DEFAULT 1, pan_x REAL DEFAULT 0, pan_y REAL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  // Schema migrations for columns added after the table already existed in production.
+  try { await db.exec(`ALTER TABLE custom_assignments ADD COLUMN rotation REAL DEFAULT 0`) } catch { /* column already exists */ }
+  try { await db.exec(`ALTER TABLE custom_assignments ADD COLUMN file_type TEXT DEFAULT 'image'`) } catch { /* column already exists */ }
 }
-type CustomAssignmentRow = { id: string; class_id: string; subject_id: string; title: string; image_key: string; zoom: number; pan_x: number; pan_y: number; created_at: string }
+type CustomAssignmentRow = { id: string; class_id: string; subject_id: string; title: string; image_key: string; zoom: number; pan_x: number; pan_y: number; rotation: number; file_type: string; created_at: string }
 function caTransform(row: CustomAssignmentRow): string {
-  return `translate(${row.pan_x}%,${row.pan_y}%) scale(${row.zoom})`
+  return `translate(${row.pan_x}%,${row.pan_y}%) scale(${row.zoom}) rotate(${row.rotation || 0}deg)`
+}
+// Custom Assignment creation/deletion is restricted to logged-in staff — any role except 'parent'.
+function isNonParentStaff(sess: { role: string } | null): boolean {
+  return !!sess && sess.role !== 'parent'
 }
 
 // ── Category helpers (dynamic per-subject, per-class sheet counts) ─
@@ -2346,15 +2355,14 @@ function dottedRow(unit: string, fontSizePx: number, color: string): string {
   const repeats = Math.max(1, Math.min(5, Math.floor(W / itemW)))
   const slotW = W / repeats
   const capHeight = fontSizePx * 0.72
-  const xHeight = fontSizePx * 0.52
   const descent = fontSizePx * 0.22
   const topY = Math.round(fontSizePx * 0.06)
   const baseY = Math.round(topY + capHeight)
-  const midY = Math.round(topY + (capHeight - xHeight))
+  const midY = Math.round((topY + baseY) / 2)
   const H = Math.round(baseY + descent + fontSizePx * 0.12)
-  const strokeW = Math.max(1.3, fontSizePx * 0.058)
-  const dashLen = Math.max(1, fontSizePx * 0.032)
-  const gapLen = Math.max(2.4, fontSizePx * 0.085)
+  const strokeW = Math.max(1.6, fontSizePx * 0.07)
+  const dashLen = Math.max(1, strokeW * 0.35)
+  const gapLen = Math.max(3.2, strokeW * 2.3)
   const itemTextLen = Math.min(slotW - 12, unit.length * charW)
   const glyphs = Array.from({ length: repeats }, (_, i) => {
     const x = Math.round(i * slotW + (slotW - itemTextLen) / 2)
@@ -3087,6 +3095,8 @@ app.get('/assignments/custom-tracing', (c) => {
 // ================================================================
 app.post('/api/custom-assignments', async (c) => {
   try {
+    const sess = await getSession(c)
+    if (!isNonParentStaff(sess)) return c.json({ error: 'Staff login required' }, 401)
     await ensureCustomAssignmentTable(c.env.DB)
     const body = await c.req.json()
     const cl = findAssignClass(String(body.classId || ''))
@@ -3097,10 +3107,26 @@ app.post('/api/custom-assignments', async (c) => {
     const zoom = Math.min(5, Math.max(0.5, parseFloat(body.zoom) || 1))
     const panX = Math.min(60, Math.max(-60, parseFloat(body.panX) || 0))
     const panY = Math.min(60, Math.max(-60, parseFloat(body.panY) || 0))
+    const rotation = Math.min(180, Math.max(-180, parseFloat(body.rotation) || 0))
+    const fileType = body.fileType === 'pdf' ? 'pdf' : 'image'
     const id = `ca_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-    await c.env.DB.prepare('INSERT INTO custom_assignments (id,class_id,subject_id,title,image_key,zoom,pan_x,pan_y) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(id, cl.id, subj.id, title, imageKey, zoom, panX, panY).run()
+    await c.env.DB.prepare('INSERT INTO custom_assignments (id,class_id,subject_id,title,image_key,zoom,pan_x,pan_y,rotation,file_type) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .bind(id, cl.id, subj.id, title, imageKey, zoom, panX, panY, rotation, fileType).run()
     return c.json({ ok: true, id, classId: cl.id, subjectId: subj.id })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/custom-assignments/:id', async (c) => {
+  try {
+    const sess = await getSession(c)
+    if (!isNonParentStaff(sess)) return c.json({ error: 'Staff login required' }, 401)
+    await ensureCustomAssignmentTable(c.env.DB)
+    const id = c.req.param('id')
+    const row = await c.env.DB.prepare('SELECT * FROM custom_assignments WHERE id=?').bind(id).first<CustomAssignmentRow>()
+    if (!row) return c.json({ error: 'Not found' }, 404)
+    try { await c.env.MEDIA.delete(row.image_key) } catch { /* ignore R2 delete errors */ }
+    await c.env.DB.prepare('DELETE FROM custom_assignments WHERE id=?').bind(id).run()
+    return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
@@ -3109,17 +3135,23 @@ function customAssignmentFormPage(): string {
   ${Navbar('assignments')}
   <section style="padding:3rem 0 3rem;background:linear-gradient(135deg,#E8F7FC,#FEF8F0)">
     <div class="max-w-3xl mx-auto px-4">
-      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Custom Tool</div>
+      <div class="badge mb-4" style="background:#E8F7FC;color:#1AA6CA;border:1px solid #1AA6CA33">Staff Tool</div>
       <div class="section-accent" style="margin:0 auto 1rem"></div>
       <h1 class="section-title" style="color:#1AA6CA;font-size:clamp(2.1rem,5vw,3.2rem);text-align:center">Custom Assignment</h1>
       <p style="color:#6B7A9D;font-size:1rem;line-height:1.8;margin-top:1rem;text-align:center;max-width:560px;margin-left:auto;margin-right:auto">
-        Upload a picture, pick the class and subject, and save — it will appear right there in that class's worksheet list, ready to view and print.
+        Upload a picture or PDF, pick the class and subject, and save — it will appear right there in that class's worksheet list, ready to view and print.
       </p>
     </div>
   </section>
   <section style="padding:0 0 5rem;background:#F8F9FB">
     <div class="max-w-3xl mx-auto px-4">
-      <div class="card" style="padding:2rem">
+      <div id="ca-login-gate" class="card" style="padding:2.5rem;text-align:center;display:none">
+        <div style="font-size:2.4rem;margin-bottom:0.75rem">🔒</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:#0F2050;font-weight:800;margin-bottom:0.5rem">Staff Login Required</h3>
+        <p style="color:#6B7A9D;font-size:0.9rem;margin-bottom:1.25rem">Creating or removing a custom assignment is restricted to school staff. Please log in with your staff username and password.</p>
+        <a href="/parent-portal" class="btn-primary" style="display:inline-block;padding:12px 28px">Go to Login</a>
+      </div>
+      <div id="ca-form-wrap" class="card" style="padding:2rem;display:none">
         <div style="margin-bottom:16px">
           <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Assignment Name</label>
           <input type="text" id="ca-title" maxlength="80" placeholder="e.g. Fruit Coloring Sheet" class="form-input">
@@ -3139,19 +3171,21 @@ function customAssignmentFormPage(): string {
           </div>
         </div>
         <div style="margin-bottom:16px">
-          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Upload Image</label>
-          <input type="file" id="ca-file" accept="image/*" class="form-input">
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:6px">Upload Image or PDF</label>
+          <input type="file" id="ca-file" accept="image/*,application/pdf" class="form-input">
         </div>
         <div style="margin-bottom:20px">
-          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:10px">Adjust the Image</label>
+          <label style="font-weight:800;color:#0F2050;font-size:0.85rem;display:block;margin-bottom:10px">Adjust</label>
           <div class="ca-cropbox" id="ca-cropbox">
             <img id="ca-preview-img" style="display:none" alt="Preview">
-            <div id="ca-placeholder">No image selected yet</div>
+            <iframe id="ca-preview-pdf" style="display:none" title="PDF Preview"></iframe>
+            <div id="ca-placeholder">No file selected yet</div>
           </div>
           <div class="ca-sliders">
-            <label>Zoom <input type="range" id="ca-zoom" min="0.5" max="3" step="0.05" value="1"></label>
-            <label>Horizontal <input type="range" id="ca-panx" min="-60" max="60" step="1" value="0"></label>
-            <label>Vertical <input type="range" id="ca-pany" min="-60" max="60" step="1" value="0"></label>
+            <label id="ca-zoom-row">Zoom <input type="range" id="ca-zoom" min="0.5" max="3" step="0.05" value="1"></label>
+            <label id="ca-panx-row">Horizontal <input type="range" id="ca-panx" min="-60" max="60" step="1" value="0"></label>
+            <label id="ca-pany-row">Vertical <input type="range" id="ca-pany" min="-60" max="60" step="1" value="0"></label>
+            <label id="ca-rotation-row">Tilt / Rotate <input type="range" id="ca-rotation" min="-180" max="180" step="1" value="0"></label>
           </div>
         </div>
         <button type="button" class="btn-primary" style="width:100%;padding:14px" onclick="saveCustomAssignment()">Save Assignment</button>
@@ -3162,6 +3196,7 @@ function customAssignmentFormPage(): string {
   <style>
     .ca-cropbox{width:100%;max-width:320px;aspect-ratio:4/5;margin:0 auto 16px;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;position:relative}
     .ca-cropbox img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+    .ca-cropbox iframe{width:100%;height:100%;border:none;background:#fff;transform-origin:center center}
     #ca-placeholder{color:#9CA9C7;font-size:0.85rem;text-align:center;padding:0 20px}
     .ca-sliders{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
     .ca-sliders label{display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#2A3B60;font-weight:700}
@@ -3169,20 +3204,49 @@ function customAssignmentFormPage(): string {
   </style>
   <script>
     let caFile = null;
+    let caIsPdf = false;
     const caImg = document.getElementById('ca-preview-img');
+    const caPdf = document.getElementById('ca-preview-pdf');
     const caPlaceholder = document.getElementById('ca-placeholder');
+
+    (async function caCheckStaffLogin(){
+      const token = localStorage.getItem('sk_session_token');
+      let ok = false;
+      if (token) {
+        try {
+          const res = await fetch('/api/session', { headers: { 'Authorization': 'Bearer ' + token } });
+          const json = await res.json();
+          ok = !!(json.ok && json.user && json.user.role !== 'parent');
+        } catch (e) { ok = false; }
+      }
+      document.getElementById(ok ? 'ca-form-wrap' : 'ca-login-gate').style.display = 'block';
+    })();
+
     document.getElementById('ca-file').addEventListener('change', function(e){
       const f = e.target.files[0];
       if (!f) return;
       caFile = f;
+      caIsPdf = f.type === 'application/pdf';
       const reader = new FileReader();
       reader.onload = function(ev){
-        caImg.src = ev.target.result;
-        caImg.style.display = 'block';
         caPlaceholder.style.display = 'none';
+        if (caIsPdf) {
+          caImg.style.display = 'none';
+          caPdf.src = ev.target.result;
+          caPdf.style.display = 'block';
+        } else {
+          caPdf.style.display = 'none';
+          caPdf.src = '';
+          caImg.src = ev.target.result;
+          caImg.style.display = 'block';
+        }
+        ['ca-zoom-row','ca-panx-row','ca-pany-row'].forEach(function(id){
+          document.getElementById(id).style.display = caIsPdf ? 'none' : 'flex';
+        });
         document.getElementById('ca-zoom').value = 1;
         document.getElementById('ca-panx').value = 0;
         document.getElementById('ca-pany').value = 0;
+        document.getElementById('ca-rotation').value = 0;
         caApplyTransform();
       };
       reader.readAsDataURL(f);
@@ -3191,33 +3255,42 @@ function customAssignmentFormPage(): string {
       const z = document.getElementById('ca-zoom').value;
       const x = document.getElementById('ca-panx').value;
       const y = document.getElementById('ca-pany').value;
-      caImg.style.transform = 'translate(' + x + '%,' + y + '%) scale(' + z + ')';
+      const r = document.getElementById('ca-rotation').value;
+      const t = caIsPdf
+        ? 'rotate(' + r + 'deg)'
+        : 'translate(' + x + '%,' + y + '%) scale(' + z + ') rotate(' + r + 'deg)';
+      caImg.style.transform = t;
+      caPdf.style.transform = t;
     }
-    ['ca-zoom','ca-panx','ca-pany'].forEach(function(id){
+    ['ca-zoom','ca-panx','ca-pany','ca-rotation'].forEach(function(id){
       document.getElementById(id).addEventListener('input', caApplyTransform);
     });
     async function saveCustomAssignment(){
       const status = document.getElementById('ca-status');
+      const token = localStorage.getItem('sk_session_token');
+      if (!token) { status.textContent = 'Please log in as staff first.'; return; }
       const title = document.getElementById('ca-title').value.trim();
       const classId = document.getElementById('ca-class').value;
       const subjectId = document.getElementById('ca-subject').value;
       if (!title) { status.textContent = 'Please enter an assignment name.'; return; }
-      if (!caFile) { status.textContent = 'Please choose an image.'; return; }
+      if (!caFile) { status.textContent = 'Please choose a file.'; return; }
       status.textContent = 'Uploading...';
       try {
         const fd = new FormData();
         fd.append('file', caFile);
-        const upRes = await fetch('/api/upload-public?folder=custom-assignments', { method: 'POST', body: fd });
+        const upRes = await fetch('/api/custom-assignments/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
         const upJson = await upRes.json();
         if (!upJson.ok) { status.textContent = 'Upload failed: ' + (upJson.error || ''); return; }
         status.textContent = 'Saving...';
         const payload = {
           classId: classId, subjectId: subjectId, title: title, imageKey: upJson.key,
+          fileType: upJson.fileType,
           zoom: document.getElementById('ca-zoom').value,
           panX: document.getElementById('ca-panx').value,
           panY: document.getElementById('ca-pany').value,
+          rotation: document.getElementById('ca-rotation').value,
         };
-        const res = await fetch('/api/custom-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch('/api/custom-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(payload) });
         const json = await res.json();
         if (json.ok) {
           status.textContent = 'Saved! Redirecting...';
@@ -3232,14 +3305,20 @@ function customAssignmentFormPage(): string {
   </script>
   ${Footer()}
   `
-  return Layout({ children: content, title: 'Custom Assignment – SuperKids India Preschool', description: 'Upload your own picture, tag it to a class and subject, and it will appear in that worksheet list — free and instant, no login needed.', canonical: 'https://superkidsindia.com/assignments/custom-assignment' })
+  return Layout({ children: content, title: 'Custom Assignment – SuperKids India Preschool', description: 'Staff can upload a picture or PDF, tag it to a class and subject, and it will appear in that worksheet list for students to view and print.', canonical: 'https://superkidsindia.com/assignments/custom-assignment' })
 }
 
 app.get('/assignments/custom-assignment', (c) => c.html(customAssignmentFormPage()))
 
 function printCustomAssignmentPage(classInfo: AssignClass, subjectInfo: AssignSubject, row: CustomAssignmentRow): string {
-  const transform = caTransform(row)
-  const thumbHtml = `<div class="ca-thumb"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt=""></div>`
+  const isPdf = row.file_type === 'pdf'
+  const transform = isPdf ? `rotate(${row.rotation || 0}deg)` : caTransform(row)
+  const thumbHtml = isPdf
+    ? `<div class="ca-thumb ca-thumb-pdf">📄</div>`
+    : `<div class="ca-thumb"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt=""></div>`
+  const bodyMedia = isPdf
+    ? `<iframe src="/r2/${esc(row.image_key)}" style="transform:${transform}" title="${esc(row.title)}"></iframe>`
+    : `<img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt="${esc(row.title)}">`
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3254,6 +3333,7 @@ body{font-family:'Nunito',sans-serif;background:#F0F2F7;color:#0F1E3D;padding:24
 .toolbar a, .toolbar button{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;letter-spacing:0.5px;text-decoration:none;border-radius:50px;padding:10px 22px;cursor:pointer;border:none}
 .back-link{color:#0F2050;background:#fff;border:2px solid #0F2050 !important}
 .print-btn{color:#fff;background:linear-gradient(135deg,#0F2050,#1AA6CA);box-shadow:0 4px 16px rgba(15,32,80,0.25)}
+.delete-btn{color:#fff;background:#D64545;display:none}
 .sheet{max-width:850px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(15,32,80,0.12);padding:0 0 28px;overflow:hidden}
 .sheet-body{padding:22px 36px 0}
 ${SK_BANNER_STYLE}
@@ -3264,8 +3344,9 @@ ${SK_BANNER_STYLE}
 .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
 .ca-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid #0F2050;flex-shrink:0;background:#F0F2F7}
 .ca-thumb img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+.ca-thumb-pdf{display:flex;align-items:center;justify-content:center;font-size:1.8rem}
 .ca-image-wrap{width:100%;max-width:600px;aspect-ratio:4/5;margin:0 auto;border:2px dashed #DCE1EF;border-radius:14px;overflow:hidden;background:#F8F9FB;display:flex;align-items:center;justify-content:center}
-.ca-image-wrap img{width:100%;height:100%;object-fit:contain;transform-origin:center center}
+.ca-image-wrap img, .ca-image-wrap iframe{width:100%;height:100%;object-fit:contain;transform-origin:center center;border:none}
 @media print{
   @page{size:A4;margin:12mm}
   body{background:#fff;padding:0}
@@ -3278,16 +3359,45 @@ ${SK_BANNER_STYLE}
 <body>
   <div class="toolbar">
     <a href="/assignments/${classInfo.id}/${subjectInfo.id}" class="back-link">&larr; Back to ${esc(subjectInfo.name)}</a>
-    <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="delete-btn" id="ca-delete-btn" onclick="caDeleteAssignment()">🗑️ Delete</button>
+      <button class="print-btn" onclick="window.print()"><i>🖨️</i> Print / Save as PDF</button>
+    </div>
   </div>
   <div class="sheet">
     ${worksheetLetterheadHtml(classInfo, subjectInfo, row.title, thumbHtml)}
     <div class="sheet-body">
-      <div class="instructions">📌 Follow the picture above to complete this assignment.</div>
-      <div class="ca-image-wrap"><img src="/r2/${esc(row.image_key)}" style="transform:${transform}" alt="${esc(row.title)}"></div>
+      <div class="instructions">📌 Follow the ${isPdf ? 'document' : 'picture'} above to complete this assignment.</div>
+      <div class="ca-image-wrap">${bodyMedia}</div>
       <div class="sheet-footer">SuperKids India Preschool &middot; Custom assignment &middot; superkidsindia.com</div>
     </div>
   </div>
+  <script>
+    (async function caCheckDeletePerm(){
+      const token = localStorage.getItem('sk_session_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/session', { headers: { 'Authorization': 'Bearer ' + token } });
+        const json = await res.json();
+        if (json.ok && json.user && json.user.role !== 'parent') {
+          document.getElementById('ca-delete-btn').style.display = 'inline-block';
+        }
+      } catch (e) { /* not logged in */ }
+    })();
+    async function caDeleteAssignment(){
+      if (!confirm('Delete this custom assignment? This cannot be undone.')) return;
+      const token = localStorage.getItem('sk_session_token');
+      try {
+        const res = await fetch('/api/custom-assignments/${row.id}', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+        const json = await res.json();
+        if (json.ok) {
+          window.location.href = '/assignments/${classInfo.id}/${subjectInfo.id}';
+        } else {
+          alert('Delete failed: ' + (json.error || ''));
+        }
+      } catch (e) { alert('Something went wrong. Please try again.'); }
+    }
+  </script>
 </body>
 </html>`
 }
@@ -3404,14 +3514,17 @@ app.get('/assignments/:classId/:subjectId', async (c) => {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         ${customItems.map(row => `
           <div class="card fade-in" style="border-color:#7C3AED33">
-            <div class="badge mb-2" style="background:#7C3AED14;color:#7C3AED;border:1px solid #7C3AED33;font-size:0.68rem">Custom</div>
-            <div style="width:100%;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#F0F2F7;margin-bottom:0.75rem">
-              <img src="/r2/${esc(row.image_key)}" alt="${esc(row.title)}" style="width:100%;height:100%;object-fit:contain;transform:${caTransform(row)};transform-origin:center center">
+            <div class="badge mb-2" style="background:#7C3AED14;color:#7C3AED;border:1px solid #7C3AED33;font-size:0.68rem">Custom${row.file_type === 'pdf' ? ' · PDF' : ''}</div>
+            <div style="width:100%;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#F0F2F7;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:center">
+              ${row.file_type === 'pdf'
+                ? `<div style="font-size:2.6rem">📄</div>`
+                : `<img src="/r2/${esc(row.image_key)}" alt="${esc(row.title)}" style="width:100%;height:100%;object-fit:contain;transform:${caTransform(row)};transform-origin:center center">`}
             </div>
             <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#7C3AED;font-weight:700;margin-bottom:0.75rem">${esc(row.title)}</h3>
             <a href="/assignments/custom/${row.id}" class="btn-primary" style="display:block;text-align:center;font-size:0.8rem;padding:11px">
               <i class="fas fa-print mr-2"></i>View &amp; Print
             </a>
+            <button type="button" class="ca-card-delete" data-id="${row.id}" style="display:none;width:100%;text-align:center;font-size:0.75rem;padding:9px;margin-top:8px;border-radius:50px;border:none;cursor:pointer;background:#D6454514;color:#D64545;font-weight:800">🗑️ Delete</button>
           </div>
         `).join('')}
         ${items.map(it => `
@@ -3427,6 +3540,31 @@ app.get('/assignments/:classId/:subjectId', async (c) => {
       </div>
     </div>
   </section>
+  <script>
+    (async function caCheckListDeletePerm(){
+      const btns = document.querySelectorAll('.ca-card-delete');
+      if (!btns.length) return;
+      const token = localStorage.getItem('sk_session_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/session', { headers: { 'Authorization': 'Bearer ' + token } });
+        const json = await res.json();
+        if (!(json.ok && json.user && json.user.role !== 'parent')) return;
+        btns.forEach(function(btn){
+          btn.style.display = 'block';
+          btn.addEventListener('click', async function(){
+            if (!confirm('Delete this custom assignment? This cannot be undone.')) return;
+            try {
+              const dres = await fetch('/api/custom-assignments/' + btn.dataset.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+              const djson = await dres.json();
+              if (djson.ok) { btn.closest('.card').remove(); }
+              else { alert('Delete failed: ' + (djson.error || '')); }
+            } catch (e) { alert('Something went wrong. Please try again.'); }
+          });
+        });
+      } catch (e) { /* not logged in */ }
+    })();
+  </script>
   ${Footer()}
   `
   return c.html(Layout({ children: content, title: `${cl.name} ${subj.name} Worksheets – SuperKids India Preschool`, description: `${count} free printable ${subj.name} worksheets for ${cl.name}.`, canonical: `https://superkidsindia.com/assignments/${cl.id}/${subj.id}` }))

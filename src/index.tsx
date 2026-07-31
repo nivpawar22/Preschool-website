@@ -2181,6 +2181,7 @@ function getEnglishCategories(_level: number): Category[] {
 function getEvsCategories(_level: number): Category[] {
   return [
     { key: 'vocab', count: 18 },
+    { key: 'colors', count: 10 },
     { key: 'oddoneout', count: 6 },
   ]
 }
@@ -2210,20 +2211,33 @@ function getSubjectSetCount(subjectId: string, level: number): number {
 }
 
 // ── Content pools ───────────────────────────────────────────────
-const ALPHABET_WORDS: { ch: string; word: string; emoji: string }[] = [
-  { ch: 'A', word: 'Apple',    emoji: '🍎' }, { ch: 'B', word: 'Ball',     emoji: '⚽' },
-  { ch: 'C', word: 'Cat',      emoji: '🐱' }, { ch: 'D', word: 'Dog',      emoji: '🐶' },
-  { ch: 'E', word: 'Elephant', emoji: '🐘' }, { ch: 'F', word: 'Fish',     emoji: '🐟' },
-  { ch: 'G', word: 'Grapes',   emoji: '🍇' }, { ch: 'H', word: 'Hat',      emoji: '🎩' },
-  { ch: 'I', word: 'Ice Cream',emoji: '🍦' }, { ch: 'J', word: 'Juice',    emoji: '🧃' },
-  { ch: 'K', word: 'Kite',     emoji: '🪁' }, { ch: 'L', word: 'Lion',     emoji: '🦁' },
-  { ch: 'M', word: 'Moon',     emoji: '🌙' }, { ch: 'N', word: 'Nest',     emoji: '🪺' },
-  { ch: 'O', word: 'Orange',   emoji: '🍊' }, { ch: 'P', word: 'Pig',      emoji: '🐷' },
-  { ch: 'Q', word: 'Queen',    emoji: '👑' }, { ch: 'R', word: 'Rainbow',  emoji: '🌈' },
-  { ch: 'S', word: 'Sun',      emoji: '☀️' }, { ch: 'T', word: 'Tree',     emoji: '🌳' },
-  { ch: 'U', word: 'Umbrella', emoji: '☂️' }, { ch: 'V', word: 'Van',      emoji: '🚐' },
-  { ch: 'W', word: 'Watermelon',emoji:'🍉' }, { ch: 'X', word: 'X-ray',    emoji: '🩻' },
-  { ch: 'Y', word: 'Yo-yo',    emoji: '🪀' }, { ch: 'Z', word: 'Zebra',    emoji: '🦓' },
+const ALPHABET_WORDS: { ch: string; word: string; emoji: string; extras: { word: string; emoji: string }[] }[] = [
+  { ch: 'A', word: 'Apple',     emoji: '🍎', extras: [{ word: 'Ant', emoji: '🐜' }, { word: 'Airplane', emoji: '✈️' }] },
+  { ch: 'B', word: 'Ball',      emoji: '⚽', extras: [{ word: 'Banana', emoji: '🍌' }, { word: 'Butterfly', emoji: '🦋' }] },
+  { ch: 'C', word: 'Cat',       emoji: '🐱', extras: [{ word: 'Car', emoji: '🚗' }, { word: 'Cake', emoji: '🎂' }] },
+  { ch: 'D', word: 'Dog',       emoji: '🐶', extras: [{ word: 'Duck', emoji: '🦆' }, { word: 'Drum', emoji: '🥁' }] },
+  { ch: 'E', word: 'Elephant',  emoji: '🐘', extras: [{ word: 'Egg', emoji: '🥚' }, { word: 'Ear', emoji: '👂' }] },
+  { ch: 'F', word: 'Fish',      emoji: '🐟', extras: [{ word: 'Flower', emoji: '🌸' }, { word: 'Frog', emoji: '🐸' }] },
+  { ch: 'G', word: 'Grapes',    emoji: '🍇', extras: [{ word: 'Goat', emoji: '🐐' }, { word: 'Guitar', emoji: '🎸' }] },
+  { ch: 'H', word: 'Hat',       emoji: '🎩', extras: [{ word: 'Horse', emoji: '🐎' }, { word: 'House', emoji: '🏠' }] },
+  { ch: 'I', word: 'Ice Cream', emoji: '🍦', extras: [{ word: 'Insect', emoji: '🐛' }, { word: 'Ink', emoji: '🖊️' }] },
+  { ch: 'J', word: 'Juice',     emoji: '🧃', extras: [{ word: 'Jacket', emoji: '🧥' }, { word: 'Jeep', emoji: '🚙' }] },
+  { ch: 'K', word: 'Kite',      emoji: '🪁', extras: [{ word: 'Key', emoji: '🔑' }, { word: 'Koala', emoji: '🐨' }] },
+  { ch: 'L', word: 'Lion',      emoji: '🦁', extras: [{ word: 'Leaf', emoji: '🍃' }, { word: 'Lemon', emoji: '🍋' }] },
+  { ch: 'M', word: 'Moon',      emoji: '🌙', extras: [{ word: 'Monkey', emoji: '🐒' }, { word: 'Mango', emoji: '🥭' }] },
+  { ch: 'N', word: 'Nest',      emoji: '🪺', extras: [{ word: 'Nose', emoji: '👃' }, { word: 'Net', emoji: '🥅' }] },
+  { ch: 'O', word: 'Orange',    emoji: '🍊', extras: [{ word: 'Owl', emoji: '🦉' }, { word: 'Octopus', emoji: '🐙' }] },
+  { ch: 'P', word: 'Pig',       emoji: '🐷', extras: [{ word: 'Pencil', emoji: '✏️' }, { word: 'Pumpkin', emoji: '🎃' }] },
+  { ch: 'Q', word: 'Queen',     emoji: '👑', extras: [{ word: 'Quill', emoji: '🪶' }, { word: 'Question', emoji: '❓' }] },
+  { ch: 'R', word: 'Rainbow',   emoji: '🌈', extras: [{ word: 'Rabbit', emoji: '🐇' }, { word: 'Rose', emoji: '🌹' }] },
+  { ch: 'S', word: 'Sun',       emoji: '☀️', extras: [{ word: 'Star', emoji: '⭐' }, { word: 'Snake', emoji: '🐍' }] },
+  { ch: 'T', word: 'Tree',      emoji: '🌳', extras: [{ word: 'Tiger', emoji: '🐯' }, { word: 'Train', emoji: '🚂' }] },
+  { ch: 'U', word: 'Umbrella',  emoji: '☂️', extras: [{ word: 'Unicorn', emoji: '🦄' }, { word: 'UFO', emoji: '🛸' }] },
+  { ch: 'V', word: 'Van',       emoji: '🚐', extras: [{ word: 'Violin', emoji: '🎻' }, { word: 'Volcano', emoji: '🌋' }] },
+  { ch: 'W', word: 'Watermelon',emoji: '🍉', extras: [{ word: 'Whale', emoji: '🐳' }, { word: 'Watch', emoji: '⌚' }] },
+  { ch: 'X', word: 'X-ray',     emoji: '🩻', extras: [{ word: 'Xylophone', emoji: '🎹' }] },
+  { ch: 'Y', word: 'Yo-yo',     emoji: '🪀', extras: [{ word: 'Yarn', emoji: '🧶' }, { word: 'Yellow', emoji: '🟡' }] },
+  { ch: 'Z', word: 'Zebra',     emoji: '🦓', extras: [{ word: 'Zero', emoji: '0️⃣' }] },
 ]
 
 const CVC_WORDS: { w: string; e: string }[] = [
@@ -2287,6 +2301,39 @@ const ODD_ONE_OUT: { items: { e: string; label: string }[]; oddIdx: number; hint
   { items: [{e:'👁️',label:'Eye'},{e:'👃',label:'Nose'},{e:'👂',label:'Ear'},{e:'🍪',label:'Cookie'}], oddIdx: 3, hint: 'Find the one that is not a body part!' },
 ]
 
+const COLOR_WORDS: { name: string; hex: string; matches: { e: string; label: string }[]; distractors: { e: string; label: string }[] }[] = [
+  { name: 'Red', hex: '#E53E3E',
+    matches: [{e:'🍎',label:'Apple'},{e:'🎈',label:'Balloon'},{e:'🌹',label:'Rose'},{e:'🍓',label:'Strawberry'},{e:'🍒',label:'Cherry'}],
+    distractors: [{e:'🍌',label:'Banana'},{e:'🐸',label:'Frog'},{e:'🍇',label:'Grapes'},{e:'☀️',label:'Sun'},{e:'🍋',label:'Lemon'},{e:'🌿',label:'Leaf'},{e:'🍊',label:'Orange'}] },
+  { name: 'Blue', hex: '#3182CE',
+    matches: [{e:'🫐',label:'Blueberry'},{e:'🦋',label:'Butterfly'},{e:'💧',label:'Water Drop'},{e:'🐟',label:'Fish'},{e:'👖',label:'Jeans'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🐰',label:'Rabbit'},{e:'🍄',label:'Mushroom'},{e:'🍒',label:'Cherry'},{e:'🌻',label:'Sunflower'},{e:'🍞',label:'Bread'},{e:'🥕',label:'Carrot'}] },
+  { name: 'Yellow', hex: '#ECC94B',
+    matches: [{e:'🍌',label:'Banana'},{e:'🌻',label:'Sunflower'},{e:'⭐',label:'Star'},{e:'🍋',label:'Lemon'},{e:'🐥',label:'Chick'}],
+    distractors: [{e:'🍇',label:'Grapes'},{e:'🐸',label:'Frog'},{e:'🍅',label:'Tomato'},{e:'🌳',label:'Tree'},{e:'🫐',label:'Blueberry'},{e:'🍆',label:'Brinjal'},{e:'🐳',label:'Whale'}] },
+  { name: 'Green', hex: '#38A169',
+    matches: [{e:'🥦',label:'Broccoli'},{e:'🐸',label:'Frog'},{e:'🌿',label:'Leaf'},{e:'🍏',label:'Green Apple'},{e:'🥒',label:'Cucumber'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'☀️',label:'Sun'},{e:'🍇',label:'Grapes'},{e:'🐟',label:'Fish'},{e:'🍓',label:'Strawberry'},{e:'🎈',label:'Balloon'}] },
+  { name: 'Orange', hex: '#ED8936',
+    matches: [{e:'🍊',label:'Orange'},{e:'🥕',label:'Carrot'},{e:'🎃',label:'Pumpkin'},{e:'🦊',label:'Fox'},{e:'🍑',label:'Peach'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🐟',label:'Fish'},{e:'🍇',label:'Grapes'},{e:'🌿',label:'Leaf'},{e:'🐧',label:'Penguin'},{e:'☁️',label:'Cloud'},{e:'🍋',label:'Lemon'}] },
+  { name: 'Purple', hex: '#805AD5',
+    matches: [{e:'🍇',label:'Grapes'},{e:'🍆',label:'Brinjal'},{e:'🔮',label:'Crystal Ball'},{e:'🟣',label:'Purple Circle'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🌳',label:'Tree'},{e:'🍊',label:'Orange'},{e:'🐟',label:'Fish'},{e:'☀️',label:'Sun'},{e:'🍓',label:'Strawberry'}] },
+  { name: 'Pink', hex: '#ED64A6',
+    matches: [{e:'🌸',label:'Cherry Blossom'},{e:'🎀',label:'Ribbon'},{e:'🐷',label:'Pig'},{e:'🧁',label:'Cupcake'},{e:'🩷',label:'Pink Heart'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🐸',label:'Frog'},{e:'🍇',label:'Grapes'},{e:'🌳',label:'Tree'},{e:'🐟',label:'Fish'},{e:'☀️',label:'Sun'},{e:'🍋',label:'Lemon'}] },
+  { name: 'Brown', hex: '#975A16',
+    matches: [{e:'🐻',label:'Bear'},{e:'🌰',label:'Chestnut'},{e:'🍫',label:'Chocolate'},{e:'🦴',label:'Bone'},{e:'🪵',label:'Wood'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🐟',label:'Fish'},{e:'🌸',label:'Flower'},{e:'☀️',label:'Sun'},{e:'🍇',label:'Grapes'},{e:'🎈',label:'Balloon'}] },
+  { name: 'Black', hex: '#1A202C',
+    matches: [{e:'⚫',label:'Black Circle'},{e:'🐈‍⬛',label:'Black Cat'},{e:'🎩',label:'Top Hat'},{e:'🕶️',label:'Sunglasses'},{e:'🖤',label:'Black Heart'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🌸',label:'Flower'},{e:'☀️',label:'Sun'},{e:'🍇',label:'Grapes'},{e:'🐟',label:'Fish'},{e:'🎈',label:'Balloon'}] },
+  { name: 'White', hex: '#E2E8F0',
+    matches: [{e:'⚪',label:'White Circle'},{e:'☁️',label:'Cloud'},{e:'🐑',label:'Sheep'},{e:'🥛',label:'Milk'},{e:'❄️',label:'Snowflake'}],
+    distractors: [{e:'🍎',label:'Apple'},{e:'🍌',label:'Banana'},{e:'🌳',label:'Tree'},{e:'☀️',label:'Sun'},{e:'🍇',label:'Grapes'},{e:'🐟',label:'Fish'},{e:'🎈',label:'Balloon'}] },
+]
+
 const RHYMES: { title: string; lines: string[]; emoji: string }[] = [
   { title: 'Twinkle Twinkle Little Star', emoji: '⭐', lines: ['Twinkle, twinkle, little star,', 'How I wonder what you are!', 'Up above the world so high,', 'Like a diamond in the sky.'] },
   { title: 'Baa Baa Black Sheep', emoji: '🐑', lines: ['Baa, baa, black sheep,', 'Have you any wool?', 'Yes sir, yes sir,', 'Three bags full.'] },
@@ -2311,30 +2358,30 @@ const RHYMES: { title: string; lines: string[]; emoji: string }[] = [
 // ── Art & Craft: detailed multi-part SVG line-art (trace + color) ──
 type ArtPrompt = { name: string; emoji: string; hint: string; svg: string }
 const ART_PROMPTS: ArtPrompt[] = [
-  { name:'Sun', emoji:'☀️', hint:'Color it yellow & orange!', svg:`<circle cx="60" cy="60" r="22"/><line x1="60" y1="18" x2="60" y2="4"/><line x1="60" y1="102" x2="60" y2="116"/><line x1="18" y1="60" x2="4" y2="60"/><line x1="102" y1="60" x2="116" y2="60"/><line x1="30" y1="30" x2="20" y2="20"/><line x1="90" y1="30" x2="100" y2="20"/><line x1="30" y1="90" x2="20" y2="100"/><line x1="90" y1="90" x2="100" y2="100"/>` },
-  { name:'Tree', emoji:'🌳', hint:'Color the leaves green & trunk brown!', svg:`<rect x="50" y="80" width="20" height="32"/><circle cx="60" cy="55" r="36"/><circle cx="34" cy="70" r="20"/><circle cx="86" cy="70" r="20"/>` },
-  { name:'Apple', emoji:'🍎', hint:'Color it red!', svg:`<path d="M60,40 C40,20 10,35 14,62 C18,90 42,110 60,105 C78,110 102,90 106,62 C110,35 80,20 60,40 Z"/><path d="M60,40 C58,30 56,24 60,16"/><path d="M60,20 C68,10 80,14 78,24"/>` },
-  { name:'Butterfly', emoji:'🦋', hint:'Color the wings with bright colors!', svg:`<ellipse cx="34" cy="42" rx="26" ry="18"/><ellipse cx="34" cy="76" rx="20" ry="14"/><ellipse cx="86" cy="42" rx="26" ry="18"/><ellipse cx="86" cy="76" rx="20" ry="14"/><line x1="60" y1="30" x2="60" y2="94"/><line x1="60" y1="30" x2="50" y2="14"/><line x1="60" y1="30" x2="70" y2="14"/>` },
-  { name:'Flower', emoji:'🌸', hint:'Color the petals pink!', svg:`<circle cx="60" cy="60" r="12"/><ellipse cx="60" cy="30" rx="14" ry="20"/><ellipse cx="60" cy="90" rx="14" ry="20"/><ellipse cx="30" cy="60" rx="20" ry="14"/><ellipse cx="90" cy="60" rx="20" ry="14"/><line x1="60" y1="72" x2="60" y2="112"/><ellipse cx="70" cy="100" rx="12" ry="6"/>` },
-  { name:'Umbrella', emoji:'☂️', hint:'Color the canopy any color you like!', svg:`<path d="M14,60 A46,46 0 0,1 106,60"/><line x1="14" y1="60" x2="14" y2="66"/><line x1="42" y1="60" x2="42" y2="66"/><line x1="60" y1="60" x2="60" y2="110"/><line x1="78" y1="60" x2="78" y2="66"/><line x1="106" y1="60" x2="106" y2="66"/><path d="M60,110 C50,110 48,100 56,98"/>` },
-  { name:'House', emoji:'🏠', hint:'Color the roof and walls!', svg:`<polygon points="60,16 108,54 12,54"/><rect x="20" y="54" width="80" height="50"/><rect x="50" y="72" width="20" height="32"/><rect x="26" y="62" width="16" height="16"/><rect x="78" y="62" width="16" height="16"/>` },
-  { name:'Fish', emoji:'🐟', hint:'Color it blue or orange!', svg:`<ellipse cx="52" cy="60" rx="38" ry="24"/><polygon points="90,60 112,42 112,78"/><circle cx="34" cy="52" r="4"/><path d="M40,60 Q52,50 64,60 Q52,70 40,60 Z"/>` },
-  { name:'Boat', emoji:'⛵', hint:'Color the sail and boat!', svg:`<polygon points="20,80 100,80 88,100 32,100"/><line x1="60" y1="80" x2="60" y2="18"/><polygon points="60,20 60,78 24,78"/><path d="M8,100 Q60,112 112,100"/>` },
-  { name:'Kite', emoji:'🪁', hint:'Color each section a different color!', svg:`<polygon points="60,10 100,55 60,110 20,55"/><line x1="20" y1="55" x2="100" y2="55"/><line x1="60" y1="10" x2="60" y2="110"/><path d="M60,110 Q66,116 60,122 Q54,128 60,134"/>` },
-  { name:'Balloon', emoji:'🎈', hint:'Color it your favorite color!', svg:`<ellipse cx="60" cy="46" rx="30" ry="36"/><polygon points="52,80 68,80 60,90"/><path d="M60,90 Q50,100 60,110 Q70,120 62,128"/>` },
-  { name:'Star', emoji:'⭐', hint:'Color it golden yellow!', svg:`<polygon points="60,8 74,44 112,44 82,66 94,104 60,80 26,104 38,66 8,44 46,44"/>` },
-  { name:'Heart', emoji:'❤️', hint:'Color it red or pink!', svg:`<path d="M60,104 C10,70 10,26 40,20 C52,18 60,30 60,38 C60,30 68,18 80,20 C110,26 110,70 60,104 Z"/>` },
-  { name:'Ice Cream', emoji:'🍦', hint:'Color the scoop pink and cone brown!', svg:`<polygon points="42,58 78,58 60,110"/><circle cx="60" cy="42" r="26"/><line x1="42" y1="70" x2="78" y2="70"/><line x1="46" y1="82" x2="74" y2="82"/>` },
-  { name:'Car', emoji:'🚗', hint:'Color the body your favorite color!', svg:`<rect x="14" y="60" width="92" height="26" rx="6"/><path d="M30,60 L42,34 L78,34 L90,60"/><circle cx="36" cy="90" r="12"/><circle cx="84" cy="90" r="12"/><line x1="52" y1="34" x2="52" y2="60"/>` },
-  { name:'Rainbow', emoji:'🌈', hint:'Color each arc a different color!', svg:`<path d="M10,100 A50,50 0 0,1 110,100"/><path d="M26,100 A34,34 0 0,1 94,100"/><path d="M42,100 A18,18 0 0,1 78,100"/><ellipse cx="14" cy="102" rx="14" ry="8"/><ellipse cx="106" cy="102" rx="14" ry="8"/>` },
-  { name:'Cake', emoji:'🎂', hint:'Color the layers and candle!', svg:`<rect x="24" y="66" width="72" height="34"/><rect x="34" y="42" width="52" height="24"/><line x1="60" y1="42" x2="60" y2="24"/><ellipse cx="60" cy="20" rx="5" ry="8"/><line x1="24" y1="82" x2="96" y2="82"/>` },
-  { name:'Bird', emoji:'🐦', hint:'Color the body and wing!', svg:`<ellipse cx="56" cy="64" rx="34" ry="24"/><circle cx="94" cy="46" r="14"/><polygon points="106,44 120,48 106,52"/><ellipse cx="46" cy="70" rx="16" ry="10"/><line x1="30" y1="88" x2="20" y2="100"/><line x1="46" y1="88" x2="46" y2="102"/>` },
-  { name:'Elephant', emoji:'🐘', hint:'Color it grey!', svg:`<ellipse cx="56" cy="66" rx="34" ry="26"/><circle cx="94" cy="46" r="20"/><ellipse cx="110" cy="38" rx="14" ry="18"/><path d="M78,50 Q68,80 78,100"/><rect x="34" y="88" width="10" height="20"/><rect x="70" y="88" width="10" height="20"/>` },
-  { name:'Duck', emoji:'🦆', hint:'Color it yellow!', svg:`<ellipse cx="56" cy="66" rx="32" ry="26"/><circle cx="94" cy="44" r="18"/><polygon points="108,44 122,40 122,50"/><ellipse cx="50" cy="60" rx="16" ry="10"/>` },
-  { name:'Snowman', emoji:'⛄', hint:'Leave it white, color the buttons & nose!', svg:`<circle cx="60" cy="90" r="26"/><circle cx="60" cy="52" r="19"/><circle cx="60" cy="22" r="13"/><polygon points="60,26 78,30 60,34"/><circle cx="60" cy="82" r="3"/><circle cx="60" cy="94" r="3"/><line x1="41" y1="50" x2="20" y2="40"/><line x1="79" y1="50" x2="100" y2="40"/>` },
-  { name:'Train', emoji:'🚂', hint:'Color the engine your favorite color!', svg:`<rect x="14" y="50" width="40" height="36"/><rect x="58" y="34" width="48" height="52"/><circle cx="70" cy="30" r="10"/><circle cx="30" cy="98" r="10"/><circle cx="90" cy="98" r="10"/>` },
-  { name:'Cloud', emoji:'☁️', hint:'Leave it white or color it light grey!', svg:`<circle cx="40" cy="66" r="20"/><circle cx="68" cy="52" r="26"/><circle cx="94" cy="66" r="18"/><rect x="32" y="66" width="70" height="24" rx="12"/>` },
-  { name:'Ladybug', emoji:'🐞', hint:'Color it red with black spots!', svg:`<ellipse cx="60" cy="64" rx="36" ry="30"/><line x1="60" y1="34" x2="60" y2="94"/><circle cx="46" cy="52" r="5"/><circle cx="74" cy="52" r="5"/><circle cx="46" cy="78" r="5"/><circle cx="74" cy="78" r="5"/><circle cx="60" cy="20" r="12"/><line x1="52" y1="12" x2="46" y2="4"/><line x1="68" y1="12" x2="74" y2="4"/>` },
+  { name:'Sun', emoji:'☀️', hint:'Color it yellow & orange!', svg:`<circle cx="60" cy="60" r="22" fill="#FFE9A8"/><line x1="60" y1="18" x2="60" y2="4"/><line x1="60" y1="102" x2="60" y2="116"/><line x1="18" y1="60" x2="4" y2="60"/><line x1="102" y1="60" x2="116" y2="60"/><line x1="30" y1="30" x2="20" y2="20"/><line x1="90" y1="30" x2="100" y2="20"/><line x1="30" y1="90" x2="20" y2="100"/><line x1="90" y1="90" x2="100" y2="100"/>` },
+  { name:'Tree', emoji:'🌳', hint:'Color the leaves green & trunk brown!', svg:`<rect x="50" y="80" width="20" height="32" fill="#D9B382"/><circle cx="60" cy="55" r="36" fill="#A8DDA8"/><circle cx="34" cy="70" r="20" fill="#A8DDA8"/><circle cx="86" cy="70" r="20" fill="#A8DDA8"/>` },
+  { name:'Apple', emoji:'🍎', hint:'Color it red!', svg:`<path d="M60,40 C40,20 10,35 14,62 C18,90 42,110 60,105 C78,110 102,90 106,62 C110,35 80,20 60,40 Z" fill="#FFB3B3"/><path d="M60,40 C58,30 56,24 60,16" fill="none"/><path d="M60,20 C68,10 80,14 78,24" fill="#B8E6B8"/>` },
+  { name:'Butterfly', emoji:'🦋', hint:'Color the wings with bright colors!', svg:`<ellipse cx="34" cy="42" rx="26" ry="18" fill="#FFD6E8"/><ellipse cx="34" cy="76" rx="20" ry="14" fill="#C7E8FF"/><ellipse cx="86" cy="42" rx="26" ry="18" fill="#FFD6E8"/><ellipse cx="86" cy="76" rx="20" ry="14" fill="#C7E8FF"/><line x1="60" y1="30" x2="60" y2="94"/><line x1="60" y1="30" x2="50" y2="14"/><line x1="60" y1="30" x2="70" y2="14"/>` },
+  { name:'Flower', emoji:'🌸', hint:'Color the petals pink!', svg:`<circle cx="60" cy="60" r="12" fill="#FFE9A8"/><ellipse cx="60" cy="30" rx="14" ry="20" fill="#FFC2DD"/><ellipse cx="60" cy="90" rx="14" ry="20" fill="#FFC2DD"/><ellipse cx="30" cy="60" rx="20" ry="14" fill="#FFC2DD"/><ellipse cx="90" cy="60" rx="20" ry="14" fill="#FFC2DD"/><line x1="60" y1="72" x2="60" y2="112"/><ellipse cx="70" cy="100" rx="12" ry="6" fill="#B8E6B8"/>` },
+  { name:'Umbrella', emoji:'☂️', hint:'Color the canopy any color you like!', svg:`<path d="M14,60 A46,46 0 0,1 106,60" fill="#AEE6E6"/><line x1="14" y1="60" x2="14" y2="66"/><line x1="42" y1="60" x2="42" y2="66"/><line x1="60" y1="60" x2="60" y2="110"/><line x1="78" y1="60" x2="78" y2="66"/><line x1="106" y1="60" x2="106" y2="66"/><path d="M60,110 C50,110 48,100 56,98" fill="none"/>` },
+  { name:'House', emoji:'🏠', hint:'Color the roof and walls!', svg:`<polygon points="60,16 108,54 12,54" fill="#F4B183"/><rect x="20" y="54" width="80" height="50" fill="#FFF3C4"/><rect x="50" y="72" width="20" height="32" fill="#C68642"/><rect x="26" y="62" width="16" height="16" fill="#BEE3F8"/><rect x="78" y="62" width="16" height="16" fill="#BEE3F8"/>` },
+  { name:'Fish', emoji:'🐟', hint:'Color it blue or orange!', svg:`<ellipse cx="52" cy="60" rx="38" ry="24" fill="#FFD8A8"/><polygon points="90,60 112,42 112,78" fill="#FFD8A8"/><circle cx="34" cy="52" r="4" fill="#2D3748"/><path d="M40,60 Q52,50 64,60 Q52,70 40,60 Z" fill="none"/>` },
+  { name:'Boat', emoji:'⛵', hint:'Color the sail and boat!', svg:`<polygon points="20,80 100,80 88,100 32,100" fill="#D9B382"/><line x1="60" y1="80" x2="60" y2="18"/><polygon points="60,20 60,78 24,78" fill="#D6EFFF"/><path d="M8,100 Q60,112 112,100" fill="none"/>` },
+  { name:'Kite', emoji:'🪁', hint:'Color each section a different color!', svg:`<polygon points="60,10 100,55 60,110 20,55" fill="#FFD6E8"/><line x1="20" y1="55" x2="100" y2="55"/><line x1="60" y1="10" x2="60" y2="110"/><path d="M60,110 Q66,116 60,122 Q54,128 60,134" fill="none"/>` },
+  { name:'Balloon', emoji:'🎈', hint:'Color it your favorite color!', svg:`<ellipse cx="60" cy="46" rx="30" ry="36" fill="#FF8FA3"/><polygon points="52,80 68,80 60,90" fill="#FF8FA3"/><path d="M60,90 Q50,100 60,110 Q70,120 62,128" fill="none"/>` },
+  { name:'Star', emoji:'⭐', hint:'Color it golden yellow!', svg:`<polygon points="60,8 74,44 112,44 82,66 94,104 60,80 26,104 38,66 8,44 46,44" fill="#FFE066"/>` },
+  { name:'Heart', emoji:'❤️', hint:'Color it red or pink!', svg:`<path d="M60,104 C10,70 10,26 40,20 C52,18 60,30 60,38 C60,30 68,18 80,20 C110,26 110,70 60,104 Z" fill="#FF8FA3"/>` },
+  { name:'Ice Cream', emoji:'🍦', hint:'Color the scoop pink and cone brown!', svg:`<polygon points="42,58 78,58 60,110" fill="#E8C39E"/><circle cx="60" cy="42" r="26" fill="#FFC2DD"/><line x1="42" y1="70" x2="78" y2="70"/><line x1="46" y1="82" x2="74" y2="82"/>` },
+  { name:'Car', emoji:'🚗', hint:'Color the body your favorite color!', svg:`<rect x="14" y="60" width="92" height="26" rx="6" fill="#A8D8FF"/><path d="M30,60 L42,34 L78,34 L90,60" fill="#A8D8FF"/><circle cx="36" cy="90" r="12" fill="#4A5568"/><circle cx="84" cy="90" r="12" fill="#4A5568"/><line x1="52" y1="34" x2="52" y2="60"/>` },
+  { name:'Rainbow', emoji:'🌈', hint:'Color each arc a different color!', svg:`<path d="M10,100 A50,50 0 0,1 110,100" fill="none" style="stroke:#E53E3E"/><path d="M26,100 A34,34 0 0,1 94,100" fill="none" style="stroke:#ECC94B"/><path d="M42,100 A18,18 0 0,1 78,100" fill="none" style="stroke:#3182CE"/><ellipse cx="14" cy="102" rx="14" ry="8" fill="#EDF2F7"/><ellipse cx="106" cy="102" rx="14" ry="8" fill="#EDF2F7"/>` },
+  { name:'Cake', emoji:'🎂', hint:'Color the layers and candle!', svg:`<rect x="24" y="66" width="72" height="34" fill="#FFC2DD"/><rect x="34" y="42" width="52" height="24" fill="#BEE3F8"/><line x1="60" y1="42" x2="60" y2="24"/><ellipse cx="60" cy="20" rx="5" ry="8" fill="#FFA94D"/><line x1="24" y1="82" x2="96" y2="82"/>` },
+  { name:'Bird', emoji:'🐦', hint:'Color the body and wing!', svg:`<ellipse cx="56" cy="64" rx="34" ry="24" fill="#A8D8FF"/><circle cx="94" cy="46" r="14" fill="#A8D8FF"/><polygon points="106,44 120,48 106,52" fill="#FFA94D"/><ellipse cx="46" cy="70" rx="16" ry="10" fill="#7FB3E8"/><line x1="30" y1="88" x2="20" y2="100"/><line x1="46" y1="88" x2="46" y2="102"/>` },
+  { name:'Elephant', emoji:'🐘', hint:'Color it grey!', svg:`<ellipse cx="56" cy="66" rx="34" ry="26" fill="#CBD5E0"/><circle cx="94" cy="46" r="20" fill="#CBD5E0"/><ellipse cx="110" cy="38" rx="14" ry="18" fill="#B8C2CE"/><path d="M78,50 Q68,80 78,100" fill="none"/><rect x="34" y="88" width="10" height="20" fill="#CBD5E0"/><rect x="70" y="88" width="10" height="20" fill="#CBD5E0"/>` },
+  { name:'Duck', emoji:'🦆', hint:'Color it yellow!', svg:`<ellipse cx="56" cy="66" rx="32" ry="26" fill="#FFE066"/><circle cx="94" cy="44" r="18" fill="#FFE066"/><polygon points="108,44 122,40 122,50" fill="#FFA94D"/><ellipse cx="50" cy="60" rx="16" ry="10" fill="#F6C744"/>` },
+  { name:'Snowman', emoji:'⛄', hint:'Leave it white, color the buttons & nose!', svg:`<circle cx="60" cy="90" r="26" fill="#F0F8FF"/><circle cx="60" cy="52" r="19" fill="#F0F8FF"/><circle cx="60" cy="22" r="13" fill="#F0F8FF"/><polygon points="60,26 78,30 60,34" fill="#FFA94D"/><circle cx="60" cy="82" r="3" fill="#2D3748"/><circle cx="60" cy="94" r="3" fill="#2D3748"/><line x1="41" y1="50" x2="20" y2="40"/><line x1="79" y1="50" x2="100" y2="40"/>` },
+  { name:'Train', emoji:'🚂', hint:'Color the engine your favorite color!', svg:`<rect x="14" y="50" width="40" height="36" fill="#A8D8FF"/><rect x="58" y="34" width="48" height="52" fill="#FF8FA3"/><circle cx="70" cy="30" r="10" fill="#FF8FA3"/><circle cx="30" cy="98" r="10" fill="#4A5568"/><circle cx="90" cy="98" r="10" fill="#4A5568"/>` },
+  { name:'Cloud', emoji:'☁️', hint:'Leave it white or color it light grey!', svg:`<circle cx="40" cy="66" r="20" fill="#EDF2F7"/><circle cx="68" cy="52" r="26" fill="#EDF2F7"/><circle cx="94" cy="66" r="18" fill="#EDF2F7"/><rect x="32" y="66" width="70" height="24" rx="12" fill="#EDF2F7"/>` },
+  { name:'Ladybug', emoji:'🐞', hint:'Color it red with black spots!', svg:`<ellipse cx="60" cy="64" rx="36" ry="30" fill="#FF6B6B"/><line x1="60" y1="34" x2="60" y2="94"/><circle cx="46" cy="52" r="5" fill="#2D3748"/><circle cx="74" cy="52" r="5" fill="#2D3748"/><circle cx="46" cy="78" r="5" fill="#2D3748"/><circle cx="74" cy="78" r="5" fill="#2D3748"/><circle cx="60" cy="20" r="12" fill="#2D3748"/><line x1="52" y1="12" x2="46" y2="4"/><line x1="68" y1="12" x2="74" y2="4"/>` },
 ]
 
 const HINDI_VOWELS: string[] = ['अ','आ','इ','ई','उ','ऊ','ऋ','ए','ऐ','ओ','औ','अं','अः']
@@ -2373,18 +2420,61 @@ function dottedRow(unit: string, fontSizePx: number, color: string, forceRepeats
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" class="dotted-row" style="height:${H}px">${rule}${glyphs}</svg>`
 }
 
-function practiceSheet(bigModel: string, traceUnit: string, rows: number, wordLine: string): string {
+function practiceSheet(bigModel: string, traceUnit: string, rows: number, wordLine: string, extraHtml: string = ''): string {
   const fontSize = traceUnit.length <= 3 ? 46 : traceUnit.length <= 8 ? 34 : 24
   const rowsHtml = Array.from({ length: rows }, () => `<div class="ps-row">${dottedRow(traceUnit, fontSize, '#0F2050')}</div>`).join('')
   return `
     <div class="ps-model">${esc(bigModel)}</div>
     ${wordLine ? `<div class="ps-wordline">${wordLine}</div>` : ''}
-    <div class="ps-rows">${rowsHtml}</div>`
+    <div class="ps-rows">${rowsHtml}</div>
+    ${extraHtml}`
 }
 
-function numberBox(n: number, rows: number): string {
+function numberBox(n: number, rows: number, extraHtml: string = ''): string {
   const dots = '●'.repeat(Math.min(n, 20))
-  return practiceSheet(`${n}`, `${n}`, rows, `<span class="ps-dots">${dots}</span>`)
+  return practiceSheet(`${n}`, `${n}`, rows, `<span class="ps-dots">${dots}</span>`, extraHtml)
+}
+
+const NUM_WORDS_1_19 = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen']
+const NUM_WORDS_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty']
+function numberToWords(n: number): string {
+  if (n < 20) return NUM_WORDS_1_19[n]
+  const tens = Math.floor(n / 10), ones = n % 10
+  return ones === 0 ? NUM_WORDS_TENS[tens] : `${NUM_WORDS_TENS[tens]}-${NUM_WORDS_1_19[ones]}`
+}
+
+function numberActivityHtml(n: number): string {
+  const emoji = COUNT_EMOJI[(n - 1) % COUNT_EMOJI.length]
+  const countSection = n <= 20 ? `
+    <div class="na-section">
+      <div class="na-label">Count the ${esc(emoji)}</div>
+      <div class="na-objects">${emoji.repeat(n)}</div>
+    </div>` : ''
+  const scatterCount = 9
+  const range = Math.max(12, n + 6)
+  const candidates: number[] = []
+  for (let v = 1; v <= range; v++) if (v !== n) candidates.push(v)
+  const rankedCandidates = candidates
+    .map((v, i) => ({ v, k: (v * 13 + i * 7 + n * 5) % 997 }))
+    .sort((a, b) => a.k - b.k)
+    .map(x => x.v)
+  const scatter: number[] = [n, ...rankedCandidates.slice(0, scatterCount - 1)]
+  const shuffled = scatter
+    .map((v, i) => ({ v, k: (v * 13 + i * 7) % 97 }))
+    .sort((a, b) => a.k - b.k)
+    .map(x => x.v)
+  const scatterHtml = shuffled.map((v, i) => {
+    const rot = ((v * 7 + i * 3) % 11) - 5
+    const big = i % 3 === 0
+    return `<span class="na-num" style="transform:rotate(${rot}deg);font-size:${big ? '1.8rem' : '1.4rem'}">${v}</span>`
+  }).join('')
+  return `
+    ${countSection}
+    <div class="na-section">
+      <div class="na-label">Circle the number ${n}</div>
+      <div class="na-scatter">${scatterHtml}</div>
+    </div>
+    <div class="na-word">${numberToWords(n)}</div>`
 }
 
 function countRow(n: number, emoji: string): string {
@@ -2510,11 +2600,19 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
     if (key === 'alpha') {
       const l = ALPHABET_WORDS[idx]
       const lower = l.ch.toLowerCase()
+      const vocabItems = [{ word: l.word, emoji: l.emoji }, ...l.extras]
+      const vocabHtml = `
+        <div class="vocab-box">
+          <div class="vocab-title">'${l.ch}' is for...</div>
+          <div class="vocab-items">${vocabItems.map(it => `
+            <div class="vocab-item"><div class="vocab-emoji">${it.emoji}</div><div class="vocab-label">${esc(it.word)}</div></div>
+          `).join('')}</div>
+        </div>`
       return {
         title: `Letter ${l.ch}${lower}`,
         instructions: `Trace the big letter, then trace it ${rows} more times on the lines below. Say: "${l.ch} is for ${l.word}!"`,
-        bodyHtml: practiceSheet(`${l.ch}${lower}`, `${l.ch}${lower}`, rows, `${l.emoji} <b>${l.ch}</b> is for <b>${esc(l.word)}</b>`),
-        extraStyle: PRACTICE_STYLE,
+        bodyHtml: practiceSheet(`${l.ch}${lower}`, `${l.ch}${lower}`, rows, vocabHtml),
+        extraStyle: PRACTICE_STYLE + VOCAB_STYLE,
       }
     }
     if (key === 'lines') {
@@ -2579,11 +2677,12 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
     const rows = MATH_ROWS_PER_SHEET[level]
     if (key === 'numtrace') {
       const n = idx + 1
+      const traceRows = Math.max(3, rows - 2)
       return {
         title: `Number ${n}`,
-        instructions: `Count the dots, then trace the number ${rows} more times on the lines below.`,
-        bodyHtml: numberBox(n, rows),
-        extraStyle: PRACTICE_STYLE,
+        instructions: `Count the dots, then trace the number ${traceRows} more times on the lines below. Count the pictures and circle the matching number too!`,
+        bodyHtml: numberBox(n, traceRows, numberActivityHtml(n)),
+        extraStyle: PRACTICE_STYLE + NUM_ACTIVITY_STYLE,
       }
     }
     if (key === 'count') {
@@ -2691,6 +2790,34 @@ function getAssignmentContent(classInfo: AssignClass, subjectId: string, num: nu
         extraStyle: WG_STYLE,
       }
     }
+    if (key === 'colors') {
+      const c = COLOR_WORDS[idx % COLOR_WORDS.length]
+      const matchCount = Math.min(c.matches.length, level === 1 ? 3 : 4)
+      const itemCount = level === 1 ? 6 : level === 2 ? 8 : level === 3 ? 9 : 10
+      const items = [...c.matches.slice(0, matchCount), ...c.distractors.slice(0, Math.max(0, itemCount - matchCount))]
+      const shuffled = items
+        .map((it, i) => ({ it, k: ((i + 1) * 13 + idx * 7) % 97 }))
+        .sort((a, b) => a.k - b.k)
+        .map(x => x.it)
+      const colorRows = 3
+      return {
+        title: `Color: ${c.name}`,
+        instructions: `Trace and print the color "${c.name}". Then find and circle ${matchCount} ${c.name.toLowerCase()} objects below.`,
+        bodyHtml: `
+          <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+            <div class="color-swatch" style="background:${c.hex}"></div>
+          </div>
+          ${practiceSheet(c.name, c.name, colorRows, '')}
+          <div class="color-section">
+            <div class="color-label">Find and circle ${matchCount} ${c.name.toLowerCase()} objects.</div>
+            <div class="wg-grid">${shuffled.map(it => `
+              <div class="wg-box"><div class="wg-emoji">${it.e}</div><div class="wg-label">${esc(it.label)}</div></div>
+            `).join('')}</div>
+          </div>
+        `,
+        extraStyle: PRACTICE_STYLE + WG_STYLE + COLOR_STYLE,
+      }
+    }
     // oddoneout
     const grp = ODD_ONE_OUT[idx % ODD_ONE_OUT.length]
     return {
@@ -2771,6 +2898,22 @@ const PRACTICE_STYLE = `
   .ps-row{padding:2px 0}
   .dotted-row{display:block;width:100%}
 `
+const VOCAB_STYLE = `
+  .vocab-box{border:3px solid #1AA6CA;border-radius:16px;padding:22px 18px 16px;margin:4px 0 8px;position:relative;background:#F0FBFF}
+  .vocab-title{position:absolute;top:-15px;left:20px;background:#fff;padding:2px 14px;border:2px solid #1AA6CA;border-radius:20px;font-weight:800;color:#1AA6CA;font-size:1rem}
+  .vocab-items{display:flex;justify-content:space-around;flex-wrap:wrap;gap:16px;margin-top:6px}
+  .vocab-item{text-align:center;min-width:90px}
+  .vocab-emoji{font-size:3.4rem;line-height:1}
+  .vocab-label{font-weight:800;color:#0F2050;margin-top:8px;font-size:1.05rem}
+`
+const NUM_ACTIVITY_STYLE = `
+  .na-section{margin-top:8px;border:2px dashed #DCE1EF;border-radius:14px;padding:8px 16px;background:#fff}
+  .na-label{font-weight:800;color:#0F2050;margin-bottom:6px;font-size:0.95rem}
+  .na-objects{font-size:2.2rem;line-height:1.2;letter-spacing:5px;word-break:break-word}
+  .na-scatter{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;padding:4px}
+  .na-num{font-family:'Nunito',sans-serif;font-weight:800;color:#0F2050;display:inline-block}
+  .na-word{text-align:center;font-family:'Playfair Display',serif;font-weight:900;font-size:2.1rem;color:#1AA6CA;text-transform:lowercase;margin-top:8px}
+`
 const CM_STYLE = `
   .cm-grid{display:flex;flex-direction:column;gap:10px}
   .cm-row{display:flex;align-items:center;justify-content:space-between;border:2px dashed #DCE1EF;border-radius:14px;padding:12px 16px;background:#fff;gap:10px;flex-wrap:wrap}
@@ -2809,15 +2952,20 @@ const SC_STYLE = `
 const WG_STYLE = `
   .wg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .wg-box{border:2px dashed #DCE1EF;border-radius:14px;padding:14px 8px;text-align:center;background:#fff}
-  .wg-emoji{font-size:2.4rem}
+  .wg-emoji{font-size:2.8rem}
   .wg-label{font-weight:800;margin-top:6px;font-size:0.85rem;color:#2A3B60}
   .wg-check{width:22px;height:22px;border:2px solid #0F2050;border-radius:6px;margin:10px auto 0}
   @media(max-width:700px){.wg-grid{grid-template-columns:repeat(2,1fr)}}
 `
+const COLOR_STYLE = `
+  .color-swatch{width:56px;height:56px;border-radius:12px;border:3px solid #0F2050;box-shadow:0 3px 10px rgba(0,0,0,0.18)}
+  .color-section{margin-top:18px}
+  .color-label{font-weight:800;color:#0F2050;margin-bottom:12px;font-size:1rem}
+`
 const BS_STYLE = `
   .bs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
   .bs-box{border:2px dashed #DCE1EF;border-radius:14px;padding:16px 10px;text-align:center;background:#fff}
-  .bs-emoji{font-size:2.6rem}
+  .bs-emoji{font-size:3.2rem}
   .bs-word{font-weight:700;color:#2A3B60;margin-top:6px;font-size:0.95rem}
   .bs-letter{font-family:'Nunito',sans-serif;font-weight:900;font-size:2rem;color:transparent;-webkit-text-stroke:2px #0F2050;margin-top:8px}
 `
@@ -2829,8 +2977,9 @@ const RHYME_STYLE = `
 `
 const ART_STYLE = `
   .art-trace{display:flex;justify-content:center;margin-bottom:14px}
-  .art-svg{width:280px;height:280px}
-  .art-svg *{fill:none;stroke:#0F2050;stroke-width:2.5;stroke-dasharray:6,4;stroke-linecap:round;stroke-linejoin:round}
+  .art-svg{width:300px;height:300px}
+  .art-svg *{stroke:#0F2050;stroke-width:2.5;stroke-dasharray:6,4;stroke-linecap:round;stroke-linejoin:round}
+  .art-svg line, .art-svg path[fill="none"]{stroke-width:2.8}
   .art-name{text-align:center;font-family:'Playfair Display',serif;font-weight:800;color:#0F2050;font-size:1.3rem}
 `
 const HI_STYLE = `
@@ -2939,11 +3088,14 @@ ${SK_BANNER_STYLE}
 .sheet-footer{margin-top:24px;padding-top:12px;border-top:1.5px solid #DCE1EF;text-align:center;font-size:0.7rem;color:#9CA9C7}
 ${extraStyle}
 @media print{
-  @page{size:A4;margin:12mm}
+  @page{size:A4;margin:10mm}
   body{background:#fff;padding:0}
   .toolbar{display:none}
   .sheet{box-shadow:none;border-radius:0;max-width:100%}
   .sk-banner{border-radius:0}
+  .sheet-body{padding:12px 30px 0 !important}
+  .instructions{margin:8px 0 12px !important}
+  .sheet-footer{margin-top:10px !important;padding-top:6px !important}
 }
 </style>
 </head>
@@ -3643,13 +3795,17 @@ app.get('/assignments/:classId/:subjectId', async (c) => {
         <a href="/assignments/${cl.id}" style="color:${cl.color};font-weight:700;text-decoration:none">${esc(cl.name)}</a> &rsaquo;
         <b style="color:${subj.color}">${esc(subj.name)}</b>
       </p>
+      <div class="max-w-xl mx-auto" style="margin-top:1.5rem">
+        <input type="text" id="assignment-search" placeholder="🔍 Search worksheets by name or topic..." class="form-input" style="width:100%;padding:14px 22px;font-size:1rem;border-radius:50px">
+      </div>
     </div>
   </section>
   <section style="padding:1rem 0 5rem;background:#F8F9FB">
     <div class="max-w-6xl mx-auto px-4">
+      <div id="assignment-search-empty" style="display:none;text-align:center;color:#9CA9C7;padding:3rem 1rem;font-size:0.95rem">No worksheets match your search. Try a different word.</div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         ${customItems.map(row => `
-          <div class="card fade-in" style="border-color:#7C3AED33">
+          <div class="card fade-in" style="border-color:#7C3AED33" data-search="${esc(row.title.toLowerCase())}">
             <div class="badge mb-2" style="background:#7C3AED14;color:#7C3AED;border:1px solid #7C3AED33;font-size:0.68rem">Custom${row.file_type === 'pdf' ? ' · PDF' : ''}</div>
             <div style="width:100%;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#F0F2F7;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:center">
               ${row.file_type === 'pdf'
@@ -3664,7 +3820,7 @@ app.get('/assignments/:classId/:subjectId', async (c) => {
           </div>
         `).join('')}
         ${items.map(it => `
-          <div class="card fade-in" style="border-color:${subj.color}33">
+          <div class="card fade-in" style="border-color:${subj.color}33" data-search="${esc((it.title + ' ' + it.instructions).toLowerCase())}">
             <div class="badge mb-2" style="background:${subj.color}14;color:${subj.color};border:1px solid ${subj.color}33;font-size:0.68rem">Worksheet ${it.num}</div>
             <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:${subj.color};font-weight:700;margin-bottom:0.5rem">${esc(it.title)}</h3>
             <p style="color:#2A3B60;font-size:0.85rem;line-height:1.6;margin-bottom:1.2rem">${esc(it.instructions)}</p>
@@ -3677,6 +3833,22 @@ app.get('/assignments/:classId/:subjectId', async (c) => {
     </div>
   </section>
   <script>
+    (function assignmentSearchFilter(){
+      const input = document.getElementById('assignment-search');
+      const cards = document.querySelectorAll('[data-search]');
+      const emptyMsg = document.getElementById('assignment-search-empty');
+      if (!input) return;
+      input.addEventListener('input', function(){
+        const q = this.value.trim().toLowerCase();
+        let visible = 0;
+        cards.forEach(function(card){
+          const match = !q || card.dataset.search.indexOf(q) !== -1;
+          card.style.display = match ? '' : 'none';
+          if (match) visible++;
+        });
+        emptyMsg.style.display = visible === 0 ? 'block' : 'none';
+      });
+    })();
     (async function caCheckListDeletePerm(){
       const btns = document.querySelectorAll('.ca-card-delete');
       if (!btns.length) return;

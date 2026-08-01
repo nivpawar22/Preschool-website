@@ -291,7 +291,7 @@ window.openTeacherDetail = function(teacherId) {
           '<button class="btn btn-secondary btn-sm" onclick="openAccPayrollForTeacher(\''+teacherId+'\')"><i class="fas fa-money-check-alt"></i> Process Monthly Pay</button>'+
         '</div>'+
         (salPayments.length > 0
-          ? '<h4 style="font-size:13px;font-weight:800;color:#0F2050;margin:0 0 10px">Payment History</h4>'+
+          ? '<h4 style="font-size:13px;font-weight:800;color:#0F2050;margin:0 0 10px">Payment History <span style="font-weight:400;color:#94a3b8;font-size:11px">(Super Admin can delete any record here)</span></h4>'+
             '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
               '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
                 '<th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700">Month</th>'+
@@ -300,15 +300,22 @@ window.openTeacherDetail = function(teacherId) {
                 '<th style="text-align:right;padding:8px 10px;color:#64748b;font-weight:700">Net Pay</th>'+
                 '<th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700">Mode</th>'+
                 '<th style="text-align:center;padding:8px 10px;color:#64748b;font-weight:700">Status</th>'+
+                '<th style="text-align:center;padding:8px 10px;color:#64748b;font-weight:700">Action</th>'+
               '</tr></thead>'+
               '<tbody>'+salPayments.map(function(p){
+                var isPaid = (p.status||'Pending') === 'Paid';
+                var statusBadge = isPaid
+                  ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">Paid</span>'
+                  : '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">Pending</span>';
+                var proofBadge = p.proofSubmitted ? ' <i class="fas fa-receipt" style="color:#10b981" title="Payment proof submitted"></i>' : '';
                 return '<tr style="border-bottom:1px solid #f1f5f9">'+
                   '<td style="padding:8px 10px;font-weight:700;color:#374151">'+_fmtMonth(p.month)+'</td>'+
                   '<td style="padding:8px 10px;text-align:right;color:#374151">₹'+parseFloat(p.baseSalary||0).toLocaleString('en-IN')+'</td>'+
                   '<td style="padding:8px 10px;text-align:right;color:#ef4444">₹'+parseFloat(p.deductions||0).toLocaleString('en-IN')+'</td>'+
                   '<td style="padding:8px 10px;text-align:right;font-weight:800;color:#10b981">₹'+parseFloat(p.netAmount||0).toLocaleString('en-IN')+'</td>'+
                   '<td style="padding:8px 10px;color:#64748b">'+(p.paymentMode||'Bank')+'</td>'+
-                  '<td style="padding:8px 10px;text-align:center"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">'+p.status+'</span></td>'+
+                  '<td style="padding:8px 10px;text-align:center">'+statusBadge+proofBadge+'</td>'+
+                  '<td style="padding:8px 10px;text-align:center"><button class="btn btn-danger btn-sm" onclick="_deleteSalaryPaymentAdmin(\''+p.id+'\',\''+teacherId+'\')" title="Delete"><i class="fas fa-trash"></i></button></td>'+
                 '</tr>';
               }).join('')+
               '</tbody></table></div>'
@@ -1259,6 +1266,19 @@ window._delSalStruct = function(id, teacherId) {
     DB.deleteSalaryStructure(id);
     document.getElementById('tch-salary-modal').remove();
     openTeacherSalary(teacherId);
+  });
+};
+
+window._deleteSalaryPaymentAdmin = function(id, teacherId) {
+  var user = Session.current();
+  if (!user || user.role !== 'superadmin') { showToast('Only a Super Admin can delete payment history.', 'error'); return; }
+  var p = DB.getSalaryPayments(teacherId).find(function(x) { return x.id === id; });
+  var mLabel = p ? _fmtMonth(p.month) : '';
+  confirmDialog('Delete this salary payment record' + (mLabel ? ' (' + mLabel + ')' : '') + '? This cannot be undone.', function() {
+    DB.deleteSalaryPayment(id);
+    showToast('Payment record deleted', 'success');
+    document.getElementById('tch-detail-modal').remove();
+    openTeacherDetail(teacherId);
   });
 };
 

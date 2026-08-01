@@ -542,6 +542,27 @@ function renderAccExpensesTable() {
     .filter(function(e) { return (e.date || '').startsWith(thisYear); })
     .reduce(function(s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
 
+  // Salary payments (from Staff Payroll) are the school's other big monthly
+  // expense, but they live in salaryPayments, not the manual/sheet expenses
+  // table — surface them here rather than duplicating them into a stored
+  // expense record, so salaryPayments stays the single source of truth.
+  const paidSalaries = (typeof DB !== 'undefined' && DB.getSalaryPayments)
+    ? DB.getSalaryPayments(null).filter(function(p) { return (p.status || 'Pending') === 'Paid'; })
+    : [];
+  const salaryThisMonthTotal = paidSalaries
+    .filter(function(p) { return (p.month || '') === thisMonth; })
+    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  const salaryYearTotal = paidSalaries
+    .filter(function(p) { return (p.month || '').startsWith(thisYear); })
+    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  const combinedMonthTotal = monthTotal + salaryThisMonthTotal;
+  const combinedYearTotal = yearTotal + salaryYearTotal;
+
+  const salExpMonth = window._accSalExpMonth || thisMonth;
+  const salaryMonthRecords = paidSalaries.filter(function(p) { return (p.month || '') === salExpMonth; });
+  const salaryMonthRecordsTotal = salaryMonthRecords.reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  const salUsers = ((typeof DB !== 'undefined' ? DB.get().users : []) || []);
+
   function buildExpTable(list) {
     if (list.length === 0) {
       return '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:14px"><i class="fas fa-inbox" style="display:block;font-size:36px;margin-bottom:12px"></i>No expenses found. Click "Add Expense" to record one.</div>';
@@ -576,17 +597,59 @@ function renderAccExpensesTable() {
       '</tbody></table></div>';
   }
 
+  function buildSalExpTable(list) {
+    if (list.length === 0) {
+      return '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px">No salary payments marked Paid for this month yet.</div>';
+    }
+    return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">' +
+        '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>' +
+        '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Payment Date</th>' +
+        '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Mode</th>' +
+        '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Pay</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+        list.map(function(p) {
+          var t = salUsers.find(function(u) { return u.id === p.teacherId; });
+          return '<tr style="border-bottom:1px solid #f1f5f9">' +
+            '<td style="padding:10px 12px;font-weight:600;color:#374151">' + (t ? t.name : '-') + '</td>' +
+            '<td style="padding:10px 12px;color:#475569">' + formatDate(p.paymentDate) + '</td>' +
+            '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (p.paymentMode||'Bank Transfer') + '</span></td>' +
+            '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹' + parseFloat(p.netAmount||0).toLocaleString('en-IN') + '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody>' +
+      '<tfoot><tr style="border-top:2px solid #e2e8f0"><td colspan="3" style="padding:10px 12px;text-align:right;font-weight:800;color:#0F2050">Total</td><td style="padding:10px 12px;text-align:right;font-weight:900;color:#10b981">₹' + salaryMonthRecordsTotal.toLocaleString('en-IN') + '</td></tr></tfoot>' +
+    '</table></div>';
+  }
+
   wrap.innerHTML = `
     <div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
         <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #ef4444">
-          <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total This Month</div>
-          <div style="font-size:26px;font-weight:900;color:#0F2050">₹${monthTotal.toLocaleString('en-IN')}</div>
+          <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Expenses This Month</div>
+          <div style="font-size:26px;font-weight:900;color:#0F2050">₹${combinedMonthTotal.toLocaleString('en-IN')}</div>
+          <div style="font-size:11px;color:#94a3b8;margin-top:2px">Includes staff salary paid</div>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #10b981">
+          <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Salary Paid This Month</div>
+          <div style="font-size:26px;font-weight:900;color:#0F2050">₹${salaryThisMonthTotal.toLocaleString('en-IN')}</div>
         </div>
         <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8b5cf6">
-          <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total This Year</div>
-          <div style="font-size:26px;font-weight:900;color:#0F2050">₹${yearTotal.toLocaleString('en-IN')}</div>
+          <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Total Expenses This Year</div>
+          <div style="font-size:26px;font-weight:900;color:#0F2050">₹${combinedYearTotal.toLocaleString('en-IN')}</div>
         </div>
+      </div>
+
+      <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <h3 style="font-size:15px;font-weight:800;margin:0;color:#0F2050">
+            <i class="fas fa-money-check-alt" style="color:#10b981;margin-right:8px"></i>Salary Paid for the Month
+            <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${salaryMonthRecords.length} record${salaryMonthRecords.length===1?'':'s'})</span>
+          </h3>
+          <input type="month" class="form-control" style="max-width:170px" value="${salExpMonth}" onchange="accSetSalExpMonth(this.value)"/>
+        </div>
+        ${buildSalExpTable(salaryMonthRecords)}
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
@@ -611,10 +674,16 @@ function renderAccExpensesTable() {
           <i class="fas fa-calculator" style="color:#ef4444;margin-right:8px"></i>Expense Records
           <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${filtered.length} records)</span>
         </h3>
+        <p style="font-size:12px;color:#94a3b8;margin:-10px 0 14px">External expenses recorded manually or synced from the Google Sheet. Staff salary payments are shown separately above.</p>
         ${buildExpTable(filtered)}
       </div>
     </div>`;
 }
+
+window.accSetSalExpMonth = function(month) {
+  window._accSalExpMonth = month;
+  renderAccExpensesTable();
+};
 
 window.accSetExpFilter = function(cat) {
   window._accExpFilter = cat;
@@ -883,6 +952,7 @@ function renderAccPayroll() {
                 <th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Net Pay</th>
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Mode</th>
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>
+                <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Status</th>
                 <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>
               </tr></thead>
               <tbody>
@@ -890,6 +960,14 @@ function renderAccPayroll() {
                   var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
                   var [y, m] = (p.month || '').split('-');
                   var mLabel = (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]||m)+' '+y;
+                  var isPaid = (p.status||'Pending') === 'Paid';
+                  var statusBadge = isPaid
+                    ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">Paid</span>'
+                    : '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">Pending</span>';
+                  var proofBadge = p.proofSubmitted ? ' <i class="fas fa-receipt" style="color:#10b981" title="Payment proof submitted — locked from accounting delete"></i>' : '';
+                  var deleteBtn = p.proofSubmitted
+                    ? '<button class="btn btn-secondary btn-sm" disabled title="Proof submitted — only Super Admin can delete this record" style="opacity:0.5;cursor:not-allowed"><i class="fas fa-lock"></i></button>'
+                    : '<button class="btn btn-danger btn-sm" onclick="accDeletePayroll(\'' + p.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>';
                   return '<tr style="border-bottom:1px solid #f1f5f9">' +
                     '<td style="padding:10px 12px;font-weight:600;color:#374151">' + (t ? t.name : '-') + '</td>' +
                     '<td style="padding:10px 12px;color:#475569">' + mLabel + '</td>' +
@@ -897,8 +975,12 @@ function renderAccPayroll() {
                     '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#10b981">₹' + parseFloat(p.netAmount||0).toLocaleString('en-IN') + '</td>' +
                     '<td style="padding:10px 12px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (p.paymentMode||'Bank Transfer') + '</span></td>' +
                     '<td style="padding:10px 12px;color:#64748b">' + formatDate(p.paymentDate) + '</td>' +
+                    '<td style="padding:10px 12px;text-align:center">' + statusBadge + proofBadge + '</td>' +
                     '<td style="padding:10px 12px;text-align:center">' +
-                      '<button class="btn btn-danger btn-sm" onclick="accDeletePayroll(\'' + p.id + '\')"><i class="fas fa-trash"></i></button>' +
+                      '<div style="display:flex;gap:4px;justify-content:center">' +
+                      '<button class="btn btn-secondary btn-sm" onclick="accEditPayrollHistory(\'' + p.id + '\')" title="Edit payment history"><i class="fas fa-edit"></i></button>' +
+                      deleteBtn +
+                      '</div>' +
                     '</td>' +
                     '</tr>';
                 }).join('')}
@@ -986,6 +1068,13 @@ window.accProcessSalary = function(teacherId) {
             <input id="pr-date" class="form-control" type="date" value="${today}"/>
           </div>
           <div style="grid-column:1/-1">
+            <label class="form-label">Payment Status</label>
+            <select id="pr-status" class="form-control">
+              <option value="Pending">Pending — not yet transferred</option>
+              <option value="Paid">Paid — already transferred</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
             <label class="form-label">Remarks</label>
             <textarea id="pr-remarks" class="form-control" rows="2" placeholder="Optional remarks..."></textarea>
           </div>
@@ -1020,6 +1109,7 @@ window.accSavePayroll = function(teacherId) {
   var paymentDate = document.getElementById('pr-date').value;
   var remarks = (document.getElementById('pr-remarks').value || '').trim();
   var saveBase = document.getElementById('pr-save-base').value;
+  var status = document.getElementById('pr-status') ? document.getElementById('pr-status').value : 'Pending';
 
   if (!month) { showToast('Pay month is required', 'error'); return; }
   if (!paymentDate) { showToast('Payment date is required', 'error'); return; }
@@ -1036,7 +1126,10 @@ window.accSavePayroll = function(teacherId) {
     paymentMode: paymentMode,
     paymentDate: paymentDate,
     remarks: remarks,
-    status: 'Paid',
+    status: status,
+    transactionId: '',
+    screenshotKey: '',
+    proofSubmitted: false,
     paidBy: user ? user.id : '',
     createdAt: new Date().toISOString()
   };
@@ -1051,11 +1144,134 @@ window.accSavePayroll = function(teacherId) {
 };
 
 window.accDeletePayroll = function(id) {
-  confirmDialog('Delete this salary payment record?', function() {
+  var p = DB.getSalaryPayments(null).find(function(x) { return x.id === id; });
+  if (p && p.proofSubmitted) {
+    showToast('This payment has a submitted proof of payment — only a Super Admin can delete it.', 'error');
+    return;
+  }
+  var data = DB.get();
+  var t = p ? (data.users || []).find(function(u) { return u.id === p.teacherId; }) : null;
+  var [y, m] = p ? (p.month || '').split('-') : [];
+  var mLabel = p ? (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]||m)+' '+y : '';
+  var detail = (t ? ' for ' + t.name : '') + (mLabel ? ' (' + mLabel + ')' : '');
+  confirmDialog('Delete this salary payment record' + detail + '? This cannot be undone.', function() {
     DB.deleteSalaryPayment(id);
     showToast('Payment record deleted', 'success');
     renderAccPayroll();
   });
+};
+
+window.accEditPayrollHistory = function(id) {
+  var p = DB.getSalaryPayments(null).find(function(x) { return x.id === id; });
+  if (!p) return;
+  var data = DB.get();
+  var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
+  window._peScreenshotKey = p.screenshotKey || '';
+
+  var screenshotPreviewHtml = p.screenshotKey
+    ? '<div id="pe-shot-prev" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">' +
+      '<i class="fas fa-check-circle"></i>&nbsp;Screenshot on file &nbsp;<a href="/r2/' + p.screenshotKey + '" target="_blank" style="color:#065f46;font-size:10px;font-weight:700;text-decoration:underline">[view]</a>' +
+      '</div>'
+    : '<div id="pe-shot-prev" style="display:none"></div>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'acc-payedit-modal';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:480px;width:100%">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-edit" style="color:#8b5cf6;margin-right:8px"></i>Edit Payment History — ${t ? t.name : ''}</h3>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('acc-payedit-modal').remove()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="padding:24px">
+        ${p.proofSubmitted ? '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#065f46"><i class="fas fa-shield-alt" style="margin-right:6px"></i>Proof of payment already submitted for this record. You can still edit it, but only a Super Admin can delete it.</div>' : ''}
+        <div style="display:grid;gap:16px">
+          <div>
+            <label class="form-label">Payment Status</label>
+            <select id="pe-status" class="form-control">
+              <option value="Pending"${(p.status||'Pending')==='Pending'?' selected':''}>Pending — not yet transferred</option>
+              <option value="Paid"${p.status==='Paid'?' selected':''}>Paid — already transferred</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Transaction ID</label>
+            <input id="pe-txnid" class="form-control" type="text" placeholder="e.g. UPI/Bank reference number" value="${(p.transactionId||'').replace(/"/g,'&quot;')}"/>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:12px">Payment Screenshot</label>
+            <div style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:8px 10px;background:#fafbfc;display:flex;flex-direction:column;gap:6px">
+              ${screenshotPreviewHtml}
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#475569;margin:0">
+                <i class="fas fa-paperclip" style="color:#6366f1;font-size:13px;flex-shrink:0"></i>
+                <span id="pe-shot-label" style="flex:1">${p.screenshotKey ? 'Replace screenshot...' : 'Choose image...'}</span>
+                <input type="file" id="pe-shot-input" accept="image/*" onchange="_peUploadScreenshot(this)" style="display:none">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid #e2e8f0">
+        <button class="btn btn-secondary" onclick="document.getElementById('acc-payedit-modal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="accSavePayrollEdit('${id}')"><i class="fas fa-save"></i> Submit</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+window._peUploadScreenshot = function(inputEl) {
+  var file = inputEl.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('File must be under 10MB.', 'error'); inputEl.value = ''; return; }
+  var prev = document.getElementById('pe-shot-prev');
+  var lbl = document.getElementById('pe-shot-label');
+  if (prev) {
+    prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fef3c7;border-radius:6px;font-size:11px;font-weight:700;color:#92400e';
+    prev.innerHTML = '<i class="fas fa-spinner" style="animation:spin 1s linear infinite"></i>&nbsp;Uploading ' + file.name + '...';
+  }
+  if (lbl) lbl.textContent = 'Uploading...';
+  var formData = new FormData();
+  formData.append('file', file);
+  fetch('/api/upload?folder=salary-proofs', { method: 'POST', headers: _accAuthHdr(), body: formData })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) throw new Error(res.error);
+      window._peScreenshotKey = res.key;
+      if (prev) {
+        prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46';
+        prev.innerHTML = '<i class="fas fa-check-circle"></i>&nbsp;' + file.name + ' &nbsp;<a href="/r2/' + res.key + '" target="_blank" style="color:#065f46;font-size:10px;text-decoration:underline">[view]</a>';
+      }
+      if (lbl) lbl.textContent = 'Replace screenshot...';
+    })
+    .catch(function(err) {
+      if (prev) {
+        prev.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fee2e2;border-radius:6px;font-size:11px;font-weight:700;color:#991b1b';
+        prev.innerHTML = '<i class="fas fa-times-circle"></i>&nbsp;Upload failed: ' + (err.message||'Check connection');
+      }
+      if (lbl) lbl.textContent = 'Choose image...';
+      inputEl.value = '';
+    });
+};
+
+window.accSavePayrollEdit = function(id) {
+  var status = document.getElementById('pe-status').value;
+  var transactionId = (document.getElementById('pe-txnid').value || '').trim();
+  var user = Session.current();
+  var updates = {
+    status: status,
+    transactionId: transactionId,
+    screenshotKey: window._peScreenshotKey || '',
+    updatedAt: new Date().toISOString(),
+    updatedBy: user ? user.id : ''
+  };
+  if (status === 'Paid') updates.proofSubmitted = true;
+
+  DB.updateSalaryPayment(id, updates);
+  var modal = document.getElementById('acc-payedit-modal');
+  if (modal) modal.remove();
+  showToast('Payment history updated!', 'success');
+  window._peScreenshotKey = null;
+  renderAccPayroll();
 };
 
 // ---- Route Registration ----

@@ -4442,6 +4442,66 @@ app.delete('/api/expenses/:id', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── Salary Payments API ─────────────────────────────────
+// salaryPayments lives inside the shared app_data 'main' JSON blob, but the
+// generic POST /api/db (full-blob replace) intentionally skips the
+// 'accounting' role client-side (see saveToServer in data.js) to stop a
+// stale accounting-side cache from clobbering unrelated data other admins
+// wrote. These endpoints instead do a targeted read-modify-write of just
+// the salaryPayments array, so accounting can safely persist payroll
+// actions without touching anything else in the blob.
+async function loadMainAppData(db: any): Promise<any> {
+  await db.exec(`CREATE TABLE IF NOT EXISTS app_data (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)`)
+  const row = await db.prepare('SELECT value FROM app_data WHERE key = ?').bind('main').first<{ value: string }>()
+  return row ? JSON.parse(row.value) : {}
+}
+async function saveMainAppData(db: any, data: any): Promise<void> {
+  await db.prepare('INSERT OR REPLACE INTO app_data (key, value, updated_at) VALUES (?, ?, ?)').bind('main', JSON.stringify(data), new Date().toISOString()).run()
+}
+
+app.post('/api/salary-payments', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payment } = await c.req.json()
+    if (!payment || !payment.id) return c.json({ error: 'Invalid payment' }, 400)
+    const data = await loadMainAppData(c.env.DB)
+    if (!Array.isArray(data.salaryPayments)) data.salaryPayments = []
+    data.salaryPayments.unshift(payment)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.put('/api/salary-payments/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { updates } = await c.req.json()
+    const data = await loadMainAppData(c.env.DB)
+    const p = (data.salaryPayments || []).find((p: any) => p.id === c.req.param('id'))
+    if (!p) return c.json({ error: 'Payment record not found' }, 404)
+    Object.assign(p, updates || {})
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/salary-payments/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const data = await loadMainAppData(c.env.DB)
+    const p = (data.salaryPayments || []).find((p: any) => p.id === c.req.param('id'))
+    if (p && p.proofSubmitted && sess!.role !== 'superadmin') {
+      return c.json({ error: 'This payment has a submitted proof of payment — only a Super Admin can delete it.' }, 403)
+    }
+    data.salaryPayments = (data.salaryPayments || []).filter((p: any) => p.id !== c.req.param('id'))
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 // Returns the last-used Google Sheet URL so the sync modal can pre-fill it.
 app.get('/api/expenses/sheet-config', async (c) => {
   const sess = await getSession(c)

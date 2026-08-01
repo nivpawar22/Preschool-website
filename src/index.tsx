@@ -4502,6 +4502,67 @@ app.delete('/api/salary-payments/:id', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Emails the teacher a "salary paid" confirmation via Resend (same provider
+// used for OTP/credential-recovery mail), then stamps paidNotifiedAt on the
+// record so callers can avoid re-sending on every subsequent edit.
+app.post('/api/salary-payments/:id/notify', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageExpenses(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const data = await loadMainAppData(c.env.DB)
+    const payment = (data.salaryPayments || []).find((p: any) => p.id === c.req.param('id'))
+    if (!payment) return c.json({ error: 'Payment record not found' }, 404)
+    const teacher = (data.users || []).find((u: any) => u.id === payment.teacherId)
+    if (!teacher || !teacher.email) return c.json({ noEmail: true })
+    const apiKey = c.env.RESEND_API_KEY || (data.meta && data.meta.resendApiKey) || ''
+    if (!apiKey) return c.json({ notConfigured: true })
+    const meta = data.meta || {}
+    const schoolName = meta.schoolName || 'SuperKids India Preschool'
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
+    const [my, mm] = (payment.month || '').split('-')
+    const monthLabel = (monthNames[parseInt(mm) - 1] || mm) + ' ' + my
+    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+      <div style="background:#0F2050;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:#fff">${schoolName}</div>
+        <div style="font-size:11px;color:#C4893A;letter-spacing:.15em;margin-top:4px">SALARY PAYMENT CONFIRMATION</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:28px 24px;border-radius:0 0 8px 8px">
+        <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${teacher.name || teacher.username}</strong>,</p>
+        <p style="color:#4a5568;font-size:14px;margin:0 0 20px">Your salary for <strong>${monthLabel}</strong> has been paid. Here are the details:</p>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13px">
+          <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Net Pay</td><td style="padding:8px;border:1px solid #e2e8f0">₹${Number(payment.netAmount || 0).toLocaleString('en-IN')}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Payment Mode</td><td style="padding:8px;border:1px solid #e2e8f0">${payment.paymentMode || 'Bank Transfer'}</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Payment Date</td><td style="padding:8px;border:1px solid #e2e8f0">${payment.paymentDate || ''}</td></tr>
+          ${payment.transactionId ? `<tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Transaction ID</td><td style="padding:8px;border:1px solid #e2e8f0">${payment.transactionId}</td></tr>` : ''}
+        </table>
+        <p style="font-size:12px;color:#a0aec0;border-top:1px solid #e2e8f0;padding-top:16px;margin:0">
+          Log in to your staff portal to view or print the full salary slip.<br>
+          Phone: ${meta.schoolPhone || '9822-977-644'} &nbsp;|&nbsp; Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}
+        </p>
+      </div>
+    </div>`
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: meta.resendFromEmail ? `${schoolName} <${meta.resendFromEmail}>` : 'SuperKids India Preschool <onboarding@resend.dev>',
+        to: [teacher.email.trim()],
+        subject: `Salary Paid — ${monthLabel} | ${schoolName}`,
+        html,
+        ...(meta.schoolEmail ? { reply_to: meta.schoolEmail } : {})
+      })
+    })
+    if (!res.ok) {
+      let resendError = ''
+      try { const j: any = await res.json(); resendError = j.message || j.name || JSON.stringify(j) } catch { resendError = String(res.status) }
+      return c.json({ error: 'Resend error: ' + resendError })
+    }
+    payment.paidNotifiedAt = new Date().toISOString()
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 // Returns the last-used Google Sheet URL so the sync modal can pre-fill it.
 app.get('/api/expenses/sheet-config', async (c) => {
   const sess = await getSession(c)

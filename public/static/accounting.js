@@ -876,6 +876,16 @@ function renderAccPayroll() {
   const thisMonth = now.toISOString().slice(0, 7);
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+  const payrollSearch = (window._accPayrollSearch || '').toLowerCase().trim();
+  const payrollMonthFilter = window._accPayrollMonthFilter || '';
+  const filteredPayments = allPayments.filter(function(p) {
+    var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
+    var nameMatch = !payrollSearch || (t && t.name && t.name.toLowerCase().indexOf(payrollSearch) !== -1);
+    var monthMatch = !payrollMonthFilter || p.month === payrollMonthFilter;
+    return nameMatch && monthMatch;
+  });
+  const payrollFilterActive = !!(payrollSearch || payrollMonthFilter);
+
   const thisMonthTotal = allPayments
     .filter(function(p) { return (p.month || '') === thisMonth; })
     .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
@@ -938,12 +948,21 @@ function renderAccPayroll() {
       </div>
 
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-        <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
-          <i class="fas fa-history" style="color:#8b5cf6;margin-right:8px"></i>Payment History
-          <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${allPayments.length} records)</span>
-        </h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <h3 style="font-size:15px;font-weight:800;margin:0;color:#0F2050">
+            <i class="fas fa-history" style="color:#8b5cf6;margin-right:8px"></i>Payment History
+            <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${payrollFilterActive ? filteredPayments.length + ' of ' + allPayments.length : allPayments.length} records)</span>
+          </h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="payroll-search-inp" class="form-control" type="text" placeholder="Search by employee..." style="max-width:180px" value="${(payrollSearch||'').replace(/"/g,'&quot;')}" oninput="accSetPayrollSearch(this.value)"/>
+            <input id="payroll-month-inp" class="form-control" type="month" style="max-width:150px" value="${payrollMonthFilter}" onchange="accSetPayrollMonthFilter(this.value)"/>
+            ${payrollFilterActive ? '<button class="btn btn-secondary btn-sm" onclick="accClearPayrollFilters()"><i class="fas fa-times"></i> Clear</button>' : ''}
+          </div>
+        </div>
         ${allPayments.length === 0
           ? '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px">No salary payments recorded yet.</div>'
+          : filteredPayments.length === 0
+          ? '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px">No payments match your search/filter.</div>'
           : `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
               <thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">
                 <th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Employee</th>
@@ -956,7 +975,7 @@ function renderAccPayroll() {
                 <th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Actions</th>
               </tr></thead>
               <tbody>
-                ${allPayments.map(function(p) {
+                ${filteredPayments.map(function(p) {
                   var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
                   var [y, m] = (p.month || '').split('-');
                   var mLabel = (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]||m)+' '+y;
@@ -991,6 +1010,29 @@ function renderAccPayroll() {
 
   renderLayout('acc-payroll', content, 'Staff Payroll', 'Accounting / Staff Payroll');
 }
+
+// The whole panel re-renders on every filter change (same pattern as the
+// rest of this page), which recreates the search <input> — restore focus
+// and caret position afterward so typing doesn't get interrupted.
+window.accSetPayrollSearch = function(val) {
+  window._accPayrollSearch = val;
+  var prevInp = document.getElementById('payroll-search-inp');
+  var caret = prevInp ? prevInp.selectionStart : null;
+  renderAccPayroll();
+  var inp = document.getElementById('payroll-search-inp');
+  if (inp) { inp.focus(); if (caret != null) inp.setSelectionRange(caret, caret); }
+};
+
+window.accSetPayrollMonthFilter = function(val) {
+  window._accPayrollMonthFilter = val;
+  renderAccPayroll();
+};
+
+window.accClearPayrollFilters = function() {
+  window._accPayrollSearch = '';
+  window._accPayrollMonthFilter = '';
+  renderAccPayroll();
+};
 
 window.accProcessSalary = function(teacherId) {
   const data = DB.get();
@@ -1134,13 +1176,34 @@ window.accSavePayroll = function(teacherId) {
     createdAt: new Date().toISOString()
   };
 
-  DB.addSalaryPayment(payment);
+  var savePromise = DB.addSalaryPayment(payment);
   if (saveBase === 'yes') { DB.updateUser(teacherId, { baseSalary: baseSalary }); }
 
   var modal = document.getElementById('acc-payroll-modal');
   if (modal) modal.remove();
   showToast('Salary processed for ' + month + '!', 'success');
   renderAccPayroll();
+
+  if (status === 'Paid' && savePromise && savePromise.then) {
+    savePromise.then(function() { _accNotifyPaid(payment.id); });
+  }
+};
+
+// Emails the teacher a "salary paid" confirmation. Safe to call anytime a
+// record is (re)confirmed as Paid — the server only sends once per record
+// (stamps paidNotifiedAt) so repeat calls for an already-notified payment
+// are cheap no-ops from the UI's perspective; skip proactively where we
+// already know it was sent to avoid the extra round trip.
+window._accNotifyPaid = function(id) {
+  fetch('/api/salary-payments/' + id + '/notify', { method: 'POST', headers: _accAuthHdr() })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.sent) showToast('Teacher notified by email.', 'success');
+      else if (res.noEmail) showToast('Marked Paid, but teacher has no email on file — notification skipped.', 'info');
+      else if (res.notConfigured) { /* Resend not set up — silent, not the teacher's/accountant's problem to fix here */ }
+      else if (res.error) showToast('Could not email teacher: ' + res.error, 'error');
+    })
+    .catch(function() {});
 };
 
 window.accDeletePayroll = function(id) {
@@ -1167,6 +1230,7 @@ window.accEditPayrollHistory = function(id) {
   var data = DB.get();
   var t = (data.users || []).find(function(u) { return u.id === p.teacherId; });
   window._peScreenshotKey = p.screenshotKey || '';
+  window._peAlreadyNotified = !!p.paidNotifiedAt;
 
   var screenshotPreviewHtml = p.screenshotKey
     ? '<div id="pe-shot-prev" style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#d1fae5;border-radius:6px;font-size:11px;font-weight:700;color:#065f46">' +
@@ -1265,13 +1329,19 @@ window.accSavePayrollEdit = function(id) {
     updatedBy: user ? user.id : ''
   };
   if (status === 'Paid') updates.proofSubmitted = true;
+  var shouldNotify = status === 'Paid' && !window._peAlreadyNotified;
 
-  DB.updateSalaryPayment(id, updates);
+  var savePromise = DB.updateSalaryPayment(id, updates);
   var modal = document.getElementById('acc-payedit-modal');
   if (modal) modal.remove();
   showToast('Payment history updated!', 'success');
   window._peScreenshotKey = null;
+  window._peAlreadyNotified = null;
   renderAccPayroll();
+
+  if (shouldNotify && savePromise && savePromise.then) {
+    savePromise.then(function() { _accNotifyPaid(id); });
+  }
 };
 
 // ---- Route Registration ----

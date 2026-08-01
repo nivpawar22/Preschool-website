@@ -760,7 +760,7 @@ const DB = (() => {
     if (!_data.salaryPayments) _data.salaryPayments = [];
     _data.salaryPayments.unshift(payment);
     save(_data);
-    fetch('/api/salary-payments', {
+    return fetch('/api/salary-payments', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, _salaryAuthHdr()),
       body: JSON.stringify({ payment: payment })
@@ -776,10 +776,10 @@ const DB = (() => {
 
   function updateSalaryPayment(id, updates) {
     var p = (_data.salaryPayments || []).find(function(p) { return p.id === id; });
-    if (!p) return;
+    if (!p) return Promise.resolve();
     Object.assign(p, updates);
     save(_data);
-    fetch('/api/salary-payments/' + id, {
+    return fetch('/api/salary-payments/' + id, {
       method: 'PUT',
       headers: Object.assign({ 'Content-Type': 'application/json' }, _salaryAuthHdr()),
       body: JSON.stringify({ updates: updates })

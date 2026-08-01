@@ -747,16 +747,43 @@ const DB = (() => {
       .sort(function(a, b) { return (b.month || '').localeCompare(a.month || ''); });
   }
 
+  // Salary payments are written through their own dedicated endpoint
+  // (not the generic /api/db full-blob sync, which saveToServer() skips
+  // for the 'accounting' role) so accounting-role changes actually reach
+  // the server instead of only ever living in that browser's localStorage.
+  function _salaryAuthHdr() {
+    var t = localStorage.getItem('sk_session_token');
+    return t ? { 'Authorization': 'Bearer ' + t } : {};
+  }
+
   function addSalaryPayment(payment) {
     if (!_data.salaryPayments) _data.salaryPayments = [];
     _data.salaryPayments.unshift(payment);
-    commit();
+    save(_data);
+    return fetch('/api/salary-payments', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _salaryAuthHdr()),
+      body: JSON.stringify({ payment: payment })
+    }).catch(function() {});
   }
 
   function deleteSalaryPayment(id) {
     if (!_data.salaryPayments) return;
     _data.salaryPayments = _data.salaryPayments.filter(function(p) { return p.id !== id; });
-    commit();
+    save(_data);
+    fetch('/api/salary-payments/' + id, { method: 'DELETE', headers: _salaryAuthHdr() }).catch(function() {});
+  }
+
+  function updateSalaryPayment(id, updates) {
+    var p = (_data.salaryPayments || []).find(function(p) { return p.id === id; });
+    if (!p) return Promise.resolve();
+    Object.assign(p, updates);
+    save(_data);
+    return fetch('/api/salary-payments/' + id, {
+      method: 'PUT',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _salaryAuthHdr()),
+      body: JSON.stringify({ updates: updates })
+    }).catch(function() {});
   }
 
   // ---- Salary Structures ----
@@ -1016,7 +1043,7 @@ const DB = (() => {
     updateUser,
     getStaffAttendance, addStaffAttendance, updateStaffAttendance, deleteStaffAttendance,
     getStaffLeaves, addStaffLeave, updateStaffLeave, deleteStaffLeave, getLeaveBalance,
-    getSalaryPayments, addSalaryPayment, deleteSalaryPayment,
+    getSalaryPayments, addSalaryPayment, deleteSalaryPayment, updateSalaryPayment,
     getSalaryStructures, addSalaryStructure, deleteSalaryStructure,
     getHRLetters, addHRLetter, deleteHRLetter,
     getStaffExitRecords, addStaffExitRecord, updateStaffExitRecord, deleteStaffExitRecord,

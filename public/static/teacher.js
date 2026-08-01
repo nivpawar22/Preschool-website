@@ -744,6 +744,7 @@ window.teacherViewSlip = function(id) {
         '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Employee ID</div><div style="font-weight:700;color:#0F2050">'+escHtml(user.employeeId||user.empId||user.id)+'</div></div>'+
         '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Designation</div><div style="font-weight:700;color:#0F2050">'+escHtml(user.designation||'Teacher')+'</div></div>'+
         '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Payment Mode</div><div style="font-weight:700;color:#0F2050">'+escHtml(p.paymentMode||'Bank Transfer')+'</div></div>'+
+        (p.transactionId ? '<div><div style="color:#94a3b8;font-size:11px;font-weight:700">Transaction ID</div><div style="font-weight:700;color:#0F2050">'+escHtml(p.transactionId)+'</div></div>' : '')+
       '</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'+
         '<div style="background:#f0fdf4;border-radius:10px;padding:16px"><div style="font-size:12px;font-weight:800;color:#065f46;margin-bottom:12px">Earnings</div>'+

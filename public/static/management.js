@@ -2766,6 +2766,7 @@ function loadFeeConfig() {
     _feeCfg = {
       classWise: fc.classWiseFees || {},
       dueDates: fc.dueDates || {},
+      dueDatesActual: fc.dueDatesActual || {},
       kit: (fc.kitItems||[]).length > 0 ? fc.kitItems : [
         {id:'bag',name:'School Bag'},{id:'uniform',name:'Uniform (Set of 2)'},
         {id:'books',name:'Book Set'},{id:'stationery',name:'Stationery Kit'},
@@ -2819,6 +2820,12 @@ function renderFeeConfigUI() {
               return '<td style="padding:5px 6px"><input type="text" class="fee-duedate-inp" data-col="'+c.id+'" value="'+_escH((cfg.dueDates||{})[c.id]||'')+'" placeholder="e.g. 15 June 2026" style="width:120px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:12px;text-align:center;box-sizing:border-box"></td>';
             }).join('') +
           '</tr>' +
+          '<tr style="border-bottom:1px solid #F1F5F9;background:#EFF6FF"><td style="padding:10px 12px;font-weight:700;color:#1e3a8a"><i class="fas fa-bell" style="margin-right:6px;color:#1AA6CA"></i>Reminder Date<div style="font-weight:400;color:#6B7A9D;font-size:9px;margin-top:1px">Used to email due/overdue reminders</div></td>' +
+            FEE_COLS.map(function(c){
+              if (c.id === 'totalFees' || c.id === 'educationKit') return '<td style="padding:5px 6px;text-align:center;color:#cbd5e1;font-size:11px">—</td>';
+              return '<td style="padding:5px 6px"><input type="date" class="fee-duedate-actual-inp" data-col="'+c.id+'" value="'+_escH((cfg.dueDatesActual||{})[c.id]||'')+'" style="width:120px;padding:6px 10px;border:1.5px solid #DCE1EF;border-radius:6px;font-size:12px;text-align:center;box-sizing:border-box"></td>';
+            }).join('') +
+          '</tr>' +
           cfg.classes.map(function(cls) {
             var fees = cfg.classWise[cls.name] || {};
             return '<tr style="border-bottom:1px solid #F1F5F9"><td style="padding:10px 12px;font-weight:700;color:#0F1E3D">'+cls.name+'</td>' +
@@ -2828,7 +2835,11 @@ function renderFeeConfigUI() {
             '</tr>';
           }).join('') +
         '</tbody></table></div>' +
-      '<div style="display:flex;justify-content:flex-end;margin-top:14px"><button onclick="saveFeeStructure()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Fee Structure</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px">' +
+        '<button onclick="sendFeeRemindersNow()" id="fee-remind-btn" class="btn btn-secondary"><i class="fas fa-bell" style="margin-right:6px"></i>Send Reminders Now</button>' +
+        '<button onclick="saveFeeStructure()" class="btn btn-primary"><i class="fas fa-save" style="margin-right:6px"></i>Save Fee Structure</button>' +
+      '</div>' +
+      '<div id="fee-remind-result" style="margin-top:10px;font-size:12px;color:#6B7A9D"></div>' +
     '</div>' +
 
     '<div class="card" style="margin-bottom:16px">' +
@@ -2899,6 +2910,34 @@ window.removeActivity = function(i) {
   var el = document.getElementById('activities-list'); if (el) el.innerHTML = renderActivitiesList(_feeCfg.activities);
 };
 
+window.sendFeeRemindersNow = function() {
+  var btn = document.getElementById('fee-remind-btn');
+  var result = document.getElementById('fee-remind-result');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Sending...'; }
+  if (result) result.textContent = '';
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/fee-reminders/run', { method: 'POST', headers: tok ? {'Authorization':'Bearer '+tok} : {} })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) { showToast('Failed: ' + res.error, 'error'); return; }
+      showToast(res.sent + ' reminder email(s) sent.', res.sent > 0 ? 'success' : 'info');
+      if (result) {
+        var sk = res.skipped || {};
+        result.textContent = 'Sent: ' + res.sent +
+          ' · Already paid: ' + (sk.alreadyPaid||0) +
+          ' · No parent email: ' + (sk.noEmail||0) +
+          ' · Opted out: ' + (sk.optedOut||0) +
+          ' · No fee structure for class: ' + (sk.noStructure||0) +
+          (sk.noResendKey ? ' · Resend email not configured (' + sk.noResendKey + ' skipped) — set it up under School Settings' : '') +
+          (sk.noDueDateToday ? ' · No installment due/overdue today' : '');
+      }
+    })
+    .catch(function() { showToast('Failed to run reminders', 'error'); })
+    .finally(function() {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-bell" style="margin-right:6px"></i>Send Reminders Now'; }
+    });
+};
+
 function saveFeeStructure() {
   if (!_feeCfg) return;
   var inputs = document.querySelectorAll('.fee-struct-inp');
@@ -2918,7 +2957,14 @@ function saveFeeStructure() {
     if (v) dueDates[col] = v;
   });
   _feeCfg.dueDates = dueDates;
-  var cfg = {classWiseFees: classWiseFees, dueDates: dueDates, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var dueDatesActual = {};
+  document.querySelectorAll('.fee-duedate-actual-inp').forEach(function(inp) {
+    var col = inp.getAttribute('data-col');
+    var v = (inp.value || '').trim();
+    if (v) dueDatesActual[col] = v;
+  });
+  _feeCfg.dueDatesActual = dueDatesActual;
+  var cfg = {classWiseFees: classWiseFees, dueDates: dueDates, dueDatesActual: dueDatesActual, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
   var _fsTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config', {
     method:'POST',
@@ -2991,7 +3037,7 @@ window.printFeeStructure = function() {
 
 function saveActivities() {
   if (!_feeCfg) return;
-  var cfg = {classWiseFees: _feeCfg.classWise, dueDates: _feeCfg.dueDates||{}, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
+  var cfg = {classWiseFees: _feeCfg.classWise, dueDates: _feeCfg.dueDates||{}, dueDatesActual: _feeCfg.dueDatesActual||{}, kitItems: _feeCfg.kit, classWiseKit: _feeCfg.classWiseKit||{}, activities: _feeCfg.activities};
   var _actTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config', {
     method:'POST',
@@ -3053,7 +3099,7 @@ window.removeKitItem = function(i) {
 
 window.saveKitItems = function() {
   if (!_feeCfg) return;
-  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
+  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, dueDatesActual:_feeCfg.dueDatesActual||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit||{}, activities:_feeCfg.activities};
   var _kiTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config',{
     method:'POST',
@@ -3078,7 +3124,7 @@ function saveKitPrices() {
     if (v > 0) classPrices[k.id] = v;
   });
   _feeCfg.classWiseKit[className] = classPrices;
-  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
+  var cfg = {classWiseFees:_feeCfg.classWise, dueDates:_feeCfg.dueDates||{}, dueDatesActual:_feeCfg.dueDatesActual||{}, kitItems:_feeCfg.kit, classWiseKit:_feeCfg.classWiseKit, activities:_feeCfg.activities};
   var _kpTok = localStorage.getItem('sk_session_token');
   fetch('/api/fee-config',{
     method:'POST',

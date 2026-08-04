@@ -4883,6 +4883,153 @@ app.post('/api/fee-config', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── Fee Due-Date / Overdue Email Reminders ──────────────────────
+// The Fee Structure's "Due Dates" row is free text (e.g. "10th of every
+// month") — fine for display, useless for date math — so reminders read a
+// separate, real-date "Reminder Date" row (fee_config.dueDatesActual,
+// per-installment, school-wide) instead. Runs daily via the Cron Trigger
+// at the bottom of this file, and can also be triggered manually by a
+// superadmin via POST /api/fee-reminders/run.
+const FEE_INSTALLMENT_KEYS_SRV = [
+  { key: 'installment1', label: '1st Installment (Registration + First)' },
+  { key: 'installment2', label: '2nd Installment' },
+  { key: 'installment3', label: '3rd Installment' },
+]
+
+async function ensureFeeReminderLogTable(db: any) {
+  await db.exec('CREATE TABLE IF NOT EXISTS fee_reminder_log (id TEXT PRIMARY KEY, student_id TEXT NOT NULL, installment_key TEXT NOT NULL, reminder_day TEXT NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, UNIQUE(student_id, installment_key, reminder_day))')
+}
+
+function feeReminderEmailHtml(schoolName: string, meta: any, parentName: string, studentName: string, installmentLabel: string, due: number, paid: number, dueDateStr: string, kind: string) {
+  const remaining = Math.max(0, due - paid)
+  const kindConfig: Record<string, { title: string; color: string; line: string }> = {
+    upcoming: { title: 'FEE DUE SOON', color: '#0F2050', line: `is due on <strong>${dueDateStr}</strong> — just a friendly heads-up.` },
+    due: { title: 'FEE DUE TODAY', color: '#C4893A', line: `is due <strong>today (${dueDateStr})</strong>.` },
+    overdue: { title: 'FEE OVERDUE', color: '#ef4444', line: `was due on <strong>${dueDateStr}</strong> and is now overdue.` },
+  }
+  const k = kindConfig[kind] || kindConfig.due
+  return `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+    <div style="background:${k.color};padding:20px 24px;border-radius:8px 8px 0 0;text-align:center">
+      <div style="font-size:22px;font-weight:900;color:#fff">${schoolName}</div>
+      <div style="font-size:11px;color:#fff;opacity:0.85;letter-spacing:.15em;margin-top:4px">${k.title}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;padding:28px 24px;border-radius:0 0 8px 8px">
+      <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${parentName}</strong>,</p>
+      <p style="color:#4a5568;font-size:14px;margin:0 0 20px">The <strong>${installmentLabel}</strong> for <strong>${studentName}</strong> ${k.line}</p>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13px">
+        <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Amount Due</td><td style="padding:8px;border:1px solid #e2e8f0">₹${remaining.toLocaleString('en-IN')}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Due Date</td><td style="padding:8px;border:1px solid #e2e8f0">${dueDateStr}</td></tr>
+      </table>
+      <p style="font-size:13px;color:#4a5568;margin:0 0 16px">Please contact the school office to make payment. Log in to the parent portal any time to see your full fee and payment history.</p>
+      <p style="font-size:12px;color:#a0aec0;border-top:1px solid #e2e8f0;padding-top:16px;margin:0">
+        Phone: ${meta.schoolPhone || '9822-977-644'} &nbsp;|&nbsp; Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}<br>
+        You're receiving this because Fee Reminders are enabled in your Notification Settings.
+      </p>
+    </div>
+  </div>`
+}
+
+async function runFeeReminders(env: any): Promise<{ sent: number; skipped: Record<string, number>; details: string[] }> {
+  const tally = { sent: 0, skipped: { noDueDateToday: 0, alreadyPaid: 0, noEmail: 0, optedOut: 0, alreadySent: 0, noStructure: 0, noResendKey: 0 } as Record<string, number>, details: [] as string[] }
+  const feeRow = await env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('fee_config').first<{ value: string }>()
+  const feeConfig = feeRow ? JSON.parse(feeRow.value) : {}
+  const dueDatesActual: Record<string, string> = feeConfig.dueDatesActual || {}
+  const classWiseFees: Record<string, any> = feeConfig.classWiseFees || {}
+
+  const todayStr = new Date().toISOString().split('T')[0]
+  const todayMs = new Date(todayStr + 'T00:00:00Z').getTime()
+
+  const triggering: { key: string; label: string; kind: string; dueDateStr: string }[] = []
+  for (const inst of FEE_INSTALLMENT_KEYS_SRV) {
+    const dueDateStr = dueDatesActual[inst.key]
+    if (!dueDateStr) continue
+    const dueMs = new Date(dueDateStr + 'T00:00:00Z').getTime()
+    if (isNaN(dueMs)) continue
+    const daysDiff = Math.round((todayMs - dueMs) / 86400000)
+    let kind = ''
+    if (daysDiff === -3) kind = 'upcoming'
+    else if (daysDiff === 0) kind = 'due'
+    else if (daysDiff > 0 && daysDiff % 7 === 0) kind = 'overdue'
+    if (kind) triggering.push({ key: inst.key, label: inst.label, kind, dueDateStr })
+  }
+  if (triggering.length === 0) { tally.skipped.noDueDateToday = 1; return tally }
+
+  const mainData = await loadMainAppData(env.DB)
+  const students: any[] = (mainData.students || []).filter((s: any) => s.admissionId && !s.deleted)
+  const users: any[] = mainData.users || []
+  const classes: any[] = mainData.classes || []
+  const meta = mainData.meta || {}
+  const schoolName = meta.schoolName || 'SuperKids India Preschool'
+  const apiKey = env.RESEND_API_KEY || meta.resendApiKey || ''
+
+  await ensureAdmTables(env.DB)
+  await ensureFeeReminderLogTable(env.DB)
+  const paymentsRes = await env.DB.prepare('SELECT * FROM payments').all()
+  const allPayments = (paymentsRes.results || []).map((row: any) => {
+    let d: any = {}
+    try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}) } catch {}
+    return { admissionId: row.admission_id, data: d }
+  })
+
+  for (const student of students) {
+    const cls = classes.find((c: any) => c.id === student.classId)
+    const className = cls ? cls.name : ''
+    const classFees = classWiseFees[className]
+    if (!classFees) { tally.skipped.noStructure++; continue }
+
+    const stuPayments = allPayments.filter((p: any) => p.admissionId === student.admissionId).map((p: any) => p.data)
+    const paidByLabel: Record<string, number> = {}
+    stuPayments.forEach((p: any) => { (p.feeItems || []).forEach((fi: any) => { paidByLabel[fi.type] = (paidByLabel[fi.type] || 0) + (parseFloat(fi.amount) || 0) }) })
+
+    const parent = users.find((u: any) => u.role === 'parent' && Array.isArray(u.childIds) && u.childIds.includes(student.id))
+
+    for (const trig of triggering) {
+      const due = parseFloat(classFees[trig.key]) || 0
+      if (due <= 0) continue // installment not configured for this class
+      const paid = paidByLabel[trig.label] || 0
+      if (paid >= due) { tally.skipped.alreadyPaid++; continue }
+
+      if (!parent) { tally.skipped.noEmail++; continue }
+      if (parent.notifPrefs && parent.notifPrefs.feeReminders === false) { tally.skipped.optedOut++; continue }
+      if (!parent.email) { tally.skipped.noEmail++; continue }
+      if (!apiKey) { tally.skipped.noResendKey++; continue } // no Resend key configured anywhere — nothing more we can do this run
+
+      const logId = `${student.id}_${trig.key}_${todayStr}`
+      try {
+        await env.DB.prepare('INSERT INTO fee_reminder_log (id,student_id,installment_key,reminder_day,kind,sent_at) VALUES (?,?,?,?,?,?)')
+          .bind(logId, student.id, trig.key, todayStr, trig.kind, new Date().toISOString()).run()
+      } catch {
+        tally.skipped.alreadySent++
+        continue // UNIQUE constraint hit — already sent this exact reminder today (e.g. cron + manual run same day)
+      }
+
+      const html = feeReminderEmailHtml(schoolName, meta, parent.name || parent.username, student.name, trig.label, due, paid, trig.dueDateStr, trig.kind)
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: meta.resendFromEmail ? `${schoolName} <${meta.resendFromEmail}>` : 'SuperKids India Preschool <onboarding@resend.dev>',
+          to: [parent.email.trim()],
+          subject: `${trig.kind === 'overdue' ? 'Overdue: ' : ''}${trig.label} — ${schoolName}`,
+          html,
+          ...(meta.schoolEmail ? { reply_to: meta.schoolEmail } : {}),
+        }),
+      })
+      if (res.ok) { tally.sent++; tally.details.push(`${trig.kind}: ${student.name} / ${trig.label}`) }
+    }
+  }
+  return tally
+}
+
+app.post('/api/fee-reminders/run', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const result = await runFeeReminders(c.env)
+    return c.json({ ok: true, ...result })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 // ── OTP helpers ───────────────────────────────────────────────
 async function ensureOtpTable(db: any) {
   await db.exec('CREATE TABLE IF NOT EXISTS password_reset_otps (id TEXT PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0, attempts INTEGER DEFAULT 0)')
@@ -5123,4 +5270,11 @@ app.get('/api/staff-attendance/all', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
-export default app
+export default {
+  fetch: app.fetch,
+  // Cloudflare Cron Trigger (see wrangler.jsonc "triggers.crons") — runs the
+  // fee due-date/overdue email reminder sweep once a day.
+  scheduled: async (_event: any, env: Bindings, ctx: any) => {
+    ctx.waitUntil(runFeeReminders(env))
+  },
+}

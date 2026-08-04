@@ -4065,12 +4065,58 @@ function renderFeeManagerTab() {
 
 function _loadAdmReceiptsForFeeManager() {
   var tok = localStorage.getItem('sk_session_token');
-  fetch('/api/payments', {headers: tok ? {'Authorization':'Bearer '+tok} : {}})
-    .then(function(r){ return r.ok ? r.json() : {items:[]}; })
-    .then(function(res) {
+  var authHdr = tok ? {'Authorization':'Bearer '+tok} : {};
+  Promise.all([
+    fetch('/api/payments', {headers: authHdr}).then(function(r){ return r.ok ? r.json() : {items:[]}; }),
+    fetch('/api/fee-config').then(function(r){ return r.ok ? r.json() : {config:{}}; }),
+  ]).then(function(results) {
+      var res = results[0];
+      var feeConfig = results[1].config || {};
       var sec = document.getElementById('adm-receipts-section');
       if (!sec) return;
       var items = res.items || [];
+
+      // Reconciled "who actually owes what" — computed from real payments
+      // (this list) against the Fee Structure config, not the separate
+      // manually-typed invoice table above. This is the authoritative view.
+      var data = DB.get();
+      var students = (data.students || []).filter(function(s) { return s.admissionId && !s.deleted; });
+      var balanceRows = students.map(function(s) {
+        var cls = DB.getClass(s.classId);
+        var className = cls ? cls.name : '';
+        var classFees = (feeConfig.classWiseFees || {})[className] || {};
+        var stuPayments = items.filter(function(p) { return p.admission_id === s.admissionId; }).map(function(p) {
+          var d = {}; try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch (e) {}
+          return d;
+        });
+        var summary = computeFeeSummary(classFees, stuPayments);
+        return { student: s, className: className, summary: summary };
+      }).filter(function(r) { return Object.keys((feeConfig.classWiseFees || {})[r.className] || {}).length > 0; })
+        .sort(function(a, b) { return b.summary.balance - a.summary.balance; });
+
+      var balanceHtml = balanceRows.length === 0
+        ? '<div style="text-align:center;padding:24px;color:#94a3b8">No students with a configured fee structure yet.</div>'
+        : '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+            '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>'+
+              '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Class</th>'+
+              '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Total Due</th>'+
+              '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Total Paid</th>'+
+              '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Balance</th>'+
+            '</tr></thead>'+
+            '<tbody>'+balanceRows.map(function(r) {
+              var bal = r.summary.balance;
+              return '<tr style="border-bottom:1px solid #f1f5f9">'+
+                '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_mgEsc(r.student.name)+'</td>'+
+                '<td style="padding:10px 12px;color:#64748b">'+_mgEsc(r.className)+'</td>'+
+                '<td style="padding:10px 12px;text-align:right;color:#374151">₹'+r.summary.totalDue.toLocaleString('en-IN')+'</td>'+
+                '<td style="padding:10px 12px;text-align:right;color:#10b981;font-weight:700">₹'+r.summary.totalPaid.toLocaleString('en-IN')+'</td>'+
+                '<td style="padding:10px 12px;text-align:right;font-weight:800;color:'+(bal>0?'#ef4444':'#10b981')+'">₹'+bal.toLocaleString('en-IN')+'</td>'+
+              '</tr>';
+            }).join('')+
+            '</tbody></table></div>';
+
+      var balanceTotal = balanceRows.reduce(function(s, r) { return s + r.summary.balance; }, 0);
       var total = items.reduce(function(s,p){ var d={}; try{d=typeof p.data==='string'?JSON.parse(p.data):(p.data||{});}catch(e){} return s+(parseFloat(d.total)||0); },0);
       var rows = items.length === 0
         ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No admission fee receipts yet</td></tr>'
@@ -4085,7 +4131,14 @@ function _loadAdmReceiptsForFeeManager() {
               '<td style="padding:10px 12px;color:#64748b">'+_mgEsc(d.paymentMode||'Cash')+'</td>'+
             '</tr>';
           }).join('');
-      sec.innerHTML = '<div class="card">'+
+      sec.innerHTML = '<div class="card" style="margin-bottom:20px">'+
+        '<div class="card-header">'+
+          '<div class="card-title"><i class="fas fa-balance-scale" style="color:#C4893A"></i> Outstanding Balances <span style="font-weight:400;color:#94a3b8;font-size:12px">(computed from real payments, reconciled against Fee Structure)</span></div>'+
+          '<span style="font-weight:800;color:'+(balanceTotal>0?'#ef4444':'#10b981')+';font-size:14px">Total Outstanding: ₹'+balanceTotal.toLocaleString('en-IN')+'</span>'+
+        '</div>'+
+        '<div style="padding:16px">'+balanceHtml+'</div>'+
+      '</div>'+
+      '<div class="card">'+
         '<div class="card-header">'+
           '<div class="card-title"><i class="fas fa-receipt" style="color:#059669"></i> Admission Fee Receipts</div>'+
           '<span style="font-weight:800;color:#059669;font-size:14px">Total: ₹'+total.toLocaleString('en-IN')+'</span>'+

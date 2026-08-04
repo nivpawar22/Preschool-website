@@ -1590,6 +1590,117 @@ function renderParentFees() {
   const child = getSelectedChild();
   if (!child) { renderParentHome(); return; }
 
+  if (child.admissionId) {
+    renderLayout('parent-fees',
+      `${renderChildPill(child)}${renderChildSelector(child)}<div id="parent-fees-wrap"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading fee details…</h3></div></div>`,
+      'Fees & Payments', child.name);
+    _loadParentFeesReal(child);
+    return;
+  }
+
+  // No linked admission record (e.g. a manually-added student) — fall back
+  // to the legacy manually-entered invoice list.
+  renderParentFeesLegacy(child);
+}
+
+function _parentAuthHdr() {
+  var t = localStorage.getItem('sk_session_token');
+  return t ? { 'Authorization': 'Bearer ' + t } : {};
+}
+
+function _loadParentFeesReal(child) {
+  Promise.all([
+    fetch('/api/fee-config').then(function(r) { return r.json(); }),
+    fetch('/api/payments/for-admission/' + child.admissionId, { headers: _parentAuthHdr() }).then(function(r) { return r.json(); }),
+  ]).then(function(results) {
+    var wrap = document.getElementById('parent-fees-wrap');
+    if (!wrap) return;
+    var feeConfig = results[0].config || {};
+    var payItems = results[1].items || [];
+    var payments = payItems.map(function(row) {
+      var d = {};
+      try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}); } catch (e) {}
+      return Object.assign({ id: row.id, createdAt: row.created_at }, d);
+    }).sort(function(a, b) { return (b.paymentDate || '').localeCompare(a.paymentDate || ''); });
+
+    var cls = DB.getClass(child.classId);
+    var className = cls ? cls.name : '';
+    var classFees = (feeConfig.classWiseFees || {})[className] || {};
+    var dueDates = feeConfig.dueDates || {};
+    var summary = computeFeeSummary(classFees, payments);
+    var hasFeeStructure = Object.keys(classFees).length > 0;
+
+    var statusBg = { Paid: '#d1fae5', 'Partially Paid': '#fef3c7', Pending: '#fee2e2', 'N/A': '#f1f5f9' };
+    var statusColor = { Paid: '#065f46', 'Partially Paid': '#92400e', Pending: '#991b1b', 'N/A': '#64748b' };
+
+    wrap.innerHTML = `
+      <div class="grid-3" style="margin-bottom:20px">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#E8EDF5"><i class="fas fa-rupee-sign" style="color:#1AA6CA"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#1AA6CA">&#8377;${summary.totalDue.toLocaleString('en-IN')}</div>
+          <div class="text-muted">Total Fees (${escHtml(className || 'Class not set')})</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#d1fae5"><i class="fas fa-check-circle" style="color:#10b981"></i></div>
+          <div style="font-size:26px;font-weight:900;color:#10b981">&#8377;${summary.totalPaid.toLocaleString('en-IN')}</div>
+          <div class="text-muted">Total Paid</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:${summary.balance > 0 ? '#fee2e2' : '#d1fae5'}"><i class="fas fa-balance-scale" style="color:${summary.balance > 0 ? '#ef4444' : '#10b981'}"></i></div>
+          <div style="font-size:26px;font-weight:900;color:${summary.balance > 0 ? '#ef4444' : '#10b981'}">&#8377;${summary.balance.toLocaleString('en-IN')}</div>
+          <div class="text-muted">${summary.balance > 0 ? 'Balance Due' : 'Fully Paid'}</div>
+        </div>
+      </div>
+
+      ${!hasFeeStructure ? '' : `
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-list-check" style="color:#1AA6CA"></i> Installment Status</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Installment</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead>
+            <tbody>
+              ${summary.installments.filter(function(i) { return i.status !== 'N/A'; }).map(function(i) {
+                return `<tr>
+                  <td><strong>${escHtml(i.label)}</strong></td>
+                  <td>${escHtml(dueDates[i.key] || '-')}</td>
+                  <td>&#8377;${i.due.toLocaleString('en-IN')}</td>
+                  <td style="color:#10b981;font-weight:700">&#8377;${i.paid.toLocaleString('en-IN')}</td>
+                  <td><span class="badge" style="background:${statusBg[i.status]};color:${statusColor[i.status]}">${i.status}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`}
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px"><i class="fas fa-receipt" style="color:#1AA6CA"></i> Payment History – ${escHtml(child.name)}</div>
+        ${payments.length ? `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Receipt No</th><th>Date</th><th>Items</th><th>Amount</th><th>Mode</th><th>Action</th></tr></thead>
+            <tbody>
+              ${payments.map(function(p) {
+                return `<tr>
+                  <td><strong>${escHtml(p.receiptNo || '-')}</strong></td>
+                  <td>${formatDate(p.paymentDate)}</td>
+                  <td style="font-size:12px;color:#64748b">${escHtml((p.feeItems || []).map(function(fi) { return fi.type; }).join(', '))}</td>
+                  <td style="font-weight:700;color:#10b981">&#8377;${(p.total || 0).toLocaleString('en-IN')}</td>
+                  <td>${escHtml(p.paymentMode || '-')}</td>
+                  <td><a class="btn btn-sm btn-secondary" href="/receipt/${p.id}" target="_blank"><i class="fas fa-download"></i> Receipt</a></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>` : '<div class="empty-state"><i class="fas fa-rupee-sign"></i><h3>No payments recorded yet</h3></div>'}
+      </div>`;
+  }).catch(function() {
+    var wrap = document.getElementById('parent-fees-wrap');
+    if (wrap) wrap.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Unable to load fee details</h3></div>';
+  });
+}
+
+function renderParentFeesLegacy(child) {
   const fees = DB.getFeeRecords(child.id);
   const totalDue = fees.reduce(function(s, f) { return s + (f.amount || 0); }, 0);
   const totalPaid = fees.filter(function(f) { return f.status === 'Paid'; }).reduce(function(s, f) { return s + (f.amount || 0); }, 0);

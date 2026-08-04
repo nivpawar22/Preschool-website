@@ -4378,6 +4378,29 @@ app.get('/api/payments/:id', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Scoped payments lookup for a single admission — used by the parent portal's
+// Fees tab. Unlike GET /api/payments (which returns every payment in the
+// school to any logged-in role), this filters server-side to one admission
+// and, for the 'parent' role specifically, verifies the requesting parent
+// actually has a child linked to that admission before returning anything.
+app.get('/api/payments/for-admission/:admissionId', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  const admissionId = c.req.param('admissionId')
+  try {
+    if (sess.role === 'parent') {
+      const mainData = await loadMainAppData(c.env.DB)
+      const parentUser = (mainData.users || []).find((u: any) => u.id === sess.user_id)
+      const childIds: string[] = (parentUser && parentUser.childIds) || []
+      const owns = (mainData.students || []).some((s: any) => childIds.includes(s.id) && s.admissionId === admissionId)
+      if (!owns) return c.json({ error: 'Forbidden' }, 403)
+    }
+    await ensureAdmTables(c.env.DB)
+    const rows = await c.env.DB.prepare('SELECT * FROM payments WHERE admission_id = ? ORDER BY created_at DESC').bind(admissionId).all()
+    return c.json({ items: rows.results || [] })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 app.post('/api/payments', async (c) => {
   const sess = await getSession(c)
   if (!sess) return c.json({ error: 'Unauthorized' }, 401)

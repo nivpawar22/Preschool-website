@@ -991,7 +991,10 @@ function buildFeeCollectionUI() {
           pay.slice(0,8).map(function(p){var d=p.data?JSON.parse(p.data):{};return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F1F5F9"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">'+(d.studentName||'–')+'</div><div style="font-size:11px;color:#6B7A9D">'+(d.receiptNo||'')+' · '+(d.paymentMode||'')+'</div></div><div style="text-align:right"><div style="font-weight:800;color:#059669">'+fmtRs(d.total)+'</div><div style="font-size:10px;color:#6B7A9D">'+(d.paymentDate||'')+'</div></div><button onclick="printReceipt(\''+p.id+'\')" style="padding:5px 9px;border-radius:6px;border:1.5px solid #C4893A;background:#FEF0E0;color:#C4893A;font-size:11px;cursor:pointer"><i class="fas fa-print"></i></button></div>';}).join('')
         )+
       '</div>'+
-    '</div>';
+    '</div>'+
+    '<div id="adm-fee-balances" style="margin-top:24px"></div>';
+
+  renderOutstandingBalancesPanel('adm-fee-balances');
 
   window.feeSearchStudents=function(q){
     var res=document.getElementById('fee-srch-results'); if(!q){res.style.display='none';return;}

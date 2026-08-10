@@ -5030,6 +5030,99 @@ app.post('/api/fee-reminders/run', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Every staff role that touches fees (Admission Admin's Fee Collection,
+// Accounting's Fee Collection, and Super Admin's Fee Management) can trigger
+// this — an on-demand, single consolidated "you still owe X" email, not
+// gated by due-date proximity like the automated daily sweep above.
+function canManageFees(sess: { role: string } | null): boolean {
+  return !!sess && (sess.role === 'accounting' || sess.role === 'admission' || sess.role === 'superadmin')
+}
+
+app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageFees(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const mainData = await loadMainAppData(c.env.DB)
+    const student = (mainData.students || []).find((s: any) => s.id === c.req.param('studentId'))
+    if (!student || !student.admissionId) return c.json({ error: 'Student not found or not linked to an admission' }, 404)
+
+    const feeRow = await c.env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('fee_config').first<{ value: string }>()
+    const feeConfig = feeRow ? JSON.parse(feeRow.value) : {}
+    const classes: any[] = mainData.classes || []
+    const cls = classes.find((cl: any) => cl.id === student.classId)
+    const className = cls ? cls.name : ''
+    const classFees = (feeConfig.classWiseFees || {})[className]
+    if (!classFees) return c.json({ error: 'No fee structure configured for this class' }, 400)
+
+    await ensureAdmTables(c.env.DB)
+    const paymentsRes = await c.env.DB.prepare('SELECT * FROM payments WHERE admission_id = ?').bind(student.admissionId).all()
+    const stuPayments = (paymentsRes.results || []).map((row: any) => {
+      let d: any = {}
+      try { d = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}) } catch {}
+      return d
+    })
+    const paidByLabel: Record<string, number> = {}
+    stuPayments.forEach((p: any) => { (p.feeItems || []).forEach((fi: any) => { paidByLabel[fi.type] = (paidByLabel[fi.type] || 0) + (parseFloat(fi.amount) || 0) }) })
+    const pendingItems = FEE_INSTALLMENT_KEYS_SRV
+      .map((inst) => ({ label: inst.label, due: parseFloat(classFees[inst.key]) || 0, paid: paidByLabel[inst.label] || 0 }))
+      .filter((i) => i.due > 0 && i.paid < i.due)
+    const balance = pendingItems.reduce((s, i) => s + (i.due - i.paid), 0)
+    if (balance <= 0) return c.json({ noBalance: true })
+
+    const users: any[] = mainData.users || []
+    const parent = users.find((u: any) => u.role === 'parent' && Array.isArray(u.childIds) && u.childIds.includes(student.id))
+    if (!parent) return c.json({ noEmail: true })
+    if (parent.notifPrefs && parent.notifPrefs.feeReminders === false) return c.json({ optedOut: true })
+    if (!parent.email) return c.json({ noEmail: true })
+
+    const meta = mainData.meta || {}
+    const schoolName = meta.schoolName || 'SuperKids India Preschool'
+    const apiKey = c.env.RESEND_API_KEY || meta.resendApiKey || ''
+    if (!apiKey) return c.json({ notConfigured: true })
+
+    const rowsHtml = pendingItems.map((i) => `<tr><td style="padding:8px;border:1px solid #e2e8f0">${i.label}</td><td style="padding:8px;border:1px solid #e2e8f0;text-align:right">₹${(i.due - i.paid).toLocaleString('en-IN')}</td></tr>`).join('')
+    const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+      <div style="background:#ef4444;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center">
+        <div style="font-size:22px;font-weight:900;color:#fff">${schoolName}</div>
+        <div style="font-size:11px;color:#fff;opacity:0.85;letter-spacing:.15em;margin-top:4px">FEE BALANCE REMINDER</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:28px 24px;border-radius:0 0 8px 8px">
+        <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${parent.name || parent.username}</strong>,</p>
+        <p style="color:#4a5568;font-size:14px;margin:0 0 20px">This is a reminder that <strong>${student.name}</strong> has a pending fee balance:</p>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px">
+          <thead><tr><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:left">Installment</th><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:right">Pending</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div style="background:#fef2f2;border-radius:8px;padding:14px;text-align:center;margin:0 0 20px">
+          <div style="font-size:12px;color:#991b1b">Total Outstanding</div>
+          <div style="font-size:24px;font-weight:900;color:#991b1b">₹${balance.toLocaleString('en-IN')}</div>
+        </div>
+        <p style="font-size:13px;color:#4a5568;margin:0 0 16px">Please contact the school office to make payment. Log in to the parent portal any time to see your full fee and payment history.</p>
+        <p style="font-size:12px;color:#a0aec0;border-top:1px solid #e2e8f0;padding-top:16px;margin:0">
+          Phone: ${meta.schoolPhone || '9822-977-644'} &nbsp;|&nbsp; Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}
+        </p>
+      </div>
+    </div>`
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: meta.resendFromEmail ? `${schoolName} <${meta.resendFromEmail}>` : 'SuperKids India Preschool <onboarding@resend.dev>',
+        to: [parent.email.trim()],
+        subject: `Fee Balance Reminder — ${student.name} — ${schoolName}`,
+        html,
+        ...(meta.schoolEmail ? { reply_to: meta.schoolEmail } : {}),
+      }),
+    })
+    if (!res.ok) {
+      let resendError = ''
+      try { const j: any = await res.json(); resendError = j.message || j.name || JSON.stringify(j) } catch { resendError = String(res.status) }
+      return c.json({ error: 'Resend error: ' + resendError })
+    }
+    return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 // ── OTP helpers ───────────────────────────────────────────────
 async function ensureOtpTable(db: any) {
   await db.exec('CREATE TABLE IF NOT EXISTS password_reset_otps (id TEXT PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER DEFAULT 0, attempts INTEGER DEFAULT 0)')

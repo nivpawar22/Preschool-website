@@ -4974,8 +4974,9 @@ async function runFeeReminders(env: any): Promise<{ sent: number; skipped: Recor
   for (const student of students) {
     const cls = classes.find((c: any) => c.id === student.classId)
     const className = cls ? cls.name : ''
-    const classFees = classWiseFees[className]
-    if (!classFees) { tally.skipped.noStructure++; continue }
+    const classDefaults = classWiseFees[className]
+    if (!classDefaults) { tally.skipped.noStructure++; continue }
+    const classFees = { ...classDefaults, ...(student.feeOverride || {}) }
 
     const stuPayments = allPayments.filter((p: any) => p.admissionId === student.admissionId).map((p: any) => p.data)
     const paidByLabel: Record<string, number> = {}
@@ -5051,8 +5052,12 @@ app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
     const classes: any[] = mainData.classes || []
     const cls = classes.find((cl: any) => cl.id === student.classId)
     const className = cls ? cls.name : ''
-    const classFees = (feeConfig.classWiseFees || {})[className]
-    if (!classFees) return c.json({ error: 'No fee structure configured for this class' }, 400)
+    const classDefaults = (feeConfig.classWiseFees || {})[className]
+    if (!classDefaults) return c.json({ error: 'No fee structure configured for this class' }, 400)
+    // A student-specific fee override (set via PUT /api/students/:id/fee-override,
+    // e.g. a negotiated discount or scholarship) takes precedence per-field over
+    // the class-wide Fee Structure default.
+    const classFees = { ...classDefaults, ...(student.feeOverride || {}) }
 
     await ensureAdmTables(c.env.DB)
     const paymentsRes = await c.env.DB.prepare('SELECT * FROM payments WHERE admission_id = ?').bind(student.admissionId).all()
@@ -5120,6 +5125,28 @@ app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
       return c.json({ error: 'Resend error: ' + resendError })
     }
     return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// Per-student fee amount override (e.g. a negotiated discount or
+// scholarship) — stored on the student record and layered on top of the
+// class-wide Fee Structure default wherever a balance is computed
+// (Outstanding Balances panel, parent Fees tab, reminder emails). A
+// dedicated endpoint because Accounting/Admission Admin are excluded from
+// the generic full-blob /api/db sync (see saveToServer in data.js), so a
+// plain client-side student edit from those roles would silently never
+// reach the server.
+app.put('/api/students/:id/fee-override', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageFees(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { feeOverride } = await c.req.json()
+    const data = await loadMainAppData(c.env.DB)
+    const student = (data.students || []).find((s: any) => s.id === c.req.param('id'))
+    if (!student) return c.json({ error: 'Student not found' }, 404)
+    student.feeOverride = feeOverride || {}
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

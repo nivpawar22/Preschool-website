@@ -1625,7 +1625,8 @@ function _loadParentFeesReal(child) {
 
     var cls = DB.getClass(child.classId);
     var className = cls ? cls.name : '';
-    var classFees = (feeConfig.classWiseFees || {})[className] || {};
+    var classDefaults = (feeConfig.classWiseFees || {})[className] || {};
+    var classFees = applyFeeOverride(classDefaults, child.feeOverride);
     var dueDates = feeConfig.dueDates || {};
     var summary = computeFeeSummary(classFees, payments);
     var hasFeeStructure = Object.keys(classFees).length > 0;

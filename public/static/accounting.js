@@ -219,6 +219,8 @@ function renderAccFees() {
           <div id="acc-fee-count" style="font-size:26px;font-weight:900;color:#0F2050">Loading...</div>
         </div>
       </div>
+      <div id="acc-fees-balances" style="margin-bottom:24px"></div>
+
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
         <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
           <i class="fas fa-receipt" style="color:#10b981;margin-right:8px"></i>Payment Records
@@ -230,6 +232,7 @@ function renderAccFees() {
     </div>`;
 
   renderLayout('acc-fees', content, 'Fee Collection', 'Accounting / Fee Collection');
+  renderOutstandingBalancesPanel('acc-fees-balances');
 
   // Fetch payments
   fetch('/api/payments', {headers: _accAuthHdr()})

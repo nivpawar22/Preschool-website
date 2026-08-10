@@ -1122,6 +1122,104 @@ function computeFeeSummary(classFees, paymentsForStudent) {
   };
 }
 
+function _feeAuthHdr() {
+  var t = localStorage.getItem('sk_session_token');
+  return t ? { 'Authorization': 'Bearer ' + t } : {};
+}
+
+// Shared "who actually owes what" panel — computed from real payments
+// reconciled against the Fee Structure, same as the parent Fees tab. Used
+// identically by Admission Admin's Fee Collection, Accounting's Fee
+// Collection, and Super Admin's Fee Management, so every staff role that
+// touches fees sees the same numbers, not three different ad-hoc views.
+function renderOutstandingBalancesPanel(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8"><i class="fas fa-spinner fa-spin"></i> Loading outstanding balances...</div>';
+
+  Promise.all([
+    fetch('/api/payments', { headers: _feeAuthHdr() }).then(function(r) { return r.ok ? r.json() : { items: [] }; }),
+    fetch('/api/fee-config').then(function(r) { return r.ok ? r.json() : { config: {} }; }),
+  ]).then(function(results) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var payItems = results[0].items || [];
+    var feeConfig = results[1].config || {};
+    var data = DB.get();
+    var students = (data.students || []).filter(function(s) { return s.admissionId && !s.deleted; });
+
+    var rows = students.map(function(s) {
+      var cls = DB.getClass(s.classId);
+      var className = cls ? cls.name : '';
+      var classFees = (feeConfig.classWiseFees || {})[className] || {};
+      var stuPayments = payItems.filter(function(p) { return p.admission_id === s.admissionId; }).map(function(p) {
+        var d = {}; try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch (e) {}
+        return d;
+      });
+      var summary = computeFeeSummary(classFees, stuPayments);
+      return { student: s, className: className, summary: summary };
+    }).filter(function(r) { return Object.keys((feeConfig.classWiseFees || {})[r.className] || {}).length > 0; })
+      .sort(function(a, b) { return b.summary.balance - a.summary.balance; });
+
+    var totalOutstanding = rows.reduce(function(s, r) { return s + r.summary.balance; }, 0);
+
+    var bodyHtml = rows.length === 0
+      ? '<div style="text-align:center;padding:24px;color:#94a3b8">No students with a configured fee structure yet.</div>'
+      : '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+          '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">' +
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Student</th>' +
+            '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Class</th>' +
+            '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Total Due</th>' +
+            '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Total Paid</th>' +
+            '<th style="text-align:right;padding:10px 12px;color:#64748b;font-weight:700">Balance</th>' +
+            '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Action</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows.map(function(r) {
+            var bal = r.summary.balance;
+            var notifyBtn = bal > 0
+              ? '<button class="btn btn-sm btn-secondary" id="notify-btn-' + r.student.id + '" onclick="sendFeePendingNotification(\'' + r.student.id + '\',this)"><i class="fas fa-bell" style="margin-right:4px"></i>Notify</button>'
+              : '<span style="color:#94a3b8;font-size:11px">Fully paid</span>';
+            return '<tr style="border-bottom:1px solid #f1f5f9">' +
+              '<td style="padding:10px 12px;font-weight:600;color:#0F2050">' + escHtml(r.student.name) + '</td>' +
+              '<td style="padding:10px 12px;color:#64748b">' + escHtml(r.className) + '</td>' +
+              '<td style="padding:10px 12px;text-align:right;color:#374151">₹' + r.summary.totalDue.toLocaleString('en-IN') + '</td>' +
+              '<td style="padding:10px 12px;text-align:right;color:#10b981;font-weight:700">₹' + r.summary.totalPaid.toLocaleString('en-IN') + '</td>' +
+              '<td style="padding:10px 12px;text-align:right;font-weight:800;color:' + (bal > 0 ? '#ef4444' : '#10b981') + '">₹' + bal.toLocaleString('en-IN') + '</td>' +
+              '<td style="padding:10px 12px;text-align:center">' + notifyBtn + '</td>' +
+            '</tr>';
+          }).join('') + '</tbody></table></div>';
+
+    container.innerHTML = '<div class="card">' +
+      '<div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">' +
+        '<div class="card-title"><i class="fas fa-balance-scale" style="color:#C4893A"></i> Outstanding Balances <span style="font-weight:400;color:#94a3b8;font-size:12px">(real payments, reconciled)</span></div>' +
+        '<span style="font-weight:800;color:' + (totalOutstanding > 0 ? '#ef4444' : '#10b981') + ';font-size:14px">Total Outstanding: ₹' + totalOutstanding.toLocaleString('en-IN') + '</span>' +
+      '</div>' +
+      '<div style="padding:16px">' + bodyHtml + '</div>' +
+    '</div>';
+  }).catch(function() {
+    var container = document.getElementById(containerId);
+    if (container) container.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8">Unable to load outstanding balances</div>';
+  });
+}
+
+window.sendFeePendingNotification = function(studentId, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+  fetch('/api/fee-reminders/notify-student/' + studentId, { method: 'POST', headers: _feeAuthHdr() })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) { showToast(res.error, 'error'); return; }
+      if (res.sent) showToast('Fee reminder emailed to parent.', 'success');
+      else if (res.noBalance) showToast('This student has no outstanding balance.', 'info');
+      else if (res.noEmail) showToast('Parent has no email on file — cannot notify.', 'warning');
+      else if (res.optedOut) showToast('Parent has opted out of fee reminders.', 'warning');
+      else if (res.notConfigured) showToast('Email sending is not configured (Resend API key missing).', 'warning');
+    })
+    .catch(function() { showToast('Failed to send notification', 'error'); })
+    .finally(function() {
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-bell" style="margin-right:4px"></i>Notify'; }
+    });
+};
+
 // ============================================================
 // Session State
 // ============================================================

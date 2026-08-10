@@ -4895,17 +4895,37 @@ const FEE_INSTALLMENT_KEYS_SRV = [
   { key: 'installment2', label: '2nd Installment' },
   { key: 'installment3', label: '3rd Installment' },
 ]
+// Same as above plus Education Kit — used everywhere a *pending balance
+// breakdown* is shown (both email types), as opposed to the due-date-driven
+// automated trigger, which only ever fires off the 3 installments above
+// since Education Kit has no configured Reminder Date of its own.
+const FEE_ALL_ITEM_KEYS_SRV = [...FEE_INSTALLMENT_KEYS_SRV, { key: 'educationKit', label: 'Education Kit' }]
 
 async function ensureFeeReminderLogTable(db: any) {
   await db.exec('CREATE TABLE IF NOT EXISTS fee_reminder_log (id TEXT PRIMARY KEY, student_id TEXT NOT NULL, installment_key TEXT NOT NULL, reminder_day TEXT NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, UNIQUE(student_id, installment_key, reminder_day))')
 }
 
-function feeReminderEmailHtml(schoolName: string, meta: any, parentName: string, studentName: string, installmentLabel: string, due: number, paid: number, dueDateStr: string, kind: string) {
-  const remaining = Math.max(0, due - paid)
+// Every item (installment or kit) still owed for a student, i.e. its
+// configured amount is > 0 and not yet fully paid — shown consistently in
+// both email types, each with its Fee Structure due-date text if one is
+// configured for that item.
+function computePendingFeeItems(classFees: any, paidByLabel: Record<string, number>, dueDatesText: Record<string, string>): { key: string; label: string; due: number; paid: number; pending: number; dueDateStr: string }[] {
+  return FEE_ALL_ITEM_KEYS_SRV.map((inst) => {
+    const due = parseFloat(classFees[inst.key]) || 0
+    const paid = paidByLabel[inst.label] || 0
+    return { key: inst.key, label: inst.label, due, paid, pending: due - paid, dueDateStr: dueDatesText[inst.key] || '' }
+  }).filter((i) => i.due > 0 && i.pending > 0)
+}
+
+function pendingFeeItemsRowsHtml(items: { label: string; pending: number; dueDateStr: string }[]): string {
+  return items.map((i) => `<tr><td style="padding:8px;border:1px solid #e2e8f0">${i.label}${i.dueDateStr ? `<br><span style="font-size:11px;color:#94a3b8">Due: ${i.dueDateStr}</span>` : ''}</td><td style="padding:8px;border:1px solid #e2e8f0;text-align:right">₹${i.pending.toLocaleString('en-IN')}</td></tr>`).join('')
+}
+
+function feeReminderEmailHtml(schoolName: string, meta: any, parentName: string, studentName: string, triggerLabel: string, triggerDueDateStr: string, pendingItems: { label: string; pending: number; dueDateStr: string }[], balance: number, kind: string) {
   const kindConfig: Record<string, { title: string; color: string; line: string }> = {
-    upcoming: { title: 'FEE DUE SOON', color: '#0F2050', line: `is due on <strong>${dueDateStr}</strong> — just a friendly heads-up.` },
-    due: { title: 'FEE DUE TODAY', color: '#C4893A', line: `is due <strong>today (${dueDateStr})</strong>.` },
-    overdue: { title: 'FEE OVERDUE', color: '#ef4444', line: `was due on <strong>${dueDateStr}</strong> and is now overdue.` },
+    upcoming: { title: 'FEE DUE SOON', color: '#0F2050', line: `is due on <strong>${triggerDueDateStr}</strong> — just a friendly heads-up.` },
+    due: { title: 'FEE DUE TODAY', color: '#C4893A', line: `is due <strong>today (${triggerDueDateStr})</strong>.` },
+    overdue: { title: 'FEE OVERDUE', color: '#ef4444', line: `was due on <strong>${triggerDueDateStr}</strong> and is now overdue.` },
   }
   const k = kindConfig[kind] || kindConfig.due
   return `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
@@ -4915,11 +4935,15 @@ function feeReminderEmailHtml(schoolName: string, meta: any, parentName: string,
     </div>
     <div style="background:#fff;border:1px solid #e2e8f0;padding:28px 24px;border-radius:0 0 8px 8px">
       <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${parentName}</strong>,</p>
-      <p style="color:#4a5568;font-size:14px;margin:0 0 20px">The <strong>${installmentLabel}</strong> for <strong>${studentName}</strong> ${k.line}</p>
-      <table style="width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13px">
-        <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Amount Due</td><td style="padding:8px;border:1px solid #e2e8f0">₹${remaining.toLocaleString('en-IN')}</td></tr>
-        <tr><td style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;font-weight:bold">Due Date</td><td style="padding:8px;border:1px solid #e2e8f0">${dueDateStr}</td></tr>
+      <p style="color:#4a5568;font-size:14px;margin:0 0 20px">The <strong>${triggerLabel}</strong> for <strong>${studentName}</strong> ${k.line}</p>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px">
+        <thead><tr><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:left">Item</th><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:right">Pending</th></tr></thead>
+        <tbody>${pendingFeeItemsRowsHtml(pendingItems)}</tbody>
       </table>
+      <div style="background:#fef2f2;border-radius:8px;padding:14px;text-align:center;margin:0 0 20px">
+        <div style="font-size:12px;color:#991b1b">Total Outstanding</div>
+        <div style="font-size:24px;font-weight:900;color:#991b1b">₹${balance.toLocaleString('en-IN')}</div>
+      </div>
       <p style="font-size:13px;color:#4a5568;margin:0 0 16px">Please contact the school office to make payment. Log in to the parent portal any time to see your full fee and payment history.</p>
       <p style="font-size:12px;color:#a0aec0;border-top:1px solid #e2e8f0;padding-top:16px;margin:0">
         Phone: ${meta.schoolPhone || '9822-977-644'} &nbsp;|&nbsp; Email: ${meta.schoolEmail || 'superkidsprincipal@gmail.com'}<br>
@@ -4934,6 +4958,7 @@ async function runFeeReminders(env: any): Promise<{ sent: number; skipped: Recor
   const feeRow = await env.DB.prepare('SELECT value FROM app_data WHERE key=?').bind('fee_config').first<{ value: string }>()
   const feeConfig = feeRow ? JSON.parse(feeRow.value) : {}
   const dueDatesActual: Record<string, string> = feeConfig.dueDatesActual || {}
+  const dueDatesText: Record<string, string> = feeConfig.dueDates || {}
   const classWiseFees: Record<string, any> = feeConfig.classWiseFees || {}
 
   const todayStr = new Date().toISOString().split('T')[0]
@@ -5004,7 +5029,9 @@ async function runFeeReminders(env: any): Promise<{ sent: number; skipped: Recor
         continue // UNIQUE constraint hit — already sent this exact reminder today (e.g. cron + manual run same day)
       }
 
-      const html = feeReminderEmailHtml(schoolName, meta, parent.name || parent.username, student.name, trig.label, due, paid, trig.dueDateStr, trig.kind)
+      const pendingItems = computePendingFeeItems(classFees, paidByLabel, dueDatesText)
+      const balance = pendingItems.reduce((s, i) => s + i.pending, 0)
+      const html = feeReminderEmailHtml(schoolName, meta, parent.name || parent.username, student.name, trig.label, trig.dueDateStr, pendingItems, balance, trig.kind)
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -5068,10 +5095,9 @@ app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
     })
     const paidByLabel: Record<string, number> = {}
     stuPayments.forEach((p: any) => { (p.feeItems || []).forEach((fi: any) => { paidByLabel[fi.type] = (paidByLabel[fi.type] || 0) + (parseFloat(fi.amount) || 0) }) })
-    const pendingItems = FEE_INSTALLMENT_KEYS_SRV
-      .map((inst) => ({ label: inst.label, due: parseFloat(classFees[inst.key]) || 0, paid: paidByLabel[inst.label] || 0 }))
-      .filter((i) => i.due > 0 && i.paid < i.due)
-    const balance = pendingItems.reduce((s, i) => s + (i.due - i.paid), 0)
+    const dueDatesText: Record<string, string> = feeConfig.dueDates || {}
+    const pendingItems = computePendingFeeItems(classFees, paidByLabel, dueDatesText)
+    const balance = pendingItems.reduce((s, i) => s + i.pending, 0)
     if (balance <= 0) return c.json({ noBalance: true })
 
     const users: any[] = mainData.users || []
@@ -5085,7 +5111,6 @@ app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
     const apiKey = c.env.RESEND_API_KEY || meta.resendApiKey || ''
     if (!apiKey) return c.json({ notConfigured: true })
 
-    const rowsHtml = pendingItems.map((i) => `<tr><td style="padding:8px;border:1px solid #e2e8f0">${i.label}</td><td style="padding:8px;border:1px solid #e2e8f0;text-align:right">₹${(i.due - i.paid).toLocaleString('en-IN')}</td></tr>`).join('')
     const html = `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
       <div style="background:#ef4444;padding:20px 24px;border-radius:8px 8px 0 0;text-align:center">
         <div style="font-size:22px;font-weight:900;color:#fff">${schoolName}</div>
@@ -5095,8 +5120,8 @@ app.post('/api/fee-reminders/notify-student/:studentId', async (c) => {
         <p style="color:#1a202c;font-size:15px;margin:0 0 8px">Hello <strong>${parent.name || parent.username}</strong>,</p>
         <p style="color:#4a5568;font-size:14px;margin:0 0 20px">This is a reminder that <strong>${student.name}</strong> has a pending fee balance:</p>
         <table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px">
-          <thead><tr><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:left">Installment</th><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:right">Pending</th></tr></thead>
-          <tbody>${rowsHtml}</tbody>
+          <thead><tr><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:left">Item</th><th style="padding:8px;border:1px solid #e2e8f0;background:#f8fafc;text-align:right">Pending</th></tr></thead>
+          <tbody>${pendingFeeItemsRowsHtml(pendingItems)}</tbody>
         </table>
         <div style="background:#fef2f2;border-radius:8px;padding:14px;text-align:center;margin:0 0 20px">
           <div style="font-size:12px;color:#991b1b">Total Outstanding</div>

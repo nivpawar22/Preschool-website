@@ -1177,7 +1177,8 @@ function renderOutstandingBalancesPanel(containerId) {
         return d;
       });
       var summary = computeFeeSummary(effectiveFees, stuPayments);
-      window._feeBalCache[s.id] = { className: className, classDefaults: classDefaults, override: override };
+      var parent = (data.users || []).find(function(u) { return u.role === 'parent' && Array.isArray(u.childIds) && u.childIds.indexOf(s.id) !== -1; });
+      window._feeBalCache[s.id] = { className: className, classDefaults: classDefaults, override: override, summary: summary, dueDates: feeConfig.dueDates || {}, parent: parent };
       return { student: s, className: className, summary: summary, hasOverride: Object.keys(override).length > 0 };
     }).filter(function(r) { return Object.keys((feeConfig.classWiseFees || {})[r.className] || {}).length > 0; })
       .sort(function(a, b) { return b.summary.balance - a.summary.balance; });
@@ -1200,6 +1201,9 @@ function renderOutstandingBalancesPanel(containerId) {
             var notifyBtn = bal > 0
               ? '<button class="btn btn-sm btn-secondary" id="notify-btn-' + r.student.id + '" onclick="sendFeePendingNotification(\'' + r.student.id + '\',this)" title="Send pending-fees email"><i class="fas fa-bell"></i></button>'
               : '';
+            var whatsappBtn = bal > 0
+              ? '<button class="btn btn-sm btn-secondary" onclick="sendFeeWhatsApp(\'' + r.student.id + '\')" title="Send pending-fees WhatsApp message"><i class="fab fa-whatsapp" style="color:#25D366"></i></button>'
+              : '';
             var editBtn = '<button class="btn btn-sm btn-secondary" onclick="openFeeOverrideModal(\'' + r.student.id + '\')" title="Customize this student\'s fee amounts"><i class="fas fa-edit"></i></button>';
             var overrideBadge = r.hasOverride ? ' <i class="fas fa-tag" style="color:#8b5cf6" title="Custom fee amounts applied"></i>' : '';
             return '<tr style="border-bottom:1px solid #f1f5f9">' +
@@ -1208,7 +1212,7 @@ function renderOutstandingBalancesPanel(containerId) {
               '<td style="padding:10px 12px;text-align:right;color:#374151">₹' + r.summary.totalDue.toLocaleString('en-IN') + '</td>' +
               '<td style="padding:10px 12px;text-align:right;color:#10b981;font-weight:700">₹' + r.summary.totalPaid.toLocaleString('en-IN') + '</td>' +
               '<td style="padding:10px 12px;text-align:right;font-weight:800;color:' + (bal > 0 ? '#ef4444' : '#10b981') + '">₹' + bal.toLocaleString('en-IN') + '</td>' +
-              '<td style="padding:10px 12px;text-align:center"><div style="display:flex;gap:4px;justify-content:center">' + editBtn + notifyBtn + '</div></td>' +
+              '<td style="padding:10px 12px;text-align:center"><div style="display:flex;gap:4px;justify-content:center">' + editBtn + notifyBtn + whatsappBtn + '</div></td>' +
             '</tr>';
           }).join('') + '</tbody></table></div>';
 
@@ -1311,8 +1315,33 @@ window.sendFeePendingNotification = function(studentId, btnEl) {
     })
     .catch(function() { showToast('Failed to send notification', 'error'); })
     .finally(function() {
-      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-bell" style="margin-right:4px"></i>Notify'; }
+      if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-bell"></i>'; }
     });
+};
+
+window.sendFeeWhatsApp = function(studentId) {
+  var cached = (window._feeBalCache || {})[studentId];
+  var data = DB.get();
+  var student = (data.students || []).find(function(s) { return s.id === studentId; });
+  if (!cached || !student) return;
+  var parent = cached.parent;
+  if (!parent || !parent.phone) { showToast('Parent has no phone number on file.', 'warning'); return; }
+  var phone = (parent.phone || '').replace(/\D/g, '').slice(-10);
+  if (phone.length < 10) { showToast('Parent phone number is invalid.', 'warning'); return; }
+
+  var pending = (cached.summary.installments || []).filter(function(i) { return i.status === 'Pending' || i.status === 'Partially Paid'; });
+  if (pending.length === 0) { showToast('This student has no outstanding balance.', 'info'); return; }
+
+  var meta = data.meta || {};
+  var schoolName = meta.schoolName || 'SuperKids India Preschool';
+  var lines = pending.map(function(i) {
+    var due = cached.dueDates[i.key];
+    return '- ' + i.label + ': ₹' + (i.due - i.paid).toLocaleString('en-IN') + (due ? ' (Due: ' + due + ')' : '');
+  }).join('\n');
+  var msg = 'Dear Parent,\n\nThis is a reminder that ' + student.name + ' has a pending fee balance at ' + schoolName + ':\n\n' +
+    lines + '\n\nTotal Outstanding: ₹' + cached.summary.balance.toLocaleString('en-IN') +
+    '\n\nPlease contact the school office to make payment.\n\nThank you!\n' + schoolName;
+  window.open('https://wa.me/91' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
 // ============================================================

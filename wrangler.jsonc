@@ -19,5 +19,10 @@
       "binding": "MEDIA",
       "bucket_name": "superkidsindiar2bucket"
     }
-  ]
+  ],
+  "triggers": {
+    // Daily at 3:30 UTC = 9:00am IST — sends fee due-date/overdue email
+    // reminders to parents (see runFeeReminders in src/index.tsx).
+    "crons": ["30 3 * * *"]
+  }
 }

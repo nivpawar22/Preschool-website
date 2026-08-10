@@ -1071,6 +1071,58 @@ const DB = (() => {
 })();
 
 // ============================================================
+// Fee Reconciliation — shared, pure helper
+// ============================================================
+// Computes a student's REAL fee position from the Fee Structure config and
+// their actual recorded payments (the /api/payments D1 table, populated by
+// Admissions' "Fee Collection" screen) — as opposed to the legacy, manually
+// typed feeRecords "invoices". Used by both the parent portal's Fees tab
+// and the superadmin's Fee Management tab so both surfaces agree.
+//   classFees: feeConfig.classWiseFees[className] || {}
+//   paymentsForStudent: array of payment .data objects (already JSON-parsed)
+const FEE_INSTALLMENT_KEYS = [
+  { key: 'installment1', label: '1st Installment (Registration + First)' },
+  { key: 'installment2', label: '2nd Installment' },
+  { key: 'installment3', label: '3rd Installment' },
+  { key: 'educationKit', label: 'Education Kit' },
+];
+
+function computeFeeSummary(classFees, paymentsForStudent) {
+  classFees = classFees || {};
+  paymentsForStudent = paymentsForStudent || [];
+
+  var totalDue = parseFloat(classFees.totalFees) || 0;
+  if (!totalDue) {
+    totalDue = FEE_INSTALLMENT_KEYS.reduce(function(s, i) { return s + (parseFloat(classFees[i.key]) || 0); }, 0);
+  }
+
+  var totalPaid = paymentsForStudent.reduce(function(s, p) { return s + (parseFloat(p.total) || 0); }, 0);
+
+  var paidByLabel = {};
+  paymentsForStudent.forEach(function(p) {
+    (p.feeItems || []).forEach(function(fi) {
+      paidByLabel[fi.type] = (paidByLabel[fi.type] || 0) + (parseFloat(fi.amount) || 0);
+    });
+  });
+
+  var installments = FEE_INSTALLMENT_KEYS.map(function(i) {
+    var due = parseFloat(classFees[i.key]) || 0;
+    var paid = paidByLabel[i.label] || 0;
+    var status = due === 0 ? 'N/A' : (paid >= due ? 'Paid' : (paid > 0 ? 'Partially Paid' : 'Pending'));
+    return { key: i.key, label: i.label, due: due, paid: paid, status: status };
+  });
+
+  return {
+    totalDue: totalDue,
+    totalPaid: totalPaid,
+    balance: Math.max(0, totalDue - totalPaid),
+    installments: installments,
+    paidByLabel: paidByLabel,
+    paymentCount: paymentsForStudent.length,
+  };
+}
+
+// ============================================================
 // Session State
 // ============================================================
 const Session = (() => {

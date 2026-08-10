@@ -1087,6 +1087,20 @@ const FEE_INSTALLMENT_KEYS = [
   { key: 'educationKit', label: 'Education Kit' },
 ];
 
+// Layers a per-student fee override on top of the class-wide defaults.
+// computeFeeSummary() prefers classFees.totalFees as the headline "total
+// due" figure over summing the installments (a class's Total Fees can be a
+// deliberately independent lump sum) — but once a student has a per-field
+// override, that class-level total no longer describes them, so recompute
+// it as the sum of their (overridden) installments instead.
+function applyFeeOverride(classDefaults, override) {
+  var effective = Object.assign({}, classDefaults, override || {});
+  if (override && Object.keys(override).length > 0) {
+    effective.totalFees = FEE_INSTALLMENT_KEYS.reduce(function(s, i) { return s + (parseFloat(effective[i.key]) || 0); }, 0);
+  }
+  return effective;
+}
+
 function computeFeeSummary(classFees, paymentsForStudent) {
   classFees = classFees || {};
   paymentsForStudent = paymentsForStudent || [];
@@ -1148,16 +1162,23 @@ function renderOutstandingBalancesPanel(containerId) {
     var data = DB.get();
     var students = (data.students || []).filter(function(s) { return s.admissionId && !s.deleted; });
 
+    // Cached per-student so the Edit modal can pre-fill without re-fetching.
+    window._feeBalCache = window._feeBalCache || {};
+    window._feeBalContainerId = containerId;
+
     var rows = students.map(function(s) {
       var cls = DB.getClass(s.classId);
       var className = cls ? cls.name : '';
-      var classFees = (feeConfig.classWiseFees || {})[className] || {};
+      var classDefaults = (feeConfig.classWiseFees || {})[className] || {};
+      var override = s.feeOverride || {};
+      var effectiveFees = applyFeeOverride(classDefaults, override);
       var stuPayments = payItems.filter(function(p) { return p.admission_id === s.admissionId; }).map(function(p) {
         var d = {}; try { d = typeof p.data === 'string' ? JSON.parse(p.data) : (p.data || {}); } catch (e) {}
         return d;
       });
-      var summary = computeFeeSummary(classFees, stuPayments);
-      return { student: s, className: className, summary: summary };
+      var summary = computeFeeSummary(effectiveFees, stuPayments);
+      window._feeBalCache[s.id] = { className: className, classDefaults: classDefaults, override: override };
+      return { student: s, className: className, summary: summary, hasOverride: Object.keys(override).length > 0 };
     }).filter(function(r) { return Object.keys((feeConfig.classWiseFees || {})[r.className] || {}).length > 0; })
       .sort(function(a, b) { return b.summary.balance - a.summary.balance; });
 
@@ -1177,15 +1198,17 @@ function renderOutstandingBalancesPanel(containerId) {
           '<tbody>' + rows.map(function(r) {
             var bal = r.summary.balance;
             var notifyBtn = bal > 0
-              ? '<button class="btn btn-sm btn-secondary" id="notify-btn-' + r.student.id + '" onclick="sendFeePendingNotification(\'' + r.student.id + '\',this)"><i class="fas fa-bell" style="margin-right:4px"></i>Notify</button>'
-              : '<span style="color:#94a3b8;font-size:11px">Fully paid</span>';
+              ? '<button class="btn btn-sm btn-secondary" id="notify-btn-' + r.student.id + '" onclick="sendFeePendingNotification(\'' + r.student.id + '\',this)" title="Send pending-fees email"><i class="fas fa-bell"></i></button>'
+              : '';
+            var editBtn = '<button class="btn btn-sm btn-secondary" onclick="openFeeOverrideModal(\'' + r.student.id + '\')" title="Customize this student\'s fee amounts"><i class="fas fa-edit"></i></button>';
+            var overrideBadge = r.hasOverride ? ' <i class="fas fa-tag" style="color:#8b5cf6" title="Custom fee amounts applied"></i>' : '';
             return '<tr style="border-bottom:1px solid #f1f5f9">' +
-              '<td style="padding:10px 12px;font-weight:600;color:#0F2050">' + escHtml(r.student.name) + '</td>' +
+              '<td style="padding:10px 12px;font-weight:600;color:#0F2050">' + escHtml(r.student.name) + overrideBadge + '</td>' +
               '<td style="padding:10px 12px;color:#64748b">' + escHtml(r.className) + '</td>' +
               '<td style="padding:10px 12px;text-align:right;color:#374151">₹' + r.summary.totalDue.toLocaleString('en-IN') + '</td>' +
               '<td style="padding:10px 12px;text-align:right;color:#10b981;font-weight:700">₹' + r.summary.totalPaid.toLocaleString('en-IN') + '</td>' +
               '<td style="padding:10px 12px;text-align:right;font-weight:800;color:' + (bal > 0 ? '#ef4444' : '#10b981') + '">₹' + bal.toLocaleString('en-IN') + '</td>' +
-              '<td style="padding:10px 12px;text-align:center">' + notifyBtn + '</td>' +
+              '<td style="padding:10px 12px;text-align:center"><div style="display:flex;gap:4px;justify-content:center">' + editBtn + notifyBtn + '</div></td>' +
             '</tr>';
           }).join('') + '</tbody></table></div>';
 
@@ -1201,6 +1224,78 @@ function renderOutstandingBalancesPanel(containerId) {
     if (container) container.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8">Unable to load outstanding balances</div>';
   });
 }
+
+var FEE_OVERRIDE_FIELDS = [
+  { key: 'installment1', label: '1st Installment (Registration + First)' },
+  { key: 'installment2', label: '2nd Installment' },
+  { key: 'installment3', label: '3rd Installment' },
+  { key: 'educationKit', label: 'Education Kit' },
+];
+
+window.openFeeOverrideModal = function(studentId) {
+  var cached = (window._feeBalCache || {})[studentId];
+  if (!cached) return;
+  var data = DB.get();
+  var student = (data.students || []).find(function(s) { return s.id === studentId; });
+  if (!student) return;
+  var effective = Object.assign({}, cached.classDefaults, cached.override);
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'fee-override-modal';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:440px;width:100%">' +
+      '<div class="modal-header">' +
+        '<h3 class="modal-title"><i class="fas fa-edit" style="color:#8b5cf6;margin-right:8px"></i>Customize Fees — ' + escHtml(student.name) + '</h3>' +
+        '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'fee-override-modal\').remove()"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+      '<div class="modal-body" style="padding:24px">' +
+        '<p style="font-size:12px;color:#6B7A9D;margin:0 0 16px">Overrides the class-wide Fee Structure amount for this student only — useful for a discount, scholarship, or negotiated fee. These amounts are what the pending-fees notification will use.</p>' +
+        '<div style="display:grid;gap:14px">' +
+          FEE_OVERRIDE_FIELDS.map(function(f) {
+            return '<div><label class="form-label" style="font-size:12px">' + f.label + '</label>' +
+              '<input type="number" min="0" class="form-control fee-override-inp" data-key="' + f.key + '" value="' + (effective[f.key] || '') + '" placeholder="₹0"/></div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-footer" style="padding:16px 24px;display:flex;justify-content:space-between;gap:12px;border-top:1px solid #e2e8f0">' +
+        '<button class="btn btn-secondary" onclick="saveFeeOverride(\'' + studentId + '\', true)"><i class="fas fa-undo" style="margin-right:6px"></i>Reset to Class Default</button>' +
+        '<div style="display:flex;gap:12px">' +
+          '<button class="btn btn-secondary" onclick="document.getElementById(\'fee-override-modal\').remove()">Cancel</button>' +
+          '<button class="btn btn-primary" onclick="saveFeeOverride(\'' + studentId + '\', false)"><i class="fas fa-save" style="margin-right:6px"></i>Save</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+window.saveFeeOverride = function(studentId, reset) {
+  var feeOverride = {};
+  if (!reset) {
+    document.querySelectorAll('.fee-override-inp').forEach(function(inp) {
+      var v = parseFloat(inp.value);
+      if (v >= 0) feeOverride[inp.getAttribute('data-key')] = v;
+    });
+  }
+  fetch('/api/students/' + studentId + '/fee-override', {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, _feeAuthHdr()),
+    body: JSON.stringify({ feeOverride: feeOverride }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.error) { showToast(res.error, 'error'); return; }
+      var data = DB.get();
+      var student = (data.students || []).find(function(s) { return s.id === studentId; });
+      if (student) student.feeOverride = feeOverride;
+      showToast(reset ? 'Reset to class default fees.' : 'Fee amounts updated for this student.', 'success');
+      var modal = document.getElementById('fee-override-modal');
+      if (modal) modal.remove();
+      if (window._feeBalContainerId) renderOutstandingBalancesPanel(window._feeBalContainerId);
+    })
+    .catch(function() { showToast('Failed to save fee amounts', 'error'); });
+};
 
 window.sendFeePendingNotification = function(studentId, btnEl) {
   if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }

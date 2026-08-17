@@ -1660,16 +1660,23 @@ window.openTeacherAttLog = function(teacherId, month) {
             (r.lateArrival||r.late_arrival ? '<span style="background:#fff7ed;color:#f97316;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700"><i class="fas fa-clock"></i> Late</span>' : '<span style="color:#94a3b8;font-size:11px">—</span>')+
           '</td>'+
           '<td style="padding:9px 12px">'+locCell+'</td>'+
-          '<td style="padding:9px 12px;color:#64748b;font-size:12px">'+_escH(r.note||'—')+'</td>'+
+          '<td style="padding:9px 12px;color:#64748b;font-size:12px">'+_escH(r.note||'—')+(r.markedBy?' <span style="color:#94a3b8;font-style:italic">(by '+_escH(r.markedBy)+')</span>':'')+'</td>'+
+          '<td style="padding:9px 12px;text-align:center;white-space:nowrap">'+
+            '<button class="btn btn-xs" style="background:#eff6ff;color:#2563eb;border:none;margin-right:4px" onclick="openMarkAttendanceForm(\''+teacherId+'\',\''+r.id+'\',\''+r.date+'\',\''+r.status+'\',\''+(r.checkIn||r.check_in||'')+'\')" title="Edit"><i class="fas fa-edit"></i></button>'+
+            '<button class="btn btn-xs btn-danger" onclick="deleteMarkedAttendance(\''+r.id+'\',\''+teacherId+'\')" title="Delete"><i class="fas fa-trash"></i></button>'+
+          '</td>'+
         '</tr>';
       }).join('')
-    : '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No records found</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;padding:24px;color:#94a3b8">No records found</td></tr>';
 
   overlay.innerHTML =
-    '<div style="background:#fff;border-radius:16px;width:100%;max-width:860px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
-      '<div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">'+
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:920px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+      '<div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;flex-wrap:wrap">'+
         '<h3 style="margin:0;font-size:15px;font-weight:800;color:#0F2050">Daily Log — '+_escH(teacher.name)+(month?' ('+_fmtMonth(month)+')':'')+'</h3>'+
-        '<button onclick="document.getElementById(\'att-log-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+          '<button class="btn btn-primary btn-sm" onclick="openMarkAttendanceForm(\''+teacherId+'\')"><i class="fas fa-calendar-plus" style="margin-right:6px"></i>Mark Attendance</button>'+
+          '<button onclick="document.getElementById(\'att-log-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+        '</div>'+
       '</div>'+
       '<div style="flex:1;overflow-y:auto">'+
         '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
@@ -1681,6 +1688,7 @@ window.openTeacherAttLog = function(teacherId, month) {
             '<th style="text-align:center;padding:9px 12px;color:#64748b;font-weight:700">Late</th>'+
             '<th style="text-align:left;padding:9px 12px;color:#64748b;font-weight:700"><i class="fas fa-map-marker-alt" style="color:#10b981;margin-right:4px"></i>Location</th>'+
             '<th style="text-align:left;padding:9px 12px;color:#64748b;font-weight:700">Note</th>'+
+            '<th style="text-align:center;padding:9px 12px;color:#64748b;font-weight:700">Actions</th>'+
           '</tr></thead>'+
           '<tbody>'+rows+'</tbody>'+
         '</table>'+
@@ -1692,6 +1700,79 @@ window.openTeacherAttLog = function(teacherId, month) {
 
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+// Lets a Super Admin mark (or correct) a teacher's attendance directly —
+// alongside the teacher's own GPS-validated self check-in flow, for cases
+// like a forgotten check-in, an office-approved leave, or a data-entry fix.
+window.openMarkAttendanceForm = function(teacherId, existingRecId, prefillDate, prefillStatus, prefillCheckIn) {
+  var data = DB.get();
+  var teacher = (data.users || []).find(function(u) { return u.id === teacherId; });
+  if (!teacher) return;
+  var isEdit = !!existingRecId;
+  var existing = isEdit ? (DB.getStaffAttendance(teacherId) || []).find(function(r) { return r.id === existingRecId; }) : null;
+  var today = new Date().toISOString().split('T')[0];
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'mark-att-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+      '<div style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'+
+        '<h3 style="margin:0;font-size:15px;font-weight:800;color:#0F2050">'+(isEdit?'Edit':'Mark')+' Attendance — '+_escH(teacher.name)+'</h3>'+
+        '<button onclick="document.getElementById(\'mark-att-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
+      '</div>'+
+      '<div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">'+
+        '<div><label class="form-label">Date *</label><input id="mat-date" class="form-control" type="date" value="'+(prefillDate||today)+'"'+(isEdit?' readonly':'')+'/></div>'+
+        '<div><label class="form-label">Status *</label><select id="mat-status" class="form-control">'+
+          ['Present','Absent','Half-Day','On-Leave'].map(function(s){return '<option value="'+s+'"'+(prefillStatus===s?' selected':'')+'>'+s+'</option>';}).join('')+
+        '</select></div>'+
+        '<div><label class="form-label">Check-In Time</label><input id="mat-checkin" class="form-control" type="time" value="'+_escH(prefillCheckIn||'')+'"/></div>'+
+        '<div><label class="form-label">Note</label><textarea id="mat-note" class="form-control" rows="2" placeholder="Optional note...">'+_escH(existing?existing.note||'':'')+'</textarea></div>'+
+      '</div>'+
+      '<div style="padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px">'+
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'mark-att-modal\').remove()">Cancel</button>'+
+        '<button class="btn btn-primary" onclick="saveMarkAttendance(\''+teacherId+'\',\''+(existingRecId||'')+'\')"><i class="fas fa-save" style="margin-right:6px"></i>Save</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+};
+
+window.saveMarkAttendance = function(teacherId, existingRecId) {
+  var date = document.getElementById('mat-date').value;
+  var status = document.getElementById('mat-status').value;
+  var checkIn = document.getElementById('mat-checkin').value;
+  var note = (document.getElementById('mat-note').value || '').trim();
+  if (!date) { showToast('Date is required', 'error'); return; }
+
+  var recs = DB.getStaffAttendance(teacherId) || [];
+  var existing = existingRecId
+    ? recs.find(function(r) { return r.id === existingRecId; })
+    : recs.find(function(r) { return r.date === date; });
+  var markedBy = (Session.current() || {}).name || 'Super Admin';
+
+  if (existing) {
+    DB.updateStaffAttendance(existing.id, { status: status, checkIn: checkIn, note: note, markedBy: markedBy });
+    showToast('Attendance updated', 'success');
+  } else {
+    DB.addStaffAttendance({ id: 'sa_'+Date.now(), teacherId: teacherId, date: date, status: status, checkIn: checkIn, note: note, markedBy: markedBy, createdAt: new Date().toISOString() });
+    showToast('Attendance marked', 'success');
+  }
+
+  var markModal = document.getElementById('mark-att-modal'); if (markModal) markModal.remove();
+  var logModal = document.getElementById('att-log-modal'); if (logModal) logModal.remove();
+  openTeacherAttLog(teacherId, window._attRptMonth || '');
+};
+
+window.deleteMarkedAttendance = function(recId, teacherId) {
+  confirmDialog('Delete this attendance record?', function() {
+    DB.deleteStaffAttendance(recId);
+    showToast('Attendance record deleted', 'success');
+    var logModal = document.getElementById('att-log-modal'); if (logModal) logModal.remove();
+    openTeacherAttLog(teacherId, window._attRptMonth || '');
+  });
 };
 
 window._printAttReport = function() {

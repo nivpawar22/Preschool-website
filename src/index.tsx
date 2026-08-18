@@ -5415,6 +5415,34 @@ app.get('/api/staff-attendance/all', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// Super Admin editing/deleting a record that originated from a teacher's
+// GPS self-check-in must also touch this table — those rows live here, not
+// in the app_data.staffAttendance blob, so a client-side-only edit/delete
+// would get silently undone the next time the two are merged for display.
+app.put('/api/staff-attendance/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const id = c.req.param('id')
+    const { status, checkIn, note } = await c.req.json()
+    await c.env.DB.prepare('UPDATE staff_attendance SET status=?, check_in=?, note=? WHERE id=?')
+      .bind(status || 'Present', checkIn || null, note || '', id).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/staff-attendance/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureStaffAttTable(c.env.DB)
+    const id = c.req.param('id')
+    await c.env.DB.prepare('DELETE FROM staff_attendance WHERE id=?').bind(id).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 export default {
   fetch: app.fetch,
   // Cloudflare Cron Trigger (see wrangler.jsonc "triggers.crons") — runs the

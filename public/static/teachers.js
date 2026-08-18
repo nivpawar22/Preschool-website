@@ -1740,6 +1740,24 @@ window.openMarkAttendanceForm = function(teacherId, existingRecId, prefillDate, 
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
 };
 
+// A record shown in the Daily Log may have originated from the teacher's
+// GPS self-check-in, which lives in the server's staff_attendance table
+// (merged in for display by _mergeServerAtt), not in the app_data blob that
+// DB.updateStaffAttendance/deleteStaffAttendance write to. Editing/deleting
+// only the local copy gets silently undone next time the two are merged —
+// so push the same change to that table too. It's a best-effort, fire-and-
+// forget sync: a 404/no-op there just means the record never had a
+// self-check-in row (e.g. one a Super Admin created from scratch).
+function _syncServerStaffAtt(method, id, body) {
+  var token = localStorage.getItem('sk_session_token');
+  if (!token) return;
+  fetch('/api/staff-attendance/' + encodeURIComponent(id), {
+    method: method,
+    headers: Object.assign({ 'Authorization': 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
+    body: body ? JSON.stringify(body) : undefined
+  }).catch(function() {});
+}
+
 window.saveMarkAttendance = function(teacherId, existingRecId) {
   var date = document.getElementById('mat-date').value;
   var status = document.getElementById('mat-status').value;
@@ -1755,6 +1773,7 @@ window.saveMarkAttendance = function(teacherId, existingRecId) {
 
   if (existing) {
     DB.updateStaffAttendance(existing.id, { status: status, checkIn: checkIn, note: note, markedBy: markedBy });
+    _syncServerStaffAtt('PUT', existing.id, { status: status, checkIn: checkIn, note: note });
     showToast('Attendance updated', 'success');
   } else {
     DB.addStaffAttendance({ id: 'sa_'+Date.now(), teacherId: teacherId, date: date, status: status, checkIn: checkIn, note: note, markedBy: markedBy, createdAt: new Date().toISOString() });
@@ -1769,6 +1788,7 @@ window.saveMarkAttendance = function(teacherId, existingRecId) {
 window.deleteMarkedAttendance = function(recId, teacherId) {
   confirmDialog('Delete this attendance record?', function() {
     DB.deleteStaffAttendance(recId);
+    _syncServerStaffAtt('DELETE', recId);
     showToast('Attendance record deleted', 'success');
     var logModal = document.getElementById('att-log-modal'); if (logModal) logModal.remove();
     openTeacherAttLog(teacherId, window._attRptMonth || '');

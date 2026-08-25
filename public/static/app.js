@@ -274,6 +274,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'new-admission', icon: 'fa-plus-circle', label: 'New Admission' },
       { id: 'fee-collection', icon: 'fa-rupee-sign', label: 'Fee Collection' },
       { id: 'receipts', icon: 'fa-receipt', label: 'Receipts' },
+      { id: 'holidays', icon: 'fa-umbrella-beach', label: 'Holidays' },
     ];
   } else if (user.role === 'accounting') {
     navItems = [
@@ -282,6 +283,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'acc-payroll', icon: 'fa-money-check-alt', label: 'Staff Payroll' },
       { id: 'acc-purchase', icon: 'fa-shopping-cart', label: 'Purchase Orders' },
       { id: 'acc-expenses', icon: 'fa-calculator', label: 'Expenses' },
+      { id: 'holidays', icon: 'fa-umbrella-beach', label: 'Holidays' },
     ];
   } else if (user.role === 'superadmin' || user.role === 'subadmin') {
     const annBadge = Seen.count('ann', user.id, DB.getAnnouncements(''), a => a.date);
@@ -301,6 +303,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       { id: 'leaves', icon: 'fa-calendar-times', label: 'Leaves', badge: (user.role === 'subadmin' && user.assignedClass ? DB.getLeaves(null, null, user.assignedClass) : data.leaves).filter(l => l.status === 'pending' && !l.cleared && DB.getStudent(l.studentId)).length || 0 },
       { id: 'announcements', icon: 'fa-bullhorn', label: 'Announcements', badge: annBadge },
       { id: 'events', icon: 'fa-calendar-alt', label: 'Events', badge: evtBadge },
+      { id: 'holidays', icon: 'fa-umbrella-beach', label: 'Holidays' },
       { id: 'messages', icon: 'fa-comment-dots', label: 'Messages', badge: msgBadge },
       { id: 'gallery', icon: 'fa-images', label: 'Gallery', badge: galBadge },
     ];

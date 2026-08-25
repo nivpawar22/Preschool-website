@@ -858,8 +858,30 @@ const DB = (() => {
     var custom = (_data.holidays || []).filter(function(h){ return !defaultIds[h.id]; });
     return defaults.holidays.concat(custom).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
   }
-  function addHoliday(h) { if(!_data.holidays)_data.holidays=[]; _data.holidays.push(h); commit(); }
-  function deleteHoliday(id) { if(!_data.holidays)return; _data.holidays=_data.holidays.filter(function(h){return h.id!==id;}); commit(); }
+  function _holidayAuthHdr() {
+    var t = localStorage.getItem('sk_session_token');
+    return t ? { 'Authorization': 'Bearer ' + t } : {};
+  }
+  // Uses a dedicated targeted endpoint (like salary payments) rather than
+  // DB.commit(), since saveToServer() skips the full-blob sync for the
+  // admission/accounting roles — this way holidays persist for every role
+  // that can see the tab, not just superadmin/subadmin.
+  function addHoliday(h) {
+    if (!_data.holidays) _data.holidays = [];
+    _data.holidays.push(h);
+    save(_data);
+    return fetch('/api/holidays', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _holidayAuthHdr()),
+      body: JSON.stringify({ holiday: h })
+    }).catch(function() {});
+  }
+  function deleteHoliday(id) {
+    if (!_data.holidays) return;
+    _data.holidays = _data.holidays.filter(function(h){ return h.id !== id; });
+    save(_data);
+    return fetch('/api/holidays/' + encodeURIComponent(id), { method: 'DELETE', headers: _holidayAuthHdr() }).catch(function() {});
+  }
 
   // ---- Profile Change Requests ----
   function getProfileChangeRequests(teacherId) {

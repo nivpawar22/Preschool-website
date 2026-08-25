@@ -2560,6 +2560,95 @@ window._deleteHoliday = function(id) {
   openHolidayManagement();
 };
 
+// ==================== HOLIDAYS TAB (nav page — superadmin/subadmin/accounting/admission) ====================
+function renderHolidays() {
+  var user = Session.current();
+  if (!user) { renderLogin(); return; }
+  var canManage = user.role !== 'parent';
+  var today = new Date().toISOString().slice(0, 10);
+  var holidays = DB.getHolidays ? DB.getHolidays() : [];
+  var upcoming = holidays.filter(function(h) { return (h.date||'') >= today; });
+  var past = holidays.filter(function(h) { return (h.date||'') < today; }).sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+  var typeColors = { National: '#fee2e2:#991b1b', Festival: '#fef3c7:#92400e', School: '#e0e7ff:#3730a3', Optional: '#d1fae5:#065f46' };
+
+  function rowHtml(h) {
+    var p = (typeColors[h.type] || '#f1f5f9:#475569').split(':');
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+
+      '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(h.name)+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+formatDate(h.date)+'</td>'+
+      '<td style="padding:10px 12px"><span style="background:'+p[0]+';color:'+p[1]+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(h.type||'School')+'</span></td>'+
+      '<td style="padding:10px 12px;text-align:center"><span style="color:'+(h.optional?'#f59e0b':'#10b981')+';font-weight:700;font-size:12px">'+(h.optional?'Optional':'Mandatory')+'</span></td>'+
+      (canManage ? '<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm btn-danger" onclick="_deleteHolidayTab(\''+h.id+'\')" title="Delete"><i class="fas fa-trash"></i></button></td>' : '')+
+    '</tr>';
+  }
+
+  var colspan = canManage ? 5 : 4;
+  var upcomingRows = upcoming.length ? upcoming.map(rowHtml).join('') : '<tr><td colspan="'+colspan+'" style="padding:24px;text-align:center;color:#94a3b8">No upcoming holidays</td></tr>';
+  var pastRows = past.length ? past.map(rowHtml).join('') : '<tr><td colspan="'+colspan+'" style="padding:24px;text-align:center;color:#94a3b8">No past holidays this year</td></tr>';
+
+  var addForm = !canManage ? '' :
+    '<div class="card" style="margin-bottom:20px">'+
+      '<div class="card-title" style="margin-bottom:14px"><i class="fas fa-plus-circle" style="color:#6366f1"></i> Add Holiday</div>'+
+      '<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">'+
+        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Holiday Name</label><input id="hol-tab-name" type="text" placeholder="e.g. Independence Day" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
+        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Date</label><input id="hol-tab-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
+        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Type</label><select id="hol-tab-type" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"><option>National</option><option>Festival</option><option>School</option><option>Optional</option></select></div>'+
+        '<button class="btn btn-primary" onclick="_addHolidayTab()" style="white-space:nowrap">+ Add</button>'+
+      '</div>'+
+    '</div>';
+
+  var content =
+    addForm+
+    '<div class="card" style="margin-bottom:20px">'+
+      '<div class="card-title" style="margin-bottom:14px"><i class="fas fa-calendar-alt" style="color:#1AA6CA"></i> Upcoming Holidays</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Holiday</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+          '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+          (canManage ? '<th style="padding:10px 12px"></th>' : '')+
+        '</tr></thead><tbody>'+upcomingRows+'</tbody>'+
+      '</table></div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-title" style="color:#6B7A9D;margin-bottom:14px"><i class="fas fa-history"></i> Past Holidays</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Holiday</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Date</th>'+
+          '<th style="text-align:left;padding:10px 12px;color:#64748b;font-weight:700">Type</th>'+
+          '<th style="text-align:center;padding:10px 12px;color:#64748b;font-weight:700">Category</th>'+
+          (canManage ? '<th style="padding:10px 12px"></th>' : '')+
+        '</tr></thead><tbody>'+pastRows+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+
+  renderLayout('holidays', content, 'Holiday Calendar', 'School Calendar');
+}
+
+window._addHolidayTab = function() {
+  var name = (document.getElementById('hol-tab-name')||{}).value || '';
+  var date = (document.getElementById('hol-tab-date')||{}).value || '';
+  var type = (document.getElementById('hol-tab-type')||{}).value || 'School';
+  if (!name || !date) { showToast('Please enter holiday name and date', 'error'); return; }
+  if (DB.addHoliday) {
+    DB.addHoliday({ id: 'hol_'+Date.now(), name: name, date: date, type: type, optional: type === 'Optional' });
+  }
+  showToast('Holiday added', 'success');
+  renderHolidays();
+};
+
+window._deleteHolidayTab = function(id) {
+  confirmDialog('Delete this holiday?', function() {
+    if (DB.deleteHoliday) DB.deleteHoliday(id);
+    showToast('Holiday deleted', 'success');
+    renderHolidays();
+  });
+};
+
+registerRoute('holidays', renderHolidays);
+
 // ==================== QUICK ACTIONS — update to include Requests tile ====================
 window._tchQuickActionsUpdated = true; // marker so we know this version is loaded
 

@@ -3956,15 +3956,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=33"></script>
-  <script src="/static/app.js?v=33"></script>
-  <script src="/static/admin.js?v=33"></script>
-  <script src="/static/management.js?v=33"></script>
-  <script src="/static/parent.js?v=33"></script>
-  <script src="/static/admissions.js?v=33"></script>
-  <script src="/static/accounting.js?v=33"></script>
-  <script src="/static/teacher.js?v=33"></script>
-  <script src="/static/teachers.js?v=33"></script>
+  <script src="/static/data.js?v=34"></script>
+  <script src="/static/app.js?v=34"></script>
+  <script src="/static/admin.js?v=34"></script>
+  <script src="/static/management.js?v=34"></script>
+  <script src="/static/parent.js?v=34"></script>
+  <script src="/static/admissions.js?v=34"></script>
+  <script src="/static/accounting.js?v=34"></script>
+  <script src="/static/teacher.js?v=34"></script>
+  <script src="/static/teachers.js?v=34"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -5324,6 +5324,41 @@ app.post('/api/forgot-password', async (c) => {
       return c.json({ error: 'Failed to send email' }, 500)
     }
     return c.json({ sent: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Holidays ─────────────────────────────────────────────────
+// holidays lives inside the shared app_data 'main' blob too, and the same
+// generic-sync gap applies: saveToServer() skips the full-blob POST for
+// admission/accounting, so those roles need a targeted endpoint to add or
+// remove a holiday rather than relying on DB.commit().
+function canManageHolidays(sess: { role: string } | null): boolean {
+  return !!sess && sess.role !== 'parent'
+}
+
+app.post('/api/holidays', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageHolidays(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { holiday } = await c.req.json()
+    if (!holiday || !holiday.id || !holiday.name || !holiday.date) return c.json({ error: 'Invalid holiday' }, 400)
+    const data = await loadMainAppData(c.env.DB)
+    if (!Array.isArray(data.holidays)) data.holidays = []
+    data.holidays.push(holiday)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/holidays/:id', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageHolidays(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const id = c.req.param('id')
+    const data = await loadMainAppData(c.env.DB)
+    data.holidays = (data.holidays || []).filter((h: any) => h.id !== id)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 

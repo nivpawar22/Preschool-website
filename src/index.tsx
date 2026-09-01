@@ -3956,15 +3956,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=36"></script>
-  <script src="/static/app.js?v=36"></script>
-  <script src="/static/admin.js?v=36"></script>
-  <script src="/static/management.js?v=36"></script>
-  <script src="/static/parent.js?v=36"></script>
-  <script src="/static/admissions.js?v=36"></script>
-  <script src="/static/accounting.js?v=36"></script>
-  <script src="/static/teacher.js?v=36"></script>
-  <script src="/static/teachers.js?v=36"></script>
+  <script src="/static/data.js?v=37"></script>
+  <script src="/static/app.js?v=37"></script>
+  <script src="/static/admin.js?v=37"></script>
+  <script src="/static/management.js?v=37"></script>
+  <script src="/static/parent.js?v=37"></script>
+  <script src="/static/admissions.js?v=37"></script>
+  <script src="/static/accounting.js?v=37"></script>
+  <script src="/static/teacher.js?v=37"></script>
+  <script src="/static/teachers.js?v=37"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;

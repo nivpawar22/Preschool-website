@@ -3527,7 +3527,6 @@ function renderExpensesMgmtTable() {
   if (!wrap) return;
   var expenses = window._mgmtExpCache || [];
   var activeFilter = window._mgmtExpFilter || 'All';
-  var filtered = activeFilter === 'All' ? expenses : expenses.filter(function(e){ return e.category === activeFilter; });
 
   var now = new Date();
   var thisMonth = now.toISOString().slice(0, 7);
@@ -3546,6 +3545,27 @@ function renderExpensesMgmtTable() {
   var salaryMonthRecords = salSelectedMonth.monthRecords;
   var salaryMonthRecordsTotal = salSelectedMonth.monthTotal;
   var salUsers = (DB.get().users || []);
+
+  // The "Salary" filter otherwise always shows 0 records — real salary
+  // disbursements never land in the manual/sheet expenses table by design.
+  // Selecting it should still show the money spent, so build read-only
+  // expense-shaped rows from every Paid salary payment.
+  var salaryAsExpenseRows = salSummary.paid.map(function(p) {
+    var t = salUsers.find(function(u) { return u.id === p.teacherId; });
+    return {
+      id: 'sal_' + p.id,
+      date: p.paymentDate || '',
+      category: 'Salary',
+      description: 'Staff Salary — ' + (t ? t.name : 'Unknown') + ' (' + (p.month || '') + ')',
+      payee: t ? t.name : '-',
+      amount: p.netAmount,
+      isSalary: true
+    };
+  });
+  var filtered = activeFilter === 'All' ? expenses
+    : activeFilter === 'Salary' ? expenses.filter(function(e){ return e.category === 'Salary'; }).concat(salaryAsExpenseRows).sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); })
+    : expenses.filter(function(e){ return e.category === activeFilter; });
+  var filteredTotal = filtered.reduce(function(s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
 
   function buildSalExpTable(list) {
     if (list.length === 0) {
@@ -3587,9 +3607,12 @@ function renderExpensesMgmtTable() {
           '<td style="padding:9px 8px">' + _mgEsc(e.payee || '') + '</td>' +
           '<td style="padding:9px 8px;text-align:right;font-weight:700;color:#c0392b">&#8377;' + (parseFloat(e.amount||0)).toLocaleString('en-IN') + '</td>' +
           '<td style="padding:9px 8px;text-align:center">' +
-            '<button onclick="mgmtDeleteExpense(\'' + e.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i></button>' +
+            (e.isSalary
+              ? '<span style="color:#94a3b8;font-size:11px" title="Managed by Accounting under Staff Payroll">&mdash;</span>'
+              : '<button onclick="mgmtDeleteExpense(\'' + e.id + '\')" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:12px"><i class="fas fa-trash-alt"></i></button>') +
           '</td></tr>';
-      }).join('');
+      }).join('') +
+      (filtered.length ? '<tr style="border-top:2px solid #e0d6c8"><td colspan="4" style="padding:9px 8px;text-align:right;font-weight:800;color:#0F2050">Total</td><td style="padding:9px 8px;text-align:right;font-weight:900;color:#c0392b">&#8377;' + filteredTotal.toLocaleString('en-IN') + '</td><td></td></tr>' : '');
 
   wrap.innerHTML =
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">' +

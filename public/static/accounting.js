@@ -539,7 +539,6 @@ function renderAccExpensesTable() {
   const thisYear = now.getFullYear().toString();
 
   const allExpenses = window._accExpCache || [];
-  const filtered = activeFilter === 'All' ? allExpenses : allExpenses.filter(function(e) { return e.category === activeFilter; });
 
   const monthTotal = allExpenses
     .filter(function(e) { return (e.date || '').startsWith(thisMonth); })
@@ -565,6 +564,27 @@ function renderAccExpensesTable() {
   const salaryMonthRecords = salSelectedMonth.monthRecords;
   const salaryMonthRecordsTotal = salSelectedMonth.monthTotal;
   const salUsers = ((typeof DB !== 'undefined' ? DB.get().users : []) || []);
+
+  // The "Salary" filter previously always showed 0 records — real salary
+  // disbursements never land in the manual/sheet expenses table by design
+  // (see the note above). Selecting it should still show the money spent,
+  // so build read-only expense-shaped rows from every Paid salary payment.
+  const salaryAsExpenseRows = salSummary.paid.map(function(p) {
+    const t = salUsers.find(function(u) { return u.id === p.teacherId; });
+    return {
+      id: 'sal_' + p.id,
+      date: p.paymentDate || '',
+      category: 'Salary',
+      description: 'Staff Salary — ' + (t ? t.name : 'Unknown') + ' (' + (p.month || '') + ')',
+      payee: t ? t.name : '-',
+      amount: p.netAmount,
+      isSalary: true
+    };
+  });
+  const filtered = activeFilter === 'All' ? allExpenses
+    : activeFilter === 'Salary' ? allExpenses.filter(function(e) { return e.category === 'Salary'; }).concat(salaryAsExpenseRows).sort(function(a, b) { return (b.date || '').localeCompare(a.date || ''); })
+    : allExpenses.filter(function(e) { return e.category === activeFilter; });
+  const filteredTotal = filtered.reduce(function(s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
 
   function buildExpTable(list) {
     if (list.length === 0) {
@@ -593,11 +613,15 @@ function renderAccExpensesTable() {
             '<td style="padding:10px 12px;color:#64748b">' + (e.payee || '') + '</td>' +
             '<td style="padding:10px 12px;text-align:right;font-weight:800;color:#ef4444">₹' + parseFloat(e.amount || 0).toLocaleString('en-IN') + '</td>' +
             '<td style="padding:10px 12px;text-align:center">' +
-              '<button class="btn btn-danger btn-sm" onclick="accDeleteExpense(\'' + e.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
+              (e.isSalary
+                ? '<button class="btn btn-secondary btn-sm" onclick="navigate(\'acc-payroll\')" title="Manage in Staff Payroll"><i class="fas fa-money-check-alt"></i></button>'
+                : '<button class="btn btn-danger btn-sm" onclick="accDeleteExpense(\'' + e.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>') +
             '</td>' +
           '</tr>';
         }).join('') +
-      '</tbody></table></div>';
+      '</tbody>' +
+      '<tfoot><tr style="border-top:2px solid #e2e8f0"><td colspan="4" style="padding:10px 12px;text-align:right;font-weight:800;color:#0F2050">Total</td><td style="padding:10px 12px;text-align:right;font-weight:900;color:#ef4444">₹' + list.reduce(function(s, e) { return s + (parseFloat(e.amount) || 0); }, 0).toLocaleString('en-IN') + '</td><td></td></tr></tfoot>' +
+      '</table></div>';
   }
 
   function buildSalExpTable(list) {
@@ -675,9 +699,9 @@ function renderAccExpensesTable() {
       <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
         <h3 style="font-size:15px;font-weight:800;margin:0 0 16px;color:#0F2050">
           <i class="fas fa-calculator" style="color:#ef4444;margin-right:8px"></i>Expense Records
-          <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${filtered.length} records)</span>
+          <span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(${filtered.length} records, ₹${filteredTotal.toLocaleString('en-IN')} total)</span>
         </h3>
-        <p style="font-size:12px;color:#94a3b8;margin:-10px 0 14px">External expenses recorded manually or synced from the Google Sheet. Staff salary payments are shown separately above.</p>
+        <p style="font-size:12px;color:#94a3b8;margin:-10px 0 14px">${activeFilter === 'Salary' ? 'All staff salary payments marked Paid (all-time), plus any manually recorded Salary-category expenses.' : 'External expenses recorded manually or synced from the Google Sheet. Staff salary payments are shown separately above.'}</p>
         ${buildExpTable(filtered)}
       </div>
     </div>`;

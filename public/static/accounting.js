@@ -1261,6 +1261,11 @@ window.accEditPayrollHistory = function(id) {
             </select>
           </div>
           <div>
+            <label class="form-label">Payment Date</label>
+            <input id="pe-paydate" class="form-control" type="date" value="${p.paymentDate || new Date().toISOString().split('T')[0]}"/>
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px">The date this record counts as an expense on. Update it if this record is only being marked Paid now, for a different pay period.</div>
+          </div>
+          <div>
             <label class="form-label">Transaction ID</label>
             <input id="pe-txnid" class="form-control" type="text" placeholder="e.g. UPI/Bank reference number" value="${(p.transactionId||'').replace(/"/g,'&quot;')}"/>
           </div>
@@ -1323,10 +1328,12 @@ window._peUploadScreenshot = function(inputEl) {
 window.accSavePayrollEdit = function(id) {
   var status = document.getElementById('pe-status').value;
   var transactionId = (document.getElementById('pe-txnid').value || '').trim();
+  var paymentDate = document.getElementById('pe-paydate').value;
   var user = Session.current();
   var updates = {
     status: status,
     transactionId: transactionId,
+    paymentDate: paymentDate,
     screenshotKey: window._peScreenshotKey || '',
     updatedAt: new Date().toISOString(),
     updatedBy: user ? user.id : ''

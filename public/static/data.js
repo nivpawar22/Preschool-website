@@ -754,9 +754,15 @@ const DB = (() => {
   // should use so their totals never disagree with each other.
   function getSalaryExpenseSummary(month, year) {
     var paid = getSalaryPayments(null).filter(function(p) { return (p.status || 'Pending') === 'Paid'; });
-    var monthRecords = month ? paid.filter(function(p) { return (p.month || '') === month; }) : [];
+    // Group by the date the money actually went out (paymentDate), not the
+    // payroll period it covers (p.month) — payroll for a month is commonly
+    // disbursed early the following month, so "Salary Paid This Month"
+    // needs to mean "paid during this calendar month" to match how manual
+    // expenses are grouped (by e.date) and match what the label says.
+    function paidKey(p) { return (p.paymentDate || p.month || '').slice(0, 7); }
+    var monthRecords = month ? paid.filter(function(p) { return paidKey(p) === month; }) : [];
     var monthTotal = monthRecords.reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
-    var yearTotal = year ? paid.filter(function(p) { return (p.month || '').startsWith(year); }).reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0) : 0;
+    var yearTotal = year ? paid.filter(function(p) { return paidKey(p).startsWith(year); }).reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0) : 0;
     return { paid: paid, monthRecords: monthRecords, monthTotal: monthTotal, yearTotal: yearTotal };
   }
 

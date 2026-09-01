@@ -747,6 +747,19 @@ const DB = (() => {
       .sort(function(a, b) { return (b.month || '').localeCompare(a.month || ''); });
   }
 
+  // Paid staff salary is the school's other big monthly expense, but it
+  // lives in salaryPayments rather than the manual/sheet expenses table —
+  // this is the single shared calculation every "Expenses" view (Accounting
+  // Dashboard, Accounting Expenses tab, Super Admin Management Expenses tab)
+  // should use so their totals never disagree with each other.
+  function getSalaryExpenseSummary(month, year) {
+    var paid = getSalaryPayments(null).filter(function(p) { return (p.status || 'Pending') === 'Paid'; });
+    var monthRecords = month ? paid.filter(function(p) { return (p.month || '') === month; }) : [];
+    var monthTotal = monthRecords.reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+    var yearTotal = year ? paid.filter(function(p) { return (p.month || '').startsWith(year); }).reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0) : 0;
+    return { paid: paid, monthRecords: monthRecords, monthTotal: monthTotal, yearTotal: yearTotal };
+  }
+
   // Salary payments are written through their own dedicated endpoint
   // (not the generic /api/db full-blob sync, which saveToServer() skips
   // for the 'accounting' role) so accounting-role changes actually reach
@@ -1065,7 +1078,7 @@ const DB = (() => {
     updateUser,
     getStaffAttendance, addStaffAttendance, updateStaffAttendance, deleteStaffAttendance,
     getStaffLeaves, addStaffLeave, updateStaffLeave, deleteStaffLeave, getLeaveBalance,
-    getSalaryPayments, addSalaryPayment, deleteSalaryPayment, updateSalaryPayment,
+    getSalaryPayments, addSalaryPayment, deleteSalaryPayment, updateSalaryPayment, getSalaryExpenseSummary,
     getSalaryStructures, addSalaryStructure, deleteSalaryStructure,
     getHRLetters, addHRLetter, deleteHRLetter,
     getStaffExitRecords, addStaffExitRecord, updateStaffExitRecord, deleteStaffExitRecord,

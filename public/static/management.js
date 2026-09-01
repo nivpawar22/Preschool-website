@@ -3535,6 +3535,44 @@ function renderExpensesMgmtTable() {
   var monthTotal = expenses.filter(function(e){ return (e.date||'').startsWith(thisMonth); }).reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
   var yearTotal = expenses.filter(function(e){ return (e.date||'').startsWith(thisYear); }).reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
 
+  // Paid staff salary is folded into the totals here too, via the same
+  // DB.getSalaryExpenseSummary the Accounting Dashboard/Expenses tab use —
+  // otherwise this Super Admin view would disagree with Accounting Admin's.
+  var salSummary = DB.getSalaryExpenseSummary(thisMonth, thisYear);
+  var combinedMonthTotal = monthTotal + salSummary.monthTotal;
+  var combinedYearTotal = yearTotal + salSummary.yearTotal;
+  var salExpMonth = window._mgmtSalExpMonth || thisMonth;
+  var salSelectedMonth = salExpMonth === thisMonth ? salSummary : DB.getSalaryExpenseSummary(salExpMonth, thisYear);
+  var salaryMonthRecords = salSelectedMonth.monthRecords;
+  var salaryMonthRecordsTotal = salSelectedMonth.monthTotal;
+  var salUsers = (DB.get().users || []);
+
+  function buildSalExpTable(list) {
+    if (list.length === 0) {
+      return '<div style="text-align:center;color:#94a3b8;padding:24px;font-size:14px">No salary payments marked Paid for this month yet.</div>';
+    }
+    return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">' +
+      '<thead><tr style="background:#0F2050;color:#fff">' +
+        '<th style="padding:10px 8px;text-align:left">Employee</th>' +
+        '<th style="padding:10px 8px;text-align:left">Payment Date</th>' +
+        '<th style="padding:10px 8px;text-align:left">Mode</th>' +
+        '<th style="padding:10px 8px;text-align:right">Net Pay</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+        list.map(function(p) {
+          var t = salUsers.find(function(u) { return u.id === p.teacherId; });
+          return '<tr style="border-bottom:1px solid #e0d6c8">' +
+            '<td style="padding:9px 8px;font-weight:700;color:#374151">' + _mgEsc(t ? t.name : '-') + '</td>' +
+            '<td style="padding:9px 8px">' + (p.paymentDate || '-') + '</td>' +
+            '<td style="padding:9px 8px"><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + _mgEsc(p.paymentMode||'Bank Transfer') + '</span></td>' +
+            '<td style="padding:9px 8px;text-align:right;font-weight:700;color:#10b981">&#8377;' + parseFloat(p.netAmount||0).toLocaleString('en-IN') + '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody>' +
+      '<tfoot><tr style="border-top:2px solid #e0d6c8"><td colspan="3" style="padding:9px 8px;text-align:right;font-weight:800;color:#0F2050">Total</td><td style="padding:9px 8px;text-align:right;font-weight:900;color:#10b981">&#8377;' + salaryMonthRecordsTotal.toLocaleString('en-IN') + '</td></tr></tfoot>' +
+    '</table></div>';
+  }
+
   var rows = filtered.length === 0
     ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8">No expenses found.</td></tr>'
     : filtered.map(function(e, i) {
@@ -3554,15 +3592,30 @@ function renderExpensesMgmtTable() {
       }).join('');
 
   wrap.innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">' +
       '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #c0392b">' +
         '<div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase">This Month</div>' +
-        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + monthTotal.toLocaleString('en-IN') + '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + combinedMonthTotal.toLocaleString('en-IN') + '</div>' +
+        '<div style="font-size:11px;color:#94a3b8;margin-top:2px">Includes staff salary paid</div>' +
+      '</div>' +
+      '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #10b981">' +
+        '<div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase">Salary Paid This Month</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + salSummary.monthTotal.toLocaleString('en-IN') + '</div>' +
       '</div>' +
       '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #8e44ad">' +
         '<div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase">This Year</div>' +
-        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + yearTotal.toLocaleString('en-IN') + '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#0F2050">&#8377;' + combinedYearTotal.toLocaleString('en-IN') + '</div>' +
       '</div>' +
+    '</div>' +
+    '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">' +
+        '<h3 style="font-size:15px;font-weight:800;margin:0;color:#0F2050">' +
+          '<i class="fas fa-money-check-alt" style="color:#10b981;margin-right:8px"></i>Salary Paid for the Month' +
+          '<span style="font-size:13px;font-weight:600;color:#64748b;margin-left:8px">(' + salaryMonthRecords.length + ' record' + (salaryMonthRecords.length===1?'':'s') + ')</span>' +
+        '</h3>' +
+        '<input type="month" class="form-control" style="max-width:170px" value="' + salExpMonth + '" onchange="window._mgmtSalExpMonth=this.value;renderExpensesMgmtTable()"/>' +
+      '</div>' +
+      buildSalExpTable(salaryMonthRecords) +
     '</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +

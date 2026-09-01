@@ -38,6 +38,7 @@ function renderAccDashboard() {
             <div>
               <div style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Expenses This Month</div>
               <div id="acc-dash-exp-month" style="font-size:24px;font-weight:900;color:#0F2050">Loading...</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px">Includes staff salary paid</div>
             </div>
           </div>
         </div>
@@ -156,12 +157,15 @@ function renderAccDashboard() {
       const now = new Date();
       const thisMonth = now.toISOString().slice(0, 7);
       const monthlyExpenses = expenses.filter(e => (e.date || '').startsWith(thisMonth));
-      const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      // Include paid staff salary so this matches the Expenses tab's total
+      // (see DB.getSalaryExpenseSummary — the single shared calculation).
+      const salSummary = DB.getSalaryExpenseSummary(thisMonth, '');
+      const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0) + salSummary.monthTotal;
 
       const monthEl = document.getElementById('acc-dash-exp-month');
       if (monthEl) monthEl.textContent = '₹' + totalMonthlyExpenses.toLocaleString('en-IN');
       const countEl = document.getElementById('acc-dash-exp-count');
-      if (countEl) countEl.textContent = expenses.length;
+      if (countEl) countEl.textContent = expenses.length + salSummary.paid.length;
 
       const recentEl = document.getElementById('acc-dash-recent-exp');
       if (!recentEl) return;
@@ -549,21 +553,17 @@ function renderAccExpensesTable() {
   // expense, but they live in salaryPayments, not the manual/sheet expenses
   // table — surface them here rather than duplicating them into a stored
   // expense record, so salaryPayments stays the single source of truth.
-  const paidSalaries = (typeof DB !== 'undefined' && DB.getSalaryPayments)
-    ? DB.getSalaryPayments(null).filter(function(p) { return (p.status || 'Pending') === 'Paid'; })
-    : [];
-  const salaryThisMonthTotal = paidSalaries
-    .filter(function(p) { return (p.month || '') === thisMonth; })
-    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
-  const salaryYearTotal = paidSalaries
-    .filter(function(p) { return (p.month || '').startsWith(thisYear); })
-    .reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  // DB.getSalaryExpenseSummary is shared with the Accounting Dashboard and
+  // the Super Admin Management Expenses tab so all three totals agree.
+  const salSummary = DB.getSalaryExpenseSummary(thisMonth, thisYear);
+  const salaryThisMonthTotal = salSummary.monthTotal;
   const combinedMonthTotal = monthTotal + salaryThisMonthTotal;
-  const combinedYearTotal = yearTotal + salaryYearTotal;
+  const combinedYearTotal = yearTotal + salSummary.yearTotal;
 
   const salExpMonth = window._accSalExpMonth || thisMonth;
-  const salaryMonthRecords = paidSalaries.filter(function(p) { return (p.month || '') === salExpMonth; });
-  const salaryMonthRecordsTotal = salaryMonthRecords.reduce(function(s, p) { return s + (parseFloat(p.netAmount) || 0); }, 0);
+  const salSelectedMonth = salExpMonth === thisMonth ? salSummary : DB.getSalaryExpenseSummary(salExpMonth, thisYear);
+  const salaryMonthRecords = salSelectedMonth.monthRecords;
+  const salaryMonthRecordsTotal = salSelectedMonth.monthTotal;
   const salUsers = ((typeof DB !== 'undefined' ? DB.get().users : []) || []);
 
   function buildExpTable(list) {

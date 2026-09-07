@@ -579,6 +579,7 @@ window.openTeacherOnboarding = function(teacherId) {
           '<div><label class="form-label">Probation Period (months)</label><input id="tob-probation" class="form-control" type="number" min="0" max="24" value="'+(t.probationPeriod||6)+'"/></div>'+
           '<div><label class="form-label">Confirmation Date</label><input id="tob-confdate" class="form-control" type="date" value="'+(t.confirmationDate||'')+'"/></div>'+
           '<div><label class="form-label">Base Monthly Salary (₹)</label><input id="tob-salary" class="form-control" type="number" min="0" step="0.01" value="'+(t.baseSalary||'')+'"/></div>'+
+          '<div><label class="form-label">Attendance Device Employee Code <span style="font-size:11px;font-weight:400;color:#94a3b8">(eTimeOffice Empcode)</span></label><input id="tob-etimecode" class="form-control" type="text" value="'+_escH(t.etimeofficeEmpcode||'')+'" placeholder="e.g. 0001"/></div>'+
         '</div>'+
       '</div>'+
 
@@ -658,6 +659,7 @@ window._saveTeacherOnboarding = function(teacherId) {
     probationPeriod: parseInt(document.getElementById('tob-probation').value) || 0,
     confirmationDate: document.getElementById('tob-confdate').value,
     baseSalary: parseFloat(document.getElementById('tob-salary').value) || 0,
+    etimeofficeEmpcode: (document.getElementById('tob-etimecode').value||'').trim(),
   };
 
   var pass = document.getElementById('tob-pass') ? document.getElementById('tob-pass').value : '';

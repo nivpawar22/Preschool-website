@@ -21,8 +21,14 @@
     }
   ],
   "triggers": {
-    // Daily at 3:30 UTC = 9:00am IST — sends fee due-date/overdue email
-    // reminders to parents (see runFeeReminders in src/index.tsx).
-    "crons": ["30 3 * * *"]
+    "crons": [
+      // Daily at 3:30 UTC = 9:00am IST — sends fee due-date/overdue email
+      // reminders to parents (see runFeeReminders in src/index.tsx).
+      "30 3 * * *",
+      // Daily at 15:30 UTC = 9:00pm IST — pulls the day's IN/OUT attendance
+      // from the eTimeOffice biometric device (see runEtimeofficeSync).
+      // Runs after typical end-of-day checkout so both punches are in.
+      "30 15 * * *"
+    ]
   }
 }

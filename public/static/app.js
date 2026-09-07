@@ -325,7 +325,7 @@ function renderLayout(activeTab, contentHtml, pageTitle = '', breadcrumb = '') {
       navItems.push({ id: 'admissions-list', icon: 'fa-user-plus', label: 'Admissions', divider: true, dividerLabel: 'Admissions' });
       navItems.push({ id: 'receipts', icon: 'fa-receipt', label: 'Fee Receipts' });
       navItems.push({ id: 'grievances', icon: 'fa-comment-dots', label: 'Grievances' });
-      navItems.push({ id: 'teachers', icon: 'fa-chalkboard-teacher', label: 'Teachers', divider: true, dividerLabel: 'HR' });
+      navItems.push({ id: 'teachers', icon: 'fa-users', label: 'Staff', divider: true, dividerLabel: 'HR' });
       navItems.push({ id: 'management', icon: 'fa-cogs', label: 'Management' });
       navItems.push({ id: 'my-profile', icon: 'fa-user-circle', label: 'My Profile', divider: true, dividerLabel: 'Admin' });
       navItems.push({ id: 'school-settings', icon: 'fa-school', label: 'School Settings' });

@@ -107,7 +107,7 @@ function renderSubAdminsTab() {
   return `
     <div class="card">
       <div class="card-header">
-        <div class="card-title"><i class="fas fa-user-tie" style="color:#1AA6CA"></i> Sub Admins / Teachers (${subadmins.length})</div>
+        <div class="card-title"><i class="fas fa-user-tie" style="color:#1AA6CA"></i> Sub Admins / Staff (${subadmins.length})</div>
         <button class="btn btn-primary" onclick="openAddSubAdminModal()"><i class="fas fa-plus"></i> Add Sub Admin</button>
       </div>
       <div class="table-wrap">

@@ -1,5 +1,7 @@
 // ============================================================
-// Teacher Management Module — Superadmin
+// Staff Management Module — Superadmin
+// Covers all school staff (Principal, Teachers, Housekeeping, and
+// other roles) — not just classroom teachers.
 // Covers: Onboarding, HR Letters, Salary Structure, Payroll
 // ============================================================
 
@@ -21,6 +23,11 @@ function _fmtMonth(m) {
   var names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var p = m.split('-'); return (names[parseInt(p[1])-1]||p[1])+' '+p[0];
 }
+
+// Common school staff roles — covers more than just classroom teachers
+// (Principal, Housekeeper, etc.), while "Other" keeps any existing or
+// future free-text designation from being lost.
+var STAFF_ROLES = ['Principal','Vice Principal','Head Teacher','Class Teacher','Assistant Teacher','Housekeeper','Peon / Office Assistant','Accountant','Receptionist','Security Guard','Driver','Nurse','Librarian','Cook / Kitchen Staff'];
 
 // ==================== LIST ====================
 function renderTeachers() {
@@ -57,7 +64,7 @@ function renderTeachers() {
         '<div><div style="font-weight:700;color:#0F2050">'+_escH(t.name)+'</div><div style="font-size:11px;color:#94a3b8">'+(cls?cls.name:(t.email||'—'))+'</div></div>'+
       '</div></td>'+
       '<td style="padding:12px;color:#475569;font-family:monospace;font-size:12px;font-weight:600">'+_escH(t.employeeId||'—')+'</td>'+
-      '<td style="padding:12px;color:#64748b">'+_escH(t.designation||'Teacher')+'</td>'+
+      '<td style="padding:12px;color:#64748b">'+_escH(t.designation||'Staff')+'</td>'+
       '<td style="padding:12px">'+_empBadge(t.employmentType||'Full-Time')+'</td>'+
       '<td style="padding:12px;color:#64748b">'+(t.joiningDate?formatDate(t.joiningDate):'—')+'</td>'+
       '<td style="padding:12px;text-align:right;font-weight:700;color:#374151">₹'+parseFloat(t.baseSalary||0).toLocaleString('en-IN')+'</td>'+
@@ -97,11 +104,11 @@ function renderTeachers() {
         '<button class="btn btn-secondary" onclick="openHolidayManagement()" title="Manage Holidays"><i class="fas fa-calendar-alt"></i> Holidays</button>'+
         '<button class="btn btn-secondary" onclick="openAttendanceReport(null)" title="Attendance Report"><i class="fas fa-chart-bar"></i> Attendance</button>'+
         '<button class="btn btn-secondary" onclick="openLeaveTypeConfig()" title="Configure Leave Types"><i class="fas fa-sliders-h"></i> Leave Config</button>'+
-        '<button class="btn btn-primary" onclick="openTeacherOnboarding(null)"><i class="fas fa-user-plus"></i> Add Teacher</button>'+
+        '<button class="btn btn-primary" onclick="openTeacherOnboarding(null)"><i class="fas fa-user-plus"></i> Add Staff</button>'+
       '</div>'+
     '</div>'+
     (filtered.length===0
-      ? '<div style="background:#fff;border-radius:16px;padding:60px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)"><i class="fas fa-chalkboard-teacher" style="font-size:42px;color:#cbd5e1;display:block;margin-bottom:12px"></i><div style="color:#64748b;font-size:15px;font-weight:600">No teachers found</div><div style="color:#94a3b8;font-size:13px;margin-top:6px">Click "Add Teacher" to start onboarding.</div></div>'
+      ? '<div style="background:#fff;border-radius:16px;padding:60px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)"><i class="fas fa-users" style="font-size:42px;color:#cbd5e1;display:block;margin-bottom:12px"></i><div style="color:#64748b;font-size:15px;font-weight:600">No staff found</div><div style="color:#94a3b8;font-size:13px;margin-top:6px">Click "Add Staff" to start onboarding.</div></div>'
       : '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow-x:auto">'+
           '<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:740px">'+
             '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'+
@@ -118,7 +125,7 @@ function renderTeachers() {
           '</table></div>')
     +'</div>';
 
-  renderLayout('teachers', content, 'Teacher Management', 'Teachers');
+  renderLayout('teachers', content, 'Staff Management', 'Staff');
 }
 window._tchSetFilter = function(f) { window._tchFilter = f; renderTeachers(); };
 
@@ -467,7 +474,7 @@ window.openTeacherOnboarding = function(teacherId) {
   overlay.innerHTML = '<div class="modal" style="max-width:820px;width:calc(100% - 24px);max-height:92vh;display:flex;flex-direction:column;padding:0">'+
 
     '<div class="modal-header" style="flex-shrink:0;padding:16px 24px">'+
-      '<h3 class="modal-title"><i class="fas fa-user-plus" style="color:#10b981;margin-right:8px"></i>'+(isEdit?'Edit Teacher Profile':'Teacher Onboarding')+' <span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:8px">'+empId+'</span></h3>'+
+      '<h3 class="modal-title"><i class="fas fa-user-plus" style="color:#10b981;margin-right:8px"></i>'+(isEdit?'Edit Staff Profile':'Staff Onboarding')+' <span style="font-size:12px;color:#94a3b8;font-weight:600;margin-left:8px">'+empId+'</span></h3>'+
       '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'tch-onboard-modal\').remove()"><i class="fas fa-times"></i></button>'+
     '</div>'+
 
@@ -566,7 +573,13 @@ window.openTeacherOnboarding = function(teacherId) {
       '<div id="tob-sec-4" style="display:none">'+
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
           '<div><label class="form-label">Joining Date *</label><input id="tob-joining" class="form-control" type="date" value="'+(t.joiningDate||today)+'"/></div>'+
-          '<div><label class="form-label">Designation</label><input id="tob-desig" class="form-control" type="text" value="'+_escH(t.designation||'Class Teacher')+'" placeholder="e.g. Head Teacher, Nursery Teacher"/></div>'+
+          '<div><label class="form-label">Role / Designation</label>'+
+            '<select id="tob-desig" class="form-control" onchange="_tobToggleCustomDesig()">'+
+              STAFF_ROLES.map(function(r){return '<option value="'+r+'"'+((t.designation||'Class Teacher')===r?' selected':'')+'>'+r+'</option>';}).join('')+
+              '<option value="__other__"'+(STAFF_ROLES.indexOf(t.designation||'Class Teacher')===-1?' selected':'')+'>Other (specify)</option>'+
+            '</select>'+
+            '<input id="tob-desig-other" class="form-control" type="text" style="margin-top:8px'+(STAFF_ROLES.indexOf(t.designation||'Class Teacher')===-1?'':';display:none')+'" value="'+(STAFF_ROLES.indexOf(t.designation||'Class Teacher')===-1?_escH(t.designation||''):'')+'" placeholder="Enter custom role/designation"/>'+
+          '</div>'+
           '<div><label class="form-label">Department</label><input id="tob-dept" class="form-control" type="text" value="'+_escH(t.department||'')+'" placeholder="e.g. Pre-Primary, Primary"/></div>'+
           '<div><label class="form-label">Class Assigned</label><select id="tob-class" class="form-control">'+classOpts+'</select></div>'+
           '<div><label class="form-label">Reporting Manager</label><select id="tob-mgr" class="form-control">'+mgrOpts+'</select></div>'+
@@ -602,6 +615,11 @@ window._tobTab = function(idx) {
     if (sec) sec.style.display = i === idx ? '' : 'none';
     if (btn) { btn.style.color = i===idx?'#10b981':'#64748b'; btn.style.borderBottom = i===idx?'2px solid #10b981':'2px solid transparent'; }
   }
+};
+window._tobToggleCustomDesig = function() {
+  var sel = document.getElementById('tob-desig');
+  var other = document.getElementById('tob-desig-other');
+  if (sel && other) other.style.display = sel.value === '__other__' ? '' : 'none';
 };
 window._tobSameAddr = function() {
   if (document.getElementById('tob-same').checked) {
@@ -650,7 +668,11 @@ window._saveTeacherOnboarding = function(teacherId) {
     ifsc: (document.getElementById('tob-ifsc').value||'').trim(),
     upiId: (document.getElementById('tob-upi').value||'').trim(),
     joiningDate: joining,
-    designation: (document.getElementById('tob-desig').value||'').trim() || 'Class Teacher',
+    designation: (function() {
+      var sel = (document.getElementById('tob-desig').value||'').trim();
+      if (sel === '__other__') return (document.getElementById('tob-desig-other').value||'').trim() || 'Class Teacher';
+      return sel || 'Class Teacher';
+    })(),
     department: (document.getElementById('tob-dept').value||'').trim(),
     assignedClass: document.getElementById('tob-class').value,
     reportingManager: document.getElementById('tob-mgr').value,

@@ -3625,8 +3625,93 @@ function renderSchoolSettings() {
           <button class="btn btn-secondary" onclick="navigate('dashboard')">Cancel</button>
         </div>
       </div>
+
+      <div class="card" style="margin-top:20px" id="ss-etime-card">
+        <div class="card-title" style="margin-bottom:8px"><i class="fas fa-fingerprint" style="color:#6366f1"></i> Attendance Device Integration (eTimeOffice)</div>
+        <div style="text-align:center;color:#94a3b8;padding:24px;font-size:13px"><i class="fas fa-spinner fa-spin" style="display:block;font-size:24px;margin-bottom:8px"></i>Loading...</div>
+      </div>
     </div>`;
   renderLayout('school-settings', content, 'School Settings', 'Configure school details');
+  loadEtimeofficeConfig();
+}
+
+function loadEtimeofficeConfig() {
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/etimeoffice/config', { headers: tok ? { 'Authorization': 'Bearer ' + tok } : {} })
+    .then(function(r) { return r.json(); })
+    .then(renderEtimeofficeCard)
+    .catch(function() { renderEtimeofficeCard({ configured: false }); });
+}
+
+function renderEtimeofficeCard(cfg) {
+  var card = document.getElementById('ss-etime-card');
+  if (!card) return;
+  var lastSync = cfg.lastSyncAt
+    ? '<div style="font-size:12px;color:#64748b;margin-top:10px"><i class="fas fa-clock" style="margin-right:4px"></i>Last synced: ' + formatDateTime(cfg.lastSyncAt) +
+      (cfg.lastSyncSummary ? ' &mdash; ' + cfg.lastSyncSummary.synced + ' record(s) updated' + (cfg.lastSyncSummary.skippedNoMapping ? ', ' + cfg.lastSyncSummary.skippedNoMapping + ' skipped (no Employee Code mapped)' : '') + ' for ' + cfg.lastSyncSummary.date : '') + '</div>'
+    : '<div style="font-size:12px;color:#94a3b8;margin-top:10px">Not synced yet.</div>';
+  card.innerHTML =
+    '<div class="card-title" style="margin-bottom:8px"><i class="fas fa-fingerprint" style="color:#6366f1"></i> Attendance Device Integration (eTimeOffice)</div>' +
+    '<div style="font-size:12px;color:#6B7A9D;margin-bottom:14px">Pulls daily staff IN/OUT attendance from your eTimeOffice biometric device account. Map each teacher\'s device Employee Code in their profile (Teachers &rarr; Edit &rarr; Employment tab) for their punches to be picked up.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div class="form-group"><label class="form-label">Corporate ID</label><input class="form-control" id="et-corpid" type="text" value="' + _escH(cfg.corporateId || '') + '" placeholder="e.g. support"/></div>' +
+      '<div class="form-group"><label class="form-label">Username</label><input class="form-control" id="et-username" type="text" value="' + _escH(cfg.username || '') + '" placeholder="e.g. support"/></div>' +
+      '<div class="form-group" style="grid-column:1/-1">' +
+        '<label class="form-label">Password</label>' +
+        '<div style="position:relative">' +
+          '<input class="form-control" id="et-password" type="password" placeholder="' + (cfg.configured ? '•••••••• (saved — leave blank to keep)' : 'Enter password') + '" style="padding-right:44px;font-family:monospace"/>' +
+          '<button onclick="var f=document.getElementById(\'et-password\');f.type=f.type===\'password\'?\'text\':\'password\'" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6B7A9D;cursor:pointer;font-size:14px"><i class="fas fa-eye"></i></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="font-size:12px;margin:8px 0 0">' +
+      (cfg.configured
+        ? '<span style="color:#059669"><i class="fas fa-check-circle"></i> Configured</span>'
+        : '<span style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i> Not configured yet</span>') +
+    '</div>' +
+    lastSync +
+    '<div style="display:flex;gap:12px;margin-top:16px">' +
+      '<button class="btn btn-primary" onclick="saveEtimeofficeConfig()"><i class="fas fa-save"></i> Save Credentials</button>' +
+      '<button class="btn btn-secondary" id="et-sync-btn" onclick="syncEtimeofficeNow()" ' + (cfg.configured ? '' : 'disabled') + '><i class="fas fa-sync"></i> Sync Now</button>' +
+    '</div>';
+}
+
+function saveEtimeofficeConfig() {
+  var corporateId = (document.getElementById('et-corpid').value || '').trim();
+  var username = (document.getElementById('et-username').value || '').trim();
+  var password = (document.getElementById('et-password').value || '').trim();
+  if (!corporateId || !username) { showToast('Corporate ID and Username are required', 'error'); return; }
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/etimeoffice/config', {
+    method: 'PUT',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { 'Authorization': 'Bearer ' + tok } : {}),
+    body: JSON.stringify({ corporateId: corporateId, username: username, password: password })
+  })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+    .then(function(res) {
+      if (!res.ok) { showToast(res.body.error || 'Failed to save credentials', 'error'); return; }
+      showToast('eTimeOffice credentials saved', 'success');
+      loadEtimeofficeConfig();
+    })
+    .catch(function() { showToast('Failed to save credentials', 'error'); });
+}
+
+function syncEtimeofficeNow() {
+  var btn = document.getElementById('et-sync-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...'; }
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/etimeoffice/sync', {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { 'Authorization': 'Bearer ' + tok } : {}),
+    body: JSON.stringify({})
+  })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+    .then(function(res) {
+      if (!res.ok) { showToast(res.body.error || 'Sync failed', 'error'); loadEtimeofficeConfig(); return; }
+      showToast('Synced ' + res.body.synced + ' record(s)' + (res.body.skippedNoMapping ? ' (' + res.body.skippedNoMapping + ' skipped — no Employee Code mapped)' : ''), 'success');
+      loadEtimeofficeConfig();
+    })
+    .catch(function() { showToast('Sync failed — check connection', 'error'); loadEtimeofficeConfig(); });
 }
 
 function saveSchoolSettings() {

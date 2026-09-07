@@ -3956,15 +3956,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=37"></script>
-  <script src="/static/app.js?v=37"></script>
-  <script src="/static/admin.js?v=37"></script>
-  <script src="/static/management.js?v=37"></script>
-  <script src="/static/parent.js?v=37"></script>
-  <script src="/static/admissions.js?v=37"></script>
-  <script src="/static/accounting.js?v=37"></script>
-  <script src="/static/teacher.js?v=37"></script>
-  <script src="/static/teachers.js?v=37"></script>
+  <script src="/static/data.js?v=38"></script>
+  <script src="/static/app.js?v=38"></script>
+  <script src="/static/admin.js?v=38"></script>
+  <script src="/static/management.js?v=38"></script>
+  <script src="/static/parent.js?v=38"></script>
+  <script src="/static/admissions.js?v=38"></script>
+  <script src="/static/accounting.js?v=38"></script>
+  <script src="/static/teacher.js?v=38"></script>
+  <script src="/static/teachers.js?v=38"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -5478,11 +5478,147 @@ app.delete('/api/staff-attendance/:id', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── eTimeOffice Attendance Device Integration ─────────────────
+// Pulls daily IN/OUT punch data from the school's eTimeOffice biometric
+// device account and writes it into the same staffAttendance blob the
+// Super Admin's manual "Mark Attendance" feature uses, keyed by
+// (teacherId, date) — so it shows up in the same Attendance views
+// without a separate UI. Credentials are superadmin-only and never sent
+// back to the client (mirrors how user passwords are stripped elsewhere).
+async function ensureEtimeofficeTable(db: any) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS etimeoffice_config (id TEXT PRIMARY KEY, corporate_id TEXT, username TEXT, password TEXT, last_sync_at TEXT, last_sync_summary TEXT)`)
+}
+
+function canManageEtimeoffice(sess: { role: string } | null): boolean {
+  return !!sess && sess.role === 'superadmin'
+}
+
+// eTimeOffice's Status/Remark codes aren't fully enumerated in their docs
+// (observed: "P/2" for present-with-2-punches, "MIS-LT" remark for a late
+// arrival with a missing punch) — map the common prefixes conservatively
+// and keep the raw values in the note so an admin can sanity-check.
+function mapEtimeofficeStatus(status: string, remark: string): { status: string, lateArrival: boolean } {
+  const s = (status || '').toUpperCase()
+  const r = (remark || '').toUpperCase()
+  let mapped = 'Present'
+  if (s.startsWith('A')) mapped = 'Absent'
+  else if (s.includes('HD') || r.includes('HALF')) mapped = 'Half-Day'
+  else if (r.includes('LEAVE')) mapped = 'On-Leave'
+  else if (s.startsWith('P')) mapped = 'Present'
+  const lateArrival = r.includes('LT') || r.includes('LATE')
+  return { status: mapped, lateArrival }
+}
+
+async function runEtimeofficeSync(env: Bindings, dateISO?: string): Promise<any> {
+  await ensureEtimeofficeTable(env.DB)
+  const cfg = await env.DB.prepare('SELECT * FROM etimeoffice_config WHERE id=?').bind('config').first<any>()
+  if (!cfg || !cfg.corporate_id || !cfg.username || !cfg.password) {
+    return { error: 'eTimeOffice is not configured. Add the Corporate ID, Username and Password in School Settings first.' }
+  }
+  const dateStr = dateISO || new Date().toISOString().slice(0, 10)
+  const [y, m, d] = dateStr.split('-')
+  const ddmmyyyy = `${d}/${m}/${y}`
+  const authHeader = 'Basic ' + btoa(`${cfg.corporate_id}:${cfg.username}:${cfg.password}:true`)
+
+  let apiJson: any
+  try {
+    const res = await fetch(`https://api.etimeoffice.com/api/DownloadInOutPunchData?Empcode=ALL&FromDate=${ddmmyyyy}&ToDate=${ddmmyyyy}`, {
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json' }
+    })
+    apiJson = await res.json()
+  } catch (e: any) {
+    return { error: 'Failed to reach the eTimeOffice API: ' + e.message }
+  }
+  if (apiJson.Error) return { error: apiJson.Msg || 'eTimeOffice API returned an error' }
+
+  const records: any[] = apiJson.InOutPunchData || []
+  const data = await loadMainAppData(env.DB)
+  const users: any[] = data.users || []
+  const empcodeMap: Record<string, any> = {}
+  for (const u of users) { if (u.etimeofficeEmpcode) empcodeMap[String(u.etimeofficeEmpcode).trim()] = u }
+  if (!Array.isArray(data.staffAttendance)) data.staffAttendance = []
+
+  let synced = 0, skippedNoMapping = 0
+  for (const rec of records) {
+    const teacher = empcodeMap[String(rec.Empcode || '').trim()]
+    if (!teacher) { skippedNoMapping++; continue }
+    const recDate = String(rec.DateString || ddmmyyyy)
+    const [rd, rm, ry] = recDate.split('/')
+    const isoDate = ry && rm && rd ? `${ry}-${rm}-${rd}` : dateStr
+    const { status, lateArrival } = mapEtimeofficeStatus(rec.Status, rec.Remark)
+    const checkIn = rec.INTime && rec.INTime !== '--:--' ? rec.INTime : ''
+    const checkOut = rec.OUTTime && rec.OUTTime !== '--:--' ? rec.OUTTime : ''
+    const note = [rec.Status, rec.Remark].filter(Boolean).join(' — ')
+    const idx = data.staffAttendance.findIndex((r: any) => r.teacherId === teacher.id && r.date === isoDate)
+    const record = {
+      id: idx >= 0 ? data.staffAttendance[idx].id : `sa_etime_${teacher.id}_${isoDate}`,
+      teacherId: teacher.id, date: isoDate, status, checkIn, checkOut,
+      lateArrival, note, source: 'etimeoffice', markedBy: 'eTimeOffice Sync',
+      createdAt: idx >= 0 ? data.staffAttendance[idx].createdAt : new Date().toISOString()
+    }
+    if (idx >= 0) data.staffAttendance[idx] = record
+    else data.staffAttendance.push(record)
+    synced++
+  }
+  await saveMainAppData(env.DB, data)
+
+  const summary = { synced, skippedNoMapping, totalFromDevice: records.length, date: dateStr }
+  await env.DB.prepare('UPDATE etimeoffice_config SET last_sync_at=?, last_sync_summary=? WHERE id=?')
+    .bind(new Date().toISOString(), JSON.stringify(summary), 'config').run()
+  return summary
+}
+
+app.get('/api/etimeoffice/config', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageEtimeoffice(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureEtimeofficeTable(c.env.DB)
+    const row = await c.env.DB.prepare('SELECT * FROM etimeoffice_config WHERE id=?').bind('config').first<any>()
+    if (!row) return c.json({ configured: false })
+    let lastSyncSummary = null
+    try { lastSyncSummary = row.last_sync_summary ? JSON.parse(row.last_sync_summary) : null } catch {}
+    return c.json({
+      configured: !!(row.corporate_id && row.username && row.password),
+      corporateId: row.corporate_id || '',
+      username: row.username || '',
+      lastSyncAt: row.last_sync_at || null,
+      lastSyncSummary
+    })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.put('/api/etimeoffice/config', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageEtimeoffice(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await ensureEtimeofficeTable(c.env.DB)
+    const { corporateId, username, password } = await c.req.json()
+    if (!corporateId || !username) return c.json({ error: 'Corporate ID and Username are required' }, 400)
+    const existing = await c.env.DB.prepare('SELECT * FROM etimeoffice_config WHERE id=?').bind('config').first<any>()
+    const finalPassword = password || (existing ? existing.password : '')
+    if (!finalPassword) return c.json({ error: 'Password is required' }, 400)
+    await c.env.DB.prepare('INSERT OR REPLACE INTO etimeoffice_config (id, corporate_id, username, password, last_sync_at, last_sync_summary) VALUES (?,?,?,?,?,?)')
+      .bind('config', corporateId, username, finalPassword, existing ? existing.last_sync_at : null, existing ? existing.last_sync_summary : null).run()
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/etimeoffice/sync', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageEtimeoffice(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    const result = await runEtimeofficeSync(c.env, body.date)
+    if (result.error) return c.json(result, 400)
+    return c.json(result)
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 export default {
   fetch: app.fetch,
-  // Cloudflare Cron Trigger (see wrangler.jsonc "triggers.crons") — runs the
-  // fee due-date/overdue email reminder sweep once a day.
-  scheduled: async (_event: any, env: Bindings, ctx: any) => {
-    ctx.waitUntil(runFeeReminders(env))
+  // Cloudflare Cron Trigger (see wrangler.jsonc "triggers.crons").
+  scheduled: async (event: any, env: Bindings, ctx: any) => {
+    if (event.cron === '30 15 * * *') ctx.waitUntil(runEtimeofficeSync(env))
+    else ctx.waitUntil(runFeeReminders(env))
   },
 }

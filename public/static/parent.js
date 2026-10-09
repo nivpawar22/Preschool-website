@@ -663,17 +663,21 @@ function renderParentAnnouncements() {
       ${anns.map(a => {
         const poster = DB.getUser(a.postedBy);
         const cls = a.classId ? DB.getClass(a.classId) : null;
+        const isBday = a.type === 'birthday';
         return `
-        <div onclick="expandParentAnnouncement('${a.id}')" style="border:1.5px solid #DCE1EF;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(15,32,80,0.07);cursor:pointer;position:relative;transition:box-shadow 0.15s,transform 0.15s" onmouseover="this.style.boxShadow='0 6px 20px rgba(196,137,58,0.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(15,32,80,0.07)';this.style.transform='translateY(0)'">
-          ${a.imageUrl
-            ? `<img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">`
-            : `<div style="height:5px;background:linear-gradient(90deg,#0F2050,#E8B020,#C4893A)"></div>`}
-          <div style="padding:12px 14px 14px">
-            <div style="font-size:14px;font-weight:700;color:#0F1E3D;margin-bottom:5px;line-height:1.3">${a.title}</div>
-            <div style="font-size:12px;color:#4A5B80;line-height:1.55;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${a.body}</div>
-            <div style="font-size:11px;color:#6B7A9D;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;border-top:1px solid #f1f5f9;padding-top:8px">
-              ${cls ? `<span class="badge badge-blue" style="font-size:10px">${cls.name}</span>` : '<span class="badge badge-purple" style="font-size:10px">All School</span>'}
+        <div onclick="expandParentAnnouncement('${a.id}')" style="border:${isBday?'2px solid #fbbf24':'1.5px solid #DCE1EF'};border-radius:16px;overflow:hidden;background:${isBday?'linear-gradient(135deg,#fff7ed,#fef3c7)':'#fff'};box-shadow:0 2px 8px rgba(${isBday?'251,191,36,0.3':'15,32,80,0.07'});cursor:pointer;position:relative;transition:box-shadow 0.15s,transform 0.15s" onmouseover="this.style.boxShadow='0 6px 20px rgba(${isBday?'251,191,36,0.35':'196,137,58,0.13'})';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(${isBday?'251,191,36,0.3':'15,32,80,0.07'})';this.style.transform='translateY(0)'">
+          ${isBday
+            ? `<div style="padding:18px 14px 6px;text-align:center"><div style="font-size:36px;line-height:1">🎂🎉</div></div>`
+            : (a.imageUrl
+                ? `<img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block">`
+                : `<div style="height:5px;background:linear-gradient(90deg,#0F2050,#E8B020,#C4893A)"></div>`)}
+          <div style="padding:12px 14px 14px;${isBday?'text-align:center':''}">
+            <div style="font-size:14px;font-weight:700;color:${isBday?'#92400e':'#0F1E3D'};margin-bottom:5px;line-height:1.3">${a.title}</div>
+            <div style="font-size:12px;color:${isBday?'#b45309':'#4A5B80'};line-height:1.55;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${a.body}</div>
+            <div style="font-size:11px;color:${isBday?'#b45309':'#6B7A9D'};display:flex;align-items:center;justify-content:${isBday?'center':'space-between'};flex-wrap:wrap;gap:4px;border-top:1px solid ${isBday?'rgba(251,191,36,0.3)':'#f1f5f9'};padding-top:8px">
+              ${isBday ? '' : (cls ? `<span class="badge badge-blue" style="font-size:10px">${cls.name}</span>` : '<span class="badge badge-purple" style="font-size:10px">All School</span>')}
               <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
+              ${(a.comments && a.comments.length) ? `<span><i class="fas fa-comment" style="margin-right:3px"></i>${a.comments.length}</span>` : ''}
             </div>
           </div>
         </div>`;
@@ -691,24 +695,28 @@ function expandParentAnnouncement(id) {
   if (!a) return;
   const poster = DB.getUser(a.postedBy);
   const cls = a.classId ? DB.getClass(a.classId) : null;
+  const isBday = a.type === 'birthday';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
     <div class="modal" style="max-width:560px">
-      <div class="modal-header">
-        <h2 class="modal-title"><i class="fas fa-bullhorn" style="color:#E8B020;margin-right:8px"></i>${a.title}</h2>
+      <div class="modal-header" style="${isBday?'background:linear-gradient(135deg,#fff7ed,#fef3c7)':''}">
+        <h2 class="modal-title">${isBday?'🎂 ':''}<i class="fas fa-bullhorn" style="color:#E8B020;margin-right:8px"></i>${a.title}</h2>
         <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
       </div>
       <div class="modal-body" style="padding:0">
-        ${a.imageUrl ? `<div style="width:100%;background:#f0f4ff;border-bottom:2px solid #DCE1EF"><img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block"></div>` : ''}
+        ${isBday
+          ? `<div style="width:100%;background:linear-gradient(135deg,#fff7ed,#fef3c7);text-align:center;padding:24px;font-size:52px">🎉🎂🎈</div>`
+          : (a.imageUrl ? `<div style="width:100%;background:#f0f4ff;border-bottom:2px solid #DCE1EF"><img src="/r2/${a.imageUrl}" style="width:100%;height:auto;display:block"></div>` : '')}
         <div style="padding:18px">
           <p style="color:#2A3B60;font-size:14px;line-height:1.8;white-space:pre-wrap;margin:0 0 16px">${a.body}</p>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#6B7A9D;border-top:1px solid #f1f5f9;padding-top:10px">
-            ${cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>'}
+            ${isBday ? '' : (cls ? `<span class="badge badge-blue">${cls.name}</span>` : '<span class="badge badge-purple">All School</span>')}
             <span><i class="fas fa-user" style="margin-right:3px"></i>${poster ? poster.name : 'School'}</span>
             <span><i class="fas fa-calendar" style="margin-right:3px"></i>${formatDate(a.date)}</span>
           </div>
         </div>
+        ${renderAnnouncementCommentsSection(a)}
       </div>
     </div>`;
   document.body.appendChild(overlay);

@@ -175,6 +175,88 @@ function confirmDialog(msg, onConfirm, confirmText = 'Delete', dangerMode = true
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 }
 
+// ---- Announcement Comments (shared across admin.js / parent.js) ----
+// Writes through a dedicated endpoint (not DB.commit()) since
+// saveToServer() skips the full-blob sync for the 'parent' role, and
+// parents need to be able to comment too.
+function _renderAnnouncementCommentsList(a) {
+  var me = Session.current();
+  var comments = a.comments || [];
+  if (!comments.length) return '<div style="color:#94a3b8;font-size:12px;padding:6px 0">No comments yet. Be the first to comment!</div>';
+  return comments.map(function(c) {
+    var canDel = me && (me.id === c.userId || me.role === 'superadmin');
+    return '<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">'+
+      avatarHtml(c.userName, '#64748b') +
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'+
+          '<span style="font-weight:700;font-size:12px;color:#0F1E3D">'+_escH(c.userName)+'</span>'+
+          '<span style="font-size:10px;color:#94a3b8;white-space:nowrap">'+formatDateTime(c.createdAt)+'</span>'+
+        '</div>'+
+        '<div style="font-size:13px;color:#374151;margin-top:2px;white-space:pre-wrap;word-break:break-word">'+_escH(c.text)+'</div>'+
+      '</div>'+
+      (canDel ? '<button onclick="deleteAnnouncementComment(\''+a.id+'\',\''+c.id+'\')" title="Delete" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;flex-shrink:0"><i class="fas fa-trash"></i></button>' : '')+
+    '</div>';
+  }).join('');
+}
+
+function renderAnnouncementCommentsSection(a) {
+  return '<div style="border-top:1px solid #f1f5f9;padding:16px 18px">'+
+    '<div style="font-size:13px;font-weight:700;color:#0F1E3D;margin-bottom:10px"><i class="fas fa-comments" style="margin-right:6px;color:#1AA6CA"></i>Comments (<span id="ann-comments-count">'+(a.comments||[]).length+'</span>)</div>'+
+    '<div id="ann-comments-list" style="max-height:220px;overflow-y:auto;margin-bottom:12px">'+_renderAnnouncementCommentsList(a)+'</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<input id="ann-comment-input" class="form-control" type="text" placeholder="Write a comment..." onkeydown="if(event.key===\'Enter\'){postAnnouncementComment(\''+a.id+'\')}"/>'+
+      '<button class="btn btn-primary btn-sm" onclick="postAnnouncementComment(\''+a.id+'\')"><i class="fas fa-paper-plane"></i></button>'+
+    '</div>'+
+  '</div>';
+}
+
+function postAnnouncementComment(annId) {
+  var input = document.getElementById('ann-comment-input');
+  var text = (input && input.value || '').trim();
+  if (!text) { showToast('Please enter a comment', 'error'); return; }
+  var tok = localStorage.getItem('sk_session_token');
+  fetch('/api/announcements/' + annId + '/comments', {
+    method: 'POST',
+    headers: Object.assign({'Content-Type':'application/json'}, tok ? {'Authorization':'Bearer '+tok} : {}),
+    body: JSON.stringify({ text: text })
+  })
+    .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+    .then(function(res) {
+      if (!res.ok) { showToast(res.body.error || 'Failed to post comment', 'error'); return; }
+      var data = DB.get();
+      var a = (data.announcements || []).find(function(x) { return x.id === annId; });
+      if (!a) return;
+      if (!a.comments) a.comments = [];
+      a.comments.push(res.body.comment);
+      if (input) input.value = '';
+      var list = document.getElementById('ann-comments-list');
+      if (list) list.innerHTML = _renderAnnouncementCommentsList(a);
+      var count = document.getElementById('ann-comments-count');
+      if (count) count.textContent = a.comments.length;
+    })
+    .catch(function() { showToast('Failed to post comment', 'error'); });
+}
+
+function deleteAnnouncementComment(annId, commentId) {
+  confirmDialog('Delete this comment?', function() {
+    var tok = localStorage.getItem('sk_session_token');
+    fetch('/api/announcements/' + annId + '/comments/' + commentId, { method: 'DELETE', headers: tok ? {'Authorization':'Bearer '+tok} : {} })
+      .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+      .then(function(res) {
+        if (!res.ok) { showToast(res.body.error || 'Failed to delete comment', 'error'); return; }
+        var data = DB.get();
+        var a = (data.announcements || []).find(function(x) { return x.id === annId; });
+        if (!a) return;
+        a.comments = (a.comments || []).filter(function(c) { return c.id !== commentId; });
+        var list = document.getElementById('ann-comments-list');
+        if (list) list.innerHTML = _renderAnnouncementCommentsList(a);
+        var count = document.getElementById('ann-comments-count');
+        if (count) count.textContent = a.comments.length;
+      })
+      .catch(function() { showToast('Failed to delete comment', 'error'); });
+  });
+}
+
 // ---- Helpers ----
 function initials(name) {
   return (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();

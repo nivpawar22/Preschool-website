@@ -3956,15 +3956,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=39"></script>
-  <script src="/static/app.js?v=39"></script>
-  <script src="/static/admin.js?v=39"></script>
-  <script src="/static/management.js?v=39"></script>
-  <script src="/static/parent.js?v=39"></script>
-  <script src="/static/admissions.js?v=39"></script>
-  <script src="/static/accounting.js?v=39"></script>
-  <script src="/static/teacher.js?v=39"></script>
-  <script src="/static/teachers.js?v=39"></script>
+  <script src="/static/data.js?v=40"></script>
+  <script src="/static/app.js?v=40"></script>
+  <script src="/static/admin.js?v=40"></script>
+  <script src="/static/management.js?v=40"></script>
+  <script src="/static/parent.js?v=40"></script>
+  <script src="/static/admissions.js?v=40"></script>
+  <script src="/static/accounting.js?v=40"></script>
+  <script src="/static/teacher.js?v=40"></script>
+  <script src="/static/teachers.js?v=40"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -5614,11 +5614,137 @@ app.post('/api/etimeoffice/sync', async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500) }
 })
 
+// ── Automatic Birthday Announcements ──────────────────────────
+// Posts a festive announcement for any student or staff member whose
+// date of birth matches today, once per person per day (deduped by
+// checking for an existing birthday announcement for that person/date).
+function birthdayAnnouncementHtml(name: string, kind: 'student' | 'staff', extra: string): string {
+  if (kind === 'student') {
+    return `Join us in wishing ${name}${extra ? ' from ' + extra : ''} a very Happy Birthday! 🎉🎈 Wishing you a day filled with fun, laughter, and lots of love — have a super-duper birthday, little superhero! 🦸`
+  }
+  return `Wishing ${name}${extra ? ' (' + extra + ')' : ''} a very Happy Birthday! 🎉🎈 Thank you for everything you do for our SuperKids family. Have a day as wonderful as you are! 🎂`
+}
+
+async function runBirthdayAnnouncements(env: Bindings): Promise<any> {
+  const data = await loadMainAppData(env.DB)
+  if (!Array.isArray(data.announcements)) data.announcements = []
+  const todayISO = new Date().toISOString().slice(0, 10)
+  const todayMD = todayISO.slice(5)
+
+  const classes: any[] = data.classes || []
+  const alreadyPosted = (personId: string) => data.announcements.some((a: any) => a.type === 'birthday' && a.birthdayPersonId === personId && a.date === todayISO)
+
+  let posted = 0, skipped = 0
+
+  const students: any[] = (data.students || []).filter((s: any) => !s.deleted && s.dob && String(s.dob).slice(5) === todayMD)
+  for (const s of students) {
+    if (alreadyPosted(s.id)) { skipped++; continue }
+    const cls = classes.find((c: any) => c.id === s.classId)
+    data.announcements.unshift({
+      id: `ann_bday_${s.id}_${todayISO}`,
+      title: `🎂 Happy Birthday, ${s.name}!`,
+      body: birthdayAnnouncementHtml(s.name, 'student', cls ? cls.name : ''),
+      imageUrl: null,
+      postedBy: null,
+      targetRole: 'all',
+      date: todayISO,
+      classId: null,
+      type: 'birthday',
+      birthdayPersonId: s.id,
+      birthdayPersonKind: 'student',
+      comments: []
+    })
+    posted++
+  }
+
+  const staff: any[] = (data.users || []).filter((u: any) => !u.deleted && u.role !== 'parent' && u.dob && String(u.dob).slice(5) === todayMD)
+  for (const u of staff) {
+    if (alreadyPosted(u.id)) { skipped++; continue }
+    data.announcements.unshift({
+      id: `ann_bday_${u.id}_${todayISO}`,
+      title: `🎂 Happy Birthday, ${u.name}!`,
+      body: birthdayAnnouncementHtml(u.name, 'staff', u.designation || ''),
+      imageUrl: null,
+      postedBy: null,
+      targetRole: 'all',
+      date: todayISO,
+      classId: null,
+      type: 'birthday',
+      birthdayPersonId: u.id,
+      birthdayPersonKind: 'staff',
+      comments: []
+    })
+    posted++
+  }
+
+  if (posted > 0) await saveMainAppData(env.DB, data)
+  return { posted, skipped, date: todayISO }
+}
+
+app.post('/api/birthday-announcements/run', async (c) => {
+  const sess = await getSession(c)
+  if (!sess || sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const result = await runBirthdayAnnouncements(c.env)
+    return c.json(result)
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// ── Announcement Comments ──────────────────────────────────────
+// Comments are written through a dedicated targeted endpoint rather than
+// the generic /api/db full-blob sync, since saveToServer() skips that
+// sync entirely for the 'parent' role — parents need to be able to
+// comment on announcements, so this can't rely on DB.commit().
+app.post('/api/announcements/:id/comments', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const id = c.req.param('id')
+    const { text } = await c.req.json()
+    const trimmed = (text || '').trim()
+    if (!trimmed) return c.json({ error: 'Comment text is required' }, 400)
+    const data = await loadMainAppData(c.env.DB)
+    const ann = (data.announcements || []).find((a: any) => a.id === id)
+    if (!ann) return c.json({ error: 'Announcement not found' }, 404)
+    const user = (data.users || []).find((u: any) => u.id === sess.user_id)
+    const comment = {
+      id: `cm_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      userId: sess.user_id,
+      userName: user ? user.name : 'Someone',
+      role: sess.role,
+      text: trimmed,
+      createdAt: new Date().toISOString()
+    }
+    if (!Array.isArray(ann.comments)) ann.comments = []
+    ann.comments.push(comment)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true, comment })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.delete('/api/announcements/:id/comments/:commentId', async (c) => {
+  const sess = await getSession(c)
+  if (!sess) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const id = c.req.param('id')
+    const commentId = c.req.param('commentId')
+    const data = await loadMainAppData(c.env.DB)
+    const ann = (data.announcements || []).find((a: any) => a.id === id)
+    if (!ann || !Array.isArray(ann.comments)) return c.json({ error: 'Not found' }, 404)
+    const existing = ann.comments.find((cm: any) => cm.id === commentId)
+    if (!existing) return c.json({ error: 'Not found' }, 404)
+    if (existing.userId !== sess.user_id && sess.role !== 'superadmin') return c.json({ error: 'Unauthorized' }, 401)
+    ann.comments = ann.comments.filter((cm: any) => cm.id !== commentId)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
 export default {
   fetch: app.fetch,
   // Cloudflare Cron Trigger (see wrangler.jsonc "triggers.crons").
   scheduled: async (event: any, env: Bindings, ctx: any) => {
     if (event.cron === '30 15 * * *') ctx.waitUntil(runEtimeofficeSync(env))
-    else ctx.waitUntil(runFeeReminders(env))
+    else ctx.waitUntil(Promise.all([runFeeReminders(env), runBirthdayAnnouncements(env)]))
   },
 }

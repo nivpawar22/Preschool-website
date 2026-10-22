@@ -59,6 +59,28 @@ const DB = (() => {
   }
 
   var _dy = new Date().getFullYear(); // current academic year for seed data
+
+  // Lunar/Hijri-calendar Indian festivals (Holi, Diwali, Eid, etc.) shift
+  // every year and have no fixed Gregorian formula — their real dates have
+  // to be looked up from the official gazette/panchang each year. Extend
+  // this table with the next year's dates as each academic year starts;
+  // a year not listed here simply won't auto-populate its lunar holidays
+  // below (rather than showing a stale/wrong date) — add them manually via
+  // "Add Holiday" in the meantime. Fixed-date holidays (New Year, Republic
+  // Day, Independence Day, Gandhi Jayanti, Ambedkar Jayanti, Maharashtra
+  // Day, Christmas, and the school's own break dates) don't need this table
+  // — they're computed straight from the current year below.
+  // Sourced from India Post / Maharashtra Government gazetted holiday lists.
+  var INDIAN_VARIABLE_HOLIDAYS_BY_YEAR = {
+    2026: {
+      gudiPadwa: '03-20', holi: '03-04', ramNavami: '03-27', goodFriday: '04-03',
+      eidFitr: '03-21', eidAdha: '05-27', janmashtami: '09-04', ganeshChaturthi: '09-14',
+      navratriBegins: '10-11', dussehra: '10-20',
+      diwaliLakshmiPujan: '11-08', diwaliBaliPratipada: '11-09', bhaiDooj: '11-10',
+      guruNanakJayanti: '11-24'
+    }
+  };
+
   const defaults = {
     meta: { version: 3, schoolName: 'SuperKids India Preschool', schoolPhone: '', schoolPhone2: '', schoolEmail: '', schoolWebsite: 'https://superkidsindia.com', schoolAddress: 'Matoshri Apartment, Plot Number 51,\nSector No 10, Bhosari Pradhikaran,\nPin:411026', schoolLogo: '/static/school-logo.png', principalName: '', academicYear: '', letterhead: {} },
     users: [
@@ -221,38 +243,46 @@ const DB = (() => {
     staffExitRecords: [],
     holidays: (function() {
       var y = new Date().getFullYear();
-      return [
-        // National Holidays
+      var vy = INDIAN_VARIABLE_HOLIDAYS_BY_YEAR[y];
+      var list = [
+        // National Holidays — fixed Gregorian date every year
         { id: 'hol1',  name: 'New Year\'s Day',          date: y+'-01-01', type: 'National',      optional: false },
         { id: 'hol2',  name: 'Republic Day',              date: y+'-01-26', type: 'National',      optional: false },
         { id: 'hol3',  name: 'Independence Day',          date: y+'-08-15', type: 'National',      optional: false },
         { id: 'hol4',  name: 'Gandhi Jayanti',            date: y+'-10-02', type: 'National',      optional: false },
-        // Maharashtrian Holidays
+        // Maharashtrian Holidays — fixed Gregorian date every year
         { id: 'hol5',  name: 'Chhatrapati Shivaji Maharaj Jayanti', date: y+'-02-19', type: 'Maharashtra', optional: false },
-        { id: 'hol6',  name: 'Gudi Padwa',               date: y+'-03-30', type: 'Maharashtra',   optional: false },
         { id: 'hol7',  name: 'Dr. Babasaheb Ambedkar Jayanti', date: y+'-04-14', type: 'Maharashtra', optional: false },
         { id: 'hol8',  name: 'Maharashtra Day',           date: y+'-05-01', type: 'Maharashtra',   optional: false },
-        { id: 'hol9',  name: 'Dussehra (Vijayadashami)', date: y+'-10-02', type: 'Festival',      optional: false },
-        // National Festivals
-        { id: 'hol10', name: 'Holi',                     date: y+'-03-14', type: 'Festival',      optional: false },
-        { id: 'hol11', name: 'Good Friday',              date: y+'-04-18', type: 'Festival',      optional: false },
-        { id: 'hol12', name: 'Ram Navami',               date: y+'-04-06', type: 'Festival',      optional: false },
-        { id: 'hol13', name: 'Eid ul-Fitr',              date: y+'-03-31', type: 'Festival',      optional: false },
-        { id: 'hol14', name: 'Eid ul-Adha',              date: y+'-06-07', type: 'Festival',      optional: false },
-        { id: 'hol15', name: 'Janmashtami',              date: y+'-08-16', type: 'Festival',      optional: false },
-        { id: 'hol16', name: 'Ganesh Chaturthi',         date: y+'-08-27', type: 'Festival',      optional: false },
-        { id: 'hol17', name: 'Navratri Begins',          date: y+'-09-22', type: 'Festival',      optional: true  },
-        { id: 'hol18', name: 'Diwali (Lakshmi Pujan)',   date: y+'-10-20', type: 'Festival',      optional: false },
-        { id: 'hol19', name: 'Diwali (Bali Pratipada)',  date: y+'-10-21', type: 'Festival',      optional: false },
-        { id: 'hol20', name: 'Bhai Dooj',                date: y+'-10-23', type: 'Festival',      optional: true  },
-        { id: 'hol21', name: 'Guru Nanak Jayanti',       date: y+'-11-05', type: 'Festival',      optional: false },
         { id: 'hol22', name: 'Christmas',                date: y+'-12-25', type: 'Festival',      optional: false },
-        // School Specific
+        // School Specific — fixed Gregorian date every year
         { id: 'hol23', name: 'Summer Vacation Begins',   date: y+'-04-28', type: 'School',        optional: false },
         { id: 'hol24', name: 'School Reopens',           date: y+'-06-16', type: 'School',        optional: false },
-        { id: 'hol25', name: 'Diwali Vacation',          date: y+'-10-19', type: 'School',        optional: false },
         { id: 'hol26', name: 'Winter Break Begins',      date: y+'-12-22', type: 'School',        optional: false },
       ];
+      // Lunar/Hijri-calendar holidays — only added for years present in
+      // INDIAN_VARIABLE_HOLIDAYS_BY_YEAR above.
+      if (vy) {
+        list.push({ id: 'hol6',  name: 'Gudi Padwa',               date: y+'-'+vy.gudiPadwa,          type: 'Maharashtra', optional: false });
+        list.push({ id: 'hol9',  name: 'Dussehra (Vijayadashami)', date: y+'-'+vy.dussehra,           type: 'Festival',    optional: false });
+        list.push({ id: 'hol10', name: 'Holi',                     date: y+'-'+vy.holi,               type: 'Festival',    optional: false });
+        list.push({ id: 'hol11', name: 'Good Friday',              date: y+'-'+vy.goodFriday,         type: 'Festival',    optional: false });
+        list.push({ id: 'hol12', name: 'Ram Navami',               date: y+'-'+vy.ramNavami,          type: 'Festival',    optional: false });
+        list.push({ id: 'hol13', name: 'Eid ul-Fitr',              date: y+'-'+vy.eidFitr,            type: 'Festival',    optional: false });
+        list.push({ id: 'hol14', name: 'Eid ul-Adha',              date: y+'-'+vy.eidAdha,            type: 'Festival',    optional: false });
+        list.push({ id: 'hol15', name: 'Janmashtami',              date: y+'-'+vy.janmashtami,        type: 'Festival',    optional: false });
+        list.push({ id: 'hol16', name: 'Ganesh Chaturthi',         date: y+'-'+vy.ganeshChaturthi,    type: 'Festival',    optional: false });
+        list.push({ id: 'hol17', name: 'Navratri Begins',          date: y+'-'+vy.navratriBegins,     type: 'Festival',    optional: true  });
+        list.push({ id: 'hol18', name: 'Diwali (Lakshmi Pujan)',   date: y+'-'+vy.diwaliLakshmiPujan, type: 'Festival',    optional: false });
+        list.push({ id: 'hol19', name: 'Diwali (Bali Pratipada)',  date: y+'-'+vy.diwaliBaliPratipada,type: 'Festival',    optional: false });
+        list.push({ id: 'hol20', name: 'Bhai Dooj',                date: y+'-'+vy.bhaiDooj,           type: 'Festival',    optional: true  });
+        list.push({ id: 'hol21', name: 'Guru Nanak Jayanti',       date: y+'-'+vy.guruNanakJayanti,   type: 'Festival',    optional: false });
+        // Diwali Vacation = the day before Lakshmi Pujan, matching the school's usual lead-in.
+        var lp = new Date(y+'-'+vy.diwaliLakshmiPujan+'T00:00:00');
+        lp.setDate(lp.getDate() - 1);
+        list.push({ id: 'hol25', name: 'Diwali Vacation', date: lp.toISOString().slice(0, 10), type: 'School', optional: false });
+      }
+      return list;
     })(),
     profileChangeRequests: [],
     attendanceCorrectionRequests: [],

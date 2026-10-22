@@ -3956,15 +3956,15 @@ app.get('/parent-portal', (c) => {
     <button onclick="document.getElementById('pwa-ios-banner').style.display='none';localStorage.setItem('pwa-ios-dismissed','1')" style="background:transparent;color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;line-height:1;padding:0 4px;margin-top:2px">&times;</button>
   </div>
 
-  <script src="/static/data.js?v=40"></script>
-  <script src="/static/app.js?v=40"></script>
-  <script src="/static/admin.js?v=40"></script>
-  <script src="/static/management.js?v=40"></script>
-  <script src="/static/parent.js?v=40"></script>
-  <script src="/static/admissions.js?v=40"></script>
-  <script src="/static/accounting.js?v=40"></script>
-  <script src="/static/teacher.js?v=40"></script>
-  <script src="/static/teachers.js?v=40"></script>
+  <script src="/static/data.js?v=41"></script>
+  <script src="/static/app.js?v=41"></script>
+  <script src="/static/admin.js?v=41"></script>
+  <script src="/static/management.js?v=41"></script>
+  <script src="/static/parent.js?v=41"></script>
+  <script src="/static/admissions.js?v=41"></script>
+  <script src="/static/accounting.js?v=41"></script>
+  <script src="/static/teacher.js?v=41"></script>
+  <script src="/static/teachers.js?v=41"></script>
   <script>
   (function(){
     var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -5357,6 +5357,43 @@ app.delete('/api/holidays/:id', async (c) => {
     const id = c.req.param('id')
     const data = await loadMainAppData(c.env.DB)
     data.holidays = (data.holidays || []).filter((h: any) => h.id !== id)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+// A multi-day holiday range is stored as one record per day client-side.
+// Adding/deleting them one request at a time would fire several concurrent
+// read-modify-write cycles against the same blob — each reads the blob
+// before the others have written back, so all but the last write silently
+// lose the others' changes. These bulk endpoints do the whole range as a
+// single read-modify-write instead.
+app.post('/api/holidays/bulk', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageHolidays(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { holidays } = await c.req.json()
+    if (!Array.isArray(holidays) || !holidays.length) return c.json({ error: 'No holidays provided' }, 400)
+    for (const h of holidays) {
+      if (!h || !h.id || !h.name || !h.date) return c.json({ error: 'Invalid holiday' }, 400)
+    }
+    const data = await loadMainAppData(c.env.DB)
+    if (!Array.isArray(data.holidays)) data.holidays = []
+    data.holidays.push(...holidays)
+    await saveMainAppData(c.env.DB, data)
+    return c.json({ ok: true })
+  } catch (e: any) { return c.json({ error: e.message }, 500) }
+})
+
+app.post('/api/holidays/bulk-delete', async (c) => {
+  const sess = await getSession(c)
+  if (!canManageHolidays(sess)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { ids } = await c.req.json()
+    if (!Array.isArray(ids) || !ids.length) return c.json({ error: 'No ids provided' }, 400)
+    const idSet = new Set(ids)
+    const data = await loadMainAppData(c.env.DB)
+    data.holidays = (data.holidays || []).filter((h: any) => !idSet.has(h.id))
     await saveMainAppData(c.env.DB, data)
     return c.json({ ok: true })
   } catch (e: any) { return c.json({ error: e.message }, 500) }

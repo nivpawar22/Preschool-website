@@ -901,6 +901,34 @@ const DB = (() => {
     save(_data);
     return fetch('/api/holidays/' + encodeURIComponent(id), { method: 'DELETE', headers: _holidayAuthHdr() }).catch(function() {});
   }
+  // Adding/deleting a multi-day holiday range as several single-item
+  // requests would fire concurrent read-modify-write cycles against the
+  // same server blob, and all but the last to finish silently lose their
+  // change — these bulk variants do the whole range as one request.
+  function addHolidaysBulk(records) {
+    if (!records || !records.length) return Promise.resolve();
+    if (!_data.holidays) _data.holidays = [];
+    records.forEach(function(h) { _data.holidays.push(h); });
+    save(_data);
+    return fetch('/api/holidays/bulk', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _holidayAuthHdr()),
+      body: JSON.stringify({ holidays: records })
+    }).catch(function() {});
+  }
+  function deleteHolidaysBulk(ids) {
+    if (!ids || !ids.length) return Promise.resolve();
+    if (!_data.holidays) return Promise.resolve();
+    var idSet = {};
+    ids.forEach(function(id) { idSet[id] = true; });
+    _data.holidays = _data.holidays.filter(function(h){ return !idSet[h.id]; });
+    save(_data);
+    return fetch('/api/holidays/bulk-delete', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _holidayAuthHdr()),
+      body: JSON.stringify({ ids: ids })
+    }).catch(function() {});
+  }
 
   // ---- Profile Change Requests ----
   function getProfileChangeRequests(teacherId) {
@@ -1089,7 +1117,7 @@ const DB = (() => {
     getHRLetters, addHRLetter, deleteHRLetter,
     getStaffExitRecords, addStaffExitRecord, updateStaffExitRecord, deleteStaffExitRecord,
     getLeaveTypeConfig, saveLeaveTypeConfig,
-    getHolidays, addHoliday, deleteHoliday,
+    getHolidays, addHoliday, deleteHoliday, addHolidaysBulk, deleteHolidaysBulk,
     getProfileChangeRequests, addProfileChangeRequest, updateProfileChangeRequest,
     getAttendanceCorrectionRequests, addAttendanceCorrectionRequest, updateAttendanceCorrectionRequest,
     getHRDocumentRequests, addHRDocumentRequest, updateHRDocumentRequest,

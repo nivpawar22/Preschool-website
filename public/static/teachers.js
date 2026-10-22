@@ -2510,10 +2510,61 @@ window._submitResignationReview = function(reqId, action) {
 };
 
 // ==================== HOLIDAY MANAGEMENT ====================
+// A holiday can span multiple days (e.g. "Diwali Vacation"). Rather than
+// teach every date comparison in the app about ranges, a multi-day entry
+// is stored as one individual-day record per day (sharing a rangeId) —
+// each day still sorts/filters correctly everywhere holidays are already
+// read by exact date — and the two management views below collapse same-
+// rangeId records back into a single row with a combined date label.
+function _holidayDateRange(fromDate, toDate) {
+  var dates = [];
+  var d = new Date(fromDate + 'T00:00:00');
+  var end = new Date(toDate + 'T00:00:00');
+  while (d <= end) {
+    dates.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+function _buildHolidayRangeRecords(name, fromDate, toDate, type) {
+  var dates = _holidayDateRange(fromDate, toDate);
+  if (dates.length <= 1) {
+    return [{ id: 'hol_'+Date.now(), name: name, date: fromDate, type: type, optional: type === 'Optional' }];
+  }
+  var rangeId = 'holrange_' + Date.now();
+  return dates.map(function(d, i) {
+    return { id: 'hol_'+Date.now()+'_'+i, name: name, date: d, type: type, optional: type === 'Optional', rangeId: rangeId, rangeStart: fromDate, rangeEnd: toDate };
+  });
+}
+function _groupHolidaysForDisplay(holidays) {
+  var seen = {};
+  var out = [];
+  holidays.forEach(function(h) {
+    if (h.rangeId) {
+      if (seen[h.rangeId]) return;
+      seen[h.rangeId] = true;
+      out.push(Object.assign({}, h, {
+        date: h.rangeStart || h.date,
+        _endDate: h.rangeEnd || h.date,
+        _dateLabel: (h.rangeStart === h.rangeEnd) ? formatDate(h.rangeStart) : (formatDate(h.rangeStart) + ' – ' + formatDate(h.rangeEnd))
+      }));
+    } else {
+      out.push(Object.assign({}, h, { _endDate: h.date, _dateLabel: formatDate(h.date) }));
+    }
+  });
+  return out;
+}
+function _deleteHolidayGroup(id) {
+  var all = DB.getHolidays ? DB.getHolidays() : [];
+  var target = all.find(function(h) { return h.id === id; });
+  if (!target) return [];
+  return target.rangeId ? all.filter(function(h) { return h.rangeId === target.rangeId; }) : [target];
+}
+
 window.openHolidayManagement = function() {
   var today = new Date().toISOString().slice(0, 10);
-  var holidays = DB.getHolidays ? DB.getHolidays() : [];
-  holidays = holidays.filter(function(h){ return (h.date||'') >= today; })
+  var holidays = _groupHolidaysForDisplay(DB.getHolidays ? DB.getHolidays() : []);
+  holidays = holidays.filter(function(h){ return (h._endDate||h.date||'') >= today; })
     .sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
 
   var typeColors = { National: '#fee2e2:#991b1b', Festival: '#fef3c7:#92400e', School: '#e0e7ff:#3730a3', Optional: '#d1fae5:#065f46' };
@@ -2522,7 +2573,7 @@ window.openHolidayManagement = function() {
     var p = (typeColors[h.type] || '#f1f5f9:#475569').split(':');
     return '<tr style="border-bottom:1px solid #f1f5f9">'+
       '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(h.name)+'</td>'+
-      '<td style="padding:10px 12px;color:#64748b">'+(h.date||'—')+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(h._dateLabel||'—')+'</td>'+
       '<td style="padding:10px 12px"><span style="background:'+p[0]+';color:'+p[1]+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(h.type||'School')+'</span></td>'+
       '<td style="padding:10px 12px;text-align:center"><span style="color:'+(h.optional?'#f59e0b':'#10b981')+';font-weight:700;font-size:12px">'+(h.optional?'Optional':'Mandatory')+'</span></td>'+
       '<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm btn-danger" onclick="_deleteHoliday(\''+h.id+'\')"><i class="fas fa-trash"></i></button></td>'+
@@ -2534,19 +2585,21 @@ window.openHolidayManagement = function() {
   overlay.id = 'holiday-mgmt-modal';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
   overlay.innerHTML =
-    '<div style="background:#fff;border-radius:16px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
+    '<div style="background:#fff;border-radius:16px;width:100%;max-width:760px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">'+
       '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'+
         '<div style="font-size:18px;font-weight:800;color:#0F2050"><i class="fas fa-calendar-alt" style="color:#6366f1;margin-right:8px"></i>Holiday Calendar Management</div>'+
         '<button onclick="document.getElementById(\'holiday-mgmt-modal\').remove()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">&times;</button>'+
       '</div>'+
       '<div style="padding:20px 24px;border-bottom:1px solid #e2e8f0;background:#f8fafc;border-radius:0">'+
         '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">Add New Holiday</div>'+
-        '<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">'+
+        '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end">'+
           '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Holiday Name</label><input id="hol-name" type="text" placeholder="e.g. Independence Day" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
-          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Date</label><input id="hol-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">From Date</label><input id="hol-from-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">To Date</label><input id="hol-to-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"></div>'+
           '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Type</label><select id="hol-type" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%"><option>National</option><option>Festival</option><option>School</option><option>Optional</option></select></div>'+
           '<button class="btn btn-primary" onclick="_addHoliday()" style="white-space:nowrap">+ Add</button>'+
         '</div>'+
+        '<div style="font-size:11px;color:#94a3b8;margin-top:8px">For a single-day holiday, set From Date and To Date to the same day.</div>'+
       '</div>'+
       '<div style="padding:20px 24px;overflow-x:auto">'+
         '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
@@ -2569,18 +2622,21 @@ window.openHolidayManagement = function() {
 
 window._addHoliday = function() {
   var name = (document.getElementById('hol-name')||{}).value || '';
-  var date = (document.getElementById('hol-date')||{}).value || '';
+  var fromDate = (document.getElementById('hol-from-date')||{}).value || '';
+  var toDate = (document.getElementById('hol-to-date')||{}).value || '';
   var type = (document.getElementById('hol-type')||{}).value || 'School';
-  if (!name || !date) { alert('Please enter holiday name and date.'); return; }
-  if (DB.addHoliday) {
-    DB.addHoliday({ id: 'hol_'+Date.now(), name: name, date: date, type: type, optional: type === 'Optional' });
-  }
+  if (!name || !fromDate || !toDate) { alert('Please enter holiday name, from date and to date.'); return; }
+  if (toDate < fromDate) { alert('To Date cannot be before From Date.'); return; }
+  if (DB.addHolidaysBulk) DB.addHolidaysBulk(_buildHolidayRangeRecords(name, fromDate, toDate, type));
   openHolidayManagement();
 };
 
 window._deleteHoliday = function(id) {
-  if (!confirm('Delete this holiday?')) return;
-  if (DB.deleteHoliday) DB.deleteHoliday(id);
+  var toDelete = _deleteHolidayGroup(id);
+  if (!toDelete.length) return;
+  var msg = toDelete.length > 1 ? 'Delete this holiday? It spans ' + toDelete.length + ' days.' : 'Delete this holiday?';
+  if (!confirm(msg)) return;
+  if (DB.deleteHolidaysBulk) DB.deleteHolidaysBulk(toDelete.map(function(h) { return h.id; }));
   openHolidayManagement();
 };
 
@@ -2590,16 +2646,16 @@ function renderHolidays() {
   if (!user) { renderLogin(); return; }
   var canManage = user.role !== 'parent';
   var today = new Date().toISOString().slice(0, 10);
-  var holidays = DB.getHolidays ? DB.getHolidays() : [];
-  var upcoming = holidays.filter(function(h) { return (h.date||'') >= today; });
-  var past = holidays.filter(function(h) { return (h.date||'') < today; }).sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+  var grouped = _groupHolidaysForDisplay(DB.getHolidays ? DB.getHolidays() : []);
+  var upcoming = grouped.filter(function(h) { return (h._endDate||h.date||'') >= today; });
+  var past = grouped.filter(function(h) { return (h._endDate||h.date||'') < today; }).sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
   var typeColors = { National: '#fee2e2:#991b1b', Festival: '#fef3c7:#92400e', School: '#e0e7ff:#3730a3', Optional: '#d1fae5:#065f46' };
 
   function rowHtml(h) {
     var p = (typeColors[h.type] || '#f1f5f9:#475569').split(':');
     return '<tr style="border-bottom:1px solid #f1f5f9">'+
       '<td style="padding:10px 12px;font-weight:600;color:#0F2050">'+_escH(h.name)+'</td>'+
-      '<td style="padding:10px 12px;color:#64748b">'+formatDate(h.date)+'</td>'+
+      '<td style="padding:10px 12px;color:#64748b">'+(h._dateLabel||formatDate(h.date))+'</td>'+
       '<td style="padding:10px 12px"><span style="background:'+p[0]+';color:'+p[1]+';padding:2px 9px;border-radius:6px;font-size:11px;font-weight:700">'+_escH(h.type||'School')+'</span></td>'+
       '<td style="padding:10px 12px;text-align:center"><span style="color:'+(h.optional?'#f59e0b':'#10b981')+';font-weight:700;font-size:12px">'+(h.optional?'Optional':'Mandatory')+'</span></td>'+
       (canManage ? '<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm btn-danger" onclick="_deleteHolidayTab(\''+h.id+'\')" title="Delete"><i class="fas fa-trash"></i></button></td>' : '')+
@@ -2613,12 +2669,14 @@ function renderHolidays() {
   var addForm = !canManage ? '' :
     '<div class="card" style="margin-bottom:20px">'+
       '<div class="card-title" style="margin-bottom:14px"><i class="fas fa-plus-circle" style="color:#6366f1"></i> Add Holiday</div>'+
-      '<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">'+
+      '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end">'+
         '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Holiday Name</label><input id="hol-tab-name" type="text" placeholder="e.g. Independence Day" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
-        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Date</label><input id="hol-tab-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
+        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">From Date</label><input id="hol-tab-from-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
+        '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">To Date</label><input id="hol-tab-to-date" type="date" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"></div>'+
         '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px">Type</label><select id="hol-tab-type" style="border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;box-sizing:border-box"><option>National</option><option>Festival</option><option>School</option><option>Optional</option></select></div>'+
         '<button class="btn btn-primary" onclick="_addHolidayTab()" style="white-space:nowrap">+ Add</button>'+
       '</div>'+
+      '<div style="font-size:11px;color:#94a3b8;margin-top:8px">For a single-day holiday, set From Date and To Date to the same day.</div>'+
     '</div>';
 
   var content =
@@ -2653,19 +2711,22 @@ function renderHolidays() {
 
 window._addHolidayTab = function() {
   var name = (document.getElementById('hol-tab-name')||{}).value || '';
-  var date = (document.getElementById('hol-tab-date')||{}).value || '';
+  var fromDate = (document.getElementById('hol-tab-from-date')||{}).value || '';
+  var toDate = (document.getElementById('hol-tab-to-date')||{}).value || '';
   var type = (document.getElementById('hol-tab-type')||{}).value || 'School';
-  if (!name || !date) { showToast('Please enter holiday name and date', 'error'); return; }
-  if (DB.addHoliday) {
-    DB.addHoliday({ id: 'hol_'+Date.now(), name: name, date: date, type: type, optional: type === 'Optional' });
-  }
+  if (!name || !fromDate || !toDate) { showToast('Please enter holiday name, from date and to date', 'error'); return; }
+  if (toDate < fromDate) { showToast('To Date cannot be before From Date', 'error'); return; }
+  if (DB.addHolidaysBulk) DB.addHolidaysBulk(_buildHolidayRangeRecords(name, fromDate, toDate, type));
   showToast('Holiday added', 'success');
   renderHolidays();
 };
 
 window._deleteHolidayTab = function(id) {
-  confirmDialog('Delete this holiday?', function() {
-    if (DB.deleteHoliday) DB.deleteHoliday(id);
+  var toDelete = _deleteHolidayGroup(id);
+  if (!toDelete.length) return;
+  var msg = toDelete.length > 1 ? 'Delete this holiday? It spans ' + toDelete.length + ' days.' : 'Delete this holiday?';
+  confirmDialog(msg, function() {
+    if (DB.deleteHolidaysBulk) DB.deleteHolidaysBulk(toDelete.map(function(h) { return h.id; }));
     showToast('Holiday deleted', 'success');
     renderHolidays();
   });
